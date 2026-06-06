@@ -52,6 +52,10 @@ const EXCLUDE_KEYWORDS: Array[String] = [
 @export var label_color: Color = Color(1, 1, 1)
 @export var label_pixel_size: float = 0.0009
 
+@export_group("Mapeamento de Bones")
+## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
+@export var head_bone_names: Array[String] = []
+
 @export_group("Colisão")
 @export_flags_3d_physics var hitbox_layer: int = 16
 @export_flags_3d_physics var detect_layer: int = 8
@@ -95,6 +99,9 @@ func build_for(skel: Skeleton3D) -> void:
 
 func _group_for(bone_name: String) -> String:
 	var n := bone_name.to_lower()
+	for h in head_bone_names:
+		if n == h.to_lower():
+			return G_HEAD
 	for ex in EXCLUDE_KEYWORDS:
 		if n.contains(ex):
 			return ""
@@ -182,8 +189,8 @@ func _make_label(text: String, pos: Vector3) -> Label3D:
 	lbl.no_depth_test = true
 	lbl.fixed_size = true
 	lbl.pixel_size = label_pixel_size
-	lbl.font_size = 64
-	lbl.outline_size = 12
+	lbl.font_size = 32
+	lbl.outline_size = 6
 	lbl.modulate = label_color
 	lbl.outline_modulate = Color(0, 0, 0, 0.8)
 	lbl.position = pos
