@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d11gc8p5o421h"
-path="res://.godot/imported/light_shafts.png-0023b938c3530335d60f4164e1114b6e.ctex"
+uid="uid://cm5wpa4qx403u"
+path="res://.godot/imported/light_shafts.png-da10dbde0b8277676256544d879719f4.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/light_shafts.png"
-dest_files=["res://.godot/imported/light_shafts.png-0023b938c3530335d60f4164e1114b6e.ctex"]
+dest_files=["res://.godot/imported/light_shafts.png-da10dbde0b8277676256544d879719f4.ctex"]
 
 [params]
 

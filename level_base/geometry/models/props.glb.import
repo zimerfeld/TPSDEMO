@@ -1,15 +1,15 @@
-﻿[remap]
+[remap]
 
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bo1pljlkhwsd3"
-path="res://.godot/imported/props.glb-35242f356dd8ddaf2fb9fd6e691b2b7c.scn"
+uid="uid://dnmn2m57dfxiu"
+path="res://.godot/imported/props.glb-c1e4e2b24e59c59bc1965133c41ae054.scn"
 
 [deps]
 
 source_file="res://level_base/geometry/models/props.glb"
-dest_files=["res://.godot/imported/props.glb-35242f356dd8ddaf2fb9fd6e691b2b7c.scn"]
+dest_files=["res://.godot/imported/props.glb-c1e4e2b24e59c59bc1965133c41ae054.scn"]
 
 [params]
 

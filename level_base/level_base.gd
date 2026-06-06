@@ -24,6 +24,13 @@ func _ready() -> void:
 	else:
 		setup_lightmapgi()
 
+	if multiplayer == null:
+		CrashHandler.show_error(
+			"MultiplayerAPI indisponível ao inicializar o nível.\n" +
+			"Verifique a configuração de rede e tente novamente."
+		)
+		return
+
 	if multiplayer.is_server():
 		# Server will spawn the red robots
 		for child in robot_spawn_points.get_children():

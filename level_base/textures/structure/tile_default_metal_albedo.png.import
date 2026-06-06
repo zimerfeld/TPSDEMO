@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bpbi0hyoln6nr"
-path.s3tc="res://.godot/imported/tile_default_metal_albedo.png-0aa9a3d849f42077340eca669454b5e3.s3tc.ctex"
+uid="uid://b30pdf8eqjq"
+path.s3tc="res://.godot/imported/tile_default_metal_albedo.png-acef6f1e1f77869f72f7a0637a25817b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_default_metal_albedo.png"
-dest_files=["res://.godot/imported/tile_default_metal_albedo.png-0aa9a3d849f42077340eca669454b5e3.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_default_metal_albedo.png-acef6f1e1f77869f72f7a0637a25817b.s3tc.ctex"]
 
 [params]
 

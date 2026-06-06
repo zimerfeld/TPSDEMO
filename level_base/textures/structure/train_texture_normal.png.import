@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c2nry02ocoreu"
-path.s3tc="res://.godot/imported/train_texture_normal.png-125fd3eb3cc85c2b801428dae0fd7656.s3tc.ctex"
+uid="uid://cdkyf1pmoiax1"
+path.s3tc="res://.godot/imported/train_texture_normal.png-0b0bd0f68d86b6759d5022e6b6469cd5.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/train_texture_normal.png"
-dest_files=["res://.godot/imported/train_texture_normal.png-125fd3eb3cc85c2b801428dae0fd7656.s3tc.ctex"]
+dest_files=["res://.godot/imported/train_texture_normal.png-0b0bd0f68d86b6759d5022e6b6469cd5.s3tc.ctex"]
 
 [params]
 

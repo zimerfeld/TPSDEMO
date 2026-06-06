@@ -437,7 +437,20 @@ func _on_play_online_pressed() -> void:
 
 func _on_host_pressed() -> void:
 	peer = ENetMultiplayerPeer.new()
-	peer.create_server(int(online_port.value))
+	var err: Error = peer.create_server(int(online_port.value))
+	if err != OK:
+		CrashHandler.show_error(
+			"Falha ao criar servidor na porta %d.\nErro: %s\n\nVerifique se a porta está em uso." % [int(online_port.value), error_string(err)],
+			_on_play_online_pressed
+		)
+		return
+	if peer.host == null:
+		CrashHandler.show_error(
+			"Servidor criado, mas host ENet é nulo.\nTente outra porta ou reinicie o jogo.",
+			_on_play_online_pressed
+		)
+		return
+	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
 	loading_path = LEVEL_BASE_PATH
 	online.hide()
 	main.hide()
@@ -447,7 +460,20 @@ func _on_host_pressed() -> void:
 
 func _on_connect_pressed() -> void:
 	peer = ENetMultiplayerPeer.new()
-	peer.create_client(online_address.text, int(online_port.value))
+	var err: Error = peer.create_client(online_address.text, int(online_port.value))
+	if err != OK:
+		CrashHandler.show_error(
+			"Falha ao conectar em %s:%d.\nErro: %s\n\nVerifique o endereço e a porta." % [online_address.text, int(online_port.value), error_string(err)],
+			_on_play_online_pressed
+		)
+		return
+	if peer.host == null:
+		CrashHandler.show_error(
+			"Conexão iniciada, mas host ENet é nulo.\nTente novamente.",
+			_on_play_online_pressed
+		)
+		return
+	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
 	loading_path = LEVEL_BASE_PATH
 	online.hide()
 	main.hide()

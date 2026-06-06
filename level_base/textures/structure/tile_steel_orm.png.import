@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dwpd3qunl3mqn"
-path.s3tc="res://.godot/imported/tile_steel_orm.png-a53065d5b59cd40e3416cc5fd266f366.s3tc.ctex"
+uid="uid://buxrqv7igs4e2"
+path.s3tc="res://.godot/imported/tile_steel_orm.png-cd9ee9db269c705cfe9a15786e006421.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_steel_orm.png"
-dest_files=["res://.godot/imported/tile_steel_orm.png-a53065d5b59cd40e3416cc5fd266f366.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_steel_orm.png-cd9ee9db269c705cfe9a15786e006421.s3tc.ctex"]
 
 [params]
 

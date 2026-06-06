@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dcf4cfwdgr1pe"
-path.s3tc="res://.godot/imported/door_normal.png-4ed902c68270b155144b1603d7f2e74f.s3tc.ctex"
+uid="uid://u5avjb08hvmk"
+path.s3tc="res://.godot/imported/door_normal.png-6ac4c5023794b7470eab0cf16a0a9504.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/props/door_normal.png"
-dest_files=["res://.godot/imported/door_normal.png-4ed902c68270b155144b1603d7f2e74f.s3tc.ctex"]
+dest_files=["res://.godot/imported/door_normal.png-6ac4c5023794b7470eab0cf16a0a9504.s3tc.ctex"]
 
 [params]
 

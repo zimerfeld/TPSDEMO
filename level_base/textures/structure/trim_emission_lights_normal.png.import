@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dr7q081xh3ttx"
-path="res://.godot/imported/trim_emission_lights_normal.png-5b8350d8992a6456e41fab19bad87920.ctex"
+uid="uid://ko2xmydkpb5t"
+path="res://.godot/imported/trim_emission_lights_normal.png-e75e568d0f121611687eaa6e94f82491.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/trim_emission_lights_normal.png"
-dest_files=["res://.godot/imported/trim_emission_lights_normal.png-5b8350d8992a6456e41fab19bad87920.ctex"]
+dest_files=["res://.godot/imported/trim_emission_lights_normal.png-e75e568d0f121611687eaa6e94f82491.ctex"]
 
 [params]
 

@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://db0f7kj1yvu4r"
-path.s3tc="res://.godot/imported/mid_cargo_box_albedo.png-b793e787d2b27f01a662c05bb43c069b.s3tc.ctex"
+uid="uid://fdyf2ngo6evw"
+path.s3tc="res://.godot/imported/mid_cargo_box_albedo.png-f0390eaa6ba010a558f01a929da5b00a.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/props/mid_cargo_box_albedo.png"
-dest_files=["res://.godot/imported/mid_cargo_box_albedo.png-b793e787d2b27f01a662c05bb43c069b.s3tc.ctex"]
+dest_files=["res://.godot/imported/mid_cargo_box_albedo.png-f0390eaa6ba010a558f01a929da5b00a.s3tc.ctex"]
 
 [params]
 

@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://31pglyvsh3v1"
-path.s3tc="res://.godot/imported/flying_forklift_emission.png-a6f091c1f751a0827af3500c316a9bac.s3tc.ctex"
+uid="uid://bxper5316531s"
+path.s3tc="res://.godot/imported/flying_forklift_emission.png-c570aef22f8045c2da3062a177493adf.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/forklift/flying_forklift_emission.png"
-dest_files=["res://.godot/imported/flying_forklift_emission.png-a6f091c1f751a0827af3500c316a9bac.s3tc.ctex"]
+dest_files=["res://.godot/imported/flying_forklift_emission.png-c570aef22f8045c2da3062a177493adf.s3tc.ctex"]
 
 [params]
 

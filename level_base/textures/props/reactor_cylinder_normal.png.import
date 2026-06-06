@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ceht58povwv6b"
-path.s3tc="res://.godot/imported/reactor_cylinder_normal.png-eb18a326db228974ea42e632a6b42f58.s3tc.ctex"
+uid="uid://b4g5xxhcl530i"
+path.s3tc="res://.godot/imported/reactor_cylinder_normal.png-dd925da53737abd684033bd67a1dc0b2.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/props/reactor_cylinder_normal.png"
-dest_files=["res://.godot/imported/reactor_cylinder_normal.png-eb18a326db228974ea42e632a6b42f58.s3tc.ctex"]
+dest_files=["res://.godot/imported/reactor_cylinder_normal.png-dd925da53737abd684033bd67a1dc0b2.s3tc.ctex"]
 
 [params]
 

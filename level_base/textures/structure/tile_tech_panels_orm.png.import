@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b76rby8y37l7g"
-path.s3tc="res://.godot/imported/tile_tech_panels_orm.png-663c41939f3c191da34d0f5fd269f8eb.s3tc.ctex"
+uid="uid://cr881gjjnl84y"
+path.s3tc="res://.godot/imported/tile_tech_panels_orm.png-648d270cc4c86f3a1f92be78fdc5e4fe.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_tech_panels_orm.png"
-dest_files=["res://.godot/imported/tile_tech_panels_orm.png-663c41939f3c191da34d0f5fd269f8eb.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_tech_panels_orm.png-648d270cc4c86f3a1f92be78fdc5e4fe.s3tc.ctex"]
 
 [params]
 

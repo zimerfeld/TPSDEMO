@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cwm4m07qb2mnu"
-path.s3tc="res://.godot/imported/tile_glass_normal.png-5f368ea6c1e54b0903b10b25f8c4ee3e.s3tc.ctex"
+uid="uid://b0rct6x6jsb6m"
+path.s3tc="res://.godot/imported/tile_glass_normal.png-9eb4b5a6f5fd54fae78c42b719b0debc.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_glass_normal.png"
-dest_files=["res://.godot/imported/tile_glass_normal.png-5f368ea6c1e54b0903b10b25f8c4ee3e.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_glass_normal.png-9eb4b5a6f5fd54fae78c42b719b0debc.s3tc.ctex"]
 
 [params]
 

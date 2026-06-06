@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bg1qgyq2vsfa6"
-path.s3tc="res://.godot/imported/reactor_emitter_orm.png-6a1505bcb0708682837397f60b25976d.s3tc.ctex"
+uid="uid://436wk7jhsi83"
+path.s3tc="res://.godot/imported/reactor_emitter_orm.png-8ab039aedda1b3f1a9900c600e1e004b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/reactor_emitter_orm.png"
-dest_files=["res://.godot/imported/reactor_emitter_orm.png-6a1505bcb0708682837397f60b25976d.s3tc.ctex"]
+dest_files=["res://.godot/imported/reactor_emitter_orm.png-8ab039aedda1b3f1a9900c600e1e004b.s3tc.ctex"]
 
 [params]
 

@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ch14oe0btjxl0"
-path.s3tc="res://.godot/imported/scificar_orm.png-323fd37735b8e4575670e542b4e68a30.s3tc.ctex"
+uid="uid://cy4b7l4x8ikdy"
+path.s3tc="res://.godot/imported/scificar_orm.png-8eaa1e875f87a3fb673b76f097162e86.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/car/scificar_orm.png"
-dest_files=["res://.godot/imported/scificar_orm.png-323fd37735b8e4575670e542b4e68a30.s3tc.ctex"]
+dest_files=["res://.godot/imported/scificar_orm.png-8eaa1e875f87a3fb673b76f097162e86.s3tc.ctex"]
 
 [params]
 

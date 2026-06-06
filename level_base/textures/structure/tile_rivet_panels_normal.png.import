@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dq5kud1m2ksid"
-path.s3tc="res://.godot/imported/tile_rivet_panels_normal.png-2dd12da56a97de0be2095df12a49d60e.s3tc.ctex"
+uid="uid://dh6rl2qkypgi7"
+path.s3tc="res://.godot/imported/tile_rivet_panels_normal.png-66a40b5291546c5ad434e36a8c0af292.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_rivet_panels_normal.png"
-dest_files=["res://.godot/imported/tile_rivet_panels_normal.png-2dd12da56a97de0be2095df12a49d60e.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_rivet_panels_normal.png-66a40b5291546c5ad434e36a8c0af292.s3tc.ctex"]
 
 [params]
 

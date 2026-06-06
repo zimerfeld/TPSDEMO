@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cc1mlvd8ie82t"
-path="res://.godot/imported/tile_tech_panels_color_normal.png-e83eeffd7aa29240cdc5725ecb263179.ctex"
+uid="uid://cyrp6tbx7urjn"
+path="res://.godot/imported/tile_tech_panels_color_normal.png-4fc0c2014b7d369a8d423062ca684745.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_tech_panels_color_normal.png"
-dest_files=["res://.godot/imported/tile_tech_panels_color_normal.png-e83eeffd7aa29240cdc5725ecb263179.ctex"]
+dest_files=["res://.godot/imported/tile_tech_panels_color_normal.png-4fc0c2014b7d369a8d423062ca684745.ctex"]
 
 [params]
 

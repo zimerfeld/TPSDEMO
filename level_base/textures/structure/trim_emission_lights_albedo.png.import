@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkxyrilwkvavb"
-path="res://.godot/imported/trim_emission_lights_albedo.png-3a230e7f59ebf975a53c7faad190394c.ctex"
+uid="uid://04vxwspu6t0o"
+path="res://.godot/imported/trim_emission_lights_albedo.png-3a3a10c19ad07a79feb921943f0c466d.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/trim_emission_lights_albedo.png"
-dest_files=["res://.godot/imported/trim_emission_lights_albedo.png-3a230e7f59ebf975a53c7faad190394c.ctex"]
+dest_files=["res://.godot/imported/trim_emission_lights_albedo.png-3a3a10c19ad07a79feb921943f0c466d.ctex"]
 
 [params]
 

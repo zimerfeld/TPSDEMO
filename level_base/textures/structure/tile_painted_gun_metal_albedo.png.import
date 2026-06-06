@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://fkp0ef5ksjh4"
-path.s3tc="res://.godot/imported/tile_painted_gun_metal_albedo.png-f0db487eb8c176a5a93e740f4cbae6cd.s3tc.ctex"
+uid="uid://bk17c8bfu3aqo"
+path.s3tc="res://.godot/imported/tile_painted_gun_metal_albedo.png-000256b1d35f82733f3b995a7745440c.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_painted_gun_metal_albedo.png"
-dest_files=["res://.godot/imported/tile_painted_gun_metal_albedo.png-f0db487eb8c176a5a93e740f4cbae6cd.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_painted_gun_metal_albedo.png-000256b1d35f82733f3b995a7745440c.s3tc.ctex"]
 
 [params]
 

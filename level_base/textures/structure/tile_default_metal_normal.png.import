@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2yhyp3j2v4d8"
-path.s3tc="res://.godot/imported/tile_default_metal_normal.png-ad5a5e044d9933e868bce4283af17258.s3tc.ctex"
+uid="uid://0py006dt7agh"
+path.s3tc="res://.godot/imported/tile_default_metal_normal.png-ede9f4af508af8f81cb7a988ebfb1a85.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_default_metal_normal.png"
-dest_files=["res://.godot/imported/tile_default_metal_normal.png-ad5a5e044d9933e868bce4283af17258.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_default_metal_normal.png-ede9f4af508af8f81cb7a988ebfb1a85.s3tc.ctex"]
 
 [params]
 

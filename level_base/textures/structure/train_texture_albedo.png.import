@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://mb348a2pe5x2"
-path.s3tc="res://.godot/imported/train_texture_albedo.png-58c58a8a6bfd123c814c827a08758373.s3tc.ctex"
+uid="uid://bvrsokr5gfei5"
+path.s3tc="res://.godot/imported/train_texture_albedo.png-535385b1ba92a34234a70d5f6430b1f1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/train_texture_albedo.png"
-dest_files=["res://.godot/imported/train_texture_albedo.png-58c58a8a6bfd123c814c827a08758373.s3tc.ctex"]
+dest_files=["res://.godot/imported/train_texture_albedo.png-535385b1ba92a34234a70d5f6430b1f1.s3tc.ctex"]
 
 [params]
 

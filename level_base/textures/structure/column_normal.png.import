@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cyyvxldd650rk"
-path.s3tc="res://.godot/imported/column_normal.png-31362125cf87201d01b6b2ce4fcd8576.s3tc.ctex"
+uid="uid://dqa07cuqlri7j"
+path.s3tc="res://.godot/imported/column_normal.png-bec87696f0cdde28aea139b01d18fce6.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/column_normal.png"
-dest_files=["res://.godot/imported/column_normal.png-31362125cf87201d01b6b2ce4fcd8576.s3tc.ctex"]
+dest_files=["res://.godot/imported/column_normal.png-bec87696f0cdde28aea139b01d18fce6.s3tc.ctex"]
 
 [params]
 

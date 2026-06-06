@@ -1,15 +1,15 @@
-﻿[remap]
+[remap]
 
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bw3n7ygc7rasg"
-path="res://.godot/imported/flying_forklift.glb-f22e890360fe0c3997e7f5e708b7fd69.scn"
+uid="uid://uqw7mo453h5m"
+path="res://.godot/imported/flying_forklift.glb-84f299023cae3f3fd50541c176298cd8.scn"
 
 [deps]
 
 source_file="res://level_base/forklift/flying_forklift.glb"
-dest_files=["res://.godot/imported/flying_forklift.glb-f22e890360fe0c3997e7f5e708b7fd69.scn"]
+dest_files=["res://.godot/imported/flying_forklift.glb-84f299023cae3f3fd50541c176298cd8.scn"]
 
 [params]
 
