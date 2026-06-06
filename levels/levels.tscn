@@ -71,6 +71,20 @@ theme_override_font_sizes/font_size = 30
 text = "Level Base"
 alignment = 0
 
+[node name="BackButton" type="Button" parent="UI"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_right = 150.0
+offset_top = -165.0
+offset_bottom = -110.0
+theme_override_font_sizes/font_size = 30
+text = "VOLTAR"
+alignment = 1
+
 [node name="Loading" type="HBoxContainer" parent="UI"]
 visible = false
 layout_mode = 0
@@ -95,6 +109,7 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
+[connection signal="pressed" from="UI/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Level1Button" to="." method="_on_level_1_pressed"]
 [connection signal="pressed" from="UI/LevelBaseButton" to="." method="_on_level_base_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

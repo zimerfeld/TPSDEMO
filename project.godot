@@ -24,6 +24,7 @@ config/icon="res://icon.png"
 
 Settings="*res://menu/settings.gd"
 CrashHandler="*res://autoload/crash_handler.gd"
+PlayerSelection="*res://autoload/player_selection.gd"
 
 [display]
 

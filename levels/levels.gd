@@ -5,11 +5,13 @@ signal quit
 
 const LEVEL_1_PATH: String = "res://level_1/level_1.tscn"
 const LEVEL_BASE_PATH: String = "res://level_base/level_base.tscn"
+const CHOOSEPLAYER_PATH: String = "res://chooseplayer/chooseplayer.tscn"
 
 var loading_path: String = ""
 
 @onready var level1_button: Button = $UI/Level1Button
 @onready var level_base_button: Button = $UI/LevelBaseButton
+@onready var back_button: Button = $UI/BackButton
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
@@ -50,6 +52,10 @@ func _on_level_base_pressed() -> void:
 	level_base_button.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
+
+
+func _on_back_pressed() -> void:
+	emit_signal("replace_main_scene", load(CHOOSEPLAYER_PATH))
 
 
 func _input(input_event: InputEvent) -> void:

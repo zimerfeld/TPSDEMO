@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3 uid="uid://bplayera_scene1"]
+
+[ext_resource type="PackedScene" uid="uid://cs1k22tdf04k4" path="res://player/player.tscn" id="1"]
+[ext_resource type="Script" path="res://playera/playera.gd" id="2"]
+
+[node name="Playera" instance=ExtResource("1")]
+script = ExtResource("2")

@@ -3,7 +3,7 @@ extends Node
 
 signal replace_main_scene
 
-const LEVELS_PATH: String = "res://levels/levels.tscn"
+const CHOOSEPLAYER_PATH: String = "res://chooseplayer/chooseplayer.tscn"
 const LEVEL_BASE_PATH: String = "res://level_base/level_base.tscn"
 
 var loading_path: String = ""
@@ -167,7 +167,7 @@ func _on_loading_done_timer_timeout() -> void:
 
 
 func _on_play_pressed() -> void:
-	loading_path = LEVELS_PATH
+	loading_path = CHOOSEPLAYER_PATH
 	main.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)

@@ -4,7 +4,7 @@
 signal quit
 
 const RedRobot: PackedScene = preload("res://enemies/red_robot/red_robot.tscn")
-const PlayerScene: PackedScene = preload("res://player/player.tscn")
+var _player_scene: PackedScene
 
 var lightmap_gi: LightmapGI = null
 
@@ -16,6 +16,7 @@ var lightmap_gi: LightmapGI = null
 
 func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
+	_player_scene = load(PlayerSelection.scene_path)
 
 	if Settings.config_file.get_value("rendering", "gi_type") == Settings.GIType.SDFGI:
 		setup_sdfgi()
@@ -121,7 +122,7 @@ func del_player(id: int) -> void:
 func add_player(id: int, spawn_point: Marker3D = null) -> void:
 	if spawn_point == null:
 		spawn_point = player_spawn_points.get_child(randi() % player_spawn_points.get_child_count())
-	var player: CharacterBody3D = PlayerScene.instantiate()
+	var player: CharacterBody3D = _player_scene.instantiate()
 	player.name = str(id)
 	player.player_id = id
 	player.transform = spawn_point.transform
