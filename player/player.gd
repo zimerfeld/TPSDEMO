@@ -39,8 +39,26 @@ var motion := Vector2()
 	set(value):
 		player_id = value
 		$InputSynchronizer.set_multiplayer_authority(value)
+		# Garante o HUD do player local em toda cena de level, inclusive quando
+		# player_id chega via replicação depois do _ready (cliente multiplayer).
+		_setup_health_bar.call_deferred()
 
 @export var current_animation := Animations.WALK
+
+const MAX_HP: int = 100
+var hp: int = MAX_HP
+
+## Dano da arma que o player porta (atribuído a cada bullet disparado).
+@export var weapon_damage: int = 50
+
+@export_group("Glass Hitboxes")
+@export var hitbox_color: Color = Color(0.45, 0.8, 1.0, 0.22)
+@export var hitbox_radius: float = 0.1
+@export var hitbox_radius_factor: float = 0.4
+@export var hitbox_max_radius: float = 0.22
+@export var hitbox_head_radius: float = 0.16
+
+var _health_bar = null
 
 
 func _ready() -> void:
@@ -49,6 +67,47 @@ func _ready() -> void:
 	orientation.origin = Vector3()
 	if not multiplayer.is_server():
 		set_process(false)
+	# Cria o HUD de vida do player local sempre que um level carrega.
+	# Deferido para garantir que player_id/authority já foi replicado em multiplayer.
+	_setup_health_bar.call_deferred()
+	# Hitboxes de vidro por membro (visual + dano localizado).
+	# Construídas também no servidor (as áreas detectam tiros); o mesh é pulado em headless.
+	_setup_glass_hitboxes.call_deferred()
+
+
+func _setup_health_bar() -> void:
+	# Idempotente: pode ser chamado pelo _ready e pelo setter de player_id.
+	if _health_bar != null:
+		return
+	if not is_inside_tree():
+		return
+	# Mostra o HUD apenas para o player controlado localmente.
+	# Usa $InputSynchronizer (não o onready) pois o setter pode rodar antes do _ready.
+	if $InputSynchronizer.get_multiplayer_authority() != multiplayer.get_unique_id():
+		return
+	_health_bar = preload("res://player/health_bar.gd").new()
+	_health_bar.name = "HealthBar"
+	add_child(_health_bar)
+	_health_bar.update_health(hp, MAX_HP)
+
+
+func _setup_glass_hitboxes() -> void:
+	if has_node(^"GlassHitboxes"):
+		return
+	var skel := player_model.get_node_or_null(^"Robot_Skeleton/Skeleton3D") as Skeleton3D
+	if skel == null:
+		return
+	var gh = preload("res://effects_shared/glass_hitboxes.gd").new()
+	gh.name = "GlassHitboxes"
+	gh.hitbox_layer = 16        # bit5 = hitboxes do player
+	gh.detect_layer = 8         # bit4 = projétil (bullet)
+	gh.glass_color = hitbox_color
+	gh.radius = hitbox_radius
+	gh.radius_factor = hitbox_radius_factor
+	gh.max_radius = hitbox_max_radius
+	gh.head_radius = hitbox_head_radius
+	add_child(gh)
+	gh.build_for(skel)
 
 
 func _physics_process(delta: float) -> void:
@@ -135,6 +194,8 @@ func apply_input(delta: float) -> void:
 			var shoot_dir: Vector3 = (player_input.shoot_target - shoot_origin).normalized()
 
 			var bullet: CharacterBody3D = preload("res://player/bullet/bullet.tscn").instantiate()
+			bullet.weapon_damage = weapon_damage
+			bullet.shooter = self
 			get_parent().add_child(bullet, true)
 			bullet.global_transform.origin = shoot_origin
 			# If we don't rotate the bullets there is no useful way to control the particles ..
@@ -202,8 +263,21 @@ func shoot() -> void:
 
 
 @rpc("call_local")
-func hit() -> void:
+func hit(amount: int = 25) -> void:
+	hp = maxi(hp - amount, 0)
+	if _health_bar:
+		_health_bar.update_health(hp, MAX_HP)
+	if hp <= 0 and multiplayer.is_server():
+		respawn.rpc()
 	add_camera_shake_trauma(0.75)
+
+
+@rpc("call_local")
+func respawn() -> void:
+	hp = MAX_HP
+	if _health_bar:
+		_health_bar.update_health(hp, MAX_HP)
+	transform.origin = initial_position
 
 
 @rpc("call_local")

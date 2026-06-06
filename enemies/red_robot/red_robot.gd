@@ -19,8 +19,29 @@ const BLEND_AIM_SPEED: float = 0.05
 
 @export var test_shoot: bool = false
 
+# Camada das hitboxes do player (bit5 = 16) — alvo do laser do enemy.
+const PLAYER_HITBOX_LAYER: int = 16
+
+@export var enemy_name: String = "Red Robot"
+@export var max_health: int = 200
+
+## Dano do laser do enemy (multiplicado pela hitbox atingida no player).
+@export var weapon_damage: int = 25
+## Precisão de mira: 1.0 = 100% (acerta sempre que dispara).
+@export_range(0.0, 1.0) var aim_accuracy: float = 1.0
+## Só dispara quando o player estiver dentro deste alcance (mira precisa).
+@export var effective_range: float = 30.0
+
+@export_group("Glass Hitboxes")
+@export var hitbox_color: Color = Color(1.0, 0.5, 0.4, 0.22)
+@export var hitbox_radius: float = 0.15
+@export var hitbox_radius_factor: float = 0.45
+@export var hitbox_max_radius: float = 0.7
+@export var hitbox_head_radius: float = 0.25
+@export_group("")
+
 @export var target_position := Vector3()
-@export var health: int = 5
+@export var health: int = 200
 @export var state: State = State.APPROACH
 @export var dead: bool = false
 @export var aim_preparing: float = AIM_PREPARE_TIME
@@ -67,6 +88,30 @@ func _ready() -> void:
 
 	animate(0.0)
 
+	# Hitboxes de vidro por membro (visual + dano localizado).
+	# Construídas também no servidor (as áreas detectam tiros); o mesh é pulado em headless.
+	if not dead:
+		_setup_glass_hitboxes.call_deferred()
+
+
+func _setup_glass_hitboxes() -> void:
+	if has_node(^"GlassHitboxes"):
+		return
+	var skel := model.get_node_or_null(^"Armature/Skeleton3D") as Skeleton3D
+	if skel == null:
+		return
+	var gh = preload("res://effects_shared/glass_hitboxes.gd").new()
+	gh.name = "GlassHitboxes"
+	gh.hitbox_layer = 32        # bit6 = hitboxes do enemy
+	gh.detect_layer = 8         # bit4 = projétil (bullet)
+	gh.glass_color = hitbox_color
+	gh.radius = hitbox_radius
+	gh.radius_factor = hitbox_radius_factor
+	gh.max_radius = hitbox_max_radius
+	gh.head_radius = hitbox_head_radius
+	add_child(gh)
+	gh.build_for(skel)
+
 
 func resume_approach() -> void:
 	state = State.APPROACH
@@ -75,14 +120,15 @@ func resume_approach() -> void:
 
 
 @rpc("call_local")
-func hit() -> void:
+func hit(amount: int = 50) -> void:
 	if dead:
 		return
 	var param = "parameters/hit" + str(randi() % 3 + 1) + "/request"
 	animation_tree[param] = 1
 	hit_sound.play()
-	health -= 1
-	if health == 0:
+	health = maxi(health - amount, 0)
+	show_health_hud()
+	if health <= 0:
 		dead = true
 		animation_tree.active = false
 		model.visible = false
@@ -98,10 +144,31 @@ func hit() -> void:
 
 		explosion_sound.play()
 		exploded.emit()
+		hide_health_hud()
 
 		if multiplayer.is_server():
 			await get_tree().create_timer(10.0).timeout
 			queue_free()
+
+
+# Atualiza o HUD compartilhado de vida do inimigo (apenas em clientes com tela).
+# Público: chamado por hit() e pela mira do player (player_input.gd).
+# `distance` (m) é exibida ao lado do nome; -1 oculta a distância.
+func show_health_hud(distance: float = -1.0) -> void:
+	if dead:
+		return
+	if DisplayServer.get_name() == "headless":
+		return
+	var hud = preload("res://enemies/enemy_health_bar.gd").get_shared(get_tree().current_scene)
+	hud.show_enemy(enemy_name, maxi(health, 0), max_health, distance)
+
+
+# Público: chamado na morte e quando a mira do player sai do inimigo.
+func hide_health_hud() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var hud = preload("res://enemies/enemy_health_bar.gd").get_shared(get_tree().current_scene)
+	hud.hide_now()
 
 
 func shoot() -> void:
@@ -113,8 +180,10 @@ func shoot() -> void:
 	var col: Dictionary = get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_dir * max_dist, 0xFFFFFFFF, [self] ))
 	if not col.is_empty():
 		max_dist = ray_origin.distance_to(col.position)
-		if col.collider == player:
-			pass # Kill.
+		# Dano ao player com precisão de mira (servidor decide).
+		if col.collider == player and multiplayer.is_server():
+			if randf() <= aim_accuracy:
+				_damage_player(ray_origin, ray_dir, max_dist)
 	# Clip ray in shader.
 	_clip_ray(max_dist)
 	# Position laser ember particles
@@ -129,6 +198,20 @@ func shoot() -> void:
 		if col.collider == player and player is Player:
 			await get_tree().create_timer(0.1).timeout
 			player.add_camera_shake_trauma(13.0)
+
+
+# Aplica dano localizado ao player: raio contra as hitboxes do player (bit5).
+func _damage_player(ray_origin: Vector3, ray_dir: Vector3, max_dist: float) -> void:
+	if not (player is Player):
+		return
+	var mult: float = 1.0
+	var q := PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_dir * max_dist, PLAYER_HITBOX_LAYER, [self])
+	q.collide_with_areas = true
+	q.collide_with_bodies = false
+	var hb: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
+	if not hb.is_empty() and hb.collider and hb.collider.has_meta("damage_multiplier"):
+		mult = hb.collider.get_meta("damage_multiplier")
+	player.hit.rpc(int(round(weapon_damage * mult)))
 
 
 func animate(delta: float) -> void:
@@ -201,18 +284,23 @@ func _physics_process(delta: float) -> void:
 			# Facing player, try to shoot.
 			shoot_countdown -= delta
 			if shoot_countdown < 0.0:
-				# See if player can be killed because in they're sight.
 				var ray_origin = ray_from.global_transform.origin
-				var ray_to = player.global_transform.origin + Vector3.UP # Above middle of player.
-				var col = get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_origin, ray_to, 0xFFFFFFFF, [self]))
-
-				if not col.is_empty() and col.collider == player:
-					state = State.AIM
-					aim_countdown = AIM_TIME
-					aim_preparing = 0.0
+				# Só dispara quando a mira é precisa (player dentro do alcance efetivo).
+				if ray_origin.distance_to(player.global_transform.origin) > effective_range:
+					# Muito longe — aguarda aproximar antes de mirar.
+					shoot_countdown = 0.0
 				else:
-					# Player not in sight, do nothing.
-					shoot_countdown = SHOOT_WAIT
+					# See if player can be killed because in they're sight.
+					var ray_to = player.global_transform.origin + Vector3.UP # Above middle of player.
+					var col = get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_origin, ray_to, 0xFFFFFFFF, [self]))
+
+					if not col.is_empty() and col.collider == player:
+						state = State.AIM
+						aim_countdown = AIM_TIME
+						aim_preparing = 0.0
+					else:
+						# Player not in sight, do nothing.
+						shoot_countdown = SHOOT_WAIT
 
 	elif state == State.AIM or state == State.SHOOTING:
 		var max_dist: float = 1000.0
