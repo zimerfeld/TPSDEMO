@@ -4,12 +4,12 @@ signal replace_main_scene
 signal quit
 
 const LEVEL_1_PATH: String = "res://level_1/level_1.tscn"
-const FINAL_LEVEL_PATH: String = "res://final_level/final_level.tscn"
+const LEVEL_BASE_PATH: String = "res://level_base/level_base.tscn"
 
 var loading_path: String = ""
 
 @onready var level1_button: Button = $UI/Level1Button
-@onready var final_level_button: Button = $UI/FinalLevelButton
+@onready var level_base_button: Button = $UI/LevelBaseButton
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
@@ -28,7 +28,7 @@ func _process(_delta: float) -> void:
 		else:
 			print("Error while loading scene: " + str(status))
 			level1_button.show()
-			final_level_button.show()
+			level_base_button.show()
 			loading.hide()
 
 
@@ -39,15 +39,15 @@ func _on_loading_done_timer_timeout() -> void:
 func _on_level_1_pressed() -> void:
 	loading_path = LEVEL_1_PATH
 	level1_button.hide()
-	final_level_button.hide()
+	level_base_button.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 
 
-func _on_final_level_pressed() -> void:
-	loading_path = FINAL_LEVEL_PATH
+func _on_level_base_pressed() -> void:
+	loading_path = LEVEL_BASE_PATH
 	level1_button.hide()
-	final_level_button.hide()
+	level_base_button.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 

@@ -59,7 +59,7 @@ theme_override_font_sizes/font_size = 30
 text = "LEVEL 1"
 alignment = 0
 
-[node name="FinalLevelButton" type="Button" parent="UI"]
+[node name="LevelBaseButton" type="Button" parent="UI"]
 layout_mode = 0
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -68,7 +68,7 @@ offset_top = -90.0
 offset_right = 400.0
 offset_bottom = -40.0
 theme_override_font_sizes/font_size = 30
-text = "FINAL LEVEL"
+text = "Level Base"
 alignment = 0
 
 [node name="Loading" type="HBoxContainer" parent="UI"]
@@ -96,5 +96,5 @@ wait_time = 0.5
 one_shot = true
 
 [connection signal="pressed" from="UI/Level1Button" to="." method="_on_level_1_pressed"]
-[connection signal="pressed" from="UI/FinalLevelButton" to="." method="_on_final_level_pressed"]
+[connection signal="pressed" from="UI/LevelBaseButton" to="." method="_on_level_base_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

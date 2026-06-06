@@ -12,7 +12,8 @@ func _ready() -> void:
 
 func go_to_main_menu() -> void:
 	var menu: PackedScene = ResourceLoader.load("res://menu/menu.tscn")
-	multiplayer.multiplayer_peer.close()
+	if multiplayer != null and multiplayer.multiplayer_peer != null:
+		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	change_scene_to_packed(menu)
 
