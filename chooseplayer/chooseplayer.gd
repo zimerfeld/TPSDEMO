@@ -6,12 +6,12 @@ signal quit
 const CHARACTERS: Array[Dictionary] = [
 	{
 		"name": "PLAYER",
-		"scene_path": "res://player/player.tscn",
+		"scene_path": "res://players/player/player.tscn",
 		"tint": Color(1.0, 1.0, 1.0, 1.0),
 	},
 	{
 		"name": "PLAYERA",
-		"scene_path": "res://playera/playera.tscn",
+		"scene_path": "res://players/playera/playera.tscn",
 		"tint": Color(1.0, 0.55, 0.65, 1.0),
 	},
 ]
@@ -60,7 +60,7 @@ func _load_character(index: int) -> void:
 	var char_data: Dictionary = CHARACTERS[index]
 	character_name_label.text = char_data["name"]
 
-	var model_scene: PackedScene = load("res://player/model/player.glb")
+	var model_scene: PackedScene = load("res://players/player/model/player.glb")
 	if model_scene == null:
 		return
 	var model: Node3D = model_scene.instantiate()

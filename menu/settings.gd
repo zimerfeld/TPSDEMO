@@ -20,6 +20,7 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 var DEFAULTS := {
 	game = {
 		debug_mode = false,
+		hud_fps = false,
 	},
 	video = {
 		display_mode = Window.MODE_EXCLUSIVE_FULLSCREEN,

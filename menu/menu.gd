@@ -4,6 +4,7 @@ extends Node
 signal replace_main_scene
 
 const CHOOSEPLAYER_PATH: String = "res://chooseplayer/chooseplayer.tscn"
+const DEVELOPER_PATH: String = "res://developer/developer.tscn"
 const LEVEL_BASE_PATH: String = "res://level_base/level_base.tscn"
 
 var loading_path: String = ""
@@ -111,8 +112,6 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var volumetric_fog_disabled: Button = volumetric_fog_menu.get_node(^"Disabled")
 @onready var volumetric_fog_enabled: Button = volumetric_fog_menu.get_node(^"Enabled")
 
-@onready var debug_mode_toggle: CheckButton = main.get_node(^"DebugModeToggle")
-
 @onready var loading: HBoxContainer = ui.get_node(^"Loading")
 @onready var loading_progress: ProgressBar = loading.get_node(^"Progress")
 @onready var loading_done_timer: Timer = loading.get_node(^"DoneTimer")
@@ -126,7 +125,6 @@ func _ready() -> void:
 		_on_host_pressed.call_deferred()
 
 	play_button.grab_focus()
-	debug_mode_toggle.button_pressed = Settings.config_file.get_value("game", "debug_mode", false)
 
 	if not metalfx_supported:
 		scale_filter_metalfx_spatial.hide()
@@ -461,10 +459,8 @@ func _on_host_pressed() -> void:
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 
 
-func _on_debug_mode_toggle_toggled(button_pressed: bool) -> void:
-	Settings.config_file.set_value("game", "debug_mode", button_pressed)
-	Settings.save_settings()
-	DebugOverlay.refresh()
+func _on_developer_pressed() -> void:
+	emit_signal("replace_main_scene", load(DEVELOPER_PATH))
 
 
 func _on_connect_pressed() -> void:

@@ -1,16 +1,12 @@
-[gd_scene load_steps=25 format=3 uid="uid://c80nbk7u633n6"]
+[gd_scene load_steps=20 format=3 uid="uid://c80nbk7u633n6"]
 
 [ext_resource type="Script" uid="uid://4pwshyfo5i0d" path="res://menu/menu.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://gnsovrtic7g4" path="res://menu/experiment.hdr" id="2_bpuaq"]
-[ext_resource type="PackedScene" uid="uid://div25sd40yx1d" path="res://player/model/player.glb" id="3"]
+[ext_resource type="PackedScene" uid="uid://div25sd40yx1d" path="res://players/player/model/player.glb" id="3"]
 [ext_resource type="AudioStream" uid="uid://bfq26n228ipa" path="res://menu/menu_intro_music.ogg" id="5"]
 [ext_resource type="Texture2D" uid="uid://ckwsj2km1edy6" path="res://menu/tps_demo.png" id="6"]
 [ext_resource type="Texture2D" uid="uid://c6gsd2mdmea8w" path="res://menu/floor.png" id="6_qhdg0"]
-[ext_resource type="FontFile" uid="uid://b8tvpu085c6v4" path="res://menu/button_font.tres" id="13"]
-[ext_resource type="StyleBox" uid="uid://dd2346b4rjg8j" path="res://menu/button_pressed.tres" id="14"]
-[ext_resource type="StyleBox" uid="uid://b5jvmt5xa2afe" path="res://menu/button_normal.tres" id="15"]
-[ext_resource type="StyleBox" uid="uid://b807o31rnpht1" path="res://menu/button_focus.tres" id="16"]
-[ext_resource type="StyleBox" uid="uid://bsth0dexb32e8" path="res://menu/button_hover.tres" id="17"]
+[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="18"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_aosi0"]
 panorama = ExtResource("2_bpuaq")
@@ -78,28 +74,6 @@ nodes/Eyes/node = SubResource("7")
 nodes/Eyes/position = Vector2(-40, 220)
 node_connections = [&"output", 0, &"Blend", &"Blend", 0, &"CombatRest", &"Blend", 1, &"Eyes"]
 
-[sub_resource type="Theme" id="9"]
-Button/colors/font_color = Color(1, 1, 1, 1)
-Button/colors/font_color_disabled = Color(0.9, 0.9, 0.9, 0.2)
-Button/colors/font_color_hover = Color(1, 1, 1, 1)
-Button/colors/font_color_pressed = Color(1, 1, 1, 1)
-Button/constants/h_separation = 2
-Button/fonts/font = ExtResource("13")
-Button/styles/disabled = null
-Button/styles/focus = ExtResource("16")
-Button/styles/hover = ExtResource("17")
-Button/styles/normal = ExtResource("15")
-Button/styles/pressed = ExtResource("14")
-Label/colors/font_color = Color(1, 1, 1, 1)
-Label/colors/font_color_shadow = Color(0, 0, 0, 0)
-Label/colors/font_outline_modulate = Color(1, 1, 1, 1)
-Label/constants/line_spacing = 3
-Label/constants/shadow_as_outline = 0
-Label/constants/shadow_offset_x = 1
-Label/constants/shadow_offset_y = 1
-Label/fonts/font = ExtResource("13")
-Label/styles/normal = null
-
 [node name="Menu" type="Node"]
 script = ExtResource("1")
 
@@ -157,7 +131,7 @@ layout_mode = 3
 anchor_left = 0.00106799
 anchor_right = 1.00107
 anchor_bottom = 1.0
-theme = SubResource("9")
+theme = ExtResource("18")
 
 [node name="Main" type="Control" parent="UI"]
 layout_mode = 1
@@ -200,24 +174,25 @@ theme_override_font_sizes/font_size = 30
 text = "SETTINGS"
 alignment = 0
 
-[node name="Quit" type="Button" parent="UI/Main"]
+[node name="Developer" type="Button" parent="UI/Main"]
 layout_mode = 0
 offset_left = 100.0
 offset_top = 690.0
 offset_right = 400.0
 offset_bottom = 740.0
 theme_override_font_sizes/font_size = 30
-text = "QUIT"
+text = "Modo Desenvolvedor"
 alignment = 0
 
-[node name="DebugModeToggle" type="CheckButton" parent="UI/Main"]
+[node name="Quit" type="Button" parent="UI/Main"]
 layout_mode = 0
 offset_left = 100.0
 offset_top = 790.0
 offset_right = 400.0
 offset_bottom = 840.0
-theme_override_font_sizes/font_size = 24
-text = "Modo Debug"
+theme_override_font_sizes/font_size = 30
+text = "Sair"
+alignment = 0
 
 [node name="Online" type="Control" parent="UI"]
 visible = false
@@ -301,18 +276,21 @@ text = "Display Mode:"
 [node name="Windowed" type="Button" parent="UI/Settings/DisplayMode"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Window"
 
 [node name="Fullscreen" type="Button" parent="UI/Settings/DisplayMode"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Fullscreen"
 
 [node name="ExclusiveFullscreen" type="Button" parent="UI/Settings/DisplayMode"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Exclusive Fullscreen"
 
@@ -328,24 +306,28 @@ text = "Vertical Synchronization:"
 [node name="Disabled" type="Button" parent="UI/Settings/VSync"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
 [node name="Enabled" type="Button" parent="UI/Settings/VSync"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Enabled"
 
 [node name="Adaptive" type="Button" parent="UI/Settings/VSync"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Adaptive"
 
 [node name="Mailbox" type="Button" parent="UI/Settings/VSync"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Mailbox"
 
@@ -361,48 +343,56 @@ text = "FPS Limit:"
 [node name="30" type="Button" parent="UI/Settings/MaxFPS"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "30"
 
 [node name="40" type="Button" parent="UI/Settings/MaxFPS"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "40"
 
 [node name="60" type="Button" parent="UI/Settings/MaxFPS"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "60"
 
 [node name="72" type="Button" parent="UI/Settings/MaxFPS"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "72"
 
 [node name="90" type="Button" parent="UI/Settings/MaxFPS"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "90"
 
 [node name="120" type="Button" parent="UI/Settings/MaxFPS"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "120"
 
 [node name="144" type="Button" parent="UI/Settings/MaxFPS"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "144"
 
 [node name="Unlimited" type="Button" parent="UI/Settings/MaxFPS"]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Unlimited"
 
@@ -419,6 +409,7 @@ text = "Resolution Scale:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Ultra Performance"
 
@@ -426,6 +417,7 @@ text = "Ultra Performance"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Performance"
 
@@ -433,6 +425,7 @@ text = "Performance"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Balanced"
 
@@ -440,6 +433,7 @@ text = "Balanced"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Quality"
 
@@ -447,6 +441,7 @@ text = "Quality"
 modulate = Color(1, 0.627451, 0.25098, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Ultra Quality"
 
@@ -454,6 +449,7 @@ text = "Ultra Quality"
 modulate = Color(1, 0.376471, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Native"
 
@@ -470,6 +466,7 @@ text = "Resolution Scale Filter:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Bilinear"
 
@@ -477,6 +474,7 @@ text = "Bilinear"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "AMD FSR 1.0"
 
@@ -484,6 +482,7 @@ text = "AMD FSR 1.0"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "MetalFX Spatial"
 
@@ -491,6 +490,7 @@ text = "MetalFX Spatial"
 modulate = Color(1, 0.627451, 0.25098, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "AMD FSR 2.2"
 
@@ -498,6 +498,7 @@ text = "AMD FSR 2.2"
 modulate = Color(1, 0.627451, 0.25098, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "MetalFX Temporal"
 
@@ -518,6 +519,7 @@ text = "Temporal Antialiasing:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -525,6 +527,7 @@ text = "Disabled"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Enabled"
 
@@ -542,6 +545,7 @@ text = "Multisample Antialiasing:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -549,6 +553,7 @@ text = "Disabled"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "2×"
 
@@ -556,6 +561,7 @@ text = "2×"
 modulate = Color(1, 0.627451, 0.25098, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "4×"
 
@@ -563,6 +569,7 @@ text = "4×"
 modulate = Color(1, 0.376471, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "8×"
 
@@ -580,6 +587,7 @@ text = "Fast Approximate Antialiasing:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -587,6 +595,7 @@ text = "Disabled"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 keep_pressed_outside = true
 text = "Enabled"
@@ -604,6 +613,7 @@ text = "Shadow Mapping:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -611,6 +621,7 @@ text = "Disabled"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Enabled"
 
@@ -627,6 +638,7 @@ text = "Global Illumination Type:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "LightmapGI"
 
@@ -634,6 +646,7 @@ text = "LightmapGI"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "VoxelGI"
 
@@ -641,6 +654,7 @@ text = "VoxelGI"
 modulate = Color(1, 0.627451, 0.25098, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "SDFGI"
 
@@ -657,6 +671,7 @@ text = "Global Illumination Quality:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -664,6 +679,7 @@ text = "Disabled"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Low"
 
@@ -671,6 +687,7 @@ text = "Low"
 modulate = Color(1, 0.376471, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "High"
 
@@ -688,6 +705,7 @@ text = "Screen-space Ambient Occlusion:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -695,6 +713,7 @@ text = "Disabled"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Medium"
 
@@ -702,6 +721,7 @@ text = "Medium"
 modulate = Color(1, 0.376471, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "High"
 
@@ -719,6 +739,7 @@ text = "Screen-space Indirect Lighting:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -726,6 +747,7 @@ text = "Disabled"
 modulate = Color(1, 0.627451, 0.25098, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Medium"
 
@@ -733,6 +755,7 @@ text = "Medium"
 modulate = Color(1, 0.376471, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "High"
 
@@ -750,6 +773,7 @@ text = "Bloom:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -757,6 +781,7 @@ text = "Disabled"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Enabled"
 
@@ -774,6 +799,7 @@ text = "Volumetric Fog:"
 modulate = Color(0.376471, 1, 0.376471, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Disabled"
 
@@ -781,6 +807,7 @@ text = "Disabled"
 modulate = Color(1, 1, 0.313726, 1)
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 50)
 toggle_mode = true
 text = "Enabled"
 
@@ -827,7 +854,7 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
-[connection signal="toggled" from="UI/Main/DebugModeToggle" to="." method="_on_debug_mode_toggle_toggled"]
+[connection signal="pressed" from="UI/Main/Developer" to="." method="_on_developer_pressed"]
 [connection signal="pressed" from="UI/Main/Play" to="." method="_on_play_pressed"]
 [connection signal="pressed" from="UI/Main/PlayOnline" to="." method="_on_play_online_pressed"]
 [connection signal="pressed" from="UI/Main/Settings" to="." method="_on_settings_pressed"]

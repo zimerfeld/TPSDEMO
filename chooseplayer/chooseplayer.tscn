@@ -1,14 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://chooseplayer01"]
+[gd_scene load_steps=11 format=3 uid="uid://chooseplayer01"]
 
 [ext_resource type="Script" path="res://chooseplayer/chooseplayer.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://gnsovrtic7g4" path="res://menu/experiment.hdr" id="2"]
 [ext_resource type="AudioStream" uid="uid://bfq26n228ipa" path="res://menu/menu_intro_music.ogg" id="3"]
 [ext_resource type="Texture2D" uid="uid://c6gsd2mdmea8w" path="res://menu/floor.png" id="4"]
-[ext_resource type="FontFile" uid="uid://b8tvpu085c6v4" path="res://menu/button_font.tres" id="5"]
-[ext_resource type="StyleBox" uid="uid://dd2346b4rjg8j" path="res://menu/button_pressed.tres" id="6"]
-[ext_resource type="StyleBox" uid="uid://b5jvmt5xa2afe" path="res://menu/button_normal.tres" id="7"]
-[ext_resource type="StyleBox" uid="uid://b807o31rnpht1" path="res://menu/button_focus.tres" id="8"]
-[ext_resource type="StyleBox" uid="uid://bsth0dexb32e8" path="res://menu/button_hover.tres" id="9"]
+[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="5"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_cp1"]
 panorama = ExtResource("2")
@@ -37,28 +33,6 @@ size = Vector2(4096, 4096)
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cp1"]
 albedo_color = Color(0.419608, 0.419608, 0.419608, 1)
 albedo_texture = ExtResource("4")
-
-[sub_resource type="Theme" id="Theme_cp1"]
-Button/colors/font_color = Color(1, 1, 1, 1)
-Button/colors/font_color_disabled = Color(0.9, 0.9, 0.9, 0.2)
-Button/colors/font_color_hover = Color(1, 1, 1, 1)
-Button/colors/font_color_pressed = Color(1, 1, 1, 1)
-Button/constants/h_separation = 2
-Button/fonts/font = ExtResource("5")
-Button/styles/disabled = null
-Button/styles/focus = ExtResource("8")
-Button/styles/hover = ExtResource("9")
-Button/styles/normal = ExtResource("7")
-Button/styles/pressed = ExtResource("6")
-Label/colors/font_color = Color(1, 1, 1, 1)
-Label/colors/font_color_shadow = Color(0, 0, 0, 0)
-Label/colors/font_outline_modulate = Color(1, 1, 1, 1)
-Label/constants/line_spacing = 3
-Label/constants/shadow_as_outline = 0
-Label/constants/shadow_offset_x = 1
-Label/constants/shadow_offset_y = 1
-Label/fonts/font = ExtResource("5")
-Label/styles/normal = null
 
 [node name="ChoosePlayer" type="Node"]
 script = ExtResource("1")
@@ -95,7 +69,7 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme = SubResource("Theme_cp1")
+theme = ExtResource("5")
 
 [node name="TitleLabel" type="Label" parent="UI"]
 layout_mode = 0
@@ -144,8 +118,8 @@ anchor_left = 0.5
 anchor_right = 0.5
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -300.0
-offset_right = 300.0
+offset_left = -330.0
+offset_right = 330.0
 offset_top = -100.0
 offset_bottom = -30.0
 theme_override_constants/separation = 60
@@ -153,14 +127,14 @@ theme_override_constants/separation = 60
 [node name="MenuButton" type="Button" parent="UI/BottomButtons"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 30
+custom_minimum_size = Vector2(300, 50)
 text = "MENU"
 alignment = 1
 
 [node name="PlayButton" type="Button" parent="UI/BottomButtons"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 30
+custom_minimum_size = Vector2(300, 50)
 text = "JOGAR"
 alignment = 1
 
