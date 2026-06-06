@@ -18,6 +18,9 @@ var toggled_aim: bool = false
 # The duration the aiming button was held for (in seconds).
 var aiming_timer: float = 0.0
 
+# Inimigo atualmente sob a mira (para esconder o HUD quando a mira sai dele).
+var _focused_enemy: Node = null
+
 # Synchronized controls
 @export var aiming: bool = false
 @export var shoot_target := Vector3()
@@ -94,6 +97,9 @@ func _process(delta: float) -> void:
 		else:
 			shoot_target = col.position
 
+	# Exibe o HUD do inimigo quando a mira está sobre ele.
+	_update_enemy_focus()
+
 	# Fade out to black if falling out of the map. -17 is lower than
 	# the lowest valid position checked the map (which is a bit under -16).
 	# At 15 units below -17 (so -32), the screen turns fully black.
@@ -111,6 +117,33 @@ func _input(input_event: InputEvent) -> void:
 		if aiming:
 			camera_speed_this_frame *= 0.75
 		rotate_camera(input_event.screen_relative * camera_speed_this_frame)
+
+
+# Lança um raio a partir da mira: mostra o HUD do inimigo sob a mira e o
+# esconde assim que a mira sai dele.
+func _update_enemy_focus() -> void:
+	var ch_pos: Vector2 = crosshair.position + crosshair.size * 0.5
+	var ray_from: Vector3 = camera_camera.project_ray_origin(ch_pos)
+	var ray_dir: Vector3 = camera_camera.project_ray_normal(ch_pos)
+
+	var col: Dictionary = get_parent().get_world_3d().direct_space_state.intersect_ray(
+			PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 1000, 0b11, Array([self], TYPE_RID, "", null)))
+
+	var enemy: Node = null
+	if not col.is_empty():
+		var collider = col.collider
+		if collider and collider.has_method(&"show_health_hud"):
+			enemy = collider
+
+	if enemy:
+		var dist: float = get_parent().global_position.distance_to(enemy.global_position)
+		enemy.show_health_hud(dist)
+		_focused_enemy = enemy
+	elif _focused_enemy != null:
+		# A mira saiu do inimigo → esconde o HUD imediatamente.
+		if is_instance_valid(_focused_enemy) and _focused_enemy.has_method(&"hide_health_hud"):
+			_focused_enemy.hide_health_hud()
+		_focused_enemy = null
 
 
 func rotate_camera(move: Vector2) -> void:

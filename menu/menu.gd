@@ -4,7 +4,7 @@ extends Node
 signal replace_main_scene
 
 const LEVELS_PATH: String = "res://levels/levels.tscn"
-const FINAL_LEVEL_PATH: String = "res://final_level/final_level.tscn"
+const LEVEL_BASE_PATH: String = "res://level_base/level_base.tscn"
 
 var loading_path: String = ""
 
@@ -438,7 +438,7 @@ func _on_play_online_pressed() -> void:
 func _on_host_pressed() -> void:
 	peer = ENetMultiplayerPeer.new()
 	peer.create_server(int(online_port.value))
-	loading_path = FINAL_LEVEL_PATH
+	loading_path = LEVEL_BASE_PATH
 	online.hide()
 	main.hide()
 	loading.show()
@@ -448,7 +448,7 @@ func _on_host_pressed() -> void:
 func _on_connect_pressed() -> void:
 	peer = ENetMultiplayerPeer.new()
 	peer.create_client(online_address.text, int(online_port.value))
-	loading_path = FINAL_LEVEL_PATH
+	loading_path = LEVEL_BASE_PATH
 	online.hide()
 	main.hide()
 	loading.show()
