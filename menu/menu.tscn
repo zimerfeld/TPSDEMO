@@ -120,10 +120,11 @@ anim_player = NodePath("../PlayerModel/AnimationPlayer")
 parameters/Blend/blend_amount = 1.0
 
 [node name="TextureRect" type="TextureRect" parent="."]
-offset_left = 20.1403
-offset_top = 5.03506
-offset_right = 1044.14
-offset_bottom = 238.035
+offset_left = 100.0
+offset_top = 308.0
+offset_right = 400.0
+offset_bottom = 388.0
+stretch_mode = 5
 texture = ExtResource("6")
 
 [node name="UI" type="Control" parent="."]
@@ -181,7 +182,7 @@ offset_top = 690.0
 offset_right = 400.0
 offset_bottom = 740.0
 theme_override_font_sizes/font_size = 30
-text = "Modo Desenvolvedor"
+text = "MODO DEVELOPER"
 alignment = 0
 
 [node name="Quit" type="Button" parent="UI/Main"]
@@ -193,6 +194,38 @@ offset_bottom = 840.0
 theme_override_font_sizes/font_size = 30
 text = "Sair"
 alignment = 0
+
+[node name="TooltipPlayOnline" type="Label" parent="UI/Main"]
+visible = false
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -360.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 100.0
+theme_override_font_sizes/font_size = 18
+text = "Jogar partida online\nmultiplicador via rede"
+horizontal_alignment = 2
+autowrap_mode = 3
+
+[node name="TooltipSettings" type="Label" parent="UI/Main"]
+visible = false
+layout_mode = 1
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -360.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 100.0
+theme_override_font_sizes/font_size = 18
+text = "Configurações de vídeo,\ngráficos e desempenho"
+horizontal_alignment = 2
+autowrap_mode = 3
 
 [node name="Online" type="Control" parent="UI"]
 visible = false
@@ -869,3 +902,7 @@ one_shot = true
 [connection signal="pressed" from="UI/Settings/Actions/Apply" to="." method="_on_apply_pressed"]
 [connection signal="pressed" from="UI/Settings/Actions/Cancel" to="." method="_on_cancel_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]
+[connection signal="mouse_entered" from="UI/Main/PlayOnline" to="." method="_on_play_online_mouse_entered"]
+[connection signal="mouse_exited" from="UI/Main/PlayOnline" to="." method="_on_play_online_mouse_exited"]
+[connection signal="mouse_entered" from="UI/Main/Settings" to="." method="_on_settings_mouse_entered"]
+[connection signal="mouse_exited" from="UI/Main/Settings" to="." method="_on_settings_mouse_exited"]

@@ -18,8 +18,11 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var ui: Control = $UI
 @onready var main: Control = ui.get_node(^"Main")
 @onready var play_button: Button = main.get_node(^"Play")
+@onready var play_online_button: Button = main.get_node(^"PlayOnline")
 @onready var settings_button: Button = main.get_node(^"Settings")
 @onready var quit_button: Button = main.get_node(^"Quit")
+@onready var tooltip_play_online: Label = main.get_node(^"TooltipPlayOnline")
+@onready var tooltip_settings_label: Label = main.get_node(^"TooltipSettings")
 
 @onready var online: Control = ui.get_node(^"Online")
 @onready var online_port: SpinBox = online.get_node(^"Port")
@@ -463,6 +466,27 @@ func _on_host_pressed() -> void:
 
 func _on_developer_pressed() -> void:
 	emit_signal("replace_main_scene", load(DEVELOPER_PATH))
+
+
+func _input(input_event: InputEvent) -> void:
+	if input_event.is_action_pressed(&"quit"):
+		_on_quit_pressed()
+
+
+func _on_play_online_mouse_entered() -> void:
+	tooltip_play_online.show()
+
+
+func _on_play_online_mouse_exited() -> void:
+	tooltip_play_online.hide()
+
+
+func _on_settings_mouse_entered() -> void:
+	tooltip_settings_label.show()
+
+
+func _on_settings_mouse_exited() -> void:
+	tooltip_settings_label.hide()
 
 
 func _on_connect_pressed() -> void:

@@ -60,4 +60,4 @@ func _on_back_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
-		quit.emit()
+		emit_signal("replace_main_scene", load(CHOOSEPLAYER_PATH))
