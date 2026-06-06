@@ -176,8 +176,6 @@ func _on_play_pressed() -> void:
 
 func _on_settings_pressed() -> void:
 	main.hide()
-	settings_menu.show()
-	settings_action_cancel.grab_focus()
 
 	if (
 			Settings.config_file.get_value("video", "display_mode") == Window.MODE_WINDOWED
@@ -306,6 +304,10 @@ func _on_settings_pressed() -> void:
 	else:
 		volumetric_fog_enabled.button_pressed = true
 
+	# All controls pre-set — now reveal the panel so the user sees the correct state immediately.
+	settings_menu.show()
+	settings_action_cancel.grab_focus()
+
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
@@ -418,10 +420,10 @@ func _on_apply_pressed() -> void:
 	Settings.config_file.set_value("rendering", "bloom", bloom_enabled.button_pressed)
 	Settings.config_file.set_value("rendering", "volumetric_fog", volumetric_fog_enabled.button_pressed)
 
+	Settings.save_settings()
+
 	# Apply relevant settings directly.
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
-
-	Settings.save_settings()
 
 
 func _on_cancel_pressed() -> void:

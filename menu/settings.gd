@@ -21,6 +21,8 @@ var DEFAULTS := {
 	game = {
 		debug_mode = false,
 		hud_fps = false,
+		show_id = false,
+		show_grid = false,
 	},
 	video = {
 		display_mode = Window.MODE_EXCLUSIVE_FULLSCREEN,
@@ -60,14 +62,20 @@ func load_settings() -> void:
 	config_file.load(CONFIG_FILE_PATH)
 	# Initialize defaults for values not found in the existing configuration file,
 	# so we don't have to specify them every time we use `ConfigFile.get_value()`.
+	var needs_save := false
 	for section in DEFAULTS:
 		for key in DEFAULTS[section]:
 			if not config_file.has_section_key(section, key):
 				config_file.set_value(section, key, DEFAULTS[section][key])
+				needs_save = true
+	if needs_save:
+		save_settings()
 
 
 func save_settings() -> void:
-	config_file.save(CONFIG_FILE_PATH)
+	var err := config_file.save(CONFIG_FILE_PATH)
+	if err != OK:
+		push_error("Settings: failed to save '%s': %s" % [CONFIG_FILE_PATH, error_string(err)])
 
 
 func apply_graphics_settings(window: Window, environment: Environment, scene_root: Node) -> void:

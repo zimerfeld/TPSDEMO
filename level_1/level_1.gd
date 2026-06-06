@@ -20,7 +20,7 @@ func _ready() -> void:
 	spawned_nodes.add_child(player)
 
 	var robot: CharacterBody3D = RedRobot.instantiate()
-	robot.position = Vector3(10, 1, 0)
+	robot.position = Vector3(20, 1, 0)
 	spawned_nodes.add_child(robot)
 
 

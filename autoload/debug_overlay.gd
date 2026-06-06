@@ -21,7 +21,9 @@ var _canvas_layer: CanvasLayer = null
 # inst_id → {tooltip: PanelContainer, ctrl_border: Panel, color: Color}
 var _overlay_map: Dictionary = {}
 var _fps_label: Label = null
+var _grid_mesh: MeshInstance3D = null
 var _palette_index: int = 0
+var _last_scene: Node = null
 
 
 func _ready() -> void:
@@ -31,6 +33,8 @@ func _ready() -> void:
 		call_deferred("_build_overlays")
 	if _is_fps_on():
 		call_deferred("_update_fps_hud")
+	if _is_show_grid_on():
+		call_deferred("_update_grid")
 
 
 func _is_debug_on() -> bool:
@@ -41,16 +45,35 @@ func _is_fps_on() -> bool:
 	return Settings.config_file.get_value("game", "hud_fps", false)
 
 
+func _is_show_id_on() -> bool:
+	return Settings.config_file.get_value("game", "show_id", false)
+
+
+func _is_show_grid_on() -> bool:
+	return Settings.config_file.get_value("game", "show_grid", false)
+
+
 func refresh() -> void:
 	_clear_all()
 	if _is_debug_on():
 		_build_overlays()
 	_update_fps_hud()
+	_update_grid()
 
 
 func _process(_delta: float) -> void:
 	if is_instance_valid(_fps_label):
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+
+	# Recreate grid when scene changes (e.g. entering a level)
+	var current := get_tree().current_scene
+	if current != _last_scene:
+		_last_scene = current
+		if is_instance_valid(_grid_mesh):
+			_grid_mesh.queue_free()
+			_grid_mesh = null
+		if current is Node3D and _is_show_grid_on():
+			call_deferred("_update_grid")
 
 	if _canvas_layer == null:
 		return
@@ -62,12 +85,19 @@ func _process(_delta: float) -> void:
 		var tooltip: PanelContainer = entry.tooltip
 		var ctrl_border: Panel = entry.ctrl_border
 		if is_instance_valid(obj) and is_instance_valid(tooltip):
-			var rect: Rect2 = (obj as Control).get_global_rect()
+			var ctrl := obj as Control
+			var shown := ctrl.is_visible_in_tree()
+			var rect: Rect2 = ctrl.get_global_rect()
 			if is_instance_valid(ctrl_border):
 				ctrl_border.position = rect.position
 				ctrl_border.size = rect.size
-			# Anchor tooltip to the top-right corner of the control
-			tooltip.position = Vector2(rect.position.x + rect.size.x, rect.position.y)
+				ctrl_border.visible = shown
+			var vp_size := get_viewport().get_visible_rect().size
+			var tip_x := rect.position.x + rect.size.x
+			if tooltip.size.x > 0 and tip_x + tooltip.size.x > vp_size.x:
+				tip_x = rect.position.x - tooltip.size.x
+			tooltip.position = Vector2(tip_x, rect.position.y)
+			tooltip.visible = shown
 		else:
 			if is_instance_valid(tooltip):
 				tooltip.queue_free()
@@ -78,6 +108,19 @@ func _process(_delta: float) -> void:
 		_overlay_map.erase(k)
 
 	_resolve_overlaps()
+	_clamp_tooltips_to_viewport()
+
+
+func _clamp_tooltips_to_viewport() -> void:
+	var vp_size := get_viewport().get_visible_rect().size
+	for inst_id in _overlay_map:
+		var tooltip: PanelContainer = _overlay_map[inst_id].tooltip
+		if not is_instance_valid(tooltip) or not tooltip.visible or tooltip.size.x <= 0:
+			continue
+		var pos := tooltip.position
+		pos.x = clamp(pos.x, 0.0, vp_size.x - tooltip.size.x)
+		pos.y = clamp(pos.y, 0.0, vp_size.y - tooltip.size.y)
+		tooltip.position = pos
 
 
 func _resolve_overlaps() -> void:
@@ -124,6 +167,10 @@ func _clear_all() -> void:
 	_canvas_layer = null
 	_fps_label = null
 
+	if is_instance_valid(_grid_mesh):
+		_grid_mesh.queue_free()
+	_grid_mesh = null
+
 
 func _update_fps_hud() -> void:
 	if _is_fps_on():
@@ -137,15 +184,52 @@ func _update_fps_hud() -> void:
 			_fps_label.add_theme_constant_override("shadow_offset_y", 1)
 			_fps_label.add_theme_constant_override("shadow_as_outline", 1)
 			_fps_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_fps_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-			_fps_label.offset_left = -120.0
+			_fps_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			_fps_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+			_fps_label.offset_left = -60.0
 			_fps_label.offset_top = 8.0
-			_fps_label.offset_right = -8.0
+			_fps_label.offset_right = 60.0
 			_fps_label.offset_bottom = 36.0
 			_canvas_layer.add_child(_fps_label)
 	elif is_instance_valid(_fps_label):
 		_fps_label.queue_free()
 		_fps_label = null
+
+
+func _update_grid() -> void:
+	if _is_show_grid_on():
+		if not is_instance_valid(_grid_mesh):
+			var scene := get_tree().current_scene
+			if scene is Node3D:
+				_grid_mesh = _build_grid_mesh()
+				scene.add_child(_grid_mesh)
+	else:
+		if is_instance_valid(_grid_mesh):
+			_grid_mesh.queue_free()
+			_grid_mesh = null
+
+
+func _build_grid_mesh() -> MeshInstance3D:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_LINES)
+	# 100m × 100m grid centered at origin, 10m cell spacing
+	for i in range(11):
+		var t := -50.0 + i * 10.0
+		st.add_vertex(Vector3(t, 0.05, -50.0))
+		st.add_vertex(Vector3(t, 0.05,  50.0))
+		st.add_vertex(Vector3(-50.0, 0.05, t))
+		st.add_vertex(Vector3( 50.0, 0.05, t))
+	var arr_mesh := st.commit()
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color.WHITE
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.no_depth_test = false
+	arr_mesh.surface_set_material(0, mat)
+	var mi := MeshInstance3D.new()
+	mi.name = "DebugGrid"
+	mi.mesh = arr_mesh
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
 
 
 func _scan(node: Node) -> void:
@@ -204,7 +288,10 @@ func _add_2d(ctrl: Control) -> void:
 	tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var lbl := Label.new()
-	lbl.text = "TYPE: %s\nID: %d\nName: %s" % [ctrl.get_class(), id, ctrl.name]
+	if _is_show_id_on():
+		lbl.text = "TYPE: %s\nID: %d  Name: %s" % [ctrl.get_class(), id, ctrl.name]
+	else:
+		lbl.text = "TYPE: %s\nName: %s" % [ctrl.get_class(), ctrl.name]
 	lbl.add_theme_font_size_override("font_size", 10)
 	lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 0.0, 0.92))
 	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
@@ -227,6 +314,9 @@ func _next_color() -> Color:
 
 func _add_3d(mesh: MeshInstance3D) -> void:
 	if mesh.has_meta(_LABEL3D_META):
+		return
+	# Skip the debug grid itself
+	if mesh == _grid_mesh:
 		return
 	var lbl := Label3D.new()
 	lbl.name = "DebugLabel3D"

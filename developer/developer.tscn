@@ -17,6 +17,7 @@ script = ExtResource("1")
 environment = SubResource("1")
 
 [node name="UI" type="Control" parent="."]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -37,7 +38,7 @@ layout_mode = 0
 offset_left = 40.0
 offset_top = 140.0
 offset_right = 900.0
-offset_bottom = 450.0
+offset_bottom = 600.0
 theme_override_constants/separation = 24
 
 [node name="DebugRow" type="HBoxContainer" parent="UI/Options"]
@@ -53,6 +54,19 @@ text = "Modo Debug:"
 [node name="DebugToggle" type="CheckButton" parent="UI/Options/DebugRow"]
 layout_mode = 2
 
+[node name="ShowIDRow" type="HBoxContainer" parent="UI/Options"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowIDLabel" type="Label" parent="UI/Options/ShowIDRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 0)
+theme_override_font_sizes/font_size = 28
+text = "Show ID:"
+
+[node name="ShowIDToggle" type="CheckButton" parent="UI/Options/ShowIDRow"]
+layout_mode = 2
+
 [node name="FPSRow" type="HBoxContainer" parent="UI/Options"]
 layout_mode = 2
 theme_override_constants/separation = 20
@@ -64,6 +78,19 @@ theme_override_font_sizes/font_size = 28
 text = "HUD FPS:"
 
 [node name="FPSToggle" type="CheckButton" parent="UI/Options/FPSRow"]
+layout_mode = 2
+
+[node name="ShowGridRow" type="HBoxContainer" parent="UI/Options"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowGridLabel" type="Label" parent="UI/Options/ShowGridRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(300, 0)
+theme_override_font_sizes/font_size = 28
+text = "Malha no Solo:"
+
+[node name="ShowGridToggle" type="CheckButton" parent="UI/Options/ShowGridRow"]
 layout_mode = 2
 
 [node name="BackButton" type="Button" parent="UI"]
@@ -81,5 +108,7 @@ text = "VOLTAR"
 alignment = 0
 
 [connection signal="toggled" from="UI/Options/DebugRow/DebugToggle" to="." method="_on_debug_toggle_toggled"]
+[connection signal="toggled" from="UI/Options/ShowIDRow/ShowIDToggle" to="." method="_on_show_id_toggle_toggled"]
 [connection signal="toggled" from="UI/Options/FPSRow/FPSToggle" to="." method="_on_fps_toggle_toggled"]
+[connection signal="toggled" from="UI/Options/ShowGridRow/ShowGridToggle" to="." method="_on_show_grid_toggle_toggled"]
 [connection signal="pressed" from="UI/BackButton" to="." method="_on_back_pressed"]
