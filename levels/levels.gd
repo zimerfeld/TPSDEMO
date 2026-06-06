@@ -9,8 +9,8 @@ const CHOOSEPLAYER_PATH: String = "res://chooseplayer/chooseplayer.tscn"
 
 var loading_path: String = ""
 
-@onready var level1_button: Button = $UI/Level1Button
-@onready var level_base_button: Button = $UI/LevelBaseButton
+@onready var level1_button: Button = $UI/ButtonGrid/Level1Button
+@onready var level_base_button: Button = $UI/ButtonGrid/LevelBaseButton
 @onready var back_button: Button = $UI/BackButton
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
