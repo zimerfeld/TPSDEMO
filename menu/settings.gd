@@ -18,6 +18,9 @@ const CONFIG_FILE_PATH = "user://settings.ini"
 var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name() == "metal"
 
 var DEFAULTS := {
+	game = {
+		debug_mode = false,
+	},
 	video = {
 		display_mode = Window.MODE_EXCLUSIVE_FULLSCREEN,
 		vsync = DisplayServer.VSYNC_ENABLED,

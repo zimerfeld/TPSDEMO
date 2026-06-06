@@ -111,6 +111,8 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var volumetric_fog_disabled: Button = volumetric_fog_menu.get_node(^"Disabled")
 @onready var volumetric_fog_enabled: Button = volumetric_fog_menu.get_node(^"Enabled")
 
+@onready var debug_mode_toggle: CheckButton = main.get_node(^"DebugModeToggle")
+
 @onready var loading: HBoxContainer = ui.get_node(^"Loading")
 @onready var loading_progress: ProgressBar = loading.get_node(^"Progress")
 @onready var loading_done_timer: Timer = loading.get_node(^"DoneTimer")
@@ -124,6 +126,7 @@ func _ready() -> void:
 		_on_host_pressed.call_deferred()
 
 	play_button.grab_focus()
+	debug_mode_toggle.button_pressed = Settings.config_file.get_value("game", "debug_mode", false)
 
 	if not metalfx_supported:
 		scale_filter_metalfx_spatial.hide()
@@ -456,6 +459,12 @@ func _on_host_pressed() -> void:
 	main.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
+
+
+func _on_debug_mode_toggle_toggled(button_pressed: bool) -> void:
+	Settings.config_file.set_value("game", "debug_mode", button_pressed)
+	Settings.save_settings()
+	DebugOverlay.refresh()
 
 
 func _on_connect_pressed() -> void:

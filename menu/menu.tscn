@@ -210,6 +210,15 @@ theme_override_font_sizes/font_size = 30
 text = "QUIT"
 alignment = 0
 
+[node name="DebugModeToggle" type="CheckButton" parent="UI/Main"]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 790.0
+offset_right = 400.0
+offset_bottom = 840.0
+theme_override_font_sizes/font_size = 24
+text = "Modo Debug"
+
 [node name="Online" type="Control" parent="UI"]
 visible = false
 anchors_preset = 0
@@ -818,6 +827,7 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
+[connection signal="toggled" from="UI/Main/DebugModeToggle" to="." method="_on_debug_mode_toggle_toggled"]
 [connection signal="pressed" from="UI/Main/Play" to="." method="_on_play_pressed"]
 [connection signal="pressed" from="UI/Main/PlayOnline" to="." method="_on_play_online_pressed"]
 [connection signal="pressed" from="UI/Main/Settings" to="." method="_on_settings_pressed"]

@@ -49,41 +49,32 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 theme = SubResource("2")
 
-[node name="Level1Button" type="Button" parent="UI"]
+[node name="ButtonGrid" type="VBoxContainer" parent="UI"]
 layout_mode = 0
-offset_left = 100.0
+offset_left = 40.0
 offset_top = 40.0
-offset_right = 400.0
-offset_bottom = 90.0
+theme_override_constants/separation = 12
+
+[node name="Level1Button" type="Button" parent="UI/ButtonGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 30
 text = "LEVEL 1"
 alignment = 0
 
-[node name="LevelBaseButton" type="Button" parent="UI"]
-layout_mode = 0
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 100.0
-offset_top = -90.0
-offset_right = 400.0
-offset_bottom = -40.0
+[node name="LevelBaseButton" type="Button" parent="UI/ButtonGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 30
 text = "Level Base"
 alignment = 0
 
-[node name="BackButton" type="Button" parent="UI"]
-layout_mode = 0
-anchor_left = 0.5
-anchor_right = 0.5
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = -150.0
-offset_right = 150.0
-offset_top = -165.0
-offset_bottom = -110.0
+[node name="BackButton" type="Button" parent="UI/ButtonGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 30
 text = "VOLTAR"
-alignment = 1
+alignment = 0
 
 [node name="Loading" type="HBoxContainer" parent="UI"]
 visible = false
@@ -109,7 +100,7 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
-[connection signal="pressed" from="UI/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Level1Button" to="." method="_on_level_1_pressed"]
-[connection signal="pressed" from="UI/LevelBaseButton" to="." method="_on_level_base_pressed"]
+[connection signal="pressed" from="UI/ButtonGrid/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/ButtonGrid/Level1Button" to="." method="_on_level_1_pressed"]
+[connection signal="pressed" from="UI/ButtonGrid/LevelBaseButton" to="." method="_on_level_base_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]
