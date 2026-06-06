@@ -21,6 +21,12 @@ var orientation := Transform3D()
 var root_motion := Transform3D()
 var motion := Vector2()
 
+var _is_local_player: bool = false
+var _has_prediction: bool = false
+var _predicted_origin: Vector3
+var _predicted_velocity: Vector3
+const SERVER_SNAP_THRESHOLD: float = 2.0
+
 @onready var initial_position: Vector3 = transform.origin
 
 @onready var player_input: PlayerInputSynchronizer = $InputSynchronizer
@@ -42,6 +48,7 @@ var motion := Vector2()
 		# Garante o HUD do player local em toda cena de level, inclusive quando
 		# player_id chega via replicação depois do _ready (cliente multiplayer).
 		_setup_health_bar.call_deferred()
+		_is_local_player = not multiplayer.is_server() and value == multiplayer.get_unique_id()
 
 @export var current_animation := Animations.WALK
 
@@ -113,8 +120,24 @@ func _setup_glass_hitboxes() -> void:
 func _physics_process(delta: float) -> void:
 	if multiplayer.is_server():
 		apply_input(delta)
+	elif _is_local_player:
+		_reconcile()
+		apply_input(delta)
+		_predicted_origin = global_position
+		_predicted_velocity = velocity
+		_has_prediction = true
 	else:
 		animate(current_animation, delta)
+
+
+func _reconcile() -> void:
+	if not _has_prediction:
+		return
+	var drift: float = global_position.distance_to(_predicted_origin)
+	if drift < SERVER_SNAP_THRESHOLD:
+		# Servidor concorda (ou sem sync este frame): mantém predição local
+		global_position = _predicted_origin
+		velocity = _predicted_velocity
 
 
 func animate(anim: int, _delta: float) -> void:

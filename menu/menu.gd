@@ -438,6 +438,7 @@ func _on_play_online_pressed() -> void:
 func _on_host_pressed() -> void:
 	peer = ENetMultiplayerPeer.new()
 	peer.create_server(int(online_port.value))
+	peer.set_compression_mode(ENetPacketPeer.COMPRESS_RANGE_CODER)
 	loading_path = LEVEL_BASE_PATH
 	online.hide()
 	main.hide()
@@ -448,6 +449,7 @@ func _on_host_pressed() -> void:
 func _on_connect_pressed() -> void:
 	peer = ENetMultiplayerPeer.new()
 	peer.create_client(online_address.text, int(online_port.value))
+	peer.set_compression_mode(ENetPacketPeer.COMPRESS_RANGE_CODER)
 	loading_path = LEVEL_BASE_PATH
 	online.hide()
 	main.hide()
