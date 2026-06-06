@@ -121,9 +121,9 @@ parameters/Blend/blend_amount = 1.0
 
 [node name="TextureRect" type="TextureRect" parent="."]
 offset_left = 100.0
-offset_top = 308.0
+offset_top = 332.0
 offset_right = 400.0
-offset_bottom = 388.0
+offset_bottom = 382.0
 stretch_mode = 5
 texture = ExtResource("6")
 
