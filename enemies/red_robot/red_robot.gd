@@ -104,7 +104,7 @@ func _setup_glass_hitboxes() -> void:
 	gh.name = "GlassHitboxes"
 	gh.hitbox_layer = 32        # bit6 = hitboxes do enemy
 	gh.detect_layer = 8         # bit4 = projétil (bullet)
-	gh.head_bone_names = ["mouth_eyes"]
+	gh.head_bone_names = (["mouth_eyes"] as Array[String])
 	gh.glass_color = hitbox_color
 	gh.radius = hitbox_radius
 	gh.radius_factor = hitbox_radius_factor
