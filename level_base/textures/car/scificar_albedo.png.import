@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkhr7u5drtfv5"
-path.s3tc="res://.godot/imported/scificar_albedo.png-bb87ec562f18c293933fff82fe01ded5.s3tc.ctex"
+uid="uid://vx6t2ykwo0hr"
+path.s3tc="res://.godot/imported/scificar_albedo.png-44f73adf9ecea02268a3e9d446525a36.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/car/scificar_albedo.png"
-dest_files=["res://.godot/imported/scificar_albedo.png-bb87ec562f18c293933fff82fe01ded5.s3tc.ctex"]
+dest_files=["res://.godot/imported/scificar_albedo.png-44f73adf9ecea02268a3e9d446525a36.s3tc.ctex"]
 
 [params]
 

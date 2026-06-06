@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dah2trjt0mvco"
-path.s3tc="res://.godot/imported/container4_orm.png-d6c080fcd2d3ae87dfd512d325c31b8a.s3tc.ctex"
+uid="uid://dox5lcw7k4vxe"
+path.s3tc="res://.godot/imported/container4_orm.png-87eb1c30dde90da71e3297a74038c781.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/props/container4_orm.png"
-dest_files=["res://.godot/imported/container4_orm.png-d6c080fcd2d3ae87dfd512d325c31b8a.s3tc.ctex"]
+dest_files=["res://.godot/imported/container4_orm.png-87eb1c30dde90da71e3297a74038c781.s3tc.ctex"]
 
 [params]
 

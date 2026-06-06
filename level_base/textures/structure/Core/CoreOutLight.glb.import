@@ -1,15 +1,15 @@
-﻿[remap]
+[remap]
 
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cibm852o1fxtr"
-path="res://.godot/imported/CoreOutLight.glb-95e00e929dc66b5e2cfb3dd5976f5aed.scn"
+uid="uid://cfbfungfev5oq"
+path="res://.godot/imported/CoreOutLight.glb-93fb725cadf82d3b45ae66ca6a9b6084.scn"
 
 [deps]
 
 source_file="res://level_base/textures/structure/Core/CoreOutLight.glb"
-dest_files=["res://.godot/imported/CoreOutLight.glb-95e00e929dc66b5e2cfb3dd5976f5aed.scn"]
+dest_files=["res://.godot/imported/CoreOutLight.glb-93fb725cadf82d3b45ae66ca6a9b6084.scn"]
 
 [params]
 

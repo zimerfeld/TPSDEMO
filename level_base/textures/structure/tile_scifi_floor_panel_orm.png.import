@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://3gkkrtbooavu"
-path.s3tc="res://.godot/imported/tile_scifi_floor_panel_orm.png-9fbad552cd93b88e82614204872ee26c.s3tc.ctex"
+uid="uid://daqmoy8npj8u7"
+path.s3tc="res://.godot/imported/tile_scifi_floor_panel_orm.png-34e661e425e637b6eacc1d383ccb81fb.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_scifi_floor_panel_orm.png"
-dest_files=["res://.godot/imported/tile_scifi_floor_panel_orm.png-9fbad552cd93b88e82614204872ee26c.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_scifi_floor_panel_orm.png-34e661e425e637b6eacc1d383ccb81fb.s3tc.ctex"]
 
 [params]
 

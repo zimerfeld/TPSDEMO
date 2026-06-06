@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ciayttelmeeka"
-path.s3tc="res://.godot/imported/reactor_cylinder_emissive.png-6408ca76ad6fbee2f8584c2d56bea8f7.s3tc.ctex"
+uid="uid://bkdehhtl5r8xy"
+path.s3tc="res://.godot/imported/reactor_cylinder_emissive.png-76cfe6f5ae2b8f350bd4a7ceb145b84b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/props/reactor_cylinder_emissive.png"
-dest_files=["res://.godot/imported/reactor_cylinder_emissive.png-6408ca76ad6fbee2f8584c2d56bea8f7.s3tc.ctex"]
+dest_files=["res://.godot/imported/reactor_cylinder_emissive.png-76cfe6f5ae2b8f350bd4a7ceb145b84b.s3tc.ctex"]
 
 [params]
 

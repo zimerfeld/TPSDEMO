@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://07f8ef1x0jyu"
-path.s3tc="res://.godot/imported/scificar_emissive.png-62da9b003a84021e72c891062c1cbff9.s3tc.ctex"
+uid="uid://ch5m83a7exbqh"
+path.s3tc="res://.godot/imported/scificar_emissive.png-ca7ea136e7866cedfd01042585aa6659.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/car/scificar_emissive.png"
-dest_files=["res://.godot/imported/scificar_emissive.png-62da9b003a84021e72c891062c1cbff9.s3tc.ctex"]
+dest_files=["res://.godot/imported/scificar_emissive.png-ca7ea136e7866cedfd01042585aa6659.s3tc.ctex"]
 
 [params]
 

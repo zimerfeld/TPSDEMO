@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwm2o624qsnwg"
-path.s3tc="res://.godot/imported/door_albedo.png-9c48f20d028ebbc90aada492f2a1d3ec.s3tc.ctex"
+uid="uid://ceh4pavwqrov"
+path.s3tc="res://.godot/imported/door_albedo.png-ac7ffcd04061a733a5a3c4a3e0bd6c95.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/props/door_albedo.png"
-dest_files=["res://.godot/imported/door_albedo.png-9c48f20d028ebbc90aada492f2a1d3ec.s3tc.ctex"]
+dest_files=["res://.godot/imported/door_albedo.png-ac7ffcd04061a733a5a3c4a3e0bd6c95.s3tc.ctex"]
 
 [params]
 

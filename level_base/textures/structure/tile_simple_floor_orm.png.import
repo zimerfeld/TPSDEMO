@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bhryjkr6r3taq"
-path.s3tc="res://.godot/imported/tile_simple_floor_orm.png-3188e75f8c1f5ec28a9bf59c825b3d8a.s3tc.ctex"
+uid="uid://clfvltifigt3u"
+path.s3tc="res://.godot/imported/tile_simple_floor_orm.png-8a6ea13849262d44881380fb978eeb9e.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_simple_floor_orm.png"
-dest_files=["res://.godot/imported/tile_simple_floor_orm.png-3188e75f8c1f5ec28a9bf59c825b3d8a.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_simple_floor_orm.png-8a6ea13849262d44881380fb978eeb9e.s3tc.ctex"]
 
 [params]
 

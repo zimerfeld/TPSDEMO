@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1vhavtrfxe8b"
-path.s3tc="res://.godot/imported/core_out_light.png-2c5b4e17f23ddd27d2c729f47b71eda8.s3tc.ctex"
+uid="uid://c6va3bq1weyhv"
+path.s3tc="res://.godot/imported/core_out_light.png-47489c26c38b6e40a76085ba159fcf15.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/Core/core_out_light.png"
-dest_files=["res://.godot/imported/core_out_light.png-2c5b4e17f23ddd27d2c729f47b71eda8.s3tc.ctex"]
+dest_files=["res://.godot/imported/core_out_light.png-47489c26c38b6e40a76085ba159fcf15.s3tc.ctex"]
 
 [params]
 

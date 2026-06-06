@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bi3imw0mux7hy"
-path.s3tc="res://.godot/imported/core_fire_noise.png-1639965b4b1fe08c96f06bb8c64b0015.s3tc.ctex"
+uid="uid://88auv1mdl8d"
+path.s3tc="res://.godot/imported/core_fire_noise.png-f05be05a728963e7fb78438e93382d1b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/Core/core_fire_noise.png"
-dest_files=["res://.godot/imported/core_fire_noise.png-1639965b4b1fe08c96f06bb8c64b0015.s3tc.ctex"]
+dest_files=["res://.godot/imported/core_fire_noise.png-f05be05a728963e7fb78438e93382d1b.s3tc.ctex"]
 
 [params]
 

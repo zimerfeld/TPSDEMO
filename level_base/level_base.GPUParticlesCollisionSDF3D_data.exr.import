@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwppoxp2hhend"
-path="res://.godot/imported/level_base.GPUParticlesCollisionSDF3D_data.exr-624d08d446f6331e98852785605d4aea.ctex"
+uid="uid://y7x88g7gw0i2"
+path="res://.godot/imported/level_base.GPUParticlesCollisionSDF3D_data.exr-4b3d5dfb78d7f25477754c2bb78abeba.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/level_base.GPUParticlesCollisionSDF3D_data.exr"
-dest_files=["res://.godot/imported/level_base.GPUParticlesCollisionSDF3D_data.exr-624d08d446f6331e98852785605d4aea.ctex"]
+dest_files=["res://.godot/imported/level_base.GPUParticlesCollisionSDF3D_data.exr-4b3d5dfb78d7f25477754c2bb78abeba.ctex"]
 
 [params]
 

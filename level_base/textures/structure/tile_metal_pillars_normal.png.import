@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b23qv4ndqaq62"
-path.s3tc="res://.godot/imported/tile_metal_pillars_normal.png-3b93586f20b08e272bf23c4e673c2732.s3tc.ctex"
+uid="uid://bo03px2sxoq7s"
+path.s3tc="res://.godot/imported/tile_metal_pillars_normal.png-ed8c4f55ddbc9f3d3f90f38027cc0b26.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_metal_pillars_normal.png"
-dest_files=["res://.godot/imported/tile_metal_pillars_normal.png-3b93586f20b08e272bf23c4e673c2732.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_metal_pillars_normal.png-ed8c4f55ddbc9f3d3f90f38027cc0b26.s3tc.ctex"]
 
 [params]
 

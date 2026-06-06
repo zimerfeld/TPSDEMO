@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://but8hvbwc55k2"
-path.s3tc="res://.godot/imported/tile_metal_pillars_albedo.png-12d4e002728561958a7fbd697e65a11c.s3tc.ctex"
+uid="uid://xm6exhlu4038"
+path.s3tc="res://.godot/imported/tile_metal_pillars_albedo.png-a5b05ccf5b4c3422086a012a000ace73.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_metal_pillars_albedo.png"
-dest_files=["res://.godot/imported/tile_metal_pillars_albedo.png-12d4e002728561958a7fbd697e65a11c.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_metal_pillars_albedo.png-a5b05ccf5b4c3422086a012a000ace73.s3tc.ctex"]
 
 [params]
 

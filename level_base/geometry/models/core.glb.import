@@ -1,15 +1,15 @@
-﻿[remap]
+[remap]
 
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c8p6iycrbhf2o"
-path="res://.godot/imported/core.glb-b9cead6f542884579a686275d6615342.scn"
+uid="uid://dgd5xpibcp0mn"
+path="res://.godot/imported/core.glb-a660ebccdeeed6c567ef5b0b31583012.scn"
 
 [deps]
 
 source_file="res://level_base/geometry/models/core.glb"
-dest_files=["res://.godot/imported/core.glb-b9cead6f542884579a686275d6615342.scn"]
+dest_files=["res://.godot/imported/core.glb-a660ebccdeeed6c567ef5b0b31583012.scn"]
 
 [params]
 

@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvtxg8q7kgk7k"
-path.s3tc="res://.godot/imported/plasma.png-e7455de49a12f83fd81aadb5e33f6354.s3tc.ctex"
+uid="uid://c3jijdljmeu02"
+path.s3tc="res://.godot/imported/plasma.png-a490597fd5dd906b9354327f2ed2451b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/plasma.png"
-dest_files=["res://.godot/imported/plasma.png-e7455de49a12f83fd81aadb5e33f6354.s3tc.ctex"]
+dest_files=["res://.godot/imported/plasma.png-a490597fd5dd906b9354327f2ed2451b.s3tc.ctex"]
 
 [params]
 

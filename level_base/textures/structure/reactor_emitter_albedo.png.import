@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://i57x50dia0lx"
-path.s3tc="res://.godot/imported/reactor_emitter_albedo.png-ca0ea1a2bfe928d011b2bd1d56fd2329.s3tc.ctex"
+uid="uid://sh6av4uwqih5"
+path.s3tc="res://.godot/imported/reactor_emitter_albedo.png-3ecfee8249643811fdc46141ea4108f9.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/reactor_emitter_albedo.png"
-dest_files=["res://.godot/imported/reactor_emitter_albedo.png-ca0ea1a2bfe928d011b2bd1d56fd2329.s3tc.ctex"]
+dest_files=["res://.godot/imported/reactor_emitter_albedo.png-3ecfee8249643811fdc46141ea4108f9.s3tc.ctex"]
 
 [params]
 

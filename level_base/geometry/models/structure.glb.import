@@ -1,15 +1,15 @@
-﻿[remap]
+[remap]
 
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://ifbjf7fen32g"
-path="res://.godot/imported/structure.glb-2c1d8866ffe1bc4b3f980e6b366b2482.scn"
+uid="uid://bx280li3yip23"
+path="res://.godot/imported/structure.glb-d2b7de023db9bce4737f434031074c0a.scn"
 
 [deps]
 
 source_file="res://level_base/geometry/models/structure.glb"
-dest_files=["res://.godot/imported/structure.glb-2c1d8866ffe1bc4b3f980e6b366b2482.scn"]
+dest_files=["res://.godot/imported/structure.glb-d2b7de023db9bce4737f434031074c0a.scn"]
 
 [params]
 

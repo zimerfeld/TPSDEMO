@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bdxryi3w47ryg"
-path.s3tc="res://.godot/imported/trim_misc_2_normal.png-730a553796fab68497eb6a79ebc03e86.s3tc.ctex"
+uid="uid://dt1scr7lvutqf"
+path.s3tc="res://.godot/imported/trim_misc_2_normal.png-a0c1c794b525956c4716178f466151bb.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/trim_misc_2_normal.png"
-dest_files=["res://.godot/imported/trim_misc_2_normal.png-730a553796fab68497eb6a79ebc03e86.s3tc.ctex"]
+dest_files=["res://.godot/imported/trim_misc_2_normal.png-a0c1c794b525956c4716178f466151bb.s3tc.ctex"]
 
 [params]
 

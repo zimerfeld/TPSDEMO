@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cx8ut67yon2v3"
-path.s3tc="res://.godot/imported/container2_albedo.png-c24738758a54c9652c9a74fdab632651.s3tc.ctex"
+uid="uid://djuqx5gkn4uk1"
+path.s3tc="res://.godot/imported/container2_albedo.png-5778f605ee0924a817c444ab16ee3e12.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/props/container2_albedo.png"
-dest_files=["res://.godot/imported/container2_albedo.png-c24738758a54c9652c9a74fdab632651.s3tc.ctex"]
+dest_files=["res://.godot/imported/container2_albedo.png-5778f605ee0924a817c444ab16ee3e12.s3tc.ctex"]
 
 [params]
 

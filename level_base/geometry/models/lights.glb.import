@@ -1,15 +1,15 @@
-﻿[remap]
+[remap]
 
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cf3wply5jpsqk"
-path="res://.godot/imported/lights.glb-a702d00e3da16d096ef7db99a348eebd.scn"
+uid="uid://bbxthdavtw88w"
+path="res://.godot/imported/lights.glb-f60cabaf2c7c25f0e129b72cb9bdc90d.scn"
 
 [deps]
 
 source_file="res://level_base/geometry/models/lights.glb"
-dest_files=["res://.godot/imported/lights.glb-a702d00e3da16d096ef7db99a348eebd.scn"]
+dest_files=["res://.godot/imported/lights.glb-f60cabaf2c7c25f0e129b72cb9bdc90d.scn"]
 
 [params]
 

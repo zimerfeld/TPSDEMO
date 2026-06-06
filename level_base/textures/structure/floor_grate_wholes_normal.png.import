@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dj73stm6a2e15"
-path.s3tc="res://.godot/imported/floor_grate_wholes_normal.png-696ac6c1a1abe8d95308e8279de39424.s3tc.ctex"
+uid="uid://bbxqh7i87qdh3"
+path.s3tc="res://.godot/imported/floor_grate_wholes_normal.png-ee1e9f64ade8d38d101d929c26658549.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/floor_grate_wholes_normal.png"
-dest_files=["res://.godot/imported/floor_grate_wholes_normal.png-696ac6c1a1abe8d95308e8279de39424.s3tc.ctex"]
+dest_files=["res://.godot/imported/floor_grate_wholes_normal.png-ee1e9f64ade8d38d101d929c26658549.s3tc.ctex"]
 
 [params]
 

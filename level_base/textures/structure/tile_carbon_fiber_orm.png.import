@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1qkax204t6w0"
-path.s3tc="res://.godot/imported/tile_carbon_fiber_orm.png-04326eafc1bb2a6dcd4af010481c9318.s3tc.ctex"
+uid="uid://bbmt4302l5muq"
+path.s3tc="res://.godot/imported/tile_carbon_fiber_orm.png-658e1265e701d2f50fe5484576b133b5.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/textures/structure/tile_carbon_fiber_orm.png"
-dest_files=["res://.godot/imported/tile_carbon_fiber_orm.png-04326eafc1bb2a6dcd4af010481c9318.s3tc.ctex"]
+dest_files=["res://.godot/imported/tile_carbon_fiber_orm.png-658e1265e701d2f50fe5484576b133b5.s3tc.ctex"]
 
 [params]
 

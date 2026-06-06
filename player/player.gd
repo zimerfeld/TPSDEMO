@@ -48,7 +48,10 @@ const SERVER_SNAP_THRESHOLD: float = 2.0
 		# Garante o HUD do player local em toda cena de level, inclusive quando
 		# player_id chega via replicação depois do _ready (cliente multiplayer).
 		_setup_health_bar.call_deferred()
-		_is_local_player = not multiplayer.is_server() and value == multiplayer.get_unique_id()
+		# Guard: multiplayer is only available when inside the scene tree.
+		# _ready() will re-evaluate _is_local_player after add_child().
+		if is_inside_tree():
+			_is_local_player = _safe_is_server_call(false) == false and value == multiplayer.get_unique_id()
 
 @export var current_animation := Animations.WALK
 
@@ -72,7 +75,9 @@ func _ready() -> void:
 	# Pre-initialize orientation transform.
 	orientation = player_model.global_transform
 	orientation.origin = Vector3()
-	if not multiplayer.is_server():
+	# Re-evaluate here: player_id setter may have run before add_child() (no tree = no multiplayer).
+	_is_local_player = not _safe_is_server_call(false) and player_id == multiplayer.get_unique_id()
+	if not _safe_is_server_call(false):
 		set_process(false)
 	# Cria o HUD de vida do player local sempre que um level carrega.
 	# Deferido para garantir que player_id/authority já foi replicado em multiplayer.
@@ -117,8 +122,19 @@ func _setup_glass_hitboxes() -> void:
 	gh.build_for(skel)
 
 
+func _safe_is_server_call(default: bool = false) -> bool:
+	if not is_inside_tree():
+		return default
+	if multiplayer == null:
+		CrashHandler.show_error(
+			"MultiplayerAPI indisponível no player %d.\nVerifique a conexão de rede." % player_id
+		)
+		return default
+	return multiplayer.is_server()
+
+
 func _physics_process(delta: float) -> void:
-	if multiplayer.is_server():
+	if _safe_is_server_call(false):
 		apply_input(delta)
 	elif _is_local_player:
 		_reconcile()
@@ -290,7 +306,7 @@ func hit(amount: int = 25) -> void:
 	hp = maxi(hp - amount, 0)
 	if _health_bar:
 		_health_bar.update_health(hp, MAX_HP)
-	if hp <= 0 and multiplayer.is_server():
+	if hp <= 0 and _safe_is_server_call(false):
 		respawn.rpc()
 	add_camera_shake_trauma(0.75)
 

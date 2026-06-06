@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dbxcfyikglt8p"
-path.s3tc="res://.godot/imported/dot.png-04cfe4b8c6d3472e32fe85a87f8ab577.s3tc.ctex"
+uid="uid://vq5qafqqevuj"
+path.s3tc="res://.godot/imported/dot.png-ecef0400cf7c5aca9eee257823100d80.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -12,7 +12,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/forklift/dot.png"
-dest_files=["res://.godot/imported/dot.png-04cfe4b8c6d3472e32fe85a87f8ab577.s3tc.ctex"]
+dest_files=["res://.godot/imported/dot.png-ecef0400cf7c5aca9eee257823100d80.s3tc.ctex"]
 
 [params]
 

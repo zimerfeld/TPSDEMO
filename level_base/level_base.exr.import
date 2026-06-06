@@ -1,9 +1,9 @@
-﻿[remap]
+[remap]
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://byj5l7l8cfrnm"
-path="res://.godot/imported/level_base.exr-bea0f31b7515bad0c3a9742458bc1d09.ctex"
+uid="uid://3bw2lismi6qc"
+path="res://.godot/imported/level_base.exr-2b6724a4e00351c99d230e3b5296faab.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://level_base/level_base.exr"
-dest_files=["res://.godot/imported/level_base.exr-bea0f31b7515bad0c3a9742458bc1d09.ctex"]
+dest_files=["res://.godot/imported/level_base.exr-2b6724a4e00351c99d230e3b5296faab.ctex"]
 
 [params]
 
