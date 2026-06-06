@@ -3,7 +3,8 @@ extends Node
 
 signal replace_main_scene
 
-const LEVELS_PATH: String = "res://levels/levels.tscn"
+const CHOOSEPLAYER_PATH: String = "res://chooseplayer/chooseplayer.tscn"
+const DEVELOPER_PATH: String = "res://developer/developer.tscn"
 const LEVEL_BASE_PATH: String = "res://level_base/level_base.tscn"
 
 var loading_path: String = ""
@@ -167,7 +168,7 @@ func _on_loading_done_timer_timeout() -> void:
 
 
 func _on_play_pressed() -> void:
-	loading_path = LEVELS_PATH
+	loading_path = CHOOSEPLAYER_PATH
 	main.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
@@ -175,8 +176,6 @@ func _on_play_pressed() -> void:
 
 func _on_settings_pressed() -> void:
 	main.hide()
-	settings_menu.show()
-	settings_action_cancel.grab_focus()
 
 	if (
 			Settings.config_file.get_value("video", "display_mode") == Window.MODE_WINDOWED
@@ -305,6 +304,10 @@ func _on_settings_pressed() -> void:
 	else:
 		volumetric_fog_enabled.button_pressed = true
 
+	# All controls pre-set — now reveal the panel so the user sees the correct state immediately.
+	settings_menu.show()
+	settings_action_cancel.grab_focus()
+
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
@@ -417,10 +420,10 @@ func _on_apply_pressed() -> void:
 	Settings.config_file.set_value("rendering", "bloom", bloom_enabled.button_pressed)
 	Settings.config_file.set_value("rendering", "volumetric_fog", volumetric_fog_enabled.button_pressed)
 
+	Settings.save_settings()
+
 	# Apply relevant settings directly.
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
-
-	Settings.save_settings()
 
 
 func _on_cancel_pressed() -> void:
@@ -456,6 +459,10 @@ func _on_host_pressed() -> void:
 	main.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
+
+
+func _on_developer_pressed() -> void:
+	emit_signal("replace_main_scene", load(DEVELOPER_PATH))
 
 
 func _on_connect_pressed() -> void:
