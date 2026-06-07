@@ -1,52 +1,51 @@
 # Fluxo de Cenas
 
+`main.tscn` (Node, `main.gd`) é um **roteador**: instancia cada tela como filha
+de si mesmo (não usa `SceneTree.change_scene`), reagindo aos sinais
+`replace_main_scene` e `quit`. Por isso `get_tree().current_scene` continua sendo
+`main` durante todo o jogo.
+
 ```
-main.tscn (Node, main.gd)
-   │
+main.tscn (main.gd — roteador)
    └─► menu.tscn (menu.gd)
-          │  quit → go_to_main_menu()
-          │
-          ├─► levels.tscn (levels.gd)
-          │       │  Level 1 Button
-          │       ├─► level_1.tscn   ── carregamento assíncrono (load_threaded)
-          │       │
-          │       └─► final_level.tscn ── carregamento assíncrono
-          │
-          └─► settings.tscn (settings.gd)
+          ├─► chooseplayer.tscn ─► levels.tscn ─┬─► level_1.tscn
+          │                                     └─► level_base.tscn
+          ├─► settings.tscn (UI: settings.gd)
+          ├─► developer.tscn ─► models.tscn
+          ├─► (Play Online: host / connect) ─► level_base.tscn
+          └─► Sair → quit
 ```
+
+---
+
+## Pastas
+
+- **scenes2D/** (telas de UI): `menu`, `settings`, `chooseplayer`, `developer`, `levels`
+- **scenes3D/** (conteúdo 3D): `players`, `enemies`, `door`, `level_1`, `level_base`, `models`
+
+## Autoloads
+
+- **Settings** → `scenes2D/settings/config.gd` (gerenciador de config: `config_file`, `DEFAULTS`, `save_settings()`)
+- **CrashHandler** → popup global de erro
+- **PlayerSelection** → personagem escolhido
+- **DebugOverlay** → overlays de debug (ver abaixo)
 
 ---
 
 ## main.gd
 
-- Entry point do jogo
-- Gerencia troca de cenas com `change_scene_to_packed()`
-- Conecta sinal `quit` → `go_to_main_menu()`
-- Conecta sinal `replace_main_scene` → troca de cena
+- Entry point (`run/main_scene`)
+- `change_scene_to_packed()` remove os filhos e instancia a nova tela
+- Conecta `quit` → `go_to_main_menu()` e `replace_main_scene` → troca de cena (se a tela tiver o sinal)
 
----
+## Telas (UI)
 
-## levels.gd
-
-- Botões **Level 1** e **Final Level**
-- Carregamento assíncrono via `ResourceLoader.load_threaded_request()`
-- ProgressBar durante loading
-- `DoneTimer` → emite `replace_main_scene` ao terminar
-
----
-
-## level_1.tscn / level_1.gd
-
-- Cena simples para teste
-- Spawna 1 player em `(0,1,0)` + 1 robô em `(10,1,0)`
-- Modo offline (single-player)
-
-## final_level.tscn / final_level.gd
-
-- Cena completa com iluminação (SDFGI / VoxelGI / LightmapGI)
-- Suporte multiplayer completo
-- Spawn points para players e robôs
-- Robôs respawnam após 15 s quando morrem
+- **menu** — Jogar (→ chooseplayer), Configurações (→ settings), Modo Developer (→ developer), Play Online (→ level_base), Sair
+- **settings** — `config.gd` (autoload **Settings**) + `settings.gd` (UI). Abas Display / Resolution / Antialiasing / Lighting / Effects / **Debug**
+- **developer** — toggles HUD FPS / Malha no Solo (estilo Disabled/Enabled) + botão **Modelos 3D**
+- **models** — visualizador dos modelos 3D do level_base com combobox em cascata (categoria → modelo), modelo girando
+- **chooseplayer** — escolhe personagem (modelo 3D girando) → levels
+- **levels** — Level 1 (`scenes3D/level_1`) ou Level Base (`scenes3D/level_base`), load assíncrono
 
 ---
 
@@ -54,8 +53,8 @@ main.tscn (Node, main.gd)
 
 | Sinal | Emitido por | Recebido por |
 |---|---|---|
-| `quit` | levels, level_1, final_level | `main.gd` → `go_to_main_menu()` |
-| `replace_main_scene(scene)` | levels | `main.gd` → troca cena |
+| `replace_main_scene(scene)` | menu, settings, chooseplayer, developer, models, levels | `main.gd` → troca de cena |
+| `quit` | chooseplayer, developer | `main.gd` → `go_to_main_menu()` |
 
 ---
 
@@ -63,3 +62,4 @@ main.tscn (Node, main.gd)
 
 - [[arquivos-chave/main-gd]]
 - [[sistemas/multiplayer]]
+- [[convencoes/formatacao]]

@@ -73,17 +73,8 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var volumetric_fog_disabled: Button = $UI/VBox/Tabs/Effects/VolumetricFog/Disabled
 @onready var volumetric_fog_enabled: Button = $UI/VBox/Tabs/Effects/VolumetricFog/Enabled
 
-@onready var debug_2d_disabled: Button = $UI/VBox/Tabs/Debug/Debug2DRow/Disabled
-@onready var debug_2d_enabled: Button = $UI/VBox/Tabs/Debug/Debug2DRow/Enabled
-
-@onready var debug_3d_disabled: Button = $UI/VBox/Tabs/Debug/Debug3DRow/Disabled
-@onready var debug_3d_enabled: Button = $UI/VBox/Tabs/Debug/Debug3DRow/Enabled
-
-@onready var debug_mode_disabled: Button = $UI/VBox/Tabs/Debug/DebugModeRow/Disabled
-@onready var debug_mode_enabled: Button = $UI/VBox/Tabs/Debug/DebugModeRow/Enabled
-
-@onready var show_id_disabled: Button = $UI/VBox/Tabs/Debug/ShowIDRow/Disabled
-@onready var show_id_enabled: Button = $UI/VBox/Tabs/Debug/ShowIDRow/Enabled
+@onready var music_disabled: Button = $UI/VBox/Tabs/Audio/MusicRow/Disabled
+@onready var music_enabled: Button = $UI/VBox/Tabs/Audio/MusicRow/Enabled
 
 @onready var _rows: Array = []
 
@@ -105,10 +96,7 @@ func _ready() -> void:
 		$UI/VBox/Tabs/Lighting/SSIL,
 		$UI/VBox/Tabs/Effects/Bloom,
 		$UI/VBox/Tabs/Effects/VolumetricFog,
-		$UI/VBox/Tabs/Debug/Debug2DRow,
-		$UI/VBox/Tabs/Debug/Debug3DRow,
-		$UI/VBox/Tabs/Debug/DebugModeRow,
-		$UI/VBox/Tabs/Debug/ShowIDRow,
+		$UI/VBox/Tabs/Audio/MusicRow,
 	]
 
 	if not metalfx_supported:
@@ -220,17 +208,8 @@ func _load_current_settings() -> void:
 	volumetric_fog_disabled.button_pressed = not Settings.config_file.get_value("rendering", "volumetric_fog")
 	volumetric_fog_enabled.button_pressed = Settings.config_file.get_value("rendering", "volumetric_fog")
 
-	debug_2d_disabled.button_pressed = not Settings.config_file.get_value("game", "debug_2d")
-	debug_2d_enabled.button_pressed = Settings.config_file.get_value("game", "debug_2d")
-
-	debug_3d_disabled.button_pressed = not Settings.config_file.get_value("game", "debug_3d")
-	debug_3d_enabled.button_pressed = Settings.config_file.get_value("game", "debug_3d")
-
-	debug_mode_disabled.button_pressed = not Settings.config_file.get_value("game", "debug_mode")
-	debug_mode_enabled.button_pressed = Settings.config_file.get_value("game", "debug_mode")
-
-	show_id_disabled.button_pressed = not Settings.config_file.get_value("game", "show_id")
-	show_id_enabled.button_pressed = Settings.config_file.get_value("game", "show_id")
+	music_disabled.button_pressed = not Settings.config_file.get_value("audio", "music")
+	music_enabled.button_pressed = Settings.config_file.get_value("audio", "music")
 
 
 func _on_apply_pressed() -> void:
@@ -336,12 +315,10 @@ func _on_apply_pressed() -> void:
 	Settings.config_file.set_value("rendering", "bloom", bloom_enabled.button_pressed)
 	Settings.config_file.set_value("rendering", "volumetric_fog", volumetric_fog_enabled.button_pressed)
 
-	Settings.config_file.set_value("game", "debug_2d", debug_2d_enabled.button_pressed)
-	Settings.config_file.set_value("game", "debug_3d", debug_3d_enabled.button_pressed)
-	Settings.config_file.set_value("game", "debug_mode", debug_mode_enabled.button_pressed)
-	Settings.config_file.set_value("game", "show_id", show_id_enabled.button_pressed)
+	Settings.config_file.set_value("audio", "music", music_enabled.button_pressed)
 
 	Settings.save_settings()
+	Settings.apply_audio_settings()
 
 	get_window().mode = Settings.config_file.get_value("video", "display_mode")
 	DisplayServer.window_set_vsync_mode(Settings.config_file.get_value("video", "vsync"))

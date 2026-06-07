@@ -43,7 +43,7 @@ func change_scene_to_packed(resource: PackedScene):
 menu.tscn → quit              → go_to_main_menu()
 levels.tscn → replace_main_scene(scene) → change_scene_to_packed(scene)
 level_1.tscn → quit           → go_to_main_menu()
-final_level.tscn → quit       → go_to_main_menu()
+level_base.tscn → quit       → go_to_main_menu()
 ```
 
 ---

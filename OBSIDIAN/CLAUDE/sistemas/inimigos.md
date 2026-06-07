@@ -1,7 +1,7 @@
 # Sistema de Inimigos — Red Robot
 
-**Script:** `enemies/red_robot/red_robot.gd`  
-**Cena:** `enemies/red_robot/red_robot.tscn`
+**Script:** `scenes3D/enemies/red_robot/red_robot.gd`  
+**Cena:** `scenes3D/enemies/red_robot/red_robot.tscn`
 
 ---
 
@@ -50,7 +50,7 @@ APPROACH ──► AIM ──► SHOOTING
 
 ## HUD de Vida (Boss Bar)
 
-- `enemies/enemy_health_bar.gd` — `CanvasLayer` compartilhado no **topo-centro**
+- `scenes3D/enemies/enemy_health_bar.gd` — `CanvasLayer` compartilhado no **topo-centro**
 - Acionado por:
   - `hit()` → `show_health_hud()` (ao ser atingido)
   - **mira do player entra** → `player_input._update_enemy_focus()` chama `show_health_hud()`
@@ -92,13 +92,13 @@ func hit() -> void:
 ## Spawn
 
 - **level_1:** `robot.position = Vector3(10, 1, 0)` (hardcoded)
-- **final_level:** spawn em cada `RobotSpawnpoints/*`; respawn automático após 15 s
+- **level_base:** spawn em cada `RobotSpawnpoints/*`; respawn automático após 15 s
 
 ---
 
 ## Sinal
 
-- `exploded` — emitido ao morrer; final_level conecta para respawn
+- `exploded` — emitido ao morrer; level_base conecta para respawn
 
 ---
 
