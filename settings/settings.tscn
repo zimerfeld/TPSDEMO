@@ -21,7 +21,7 @@ anchors_preset = -1
 anchor_left = 0.01
 anchor_top = 0.03
 anchor_right = 0.99
-anchor_bottom = 0.88
+anchor_bottom = 0.97
 theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="UI/VBox" unique_id=2067419229]
@@ -34,7 +34,7 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/side_margin = 12
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 16
 current_tab = 0
 
 [node name="Display" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=1753421457]
@@ -637,33 +637,22 @@ text = "Show Debug 3D Scene:"
 layout_mode = 2
 tooltip_text = "Exibe tooltip para os objetos"
 
-[node name="Actions" type="HBoxContainer" parent="UI" unique_id=1938356380]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -330.0
-offset_top = -100.0
-offset_right = 330.0
-offset_bottom = -50.0
-grow_horizontal = 2
-grow_vertical = 0
+[node name="Actions" type="HBoxContainer" parent="UI/VBox" unique_id=1938356380]
+layout_mode = 2
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="SettingsBackButton" type="Button" parent="UI/Actions" unique_id=1664479691]
+[node name="SettingsBackButton" type="Button" parent="UI/VBox/Actions" unique_id=1664479691]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
-[node name="Apply" type="Button" parent="UI/Actions" unique_id=1006366513]
+[node name="Apply" type="Button" parent="UI/VBox/Actions" unique_id=1006366513]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Aplicar"
 
-[connection signal="pressed" from="UI/Actions/SettingsBackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/Apply" to="." method="_on_apply_pressed"]
+[connection signal="pressed" from="UI/VBox/Actions/SettingsBackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/VBox/Actions/Apply" to="." method="_on_apply_pressed"]
