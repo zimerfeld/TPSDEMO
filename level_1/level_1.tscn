@@ -42,3 +42,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 shape = SubResource("5")
 
 [node name="SpawnedNodes" type="Node3D" parent="."]
+
+[node name="TitleCanvas" type="CanvasLayer" parent="."]
+
+[node name="title_label" type="Label" parent="TitleCanvas"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 30.0
+offset_right = 400.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 40
+text = "Level 1"
+horizontal_alignment = 1

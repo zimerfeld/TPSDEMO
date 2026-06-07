@@ -92,8 +92,9 @@ func _setup_scene_name_label() -> void:
 
 # main.gd swaps menu/gameplay scenes in as children of the root scene instead of
 # using SceneTree.change_scene, so current_scene stays main.tscn. Surface the
-# file name of the sub-scene actually loaded into the runtime when present.
-func _active_scene_file() -> String:
+# instance (node) name of the screen actually loaded into the runtime — e.g.
+# "Menu", "Levels", "Level1" — instead of relying on current_scene.
+func _active_screen_name() -> String:
 	var root_scene := get_tree().current_scene
 	if root_scene == null:
 		return ""
@@ -102,7 +103,7 @@ func _active_scene_file() -> String:
 		if child.scene_file_path != "" and child.scene_file_path != root_scene.scene_file_path:
 			loaded = child
 	var target := loaded if loaded != null else root_scene
-	return target.scene_file_path.get_file()
+	return target.name
 
 
 func _process(_delta: float) -> void:
@@ -110,7 +111,7 @@ func _process(_delta: float) -> void:
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
 	if is_instance_valid(_scene_name_label):
-		_scene_name_label.text = _active_scene_file()
+		_scene_name_label.text = _active_screen_name()
 
 	# Recreate grid when scene changes (e.g. entering a level)
 	var current := get_tree().current_scene
