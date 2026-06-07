@@ -1,10 +1,9 @@
 extends Node
 
 signal replace_main_scene
-signal quit
 
 const LEVEL_1_PATH: String = "res://scenes3D/level_1/level_1.tscn"
-const LEVEL_BASE_PATH: String = "res://scenes2D/level_base/level_base.tscn"
+const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 
 var loading_path: String = ""

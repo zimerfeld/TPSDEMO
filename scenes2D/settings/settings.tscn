@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://er6ung1hi5fm"]
 
-[ext_resource type="Script" uid="uid://dro3r72khmv6c" path="res://scenes2D/settings/settings_ui.gd" id="1"]
+[ext_resource type="Script" uid="uid://dro3r72khmv6c" path="res://scenes2D/settings/settings.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
 
 [node name="Settings" type="Node" unique_id=683111983]

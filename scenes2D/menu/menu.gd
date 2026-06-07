@@ -5,7 +5,7 @@ signal replace_main_scene
 
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
-const LEVEL_BASE_PATH: String = "res://scenes2D/level_base/level_base.tscn"
+const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
 const SETTINGS_PATH: String = "res://scenes2D/settings/settings.tscn"
 
 var loading_path: String = ""

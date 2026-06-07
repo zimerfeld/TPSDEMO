@@ -43,6 +43,14 @@
 
 ---
 
+## Convenções
+
+| Nota | Resumo |
+|---|---|
+| [[convencoes/formatacao]] | Formatação de arquivos (UTF-8 sem BOM, LF, sem trailing ws, newline final) + rebuild do cache de UIDs |
+
+---
+
 ## Notas Rápidas
 
 - Motor: **Godot 4.x**

@@ -54,6 +54,30 @@ You can either download from the Godot Asset Library, clone this repository, or
 - <kbd>F11</kbd> or <kbd>Alt + Enter</kbd>: Toggle fullscreen
 - <kbd>F3</kbd>: Toggle debugging information (such as FPS counter)
 
+## Code formatting
+
+All text files in this project must follow a consistent format, enforced by
+[`file_format.sh`](file_format.sh). Always apply it before committing changes:
+
+- UTF-8 encoding **without BOM**
+- LF (Unix) line endings
+- No trailing whitespace
+- A trailing newline at end of file
+
+Run the formatter from the repository root:
+
+```bash
+bash file_format.sh
+```
+
+On Windows, run it from Git Bash. It requires `dos2unix` and `perl`
+(`recode` is optional). A common cause of `Parse Error: Expected '['` when
+loading a `.tscn`/`.tres` is a stray UTF-8 BOM — running the formatter removes it.
+
+> **Tip:** after moving or renaming scenes/resources, also reopen the project in
+> the Godot editor once so it rebuilds `.godot/uid_cache.bin` and reimports moved
+> assets (this clears `invalid UID … using text path instead` warnings).
+
 ## Useful links
 
 - [Main website](https://godotengine.org)

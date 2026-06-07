@@ -40,8 +40,10 @@ horizontal_alignment = 1
 
 [node name="ButtonGrid" type="VBoxContainer" parent="UI" unique_id=412148386]
 layout_mode = 0
-offset_left = 40.0
-offset_top = 40.0
+offset_left = 62.0
+offset_top = 133.0
+offset_right = 362.0
+offset_bottom = 245.0
 theme_override_constants/separation = 12
 
 [node name="Level1Button" type="Button" parent="UI/ButtonGrid" unique_id=1572114992]
