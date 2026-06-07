@@ -198,7 +198,6 @@ common/physics_interpolation=true
 reflections/sky_reflections/texture_array_reflections=false
 textures/default_filters/anisotropic_filtering_level=4
 anti_aliasing/quality/use_debanding=true
-scaling_3d/mode=2
 textures/decals/filter=1
 textures/light_projectors/filter=1
 occlusion_culling/use_occlusion_culling=true

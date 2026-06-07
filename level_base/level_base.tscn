@@ -5,7 +5,6 @@
 [ext_resource type="VoxelGIData" uid="uid://bw86lhn5p1ovp" path="res://level_base/geometry/giprobe_data.res" id="5"]
 [ext_resource type="AudioStream" uid="uid://vxxm8xm1fr6y" path="res://level_base/level_base_music.ogg" id="8"]
 [ext_resource type="Script" uid="uid://6ec6m14rhsxi" path="res://level_base/debug.gd" id="9"]
-[ext_resource type="CompressedTexture3D" uid="uid://b2x2pkclq230n" path="res://level_base/level_base.GPUParticlesCollisionSDF3D_data.exr" id="11_mt3nw"]
 [ext_resource type="PackedScene" uid="uid://dln4kthc3tvfv" path="res://level_base/forklift/flying_forklift.tscn" id="12"]
 [ext_resource type="PackedScene" uid="uid://dgvowmn3iop44" path="res://level_base/geometry/scenes/lights.tscn" id="13"]
 [ext_resource type="PackedScene" uid="uid://ddbnmy6um5fjg" path="res://level_base/geometry/scenes/core.tscn" id="14"]
@@ -262,5 +261,4 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.3694, -10.2858, 7.23363)
 [node name="GPUParticlesCollisionSDF3D" type="GPUParticlesCollisionSDF3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.1415, 0, 31.955)
 size = Vector3(140, 40, 140)
-resolution = 4
-texture = ExtResource("11_mt3nw")
+resolution = 3

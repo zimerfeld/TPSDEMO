@@ -46,3 +46,8 @@ func _on_show_grid_toggle_toggled(button_pressed: bool) -> void:
 
 func _on_back_pressed() -> void:
 	quit.emit()
+
+
+func _input(input_event: InputEvent) -> void:
+	if input_event.is_action_pressed(&"quit"):
+		quit.emit()

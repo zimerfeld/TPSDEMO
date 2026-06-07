@@ -25,6 +25,9 @@ var _grid_mesh: MeshInstance3D = null
 var _palette_index: int = 0
 var _last_scene: Node = null
 
+var _persistent_canvas: CanvasLayer = null
+var _scene_name_label: Label = null
+
 
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
@@ -35,6 +38,7 @@ func _ready() -> void:
 		call_deferred("_update_fps_hud")
 	if _is_show_grid_on():
 		call_deferred("_update_grid")
+	call_deferred("_setup_scene_name_label")
 
 
 func _is_debug_on() -> bool:
@@ -61,9 +65,36 @@ func refresh() -> void:
 	_update_grid()
 
 
+func _setup_scene_name_label() -> void:
+	if not is_instance_valid(_persistent_canvas):
+		_persistent_canvas = CanvasLayer.new()
+		_persistent_canvas.layer = 101
+		_persistent_canvas.name = "DebugSceneCanvas"
+		get_tree().root.add_child(_persistent_canvas)
+	_scene_name_label = Label.new()
+	_scene_name_label.add_theme_font_size_override("font_size", 13)
+	_scene_name_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.65))
+	_scene_name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
+	_scene_name_label.add_theme_constant_override("shadow_offset_x", 1)
+	_scene_name_label.add_theme_constant_override("shadow_offset_y", 1)
+	_scene_name_label.add_theme_constant_override("shadow_as_outline", 1)
+	_scene_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_scene_name_label.offset_left = -320.0
+	_scene_name_label.offset_top = 8.0
+	_scene_name_label.offset_right = -8.0
+	_scene_name_label.offset_bottom = 28.0
+	_persistent_canvas.add_child(_scene_name_label)
+
+
 func _process(_delta: float) -> void:
 	if is_instance_valid(_fps_label):
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+
+	if is_instance_valid(_scene_name_label):
+		var cs := get_tree().current_scene
+		_scene_name_label.text = cs.scene_file_path.get_file() if cs != null else ""
 
 	# Recreate grid when scene changes (e.g. entering a level)
 	var current := get_tree().current_scene

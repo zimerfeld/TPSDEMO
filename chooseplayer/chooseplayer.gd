@@ -123,3 +123,8 @@ func _on_back_pressed() -> void:
 
 func _on_loading_done_timer_timeout() -> void:
 	emit_signal("replace_main_scene", ResourceLoader.load_threaded_get(_loading_path))
+
+
+func _input(input_event: InputEvent) -> void:
+	if input_event.is_action_pressed(&"quit"):
+		quit.emit()
