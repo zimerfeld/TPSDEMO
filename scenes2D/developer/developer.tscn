@@ -112,6 +112,12 @@ offset_bottom = -50.0
 theme_override_constants/separation = 60
 alignment = 1
 
+[node name="Models3DButton" type="Button" parent="UI/Actions"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Modelos 3D"
+
 [node name="BackButton" type="Button" parent="UI/Actions" unique_id=844862653]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
@@ -120,4 +126,5 @@ text = "Voltar"
 
 [connection signal="toggled" from="UI/Options/FPSRow/Enabled" to="." method="_on_fps_toggle_toggled"]
 [connection signal="toggled" from="UI/Options/ShowGridRow/Enabled" to="." method="_on_show_grid_toggle_toggled"]
+[connection signal="pressed" from="UI/Actions/Models3DButton" to="." method="_on_models_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
