@@ -112,26 +112,29 @@ offset_bottom = 540.0
 theme_override_font_sizes/font_size = 50
 text = ">"
 
-[node name="BottomButtons" type="HBoxContainer" parent="UI"]
-layout_mode = 0
+[node name="Actions" type="HBoxContainer" parent="UI"]
+layout_mode = 1
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_top = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
 offset_left = -330.0
 offset_right = 330.0
 offset_top = -100.0
-offset_bottom = -30.0
+offset_bottom = -50.0
+alignment = 1
 theme_override_constants/separation = 60
 
-[node name="MenuButton" type="Button" parent="UI/BottomButtons"]
+[node name="ChoosePlayerBackButton" type="Button" parent="UI/Actions"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(300, 50)
 text = "Voltar"
 alignment = 1
 
-[node name="PlayButton" type="Button" parent="UI/BottomButtons"]
+[node name="PlayButton" type="Button" parent="UI/Actions"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(300, 50)
@@ -164,6 +167,6 @@ one_shot = true
 
 [connection signal="pressed" from="UI/ArrowLeft" to="." method="_on_left_pressed"]
 [connection signal="pressed" from="UI/ArrowRight" to="." method="_on_right_pressed"]
-[connection signal="pressed" from="UI/BottomButtons/MenuButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/BottomButtons/PlayButton" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="UI/Actions/ChoosePlayerBackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/PlayButton" to="." method="_on_play_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

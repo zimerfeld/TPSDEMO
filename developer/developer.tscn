@@ -93,22 +93,28 @@ text = "Malha no Solo:"
 [node name="ShowGridToggle" type="CheckButton" parent="UI/Options/ShowGridRow"]
 layout_mode = 2
 
-[node name="BackButton" type="Button" parent="UI"]
+[node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
 anchor_left = 0.5
-anchor_top = 1.0
 anchor_right = 0.5
+anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -150.0
-offset_top = -90.0
-offset_right = 150.0
-offset_bottom = -40.0
+offset_left = -330.0
+offset_top = -100.0
+offset_right = 330.0
+offset_bottom = -50.0
+alignment = 1
+theme_override_constants/separation = 60
+
+[node name="DeveloperBackButton" type="Button" parent="UI/Actions"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 50)
 theme_override_font_sizes/font_size = 30
-text = "VOLTAR"
-alignment = 0
+text = "Voltar"
+alignment = 1
 
 [connection signal="toggled" from="UI/Options/DebugRow/DebugToggle" to="." method="_on_debug_toggle_toggled"]
 [connection signal="toggled" from="UI/Options/ShowIDRow/ShowIDToggle" to="." method="_on_show_id_toggle_toggled"]
 [connection signal="toggled" from="UI/Options/FPSRow/FPSToggle" to="." method="_on_fps_toggle_toggled"]
 [connection signal="toggled" from="UI/Options/ShowGridRow/ShowGridToggle" to="." method="_on_show_grid_toggle_toggled"]
-[connection signal="pressed" from="UI/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/DeveloperBackButton" to="." method="_on_back_pressed"]
