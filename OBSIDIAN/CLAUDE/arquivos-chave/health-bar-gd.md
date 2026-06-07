@@ -1,6 +1,6 @@
 # scenes3D/players/player/health_bar.gd
 
-**Criado em:** 2026-06-06  
+**Criado em:** 2026-06-06
 **Estende:** `CanvasLayer`
 
 ---

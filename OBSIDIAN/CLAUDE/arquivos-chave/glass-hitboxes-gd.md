@@ -1,6 +1,6 @@
 # effects_shared/glass_hitboxes.gd
 
-**Criado em:** 2026-06-06 · **Atualizado:** hitboxes funcionais  
+**Criado em:** 2026-06-06 · **Atualizado:** hitboxes funcionais
 **Estende:** `Node3D`
 
 ---

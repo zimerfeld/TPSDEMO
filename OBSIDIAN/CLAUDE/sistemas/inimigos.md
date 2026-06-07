@@ -1,6 +1,6 @@
 # Sistema de Inimigos — Red Robot
 
-**Script:** `scenes3D/enemies/red_robot/red_robot.gd`  
+**Script:** `scenes3D/enemies/red_robot/red_robot.gd`
 **Cena:** `scenes3D/enemies/red_robot/red_robot.tscn`
 
 ---
