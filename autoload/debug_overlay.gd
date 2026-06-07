@@ -20,6 +20,9 @@ const _PALETTE := [
 var _canvas_layer: CanvasLayer = null
 # inst_id → {tooltip: PanelContainer, ctrl_border: Panel, color: Color}
 var _overlay_map: Dictionary = {}
+# Instance ids of the per-mesh "ID" Label3D nodes, so their `visible` can be
+# kept in sync every frame with the saved "show_id" setting.
+var _id_labels: Array = []
 var _fps_label: Label = null
 var _grid_mesh: MeshInstance3D = null
 var _palette_index: int = 0
@@ -141,6 +144,20 @@ func _process(_delta: float) -> void:
 		if current is Node3D and _is_show_grid_on():
 			call_deferred("_update_grid")
 
+	# Toggle the 3D "ID" labels' visibility from the saved show_id setting,
+	# the same way the 2D overlays react to the saved configuration.
+	if not _id_labels.is_empty():
+		var show_id := _is_show_id_on()
+		var stale_ids: Array = []
+		for lid in _id_labels:
+			var node := instance_from_id(lid)
+			if node is Label3D:
+				(node as Label3D).visible = show_id
+			else:
+				stale_ids.append(lid)
+		for s in stale_ids:
+			_id_labels.erase(s)
+
 	if _canvas_layer == null:
 		return
 
@@ -227,6 +244,7 @@ func _clear_all() -> void:
 
 	if get_tree().current_scene != null:
 		_remove_3d_labels(get_tree().current_scene)
+	_id_labels.clear()
 
 	if is_instance_valid(_canvas_layer):
 		_canvas_layer.queue_free()
@@ -388,7 +406,7 @@ func _add_3d(mesh: MeshInstance3D) -> void:
 		return
 	var lbl := Label3D.new()
 	lbl.name = "DebugLabel3D"
-	lbl.text = "TYPE: %s\nID: %d\nName: %s" % [mesh.get_class(), mesh.get_instance_id(), mesh.name]
+	lbl.text = "TYPE: %s\nName: %s" % [mesh.get_class(), mesh.name]
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.no_depth_test = true
 	lbl.pixel_size = 0.005
@@ -398,6 +416,24 @@ func _add_3d(mesh: MeshInstance3D) -> void:
 	lbl.outline_modulate = Color(0, 0, 0, 0.8)
 	lbl.position = Vector3(0.0, 0.5, 0.0)
 	lbl.set_meta(_LABEL3D_META, true)
+
+	# The ID lives on its own child label so its visibility can be toggled at
+	# runtime from the saved "show_id" setting (mirrors the 2D tooltip behaviour).
+	var id_lbl := Label3D.new()
+	id_lbl.name = "DebugLabel3D_ID"
+	id_lbl.text = "ID: %d" % mesh.get_instance_id()
+	id_lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	id_lbl.no_depth_test = true
+	id_lbl.pixel_size = 0.005
+	id_lbl.font_size = 14
+	id_lbl.modulate = Color.YELLOW
+	id_lbl.outline_size = 4
+	id_lbl.outline_modulate = Color(0, 0, 0, 0.8)
+	id_lbl.position = Vector3(0.0, -0.18, 0.0)
+	id_lbl.visible = _is_show_id_on()
+	lbl.add_child(id_lbl)
+	_id_labels.append(id_lbl.get_instance_id())
+
 	mesh.set_meta(_LABEL3D_META, true)
 	mesh.add_child(lbl)
 

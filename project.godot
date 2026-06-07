@@ -26,7 +26,7 @@ buses/default_bus_layout="uid://vtdn63d3ksc2"
 
 [autoload]
 
-Settings="*res://scenes2D/settings/settings.gd"
+Settings="*res://scenes2D/settings/config.gd"
 CrashHandler="*res://autoload/crash_handler.gd"
 PlayerSelection="*res://autoload/player_selection.gd"
 DebugOverlay="*res://autoload/debug_overlay.gd"
