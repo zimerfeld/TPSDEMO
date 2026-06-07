@@ -16,7 +16,7 @@ const CHARACTERS: Array[Dictionary] = [
 	},
 ]
 
-const LEVELS_PATH: String = "res://levels/levels.tscn"
+const LEVELS_PATH: String = "res://scenes2D/levels/levels.tscn"
 
 var current_index: int = 0
 var _model_rot_y: float = 0.0

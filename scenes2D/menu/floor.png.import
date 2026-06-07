@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://gnsovrtic7g4"
-path.bptc="res://.godot/imported/experiment.hdr-b8c588f778b1bbe816e1780c3767a773.bptc.ctex"
+uid="uid://c6gsd2mdmea8w"
+path.bptc="res://.godot/imported/floor.png-96215f205df1cdb78fb8d194e224e164.bptc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,13 +11,13 @@ metadata={
 
 [deps]
 
-source_file="res://menu/experiment.hdr"
-dest_files=["res://.godot/imported/experiment.hdr-b8c588f778b1bbe816e1780c3767a773.bptc.ctex"]
+source_file="res://scenes2D/menu/floor.png"
+dest_files=["res://.godot/imported/floor.png-96215f205df1cdb78fb8d194e224e164.bptc.ctex"]
 
 [params]
 
 compress/mode=2
-compress/high_quality=false
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

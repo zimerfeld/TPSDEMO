@@ -11,7 +11,7 @@ func _ready() -> void:
 
 
 func go_to_main_menu() -> void:
-	var menu: PackedScene = ResourceLoader.load("res://menu/menu.tscn")
+	var menu: PackedScene = ResourceLoader.load("res://scenes2D/menu/menu.tscn")
 	if multiplayer != null and multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()

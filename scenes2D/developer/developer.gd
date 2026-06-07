@@ -3,7 +3,6 @@ extends Node
 signal quit
 
 
-@onready var ui: Control = $UI
 @onready var debug_toggle: CheckButton = $UI/Options/DebugRow/DebugToggle
 @onready var show_id_toggle: CheckButton = $UI/Options/ShowIDRow/ShowIDToggle
 @onready var fps_toggle: CheckButton = $UI/Options/FPSRow/FPSToggle
@@ -11,13 +10,12 @@ signal quit
 
 
 func _ready() -> void:
-	# Pre-set all controls from saved settings without triggering their signal handlers,
-	# then reveal the UI so the user sees the correct state from the first frame.
+	# Controls are defined and visible directly in the scene; just sync their state
+	# from saved settings without triggering their signal handlers.
 	debug_toggle.set_pressed_no_signal(Settings.config_file.get_value("game", "debug_mode", false))
 	show_id_toggle.set_pressed_no_signal(Settings.config_file.get_value("game", "show_id", false))
 	fps_toggle.set_pressed_no_signal(Settings.config_file.get_value("game", "hud_fps", false))
 	show_grid_toggle.set_pressed_no_signal(Settings.config_file.get_value("game", "show_grid", false))
-	ui.visible = true
 
 
 func _on_debug_toggle_toggled(button_pressed: bool) -> void:

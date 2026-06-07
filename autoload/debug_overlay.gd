@@ -79,13 +79,30 @@ func _setup_scene_name_label() -> void:
 	_scene_name_label.add_theme_constant_override("shadow_offset_y", 1)
 	_scene_name_label.add_theme_constant_override("shadow_as_outline", 1)
 	_scene_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_scene_name_label.offset_left = -320.0
-	_scene_name_label.offset_top = 8.0
-	_scene_name_label.offset_right = -8.0
-	_scene_name_label.offset_bottom = 28.0
+	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	# Canto inferior esquerdo, colado na borda de baixo (abaixo da health bar).
+	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_scene_name_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_scene_name_label.offset_left = 8.0
+	_scene_name_label.offset_top = -24.0
+	_scene_name_label.offset_right = 320.0
+	_scene_name_label.offset_bottom = -6.0
 	_persistent_canvas.add_child(_scene_name_label)
+
+
+# main.gd swaps menu/gameplay scenes in as children of the root scene instead of
+# using SceneTree.change_scene, so current_scene stays main.tscn. Surface the
+# file name of the sub-scene actually loaded into the runtime when present.
+func _active_scene_file() -> String:
+	var root_scene := get_tree().current_scene
+	if root_scene == null:
+		return ""
+	var loaded: Node = null
+	for child in root_scene.get_children():
+		if child.scene_file_path != "" and child.scene_file_path != root_scene.scene_file_path:
+			loaded = child
+	var target := loaded if loaded != null else root_scene
+	return target.scene_file_path.get_file()
 
 
 func _process(_delta: float) -> void:
@@ -93,8 +110,7 @@ func _process(_delta: float) -> void:
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
 	if is_instance_valid(_scene_name_label):
-		var cs := get_tree().current_scene
-		_scene_name_label.text = cs.scene_file_path.get_file() if cs != null else ""
+		_scene_name_label.text = _active_scene_file()
 
 	# Recreate grid when scene changes (e.g. entering a level)
 	var current := get_tree().current_scene
