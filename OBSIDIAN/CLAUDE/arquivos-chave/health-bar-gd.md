@@ -1,4 +1,4 @@
-# player/health_bar.gd
+# scenes3D/players/player/health_bar.gd
 
 **Criado em:** 2026-06-06  
 **Estende:** `CanvasLayer`
@@ -70,19 +70,19 @@ func _setup_health_bar() -> void:
     # $InputSynchronizer (não o onready) pois o setter pode rodar antes do _ready
     if $InputSynchronizer.get_multiplayer_authority() != multiplayer.get_unique_id():
         return                       # só o player local vê o HUD
-    _health_bar = preload("res://player/health_bar.gd").new()
+    _health_bar = preload("res://scenes3D/players/player/health_bar.gd").new()
     _health_bar.name = "HealthBar"
     add_child(_health_bar)
     _health_bar.update_health(hp, MAX_HP)
 ```
 
 > **Por que dois gatilhos:** em `level_1` (single-player) a authority já está definida no
-> `_ready`. Em `final_level` num **cliente**, o player é criado via `MultiplayerSpawner` e a
+> `_ready`. Em `level_base` num **cliente**, o player é criado via `MultiplayerSpawner` e a
 > authority só é resolvida quando `player_id` replica — o gatilho no setter garante o HUD nesse caso.
 
 ---
 
-## Caminho: `player/health_bar.gd`
+## Caminho: `scenes3D/players/player/health_bar.gd`
 
 ---
 

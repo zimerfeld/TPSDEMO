@@ -74,7 +74,7 @@ Replica do cliente-dono → servidor:
 player.player_id = 1   # authority = peer 1 (local)
 ```
 
-### final_level (multiplayer)
+### level_base (multiplayer)
 ```gdscript
 # Server spawna player para cada peer
 add_player(peer_id, spawn_point)

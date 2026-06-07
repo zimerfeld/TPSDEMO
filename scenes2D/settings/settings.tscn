@@ -607,23 +607,23 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="Debug" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=296233603]
+[node name="Audio" type="VBoxContainer" parent="UI/VBox/Tabs"]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 24
 metadata/_tab_index = 5
 
-[node name="Debug2DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug" unique_id=1216189325]
+[node name="MusicRow" type="HBoxContainer" parent="UI/VBox/Tabs/Audio"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Debug2DLabel" type="Label" parent="UI/VBox/Tabs/Debug/Debug2DRow" unique_id=1825609795]
+[node name="MusicLabel" type="Label" parent="UI/VBox/Tabs/Audio/MusicRow"]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "Show Debug 2D Scene:"
+text = "Música:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug2DRow"]
+[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Audio/MusicRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -631,86 +631,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug2DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Enabled"
-
-[node name="Debug3DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug" unique_id=1829917393]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="Debug3DLabel" type="Label" parent="UI/VBox/Tabs/Debug/Debug3DRow" unique_id=1421913928]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Show Debug 3D Scene:"
-
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug3DRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug3DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-tooltip_text = "Exibe tooltip para os objetos"
-text = "Enabled"
-
-[node name="DebugModeRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="DebugModeLabel" type="Label" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Modo Debug:"
-
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Enabled"
-
-[node name="ShowIDRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="ShowIDLabel" type="Label" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Show ID:"
-
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
+[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Audio/MusicRow"]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2

@@ -19,12 +19,16 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 
 var DEFAULTS := {
 	game = {
-		debug_mode = false,
 		debug_2d = false,
 		debug_3d = false,
 		hud_fps = false,
 		show_id = false,
+		show_type = false,
+		show_name = false,
 		show_grid = false,
+	},
+	audio = {
+		music = true,
 	},
 	video = {
 		display_mode = Window.MODE_EXCLUSIVE_FULLSCREEN,
@@ -52,6 +56,15 @@ var config_file := ConfigFile.new()
 
 func _ready() -> void:
 	load_settings()
+	apply_audio_settings()
+
+
+# Mutes/unmutes the "Music" audio bus from the saved setting, so it applies to
+# every scene's music globally.
+func apply_audio_settings() -> void:
+	var music_bus := AudioServer.get_bus_index("Music")
+	if music_bus != -1:
+		AudioServer.set_bus_mute(music_bus, not config_file.get_value("audio", "music", true))
 
 
 func _input(input_event: InputEvent) -> void:

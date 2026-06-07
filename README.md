@@ -43,6 +43,30 @@ or [build it from source](https://github.com/godotengine/godot).
 You can either download from the Godot Asset Library, clone this repository, or
 [download a ZIP archive](https://github.com/godotengine/tps-demo/archive/master.zip).
 
+## Project structure
+
+UI screens live under `scenes2D/`, 3D content under `scenes3D/`:
+
+- `scenes2D/` — `menu`, `settings`, `chooseplayer`, `developer`, `levels`
+- `scenes3D/` — `players`, `enemies`, `door`, `level_1`, `level_base`, `models`
+- `autoload/` — global singletons: `config.gd` (registered as `Settings`),
+  `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`
+- `main/main.tscn` is the entry scene. `main.gd` is a router that swaps screens
+  in as children — reacting to the `replace_main_scene` / `quit` signals —
+  instead of using `SceneTree.change_scene`, so `current_scene` stays `main`.
+
+Screen flow:
+
+```
+menu ─┬─ chooseplayer ─► levels ─► level_1 / level_base
+      ├─ settings
+      ├─ developer ─► models        (3D model viewer for level_base assets)
+      └─ play online ─► level_base
+```
+
+The `developer` screen and the `settings` "Debug" tab toggle the `DebugOverlay`
+(FPS HUD, ground grid, and per-node TYPE/ID tooltips on 2D and 3D nodes).
+
 ## Controls
 
 - Mouse or <kbd>Gamepad Right Stick</kbd>: Look around

@@ -111,6 +111,7 @@ transform = Transform3D(0.871624, -0.0363083, 0.488828, 0, 0.997253, 0.0740721, 
 [node name="Music" type="AudioStreamPlayer" parent="." unique_id=1124272341]
 stream = ExtResource("5")
 autoplay = true
+bus = &"Music"
 
 [node name="AnimationTree" type="AnimationTree" parent="." unique_id=1244677183]
 root_node = NodePath("../PlayerModel")

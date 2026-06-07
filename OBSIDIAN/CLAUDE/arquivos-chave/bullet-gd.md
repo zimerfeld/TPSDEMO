@@ -1,4 +1,4 @@
-# player/bullet/bullet.gd
+# scenes3D/players/player/bullet/bullet.gd
 
 **Estende:** `CharacterBody3D`
 
