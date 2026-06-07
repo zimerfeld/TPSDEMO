@@ -24,7 +24,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2")
 
-[node name="title_label" type="Label" parent="UI" unique_id=1999006960]
+[node name="TitleLabel" type="Label" parent="UI" unique_id=1999006960]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -46,32 +46,6 @@ offset_right = 900.0
 offset_bottom = 600.0
 theme_override_constants/separation = 24
 
-[node name="DebugRow" type="HBoxContainer" parent="UI/Options" unique_id=1572034884]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="DebugLabel" type="Label" parent="UI/Options/DebugRow" unique_id=902226708]
-custom_minimum_size = Vector2(300, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Modo Debug:"
-
-[node name="DebugToggle" type="CheckButton" parent="UI/Options/DebugRow" unique_id=1264839903]
-layout_mode = 2
-
-[node name="ShowIDRow" type="HBoxContainer" parent="UI/Options" unique_id=208187324]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="ShowIDLabel" type="Label" parent="UI/Options/ShowIDRow" unique_id=92403944]
-custom_minimum_size = Vector2(300, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Show ID:"
-
-[node name="ShowIDToggle" type="CheckButton" parent="UI/Options/ShowIDRow" unique_id=391141383]
-layout_mode = 2
-
 [node name="FPSRow" type="HBoxContainer" parent="UI/Options" unique_id=957747185]
 layout_mode = 2
 theme_override_constants/separation = 20
@@ -82,8 +56,21 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "HUD FPS:"
 
-[node name="FPSToggle" type="CheckButton" parent="UI/Options/FPSRow" unique_id=1198061388]
+[node name="Disabled" type="Button" parent="UI/Options/FPSRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Options/FPSRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
 
 [node name="ShowGridRow" type="HBoxContainer" parent="UI/Options" unique_id=131747156]
 layout_mode = 2
@@ -95,8 +82,21 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Malha no Solo:"
 
-[node name="ShowGridToggle" type="CheckButton" parent="UI/Options/ShowGridRow" unique_id=2127751422]
+[node name="Disabled" type="Button" parent="UI/Options/ShowGridRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Options/ShowGridRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
 
 [node name="Actions" type="HBoxContainer" parent="UI" unique_id=1614213473]
 layout_mode = 1
@@ -112,14 +112,12 @@ offset_bottom = -50.0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="DeveloperBackButton" type="Button" parent="UI/Actions" unique_id=844862653]
+[node name="BackButton" type="Button" parent="UI/Actions" unique_id=844862653]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Voltar"
 
-[connection signal="toggled" from="UI/Options/DebugRow/DebugToggle" to="." method="_on_debug_toggle_toggled"]
-[connection signal="toggled" from="UI/Options/ShowIDRow/ShowIDToggle" to="." method="_on_show_id_toggle_toggled"]
-[connection signal="toggled" from="UI/Options/FPSRow/FPSToggle" to="." method="_on_fps_toggle_toggled"]
-[connection signal="toggled" from="UI/Options/ShowGridRow/ShowGridToggle" to="." method="_on_show_grid_toggle_toggled"]
-[connection signal="pressed" from="UI/Actions/DeveloperBackButton" to="." method="_on_back_pressed"]
+[connection signal="toggled" from="UI/Options/FPSRow/Enabled" to="." method="_on_fps_toggle_toggled"]
+[connection signal="toggled" from="UI/Options/ShowGridRow/Enabled" to="." method="_on_show_grid_toggle_toggled"]
+[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]

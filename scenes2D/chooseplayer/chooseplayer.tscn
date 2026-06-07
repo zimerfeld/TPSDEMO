@@ -73,7 +73,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("5")
 
-[node name="title_label" type="Label" parent="UI" unique_id=1699398886]
+[node name="TitleLabel" type="Label" parent="UI" unique_id=1699398886]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -134,7 +134,7 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="ChoosePlayerBackButton" type="Button" parent="UI/Actions" unique_id=1719511959]
+[node name="BackButton" type="Button" parent="UI/Actions" unique_id=1719511959]
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -172,6 +172,6 @@ one_shot = true
 
 [connection signal="pressed" from="UI/ArrowLeft" to="." method="_on_left_pressed"]
 [connection signal="pressed" from="UI/ArrowRight" to="." method="_on_right_pressed"]
-[connection signal="pressed" from="UI/Actions/ChoosePlayerBackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Actions/PlayButton" to="." method="_on_play_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

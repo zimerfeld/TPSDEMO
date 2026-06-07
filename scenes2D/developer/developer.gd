@@ -3,31 +3,33 @@ extends Node
 signal quit
 
 
-@onready var debug_toggle: CheckButton = $UI/Options/DebugRow/DebugToggle
-@onready var show_id_toggle: CheckButton = $UI/Options/ShowIDRow/ShowIDToggle
-@onready var fps_toggle: CheckButton = $UI/Options/FPSRow/FPSToggle
-@onready var show_grid_toggle: CheckButton = $UI/Options/ShowGridRow/ShowGridToggle
+@onready var fps_disabled: Button = $UI/Options/FPSRow/Disabled
+@onready var fps_enabled: Button = $UI/Options/FPSRow/Enabled
+@onready var show_grid_disabled: Button = $UI/Options/ShowGridRow/Disabled
+@onready var show_grid_enabled: Button = $UI/Options/ShowGridRow/Enabled
 
 
 func _ready() -> void:
-	# Controls are defined and visible directly in the scene; just sync their state
-	# from saved settings without triggering their signal handlers.
-	debug_toggle.set_pressed_no_signal(Settings.config_file.get_value("game", "debug_mode", false))
-	show_id_toggle.set_pressed_no_signal(Settings.config_file.get_value("game", "show_id", false))
-	fps_toggle.set_pressed_no_signal(Settings.config_file.get_value("game", "hud_fps", false))
-	show_grid_toggle.set_pressed_no_signal(Settings.config_file.get_value("game", "show_grid", false))
+	# Each row is a Disabled/Enabled pair behaving like a single toggle, matching
+	# the Settings screen style. Group them and sync from saved settings without
+	# triggering the signal handlers. (Modo Debug / Show ID moved to Settings → Debug.)
+	_make_button_group($UI/Options/FPSRow)
+	_make_button_group($UI/Options/ShowGridRow)
+
+	var fps_on: bool = Settings.config_file.get_value("game", "hud_fps", false)
+	fps_enabled.set_pressed_no_signal(fps_on)
+	fps_disabled.set_pressed_no_signal(not fps_on)
+
+	var grid_on: bool = Settings.config_file.get_value("game", "show_grid", false)
+	show_grid_enabled.set_pressed_no_signal(grid_on)
+	show_grid_disabled.set_pressed_no_signal(not grid_on)
 
 
-func _on_debug_toggle_toggled(button_pressed: bool) -> void:
-	Settings.config_file.set_value("game", "debug_mode", button_pressed)
-	Settings.save_settings()
-	DebugOverlay.refresh()
-
-
-func _on_show_id_toggle_toggled(button_pressed: bool) -> void:
-	Settings.config_file.set_value("game", "show_id", button_pressed)
-	Settings.save_settings()
-	DebugOverlay.refresh()
+func _make_button_group(row: Node) -> void:
+	var group := ButtonGroup.new()
+	for btn in row.get_children():
+		if btn is BaseButton:
+			btn.button_group = group
 
 
 func _on_fps_toggle_toggled(button_pressed: bool) -> void:

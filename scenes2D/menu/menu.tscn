@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://4pwshyfo5i0d" path="res://scenes2D/menu/menu.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://gnsovrtic7g4" path="res://scenes2D/menu/experiment.hdr" id="2_bpuaq"]
-[ext_resource type="PackedScene" uid="uid://div25sd40yx1d" path="res://players/player/model/player.glb" id="3"]
+[ext_resource type="PackedScene" uid="uid://div25sd40yx1d" path="res://scenes3D/players/player/model/player.glb" id="3"]
 [ext_resource type="AudioStream" uid="uid://bfq26n228ipa" path="res://scenes2D/menu/menu_intro_music.ogg" id="5"]
 [ext_resource type="Texture2D" uid="uid://c6gsd2mdmea8w" path="res://scenes2D/menu/floor.png" id="6_qhdg0"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="18"]
@@ -136,7 +136,7 @@ offset_top = 2.05054
 offset_right = -4.10107
 offset_bottom = 2.05054
 
-[node name="title_label" type="Label" parent="UI/Main" unique_id=269015257]
+[node name="TitleLabel" type="Label" parent="UI/Main" unique_id=269015257]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -267,7 +267,7 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="PlayOnlineBackButton" type="Button" parent="UI/Online/Actions" unique_id=1818900303]
+[node name="BackButton" type="Button" parent="UI/Online/Actions" unique_id=1818900303]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
@@ -304,5 +304,5 @@ one_shot = true
 [connection signal="pressed" from="UI/Main/Quit" to="." method="_on_quit_pressed"]
 [connection signal="pressed" from="UI/Online/Host" to="." method="_on_host_pressed"]
 [connection signal="pressed" from="UI/Online/Connect" to="." method="_on_connect_pressed"]
-[connection signal="pressed" from="UI/Online/Actions/PlayOnlineBackButton" to="." method="_on_cancel_pressed"]
+[connection signal="pressed" from="UI/Online/Actions/BackButton" to="." method="_on_cancel_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

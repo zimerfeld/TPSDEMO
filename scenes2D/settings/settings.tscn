@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dro3r72khmv6c" path="res://scenes2D/settings/settings_ui.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
 
-[node name="SettingsUI" type="Node" unique_id=683111983]
+[node name="Settings" type="Node" unique_id=683111983]
 script = ExtResource("1")
 
 [node name="UI" type="Control" parent="." unique_id=66183437]
@@ -25,7 +25,7 @@ anchor_bottom = 1.0
 offset_bottom = -110.0
 theme_override_constants/separation = 8
 
-[node name="title_label" type="Label" parent="UI/VBox" unique_id=2067419229]
+[node name="TitleLabel" type="Label" parent="UI/VBox" unique_id=2067419229]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Configurações"
@@ -623,8 +623,21 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Show Debug 2D Scene:"
 
-[node name="showdebug2Dscene" type="CheckButton" parent="UI/VBox/Tabs/Debug/Debug2DRow" unique_id=1108856126]
+[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug2DRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug2DRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
 
 [node name="Debug3DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug" unique_id=1829917393]
 layout_mode = 2
@@ -636,9 +649,74 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Show Debug 3D Scene:"
 
-[node name="showdebug3Dscene" type="CheckButton" parent="UI/VBox/Tabs/Debug/Debug3DRow" unique_id=663101920]
+[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug3DRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug3DRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
 tooltip_text = "Exibe tooltip para os objetos"
+text = "Enabled"
+
+[node name="DebugModeRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="DebugModeLabel" type="Label" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Modo Debug:"
+
+[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
+[node name="ShowIDRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowIDLabel" type="Label" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Show ID:"
+
+[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
 
 [node name="Actions" type="HBoxContainer" parent="UI" unique_id=1938356380]
 layout_mode = 1
@@ -656,7 +734,7 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="SettingsBackButton" type="Button" parent="UI/Actions" unique_id=1664479691]
+[node name="BackButton" type="Button" parent="UI/Actions" unique_id=1664479691]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -668,5 +746,5 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Aplicar"
 
-[connection signal="pressed" from="UI/Actions/SettingsBackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Actions/Apply" to="." method="_on_apply_pressed"]

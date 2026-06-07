@@ -32,7 +32,7 @@ var _scene_name_label: Label = null
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
 	get_tree().node_removed.connect(_on_node_removed)
-	if _is_debug_on():
+	if _is_overlay_active():
 		call_deferred("_build_overlays")
 	if _is_fps_on():
 		call_deferred("_update_fps_hud")
@@ -43,6 +43,22 @@ func _ready() -> void:
 
 func _is_debug_on() -> bool:
 	return Settings.config_file.get_value("game", "debug_mode", false)
+
+
+# 2D (Control) overlays are shown when the legacy master debug toggle (Developer
+# screen) OR the dedicated 2D toggle (Settings → Debug) is on.
+func _is_debug_2d_on() -> bool:
+	return _is_debug_on() or Settings.config_file.get_value("game", "debug_2d", false)
+
+
+# 3D (MeshInstance3D) overlays follow the master toggle OR the dedicated 3D toggle.
+func _is_debug_3d_on() -> bool:
+	return _is_debug_on() or Settings.config_file.get_value("game", "debug_3d", false)
+
+
+# The overlay canvas/scan is needed whenever either category is enabled.
+func _is_overlay_active() -> bool:
+	return _is_debug_2d_on() or _is_debug_3d_on()
 
 
 func _is_fps_on() -> bool:
@@ -59,7 +75,7 @@ func _is_show_grid_on() -> bool:
 
 func refresh() -> void:
 	_clear_all()
-	if _is_debug_on():
+	if _is_overlay_active():
 		_build_overlays()
 	_update_fps_hud()
 	_update_grid()
@@ -80,13 +96,15 @@ func _setup_scene_name_label() -> void:
 	_scene_name_label.add_theme_constant_override("shadow_as_outline", 1)
 	_scene_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	# Canto inferior esquerdo, colado na borda de baixo (abaixo da health bar).
+	_scene_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Canto inferior esquerdo, na mesma faixa vertical dos botões "Voltar"
+	# (Actions: offset_top -100 / offset_bottom -50, relativo à borda inferior).
 	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	_scene_name_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_scene_name_label.offset_left = 8.0
-	_scene_name_label.offset_top = -24.0
+	_scene_name_label.offset_top = -100.0
 	_scene_name_label.offset_right = 320.0
-	_scene_name_label.offset_bottom = -6.0
+	_scene_name_label.offset_bottom = -50.0
 	_persistent_canvas.add_child(_scene_name_label)
 
 
@@ -296,9 +314,11 @@ func _tag(node: Node) -> void:
 	if node.has_meta(_LABEL3D_META):
 		return
 	if node is Control and not (node is CanvasLayer):
-		_add_2d(node as Control)
+		if _is_debug_2d_on():
+			_add_2d(node as Control)
 	elif node is MeshInstance3D:
-		_add_3d(node as MeshInstance3D)
+		if _is_debug_3d_on():
+			_add_3d(node as MeshInstance3D)
 
 
 func _add_2d(ctrl: Control) -> void:
@@ -404,7 +424,7 @@ func _ensure_canvas() -> void:
 # ── Reactive handlers ─────────────────────────────────────────────────────────
 
 func _on_node_added(node: Node) -> void:
-	if not _is_debug_on():
+	if not _is_overlay_active():
 		return
 	call_deferred("_tag", node)
 
