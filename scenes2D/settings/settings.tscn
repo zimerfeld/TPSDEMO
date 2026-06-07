@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://er6ung1hi5fm"]
 
-[ext_resource type="Script" uid="uid://dro3r72khmv6c" path="res://settings/settings_ui.gd" id="1"]
+[ext_resource type="Script" uid="uid://dro3r72khmv6c" path="res://scenes2D/settings/settings_ui.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
 
-[node name="SettingsUI" type="Node2D" unique_id=683111983]
+[node name="SettingsUI" type="Node" unique_id=683111983]
 script = ExtResource("1")
 
 [node name="UI" type="Control" parent="." unique_id=66183437]
@@ -21,10 +21,11 @@ anchors_preset = -1
 anchor_left = 0.01
 anchor_top = 0.03
 anchor_right = 0.99
-anchor_bottom = 0.97
+anchor_bottom = 1.0
+offset_bottom = -110.0
 theme_override_constants/separation = 8
 
-[node name="Title" type="Label" parent="UI/VBox" unique_id=2067419229]
+[node name="title_label" type="Label" parent="UI/VBox" unique_id=2067419229]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Configurações"
@@ -606,53 +607,66 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="Debug" type="VBoxContainer" parent="UI/VBox/Tabs"]
+[node name="Debug" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=296233603]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 24
+metadata/_tab_index = 5
 
-[node name="Debug2DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug"]
+[node name="Debug2DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug" unique_id=1216189325]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Debug2DLabel" type="Label" parent="UI/VBox/Tabs/Debug/Debug2DRow"]
+[node name="Debug2DLabel" type="Label" parent="UI/VBox/Tabs/Debug/Debug2DRow" unique_id=1825609795]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Show Debug 2D Scene:"
 
-[node name="showdebug2Dscene" type="CheckButton" parent="UI/VBox/Tabs/Debug/Debug2DRow"]
+[node name="showdebug2Dscene" type="CheckButton" parent="UI/VBox/Tabs/Debug/Debug2DRow" unique_id=1108856126]
 layout_mode = 2
 
-[node name="Debug3DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug"]
+[node name="Debug3DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug" unique_id=1829917393]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Debug3DLabel" type="Label" parent="UI/VBox/Tabs/Debug/Debug3DRow"]
+[node name="Debug3DLabel" type="Label" parent="UI/VBox/Tabs/Debug/Debug3DRow" unique_id=1421913928]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Show Debug 3D Scene:"
 
-[node name="showdebug3Dscene" type="CheckButton" parent="UI/VBox/Tabs/Debug/Debug3DRow"]
+[node name="showdebug3Dscene" type="CheckButton" parent="UI/VBox/Tabs/Debug/Debug3DRow" unique_id=663101920]
 layout_mode = 2
 tooltip_text = "Exibe tooltip para os objetos"
 
-[node name="Actions" type="HBoxContainer" parent="UI/VBox" unique_id=1938356380]
-layout_mode = 2
+[node name="Actions" type="HBoxContainer" parent="UI" unique_id=1938356380]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -330.0
+offset_top = -100.0
+offset_right = 330.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="SettingsBackButton" type="Button" parent="UI/VBox/Actions" unique_id=1664479691]
+[node name="SettingsBackButton" type="Button" parent="UI/Actions" unique_id=1664479691]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
-[node name="Apply" type="Button" parent="UI/VBox/Actions" unique_id=1006366513]
+[node name="Apply" type="Button" parent="UI/Actions" unique_id=1006366513]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Aplicar"
 
-[connection signal="pressed" from="UI/VBox/Actions/SettingsBackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/VBox/Actions/Apply" to="." method="_on_apply_pressed"]
+[connection signal="pressed" from="UI/Actions/SettingsBackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/Apply" to="." method="_on_apply_pressed"]

@@ -1,6 +1,6 @@
-[gd_resource type="FontFile" load_steps=2 format=3 uid="uid://b8tvpu085c6v4"]
+[gd_resource type="FontFile" format=3 uid="uid://b8tvpu085c6v4"]
 
-[ext_resource type="FontFile" uid="uid://fevb61otyhrn" path="res://menu/font/PT_Sans-Web-Bold.ttf" id="1"]
+[ext_resource type="FontFile" uid="uid://fevb61otyhrn" path="res://scenes2D/menu/font/PT_Sans-Web-Bold.ttf" id="1"]
 
 [resource]
 fallbacks = Array[Font]([ExtResource("1")])

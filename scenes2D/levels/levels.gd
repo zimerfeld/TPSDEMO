@@ -5,7 +5,7 @@ signal quit
 
 const LEVEL_1_PATH: String = "res://level_1/level_1.tscn"
 const LEVEL_BASE_PATH: String = "res://level_base/level_base.tscn"
-const CHOOSEPLAYER_PATH: String = "res://chooseplayer/chooseplayer.tscn"
+const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 
 var loading_path: String = ""
 

@@ -1,8 +1,8 @@
-extends Node2D
+extends Node
 
 signal replace_main_scene
 
-const MENU_PATH: String = "res://menu/menu.tscn"
+const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
 
 var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name() == "metal"
 

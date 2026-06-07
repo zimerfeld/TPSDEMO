@@ -1,10 +1,10 @@
-[gd_resource type="Theme" load_steps=6 format=3 uid="uid://buithemedemo1"]
+[gd_resource type="Theme" format=3 uid="uid://buithemedemo1"]
 
-[ext_resource type="FontFile" uid="uid://b8tvpu085c6v4" path="res://menu/button_font.tres" id="1"]
-[ext_resource type="StyleBox" uid="uid://dd2346b4rjg8j" path="res://menu/button_pressed.tres" id="2"]
-[ext_resource type="StyleBox" uid="uid://b5jvmt5xa2afe" path="res://menu/button_normal.tres" id="3"]
-[ext_resource type="StyleBox" uid="uid://b807o31rnpht1" path="res://menu/button_focus.tres" id="4"]
-[ext_resource type="StyleBox" uid="uid://bsth0dexb32e8" path="res://menu/button_hover.tres" id="5"]
+[ext_resource type="FontFile" uid="uid://b8tvpu085c6v4" path="res://scenes2D/menu/button_font.tres" id="1"]
+[ext_resource type="StyleBox" uid="uid://dd2346b4rjg8j" path="res://scenes2D/menu/button_pressed.tres" id="2"]
+[ext_resource type="StyleBox" uid="uid://b5jvmt5xa2afe" path="res://scenes2D/menu/button_normal.tres" id="3"]
+[ext_resource type="StyleBox" uid="uid://b807o31rnpht1" path="res://scenes2D/menu/button_focus.tres" id="4"]
+[ext_resource type="StyleBox" uid="uid://bsth0dexb32e8" path="res://scenes2D/menu/button_hover.tres" id="5"]
 
 [resource]
 Button/colors/font_color = Color(1, 1, 1, 1)

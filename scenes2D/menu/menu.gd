@@ -3,10 +3,10 @@ extends Node
 
 signal replace_main_scene
 
-const CHOOSEPLAYER_PATH: String = "res://chooseplayer/chooseplayer.tscn"
-const DEVELOPER_PATH: String = "res://developer/developer.tscn"
+const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
+const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 const LEVEL_BASE_PATH: String = "res://level_base/level_base.tscn"
-const SETTINGS_PATH: String = "res://settings/settings.tscn"
+const SETTINGS_PATH: String = "res://scenes2D/settings/settings.tscn"
 
 var loading_path: String = ""
 

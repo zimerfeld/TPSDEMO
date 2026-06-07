@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dpjad5gbcyb2v"]
 
-[ext_resource type="Script" uid="uid://drnu7yflp4xg4" path="res://levels/levels.gd" id="1"]
+[ext_resource type="Script" uid="uid://drnu7yflp4xg4" path="res://scenes2D/levels/levels.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
 
 [sub_resource type="Environment" id="1"]
@@ -24,6 +24,20 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2")
 
+[node name="title_label" type="Label" parent="UI"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 30.0
+offset_right = 400.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 40
+text = "Níveis"
+horizontal_alignment = 1
+
 [node name="ButtonGrid" type="VBoxContainer" parent="UI" unique_id=412148386]
 layout_mode = 0
 offset_left = 40.0
@@ -31,38 +45,38 @@ offset_top = 40.0
 theme_override_constants/separation = 12
 
 [node name="Level1Button" type="Button" parent="UI/ButtonGrid" unique_id=1572114992]
-layout_mode = 2
 custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Level 1"
 alignment = 0
 
 [node name="LevelBaseButton" type="Button" parent="UI/ButtonGrid" unique_id=1771458778]
-layout_mode = 2
 custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Level Base"
 alignment = 0
 
-[node name="Actions" type="HBoxContainer" parent="UI"]
+[node name="Actions" type="HBoxContainer" parent="UI" unique_id=1578847949]
 layout_mode = 1
+anchors_preset = 7
 anchor_left = 0.5
-anchor_right = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -330.0
 offset_top = -100.0
 offset_right = 330.0
 offset_bottom = -50.0
-alignment = 1
 theme_override_constants/separation = 60
+alignment = 1
 
 [node name="LevelsBackButton" type="Button" parent="UI/Actions" unique_id=1391874588]
-layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Voltar"
-alignment = 1
 
 [node name="Loading" type="HBoxContainer" parent="UI" unique_id=619865146]
 visible = false

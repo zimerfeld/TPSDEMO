@@ -3,12 +3,12 @@
 importer="font_data_dynamic"
 type="FontFile"
 uid="uid://fevb61otyhrn"
-path="res://.godot/imported/PT_Sans-Web-Bold.ttf-0042532be9026e6e382cd893b17c814c.fontdata"
+path="res://.godot/imported/PT_Sans-Web-Bold.ttf-efb1abd54778ebe3a13c6e53d6b89dc7.fontdata"
 
 [deps]
 
-source_file="res://menu/font/PT_Sans-Web-Bold.ttf"
-dest_files=["res://.godot/imported/PT_Sans-Web-Bold.ttf-0042532be9026e6e382cd893b17c814c.fontdata"]
+source_file="res://scenes2D/menu/font/PT_Sans-Web-Bold.ttf"
+dest_files=["res://.godot/imported/PT_Sans-Web-Bold.ttf-efb1abd54778ebe3a13c6e53d6b89dc7.fontdata"]
 
 [params]
 
