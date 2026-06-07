@@ -1,6 +1,9 @@
 extends Node
 
 signal quit
+signal replace_main_scene(resource: PackedScene)
+
+const MODELS_PATH: String = "res://scenes3D/models/models.tscn"
 
 
 @onready var fps_disabled: Button = $UI/Options/FPSRow/Disabled
@@ -42,6 +45,10 @@ func _on_show_grid_toggle_toggled(button_pressed: bool) -> void:
 	Settings.config_file.set_value("game", "show_grid", button_pressed)
 	Settings.save_settings()
 	DebugOverlay.refresh()
+
+
+func _on_models_pressed() -> void:
+	emit_signal("replace_main_scene", load(MODELS_PATH))
 
 
 func _on_back_pressed() -> void:
