@@ -29,7 +29,7 @@ var DEFAULTS := {
 		vsync = DisplayServer.VSYNC_ENABLED,
 		max_fps = 0,
 		resolution_scale = 1.0,
-		scale_filter = Viewport.SCALING_3D_MODE_METALFX_TEMPORAL if metalfx_supported else Viewport.SCALING_3D_MODE_FSR2,
+		scale_filter = Viewport.SCALING_3D_MODE_METALFX_TEMPORAL if metalfx_supported else Viewport.SCALING_3D_MODE_BILINEAR,
 	},
 	rendering = {
 		taa = false,
@@ -68,6 +68,10 @@ func load_settings() -> void:
 			if not config_file.has_section_key(section, key):
 				config_file.set_value(section, key, DEFAULTS[section][key])
 				needs_save = true
+	# FSR2 causes "Texture dimensions exceed device maximum" on Godot 4.6.3 — fall back to Bilinear.
+	if config_file.get_value("video", "scale_filter", -1) == Viewport.SCALING_3D_MODE_FSR2:
+		config_file.set_value("video", "scale_filter", Viewport.SCALING_3D_MODE_BILINEAR)
+		needs_save = true
 	if needs_save:
 		save_settings()
 
