@@ -44,19 +44,25 @@ theme_override_font_sizes/font_size = 30
 text = "Level Base"
 alignment = 0
 
-[node name="BackButton" type="Button" parent="UI" unique_id=1391874588]
+[node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
 anchor_left = 0.5
-anchor_top = 1.0
 anchor_right = 0.5
+anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = -150.0
-offset_top = -90.0
-offset_right = 150.0
-offset_bottom = -40.0
+offset_left = -330.0
+offset_top = -100.0
+offset_right = 330.0
+offset_bottom = -50.0
+alignment = 1
+theme_override_constants/separation = 60
+
+[node name="LevelsBackButton" type="Button" parent="UI/Actions" unique_id=1391874588]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 50)
 theme_override_font_sizes/font_size = 30
 text = "Voltar"
-alignment = 0
+alignment = 1
 
 [node name="Loading" type="HBoxContainer" parent="UI" unique_id=619865146]
 visible = false
@@ -84,5 +90,5 @@ one_shot = true
 
 [connection signal="pressed" from="UI/ButtonGrid/Level1Button" to="." method="_on_level_1_pressed"]
 [connection signal="pressed" from="UI/ButtonGrid/LevelBaseButton" to="." method="_on_level_base_pressed"]
-[connection signal="pressed" from="UI/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/LevelsBackButton" to="." method="_on_back_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]
