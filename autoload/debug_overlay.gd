@@ -20,6 +20,9 @@ const _PALETTE := [
 var _canvas_layer: CanvasLayer = null
 # inst_id → {tooltip: PanelContainer, ctrl_border: Panel, color: Color}
 var _overlay_map: Dictionary = {}
+# Instance ids of the per-mesh "ID" Label3D nodes, so their `visible` can be
+# kept in sync every frame with the saved "show_id" setting.
+var _id_labels: Array = []
 var _fps_label: Label = null
 var _grid_mesh: MeshInstance3D = null
 var _palette_index: int = 0
@@ -32,7 +35,7 @@ var _scene_name_label: Label = null
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
 	get_tree().node_removed.connect(_on_node_removed)
-	if _is_debug_on():
+	if _is_overlay_active():
 		call_deferred("_build_overlays")
 	if _is_fps_on():
 		call_deferred("_update_fps_hud")
@@ -43,6 +46,22 @@ func _ready() -> void:
 
 func _is_debug_on() -> bool:
 	return Settings.config_file.get_value("game", "debug_mode", false)
+
+
+# 2D (Control) overlays are shown when the legacy master debug toggle (Developer
+# screen) OR the dedicated 2D toggle (Settings → Debug) is on.
+func _is_debug_2d_on() -> bool:
+	return _is_debug_on() or Settings.config_file.get_value("game", "debug_2d", false)
+
+
+# 3D (MeshInstance3D) overlays follow the master toggle OR the dedicated 3D toggle.
+func _is_debug_3d_on() -> bool:
+	return _is_debug_on() or Settings.config_file.get_value("game", "debug_3d", false)
+
+
+# The overlay canvas/scan is needed whenever either category is enabled.
+func _is_overlay_active() -> bool:
+	return _is_debug_2d_on() or _is_debug_3d_on()
 
 
 func _is_fps_on() -> bool:
@@ -59,7 +78,7 @@ func _is_show_grid_on() -> bool:
 
 func refresh() -> void:
 	_clear_all()
-	if _is_debug_on():
+	if _is_overlay_active():
 		_build_overlays()
 	_update_fps_hud()
 	_update_grid()
@@ -79,13 +98,33 @@ func _setup_scene_name_label() -> void:
 	_scene_name_label.add_theme_constant_override("shadow_offset_y", 1)
 	_scene_name_label.add_theme_constant_override("shadow_as_outline", 1)
 	_scene_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_scene_name_label.offset_left = -320.0
-	_scene_name_label.offset_top = 8.0
-	_scene_name_label.offset_right = -8.0
-	_scene_name_label.offset_bottom = 28.0
+	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_scene_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Canto inferior esquerdo, na mesma faixa vertical dos botões "Voltar"
+	# (Actions: offset_top -100 / offset_bottom -50, relativo à borda inferior).
+	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_scene_name_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_scene_name_label.offset_left = 8.0
+	_scene_name_label.offset_top = -100.0
+	_scene_name_label.offset_right = 320.0
+	_scene_name_label.offset_bottom = -50.0
 	_persistent_canvas.add_child(_scene_name_label)
+
+
+# main.gd swaps menu/gameplay scenes in as children of the root scene instead of
+# using SceneTree.change_scene, so current_scene stays main.tscn. Surface the
+# instance (node) name of the screen actually loaded into the runtime — e.g.
+# "Menu", "Levels", "Level1" — instead of relying on current_scene.
+func _active_screen_name() -> String:
+	var root_scene := get_tree().current_scene
+	if root_scene == null:
+		return ""
+	var loaded: Node = null
+	for child in root_scene.get_children():
+		if child.scene_file_path != "" and child.scene_file_path != root_scene.scene_file_path:
+			loaded = child
+	var target := loaded if loaded != null else root_scene
+	return target.name
 
 
 func _process(_delta: float) -> void:
@@ -93,8 +132,7 @@ func _process(_delta: float) -> void:
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
 	if is_instance_valid(_scene_name_label):
-		var cs := get_tree().current_scene
-		_scene_name_label.text = cs.scene_file_path.get_file() if cs != null else ""
+		_scene_name_label.text = _active_screen_name()
 
 	# Recreate grid when scene changes (e.g. entering a level)
 	var current := get_tree().current_scene
@@ -105,6 +143,20 @@ func _process(_delta: float) -> void:
 			_grid_mesh = null
 		if current is Node3D and _is_show_grid_on():
 			call_deferred("_update_grid")
+
+	# Toggle the 3D "ID" labels' visibility from the saved show_id setting,
+	# the same way the 2D overlays react to the saved configuration.
+	if not _id_labels.is_empty():
+		var show_id := _is_show_id_on()
+		var stale_ids: Array = []
+		for lid in _id_labels:
+			var node := instance_from_id(lid)
+			if node is Label3D:
+				(node as Label3D).visible = show_id
+			else:
+				stale_ids.append(lid)
+		for s in stale_ids:
+			_id_labels.erase(s)
 
 	if _canvas_layer == null:
 		return
@@ -192,6 +244,7 @@ func _clear_all() -> void:
 
 	if get_tree().current_scene != null:
 		_remove_3d_labels(get_tree().current_scene)
+	_id_labels.clear()
 
 	if is_instance_valid(_canvas_layer):
 		_canvas_layer.queue_free()
@@ -279,9 +332,11 @@ func _tag(node: Node) -> void:
 	if node.has_meta(_LABEL3D_META):
 		return
 	if node is Control and not (node is CanvasLayer):
-		_add_2d(node as Control)
+		if _is_debug_2d_on():
+			_add_2d(node as Control)
 	elif node is MeshInstance3D:
-		_add_3d(node as MeshInstance3D)
+		if _is_debug_3d_on():
+			_add_3d(node as MeshInstance3D)
 
 
 func _add_2d(ctrl: Control) -> void:
@@ -351,7 +406,7 @@ func _add_3d(mesh: MeshInstance3D) -> void:
 		return
 	var lbl := Label3D.new()
 	lbl.name = "DebugLabel3D"
-	lbl.text = "TYPE: %s\nID: %d\nName: %s" % [mesh.get_class(), mesh.get_instance_id(), mesh.name]
+	lbl.text = "TYPE: %s\nName: %s" % [mesh.get_class(), mesh.name]
 	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lbl.no_depth_test = true
 	lbl.pixel_size = 0.005
@@ -361,6 +416,24 @@ func _add_3d(mesh: MeshInstance3D) -> void:
 	lbl.outline_modulate = Color(0, 0, 0, 0.8)
 	lbl.position = Vector3(0.0, 0.5, 0.0)
 	lbl.set_meta(_LABEL3D_META, true)
+
+	# The ID lives on its own child label so its visibility can be toggled at
+	# runtime from the saved "show_id" setting (mirrors the 2D tooltip behaviour).
+	var id_lbl := Label3D.new()
+	id_lbl.name = "DebugLabel3D_ID"
+	id_lbl.text = "ID: %d" % mesh.get_instance_id()
+	id_lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	id_lbl.no_depth_test = true
+	id_lbl.pixel_size = 0.005
+	id_lbl.font_size = 14
+	id_lbl.modulate = Color.YELLOW
+	id_lbl.outline_size = 4
+	id_lbl.outline_modulate = Color(0, 0, 0, 0.8)
+	id_lbl.position = Vector3(0.0, -0.18, 0.0)
+	id_lbl.visible = _is_show_id_on()
+	lbl.add_child(id_lbl)
+	_id_labels.append(id_lbl.get_instance_id())
+
 	mesh.set_meta(_LABEL3D_META, true)
 	mesh.add_child(lbl)
 
@@ -387,7 +460,7 @@ func _ensure_canvas() -> void:
 # ── Reactive handlers ─────────────────────────────────────────────────────────
 
 func _on_node_added(node: Node) -> void:
-	if not _is_debug_on():
+	if not _is_overlay_active():
 		return
 	call_deferred("_tag", node)
 

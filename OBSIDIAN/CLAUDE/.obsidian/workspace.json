@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "sistemas/sistema-de-vida.md",
+                "file": "arquivos-chave/glass-hitboxes-gd.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "sistema-de-vida"
+              "title": "glass-hitboxes-gd"
             }
           }
         ]
@@ -183,17 +183,10 @@
       "bases:Create new base": false
     }
   },
-  "active": "0f1602aa8c929b75",
+  "active": "02c7e4bd7c4ae971",
   "lastOpenFiles": [
-    "sistemas/player.md",
-    "sistemas/multiplayer.md",
-    "sistemas/inimigos.md",
-    "sistemas/dano-localizado.md",
-    "sistemas/combate-tiro.md",
-    "fluxos/fluxo-de-tiro.md",
-    "fluxos/fluxo-de-input.md",
-    "fluxos/fluxo-de-cenas.md",
-    "arquivos-chave/red-robot-gd.md",
+    "convencoes/formatacao.md",
+    "convencoes",
     "arquivos-chave/player-input-gd.md",
     "arquivos-chave/player-gd.md",
     "arquivos-chave/main-gd.md",
@@ -201,6 +194,16 @@
     "arquivos-chave/glass-hitboxes-gd.md",
     "arquivos-chave/enemy-health-bar-gd.md",
     "arquivos-chave/bullet-gd.md",
+    "arquivos-chave/red-robot-gd.md",
+    "fluxos/fluxo-de-tiro.md",
+    "fluxos/fluxo-de-input.md",
+    "fluxos/fluxo-de-cenas.md",
+    "sistemas/sistema-de-vida.md",
+    "sistemas/player.md",
+    "sistemas/multiplayer.md",
+    "sistemas/inimigos.md",
+    "sistemas/dano-localizado.md",
+    "sistemas/combate-tiro.md",
     "000-INDEX.md"
   ]
 }
