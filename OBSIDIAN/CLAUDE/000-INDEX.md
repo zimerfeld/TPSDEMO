@@ -1,6 +1,6 @@
 # TPS Demo — Índice do Cofre Claude
 
-> Memória viva do projeto Godot 4 Third Person Shooter Demo.  
+> Memória viva do projeto Godot 4 Third Person Shooter Demo.
 > Repositório: `C:\GODOT\TPSDEMO` | GitHub: [zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO)
 
 ---

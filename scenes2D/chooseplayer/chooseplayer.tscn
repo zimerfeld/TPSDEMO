@@ -160,7 +160,7 @@ offset_top = -135.0
 offset_right = -130.0
 offset_bottom = -100.0
 
-[node name="Label" type="Label" parent="UI/Loading" unique_id=2004861435]
+[node name="LoadingLabel" type="Label" parent="UI/Loading" unique_id=2004861435]
 layout_mode = 2
 text = "Loading..."
 

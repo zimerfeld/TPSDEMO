@@ -6,96 +6,96 @@ const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
 
 var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name() == "metal"
 
-@onready var display_mode_windowed: Button = $UI/VBox/Tabs/Display/DisplayMode/Windowed
-@onready var display_mode_fullscreen: Button = $UI/VBox/Tabs/Display/DisplayMode/Fullscreen
-@onready var display_mode_exclusive_fullscreen: Button = $UI/VBox/Tabs/Display/DisplayMode/ExclusiveFullscreen
+@onready var display_mode_windowed: Button = $UI/VBox/Tabs/Display/DisplayModeRow/DisplayModeWindowed
+@onready var display_mode_fullscreen: Button = $UI/VBox/Tabs/Display/DisplayModeRow/DisplayModeFullscreen
+@onready var display_mode_exclusive_fullscreen: Button = $UI/VBox/Tabs/Display/DisplayModeRow/DisplayModeExclusiveFullscreen
 
-@onready var vsync_disabled: Button = $UI/VBox/Tabs/Display/VSync/Disabled
-@onready var vsync_enabled: Button = $UI/VBox/Tabs/Display/VSync/Enabled
-@onready var vsync_adaptive: Button = $UI/VBox/Tabs/Display/VSync/Adaptive
-@onready var vsync_mailbox: Button = $UI/VBox/Tabs/Display/VSync/Mailbox
+@onready var vsync_disabled: Button = $UI/VBox/Tabs/Display/VSyncRow/VSyncDisabled
+@onready var vsync_enabled: Button = $UI/VBox/Tabs/Display/VSyncRow/VSyncEnabled
+@onready var vsync_adaptive: Button = $UI/VBox/Tabs/Display/VSyncRow/VSyncAdaptive
+@onready var vsync_mailbox: Button = $UI/VBox/Tabs/Display/VSyncRow/VSyncMailbox
 
-@onready var max_fps_30: Button = $"UI/VBox/Tabs/Display/MaxFPS/30"
-@onready var max_fps_40: Button = $"UI/VBox/Tabs/Display/MaxFPS/40"
-@onready var max_fps_60: Button = $"UI/VBox/Tabs/Display/MaxFPS/60"
-@onready var max_fps_72: Button = $"UI/VBox/Tabs/Display/MaxFPS/72"
-@onready var max_fps_90: Button = $"UI/VBox/Tabs/Display/MaxFPS/90"
-@onready var max_fps_120: Button = $"UI/VBox/Tabs/Display/MaxFPS/120"
-@onready var max_fps_144: Button = $"UI/VBox/Tabs/Display/MaxFPS/144"
-@onready var max_fps_unlimited: Button = $UI/VBox/Tabs/Display/MaxFPS/Unlimited
+@onready var max_fps_30: Button = $UI/VBox/Tabs/Display/MaxFPSRow/MaxFPS30
+@onready var max_fps_40: Button = $UI/VBox/Tabs/Display/MaxFPSRow/MaxFPS40
+@onready var max_fps_60: Button = $UI/VBox/Tabs/Display/MaxFPSRow/MaxFPS60
+@onready var max_fps_72: Button = $UI/VBox/Tabs/Display/MaxFPSRow/MaxFPS72
+@onready var max_fps_90: Button = $UI/VBox/Tabs/Display/MaxFPSRow/MaxFPS90
+@onready var max_fps_120: Button = $UI/VBox/Tabs/Display/MaxFPSRow/MaxFPS120
+@onready var max_fps_144: Button = $UI/VBox/Tabs/Display/MaxFPSRow/MaxFPS144
+@onready var max_fps_unlimited: Button = $UI/VBox/Tabs/Display/MaxFPSRow/MaxFPSUnlimited
 
-@onready var resolution_scale_ultra_performance: Button = $UI/VBox/Tabs/Resolution/ResolutionScale/UltraPerformance
-@onready var resolution_scale_performance: Button = $UI/VBox/Tabs/Resolution/ResolutionScale/Performance
-@onready var resolution_scale_balanced: Button = $UI/VBox/Tabs/Resolution/ResolutionScale/Balanced
-@onready var resolution_scale_quality: Button = $UI/VBox/Tabs/Resolution/ResolutionScale/Quality
-@onready var resolution_scale_ultra_quality: Button = $UI/VBox/Tabs/Resolution/ResolutionScale/UltraQuality
-@onready var resolution_scale_native: Button = $UI/VBox/Tabs/Resolution/ResolutionScale/Native
+@onready var resolution_scale_ultra_performance: Button = $UI/VBox/Tabs/Resolution/ResolutionScaleRow/ResolutionScaleUltraPerformance
+@onready var resolution_scale_performance: Button = $UI/VBox/Tabs/Resolution/ResolutionScaleRow/ResolutionScalePerformance
+@onready var resolution_scale_balanced: Button = $UI/VBox/Tabs/Resolution/ResolutionScaleRow/ResolutionScaleBalanced
+@onready var resolution_scale_quality: Button = $UI/VBox/Tabs/Resolution/ResolutionScaleRow/ResolutionScaleQuality
+@onready var resolution_scale_ultra_quality: Button = $UI/VBox/Tabs/Resolution/ResolutionScaleRow/ResolutionScaleUltraQuality
+@onready var resolution_scale_native: Button = $UI/VBox/Tabs/Resolution/ResolutionScaleRow/ResolutionScaleNative
 
-@onready var scale_filter_bilinear: Button = $UI/VBox/Tabs/Resolution/ScaleFilter/Bilinear
-@onready var scale_filter_fsr1: Button = $UI/VBox/Tabs/Resolution/ScaleFilter/FSR1
-@onready var scale_filter_metalfx_spatial: Button = $UI/VBox/Tabs/Resolution/ScaleFilter/MetalFXSpatial
-@onready var scale_filter_fsr2: Button = $UI/VBox/Tabs/Resolution/ScaleFilter/FSR2
-@onready var scale_filter_metalfx_temporal: Button = $UI/VBox/Tabs/Resolution/ScaleFilter/MetalFXTemporal
+@onready var scale_filter_bilinear: Button = $UI/VBox/Tabs/Resolution/ScaleFilterRow/ScaleFilterBilinear
+@onready var scale_filter_fsr1: Button = $UI/VBox/Tabs/Resolution/ScaleFilterRow/ScaleFilterFSR1
+@onready var scale_filter_metalfx_spatial: Button = $UI/VBox/Tabs/Resolution/ScaleFilterRow/ScaleFilterMetalFXSpatial
+@onready var scale_filter_fsr2: Button = $UI/VBox/Tabs/Resolution/ScaleFilterRow/ScaleFilterFSR2
+@onready var scale_filter_metalfx_temporal: Button = $UI/VBox/Tabs/Resolution/ScaleFilterRow/ScaleFilterMetalFXTemporal
 
-@onready var taa_disabled: Button = $UI/VBox/Tabs/Antialiasing/TAA/Disabled
-@onready var taa_enabled: Button = $UI/VBox/Tabs/Antialiasing/TAA/Enabled
+@onready var taa_disabled: Button = $UI/VBox/Tabs/Antialiasing/TAARow/TAADisabled
+@onready var taa_enabled: Button = $UI/VBox/Tabs/Antialiasing/TAARow/TAAEnabled
 
-@onready var msaa_disabled: Button = $UI/VBox/Tabs/Antialiasing/MSAA/Disabled
-@onready var msaa_2x: Button = $"UI/VBox/Tabs/Antialiasing/MSAA/2X"
-@onready var msaa_4x: Button = $"UI/VBox/Tabs/Antialiasing/MSAA/4X"
-@onready var msaa_8x: Button = $"UI/VBox/Tabs/Antialiasing/MSAA/8X"
+@onready var msaa_disabled: Button = $UI/VBox/Tabs/Antialiasing/MSAARow/MSAADisabled
+@onready var msaa_2x: Button = $UI/VBox/Tabs/Antialiasing/MSAARow/MSAA2X
+@onready var msaa_4x: Button = $UI/VBox/Tabs/Antialiasing/MSAARow/MSAA4X
+@onready var msaa_8x: Button = $UI/VBox/Tabs/Antialiasing/MSAARow/MSAA8X
 
-@onready var fxaa_disabled: Button = $UI/VBox/Tabs/Antialiasing/FXAA/Disabled
-@onready var fxaa_enabled: Button = $UI/VBox/Tabs/Antialiasing/FXAA/Enabled
+@onready var fxaa_disabled: Button = $UI/VBox/Tabs/Antialiasing/FXAARow/FXAADisabled
+@onready var fxaa_enabled: Button = $UI/VBox/Tabs/Antialiasing/FXAARow/FXAAEnabled
 
-@onready var shadow_mapping_disabled: Button = $UI/VBox/Tabs/Lighting/ShadowMapping/Disabled
-@onready var shadow_mapping_enabled: Button = $UI/VBox/Tabs/Lighting/ShadowMapping/Enabled
+@onready var shadow_mapping_disabled: Button = $UI/VBox/Tabs/Lighting/ShadowMappingRow/ShadowMappingDisabled
+@onready var shadow_mapping_enabled: Button = $UI/VBox/Tabs/Lighting/ShadowMappingRow/ShadowMappingEnabled
 
-@onready var gi_lightmapgi: Button = $UI/VBox/Tabs/Lighting/GIType/LightmapGI
-@onready var gi_voxelgi: Button = $UI/VBox/Tabs/Lighting/GIType/VoxelGI
-@onready var gi_sdfgi: Button = $UI/VBox/Tabs/Lighting/GIType/SDFGI
+@onready var gi_lightmapgi: Button = $UI/VBox/Tabs/Lighting/GITypeRow/GITypeLightmapGI
+@onready var gi_voxelgi: Button = $UI/VBox/Tabs/Lighting/GITypeRow/GITypeVoxelGI
+@onready var gi_sdfgi: Button = $UI/VBox/Tabs/Lighting/GITypeRow/GITypeSDFGI
 
-@onready var gi_disabled: Button = $UI/VBox/Tabs/Lighting/GIQuality/Disabled
-@onready var gi_low: Button = $UI/VBox/Tabs/Lighting/GIQuality/Low
-@onready var gi_high: Button = $UI/VBox/Tabs/Lighting/GIQuality/High
+@onready var gi_disabled: Button = $UI/VBox/Tabs/Lighting/GIQualityRow/GIQualityDisabled
+@onready var gi_low: Button = $UI/VBox/Tabs/Lighting/GIQualityRow/GIQualityLow
+@onready var gi_high: Button = $UI/VBox/Tabs/Lighting/GIQualityRow/GIQualityHigh
 
-@onready var ssao_disabled: Button = $UI/VBox/Tabs/Lighting/SSAO/Disabled
-@onready var ssao_medium: Button = $UI/VBox/Tabs/Lighting/SSAO/Medium
-@onready var ssao_high: Button = $UI/VBox/Tabs/Lighting/SSAO/High
+@onready var ssao_disabled: Button = $UI/VBox/Tabs/Lighting/SSAORow/SSAODisabled
+@onready var ssao_medium: Button = $UI/VBox/Tabs/Lighting/SSAORow/SSAOMedium
+@onready var ssao_high: Button = $UI/VBox/Tabs/Lighting/SSAORow/SSAOHigh
 
-@onready var ssil_disabled: Button = $UI/VBox/Tabs/Lighting/SSIL/Disabled
-@onready var ssil_medium: Button = $UI/VBox/Tabs/Lighting/SSIL/Medium
-@onready var ssil_high: Button = $UI/VBox/Tabs/Lighting/SSIL/High
+@onready var ssil_disabled: Button = $UI/VBox/Tabs/Lighting/SSILRow/SSILDisabled
+@onready var ssil_medium: Button = $UI/VBox/Tabs/Lighting/SSILRow/SSILMedium
+@onready var ssil_high: Button = $UI/VBox/Tabs/Lighting/SSILRow/SSILHigh
 
-@onready var bloom_disabled: Button = $UI/VBox/Tabs/Effects/Bloom/Disabled
-@onready var bloom_enabled: Button = $UI/VBox/Tabs/Effects/Bloom/Enabled
+@onready var bloom_disabled: Button = $UI/VBox/Tabs/Effects/BloomRow/BloomDisabled
+@onready var bloom_enabled: Button = $UI/VBox/Tabs/Effects/BloomRow/BloomEnabled
 
-@onready var volumetric_fog_disabled: Button = $UI/VBox/Tabs/Effects/VolumetricFog/Disabled
-@onready var volumetric_fog_enabled: Button = $UI/VBox/Tabs/Effects/VolumetricFog/Enabled
+@onready var volumetric_fog_disabled: Button = $UI/VBox/Tabs/Effects/VolumetricFogRow/VolumetricFogDisabled
+@onready var volumetric_fog_enabled: Button = $UI/VBox/Tabs/Effects/VolumetricFogRow/VolumetricFogEnabled
 
-@onready var music_disabled: Button = $UI/VBox/Tabs/Audio/MusicRow/Disabled
-@onready var music_enabled: Button = $UI/VBox/Tabs/Audio/MusicRow/Enabled
+@onready var music_disabled: Button = $UI/VBox/Tabs/Audio/MusicRow/MusicDisabled
+@onready var music_enabled: Button = $UI/VBox/Tabs/Audio/MusicRow/MusicEnabled
 
 @onready var _rows: Array = []
 
 
 func _ready() -> void:
 	_rows = [
-		$UI/VBox/Tabs/Display/DisplayMode,
-		$UI/VBox/Tabs/Display/VSync,
-		$UI/VBox/Tabs/Display/MaxFPS,
-		$UI/VBox/Tabs/Resolution/ResolutionScale,
-		$UI/VBox/Tabs/Resolution/ScaleFilter,
-		$UI/VBox/Tabs/Antialiasing/TAA,
-		$UI/VBox/Tabs/Antialiasing/MSAA,
-		$UI/VBox/Tabs/Antialiasing/FXAA,
-		$UI/VBox/Tabs/Lighting/ShadowMapping,
-		$UI/VBox/Tabs/Lighting/GIType,
-		$UI/VBox/Tabs/Lighting/GIQuality,
-		$UI/VBox/Tabs/Lighting/SSAO,
-		$UI/VBox/Tabs/Lighting/SSIL,
-		$UI/VBox/Tabs/Effects/Bloom,
-		$UI/VBox/Tabs/Effects/VolumetricFog,
+		$UI/VBox/Tabs/Display/DisplayModeRow,
+		$UI/VBox/Tabs/Display/VSyncRow,
+		$UI/VBox/Tabs/Display/MaxFPSRow,
+		$UI/VBox/Tabs/Resolution/ResolutionScaleRow,
+		$UI/VBox/Tabs/Resolution/ScaleFilterRow,
+		$UI/VBox/Tabs/Antialiasing/TAARow,
+		$UI/VBox/Tabs/Antialiasing/MSAARow,
+		$UI/VBox/Tabs/Antialiasing/FXAARow,
+		$UI/VBox/Tabs/Lighting/ShadowMappingRow,
+		$UI/VBox/Tabs/Lighting/GITypeRow,
+		$UI/VBox/Tabs/Lighting/GIQualityRow,
+		$UI/VBox/Tabs/Lighting/SSAORow,
+		$UI/VBox/Tabs/Lighting/SSILRow,
+		$UI/VBox/Tabs/Effects/BloomRow,
+		$UI/VBox/Tabs/Effects/VolumetricFogRow,
 		$UI/VBox/Tabs/Audio/MusicRow,
 	]
 
