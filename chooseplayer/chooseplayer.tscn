@@ -128,7 +128,7 @@ theme_override_constants/separation = 60
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(300, 50)
-text = "MENU"
+text = "Voltar"
 alignment = 1
 
 [node name="PlayButton" type="Button" parent="UI/BottomButtons"]

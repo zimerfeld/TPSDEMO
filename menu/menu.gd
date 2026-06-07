@@ -21,6 +21,7 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var play_online_button: Button = main.get_node(^"PlayOnline")
 @onready var settings_button: Button = main.get_node(^"Settings")
 @onready var quit_button: Button = main.get_node(^"Quit")
+
 @onready var tooltip_play_online: Label = main.get_node(^"TooltipPlayOnline")
 @onready var tooltip_settings_label: Label = main.get_node(^"TooltipSettings")
 
@@ -470,11 +471,19 @@ func _on_developer_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
-		_on_quit_pressed()
+		if online.visible:
+			_on_cancel_pressed()
+		else:
+			_on_quit_pressed()
+
+
+func _show_tooltip(tooltip: Label, ctrl: Control) -> void:
+	tooltip.position = Vector2(ctrl.position.x + ctrl.size.x, ctrl.position.y)
+	tooltip.show()
 
 
 func _on_play_online_mouse_entered() -> void:
-	tooltip_play_online.show()
+	_show_tooltip(tooltip_play_online, play_online_button)
 
 
 func _on_play_online_mouse_exited() -> void:
@@ -482,7 +491,7 @@ func _on_play_online_mouse_exited() -> void:
 
 
 func _on_settings_mouse_entered() -> void:
-	tooltip_settings_label.show()
+	_show_tooltip(tooltip_settings_label, settings_button)
 
 
 func _on_settings_mouse_exited() -> void:
