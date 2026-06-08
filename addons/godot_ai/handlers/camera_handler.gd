@@ -316,7 +316,7 @@ func _apply_make_current(cam: Node) -> void:
 		_force_camera_refresh(cam)
 		# Godot's make_current is supposed to atomically displace siblings,
 		# but on macOS headless the displaced camera occasionally still
-		# answers is_current() == true after this returns (#140 / #278 / #301).
+		# answers is_current() after this returns (#140 / #278 / #301).
 		# Sweep same-class siblings and clear any that lag.
 		_force_clear_other_currents(cam, type_str, scene_root)
 		if not _is_current_settled(cam):

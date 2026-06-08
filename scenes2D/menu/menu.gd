@@ -4,6 +4,7 @@ extends Node
 signal replace_main_scene
 
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
+const CYBERPUNK_HUD_PATH: String = "res://scenes2D/cyberpunkhud/cyberpunkhud.tscn"
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const SETTINGS_PATH: String = "res://scenes2D/settings/settings.tscn"
@@ -77,6 +78,10 @@ func _on_play_online_pressed() -> void:
 
 func _on_developer_pressed() -> void:
 	emit_signal("replace_main_scene", load(DEVELOPER_PATH))
+
+
+func _on_cyberpunk_hud_pressed() -> void:
+	emit_signal("replace_main_scene", load(CYBERPUNK_HUD_PATH))
 
 
 func _input(input_event: InputEvent) -> void:

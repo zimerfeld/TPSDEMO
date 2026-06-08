@@ -4,6 +4,27 @@ signal replace_main_scene
 
 const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
 
+# Resolution presets for the "Resolução Vídeo" dropdown. Selecting one resizes
+# the game window to that exact pixel size immediately (see
+# _on_video_resolution_selected).
+const VIDEO_RESOLUTIONS: Array[Dictionary] = [
+	{"nome": "HD — 1280 × 720", "largura": 1280, "altura": 720},
+	{"nome": "Full HD — 1920 × 1080", "largura": 1920, "altura": 1080},
+	{"nome": "QHD / 2K — 2560 × 1440", "largura": 2560, "altura": 1440},
+	{"nome": "4K / UHD — 3840 × 2160", "largura": 3840, "altura": 2160},
+	{"nome": "8K — 7680 × 4320", "largura": 7680, "altura": 4320},
+	{"nome": "HD retrato — 720 × 1280", "largura": 720, "altura": 1280},
+	{"nome": "Full HD retrato — 1080 × 1920", "largura": 1080, "altura": 1920},
+	{"nome": "iPhone SE — 375 × 667", "largura": 375, "altura": 667},
+	{"nome": "iPhone 14 — 390 × 844", "largura": 390, "altura": 844},
+	{"nome": "iPhone 14 Plus — 430 × 932", "largura": 430, "altura": 932},
+	{"nome": "Android típico — 412 × 915", "largura": 412, "altura": 915},
+	{"nome": "iPad — 768 × 1024", "largura": 768, "altura": 1024},
+	{"nome": "iPad Retina — 2048 × 1536", "largura": 2048, "altura": 1536},
+	{"nome": "Tablet Android — 800 × 1280", "largura": 800, "altura": 1280},
+	{"nome": "Tablet grande — 1600 × 2560", "largura": 1600, "altura": 2560},
+]
+
 var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name() == "metal"
 
 @onready var display_mode_windowed: Button = $UI/VBox/Tabs/Display/DisplayModeRow/DisplayModeWindowed
@@ -36,6 +57,8 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var scale_filter_metalfx_spatial: Button = $UI/VBox/Tabs/Resolution/ScaleFilterRow/ScaleFilterMetalFXSpatial
 @onready var scale_filter_fsr2: Button = $UI/VBox/Tabs/Resolution/ScaleFilterRow/ScaleFilterFSR2
 @onready var scale_filter_metalfx_temporal: Button = $UI/VBox/Tabs/Resolution/ScaleFilterRow/ScaleFilterMetalFXTemporal
+
+@onready var video_resolution_dropdown: OptionButton = $UI/VBox/Tabs/Resolution/VideoResolutionRow/VideoResolutionDropdown
 
 @onready var taa_disabled: Button = $UI/VBox/Tabs/Antialiasing/TAARow/TAADisabled
 @onready var taa_enabled: Button = $UI/VBox/Tabs/Antialiasing/TAARow/TAAEnabled
@@ -106,7 +129,25 @@ func _ready() -> void:
 	for row in _rows:
 		_make_button_group(row)
 
+	_populate_video_resolutions()
+
 	_load_current_settings()
+
+
+func _populate_video_resolutions() -> void:
+	video_resolution_dropdown.clear()
+	for res in VIDEO_RESOLUTIONS:
+		video_resolution_dropdown.add_item(res["nome"])
+	# Reflect the current window size if it matches a preset; otherwise show no
+	# selection rather than implying a resolution that isn't active.
+	var current := DisplayServer.window_get_size()
+	var matched := -1
+	for i in range(VIDEO_RESOLUTIONS.size()):
+		if VIDEO_RESOLUTIONS[i]["largura"] == current.x and VIDEO_RESOLUTIONS[i]["altura"] == current.y:
+			matched = i
+			break
+	video_resolution_dropdown.selected = matched
+	video_resolution_dropdown.item_selected.connect(_on_video_resolution_selected)
 
 
 func _make_button_group(row: Node) -> void:
@@ -335,6 +376,26 @@ func _on_apply_pressed() -> void:
 	DebugOverlay.refresh()
 
 	emit_signal("replace_main_scene", load(MENU_PATH))
+
+
+func _on_video_resolution_selected(index: int) -> void:
+	if index < 0 or index >= VIDEO_RESOLUTIONS.size():
+		return
+	var res: Dictionary = VIDEO_RESOLUTIONS[index]
+	var target := Vector2i(res["largura"], res["altura"])
+	var window := get_window()
+	# A specific pixel size is only meaningful in windowed mode — drop out of
+	# (exclusive) fullscreen first so the change is visible immediately.
+	if window.mode == Window.MODE_FULLSCREEN \
+			or window.mode == Window.MODE_EXCLUSIVE_FULLSCREEN \
+			or window.mode == Window.MODE_MAXIMIZED:
+		window.mode = Window.MODE_WINDOWED
+	window.size = target
+	# Re-center on the window's current screen.
+	var screen := window.current_screen
+	var screen_pos := DisplayServer.screen_get_position(screen)
+	var screen_size := DisplayServer.screen_get_size(screen)
+	window.position = screen_pos + (screen_size - target) / 2
 
 
 func _on_back_pressed() -> void:
