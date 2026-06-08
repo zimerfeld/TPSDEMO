@@ -1,0 +1,218 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://controls2D/pause_menu/pause_menu.gd" id="1"]
+[ext_resource type="Theme" path="res://themes/cyberpunk.tres" id="2"]
+[ext_resource type="Script" path="res://addons/godot_ai/runtime/draw_recipe.gd" id="3"]
+
+[node name="PauseOverlay" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="PauseMenu" type="VBoxContainer" parent="Dimmer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="AccentBar" type="ColorRect" parent="Dimmer/PauseMenu"]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+color = Color(1, 0.1764706, 0.58431375, 1)
+
+[node name="PauseTitle" type="Label" parent="Dimmer/PauseMenu"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.1764706, 0.58431375, 1)
+theme_override_font_sizes/font_size = 28
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="ResumeBtn" type="Button" parent="Dimmer/PauseMenu"]
+layout_mode = 2
+text = "RESUME"
+
+[node name="Sep1" type="ColorRect" parent="Dimmer/PauseMenu"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(1, 0.176, 0.584, 0.3)
+
+[node name="SettingsBtn" type="Button" parent="Dimmer/PauseMenu"]
+layout_mode = 2
+text = "SETTINGS"
+
+[node name="Sep2" type="ColorRect" parent="Dimmer/PauseMenu"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(1, 0.176, 0.584, 0.3)
+
+[node name="QuitBtn" type="Button" parent="Dimmer/PauseMenu"]
+layout_mode = 2
+text = "QUIT"
+
+[node name="SettingsPanel" type="PanelContainer" parent="Dimmer/PauseMenu"]
+visible = false
+layout_mode = 2
+
+[node name="SettingsContent" type="VBoxContainer" parent="Dimmer/PauseMenu/SettingsPanel"]
+layout_mode = 2
+
+[node name="VolumeLabel" type="Label" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+layout_mode = 2
+text = "MASTER VOLUME"
+
+[node name="VolumeSlider" type="HSlider" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+value = 80.0
+
+[node name="SensLabel" type="Label" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+layout_mode = 2
+text = "MOUSE SENSITIVITY"
+
+[node name="SensSlider" type="HSlider" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+min_value = 1.0
+value = 50.0
+
+[node name="FullscreenCheck" type="CheckBox" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+layout_mode = 2
+text = "FULLSCREEN"
+
+[node name="QRWrap" type="CenterContainer" parent="Dimmer/PauseMenu"]
+layout_mode = 2
+
+[node name="QRBlock" type="Control" parent="Dimmer/PauseMenu/QRWrap"]
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("3")
+metadata/_ops = [{
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(0, 0, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(12, 0, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(24, 0, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(36, 0, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(48, 0, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(0, 12, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(12, 12, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(24, 12, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(36, 12, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(48, 12, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(0, 24, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(12, 24, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(24, 24, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(36, 24, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(48, 24, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(0, 36, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(12, 36, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(24, 36, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(36, 36, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(48, 36, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(0, 48, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(12, 48, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 0.14901961),
+"draw": "rect",
+"rect": Rect2(24, 48, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(36, 48, 10, 10)
+}, {
+"color": Color(1, 0.1764706, 0.58431375, 1),
+"draw": "rect",
+"rect": Rect2(48, 48, 10, 10)
+}]
+
+[node name="BuildLabel" type="Label" parent="Dimmer/PauseMenu"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.22745098, 0.2509804, 0.33333334, 1)
+theme_override_font_sizes/font_size = 10
+text = "BUILD 2026.04.15  //  FIRMWARE v3.2.1"
+horizontal_alignment = 1

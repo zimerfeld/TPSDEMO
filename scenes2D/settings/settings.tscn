@@ -6,6 +6,17 @@
 [node name="Settings" type="Node" unique_id=683111983]
 script = ExtResource("1")
 
+[node name="Background" type="CanvasLayer" parent="."]
+layer = -2
+
+[node name="Bg" type="ColorRect" parent="Background"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.043137256, 0.050980393, 0.101960786, 1)
+
 [node name="UI" type="Control" parent="." unique_id=66183437]
 layout_mode = 3
 anchors_preset = 15
@@ -187,6 +198,22 @@ text = "Unlimited"
 layout_mode = 2
 theme_override_constants/separation = 8
 metadata/_tab_index = 1
+
+[node name="VideoResolutionRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="VideoResolutionLabel" type="Label" parent="UI/VBox/Tabs/Resolution/VideoResolutionRow"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Resolução Vídeo"
+
+[node name="VideoResolutionDropdown" type="OptionButton" parent="UI/VBox/Tabs/Resolution/VideoResolutionRow"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
 
 [node name="ResolutionScaleRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1031780035]
 layout_mode = 2
