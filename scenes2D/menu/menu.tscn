@@ -193,6 +193,17 @@ theme_override_font_sizes/font_size = 30
 text = "MODO DEVELOPER"
 alignment = 0
 
+[node name="CyberpunkHudRow" type="HBoxContainer" parent="UI/VBox"]
+layout_mode = 2
+
+[node name="CyberpunkHud" type="Button" parent="UI/VBox/CyberpunkHudRow"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "CYBERPUNK HUD"
+alignment = 0
+
 [node name="QuitRow" type="HBoxContainer" parent="UI/VBox"]
 layout_mode = 2
 
@@ -232,5 +243,6 @@ one_shot = true
 [connection signal="pressed" from="UI/VBox/PlayOnlineRow/PlayOnline" to="." method="_on_play_online_pressed"]
 [connection signal="pressed" from="UI/VBox/SettingsRow/Settings" to="." method="_on_settings_pressed"]
 [connection signal="pressed" from="UI/VBox/DeveloperRow/Developer" to="." method="_on_developer_pressed"]
+[connection signal="pressed" from="UI/VBox/CyberpunkHudRow/CyberpunkHud" to="." method="_on_cyberpunk_hud_pressed"]
 [connection signal="pressed" from="UI/VBox/QuitRow/Quit" to="." method="_on_quit_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

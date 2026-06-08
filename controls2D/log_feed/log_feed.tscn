@@ -1,0 +1,66 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://controls2D/log_feed/log_feed.gd" id="1"]
+[ext_resource type="Theme" path="res://themes/cyberpunk.tres" id="2"]
+[ext_resource type="Script" path="res://scripts/angular_frame.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/log_pulse.gd" id="4"]
+
+[node name="LogFeed" type="VBoxContainer"]
+custom_minimum_size = Vector2(260, 180)
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="LogPanel" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AngularFrame" type="Control" parent="LogPanel"]
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("3")
+
+[node name="Messages" type="VBoxContainer" parent="LogPanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+script = ExtResource("4")
+
+[node name="LogHeader" type="Label" parent="LogPanel/Messages"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.22352941, 1, 0.078431375, 1)
+theme_override_font_sizes/font_size = 12
+text = "// SYSTEM LOG"
+
+[node name="Log1" type="Label" parent="LogPanel/Messages"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 0.2, 0.6)
+theme_override_font_sizes/font_size = 11
+text = "[System Online]"
+
+[node name="Log2" type="Label" parent="LogPanel/Messages"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 0.2, 0.7)
+theme_override_font_sizes/font_size = 11
+text = "Shield charging..."
+
+[node name="Log3" type="Label" parent="LogPanel/Messages"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 0.2, 0.8)
+theme_override_font_sizes/font_size = 11
+text = "Hostile detected"
+
+[node name="Log4" type="Label" parent="LogPanel/Messages"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.9, 0.2, 0.9)
+theme_override_font_sizes/font_size = 11
+text = "Ability ready"
+
+[node name="Log5" type="Label" parent="LogPanel/Messages"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.22352941, 1, 0.078431375, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="Cursor" type="Label" parent="LogPanel/Messages"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.22352941, 1, 0.078431375, 1)
+theme_override_font_sizes/font_size = 12
+text = ">_"
