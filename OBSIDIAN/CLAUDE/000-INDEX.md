@@ -1,6 +1,6 @@
 # TPS Demo — Índice do Cofre Claude
 
-> Memória viva do projeto Godot 4 Third Person Shooter Demo.  
+> Memória viva do projeto Godot 4 Third Person Shooter Demo.
 > Repositório: `C:\GODOT\TPSDEMO` | GitHub: [zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO)
 
 ---
@@ -22,7 +22,7 @@
 
 | Nota | Resumo |
 |---|---|
-| [[fluxos/fluxo-de-cenas]] | main → menu → level_1 / final_level |
+| [[fluxos/fluxo-de-cenas]] | main (roteador) → menu → chooseplayer→levels→level_1/level_base · settings · developer→models |
 | [[fluxos/fluxo-de-input]] | Captura → sincronização → movimento |
 | [[fluxos/fluxo-de-tiro]] | Aim → shoot → bullet → hit → dano |
 
@@ -32,13 +32,13 @@
 
 | Arquivo | Nota |
 |---|---|
-| `player/player.gd` | [[arquivos-chave/player-gd]] |
-| `player/player_input.gd` | [[arquivos-chave/player-input-gd]] |
-| `player/health_bar.gd` | [[arquivos-chave/health-bar-gd]] |
-| `enemies/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
+| `scenes3D/players/player/player.gd` | [[arquivos-chave/player-gd]] |
+| `scenes3D/players/player/player_input.gd` | [[arquivos-chave/player-input-gd]] |
+| `scenes3D/players/player/health_bar.gd` | [[arquivos-chave/health-bar-gd]] |
+| `scenes3D/enemies/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
 | `effects_shared/glass_hitboxes.gd` | [[arquivos-chave/glass-hitboxes-gd]] |
-| `enemies/red_robot/red_robot.gd` | [[arquivos-chave/red-robot-gd]] |
-| `player/bullet/bullet.gd` | [[arquivos-chave/bullet-gd]] |
+| `scenes3D/enemies/red_robot/red_robot.gd` | [[arquivos-chave/red-robot-gd]] |
+| `scenes3D/players/player/bullet/bullet.gd` | [[arquivos-chave/bullet-gd]] |
 | `main/main.gd` | [[arquivos-chave/main-gd]] |
 
 ---
@@ -53,6 +53,9 @@
 
 ## Notas Rápidas
 
+- Organização: **scenes2D/** (telas de UI: menu, settings, chooseplayer, developer, levels) e **scenes3D/** (players, enemies, door, level_1, level_base, models)
+- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**
+- Telas extras: **developer** (toggles de debug) → **models** (visualizador 3D do level_base); **settings** com aba Debug
 - Motor: **Godot 4.x**
 - Modo de rede: **ENet / OfflineMultiplayerPeer** (server-authoritative)
 - Player: `CharacterBody3D` com root motion

@@ -5,27 +5,33 @@ signal replace_main_scene(resource: PackedScene)
 
 const MODELS_PATH: String = "res://scenes3D/models/models.tscn"
 
-
-@onready var fps_disabled: Button = $UI/Options/FPSRow/Disabled
-@onready var fps_enabled: Button = $UI/Options/FPSRow/Enabled
-@onready var show_grid_disabled: Button = $UI/Options/ShowGridRow/Disabled
-@onready var show_grid_enabled: Button = $UI/Options/ShowGridRow/Enabled
+# Each row is a Disabled/Enabled pair behaving like a single toggle. Maps the row
+# node (under UI/Options) to the "game" config key it controls. Changes are saved
+# and applied to the DebugOverlay immediately.
+const _TOGGLES: Dictionary = {
+	"FPSRow": "hud_fps",
+	"ShowGridRow": "show_grid",
+	"Debug2DRow": "debug_2d",
+	"Debug3DRow": "debug_3d",
+	"ShowTypeRow": "show_type",
+	"ShowNameRow": "show_name",
+	"ShowIDRow": "show_id",
+}
 
 
 func _ready() -> void:
-	# Each row is a Disabled/Enabled pair behaving like a single toggle, matching
-	# the Settings screen style. Group them and sync from saved settings without
-	# triggering the signal handlers. (Modo Debug / Show ID moved to Settings → Debug.)
-	_make_button_group($UI/Options/FPSRow)
-	_make_button_group($UI/Options/ShowGridRow)
-
-	var fps_on: bool = Settings.config_file.get_value("game", "hud_fps", false)
-	fps_enabled.set_pressed_no_signal(fps_on)
-	fps_disabled.set_pressed_no_signal(not fps_on)
-
-	var grid_on: bool = Settings.config_file.get_value("game", "show_grid", false)
-	show_grid_enabled.set_pressed_no_signal(grid_on)
-	show_grid_disabled.set_pressed_no_signal(not grid_on)
+	var options := $UI/Options
+	for row_name in _TOGGLES:
+		var row: HBoxContainer = options.get_node(row_name)
+		var key: String = _TOGGLES[row_name]
+		var enabled_btn: Button = row.get_node("Enabled")
+		var disabled_btn: Button = row.get_node("Disabled")
+		_make_button_group(row)
+		# Sync from saved settings without triggering the handler.
+		var on: bool = Settings.config_file.get_value("game", key, false)
+		enabled_btn.set_pressed_no_signal(on)
+		disabled_btn.set_pressed_no_signal(not on)
+		enabled_btn.toggled.connect(_on_toggle.bind(key))
 
 
 func _make_button_group(row: Node) -> void:
@@ -35,14 +41,8 @@ func _make_button_group(row: Node) -> void:
 			btn.button_group = group
 
 
-func _on_fps_toggle_toggled(button_pressed: bool) -> void:
-	Settings.config_file.set_value("game", "hud_fps", button_pressed)
-	Settings.save_settings()
-	DebugOverlay.refresh()
-
-
-func _on_show_grid_toggle_toggled(button_pressed: bool) -> void:
-	Settings.config_file.set_value("game", "show_grid", button_pressed)
+func _on_toggle(button_pressed: bool, key: String) -> void:
+	Settings.config_file.set_value("game", key, button_pressed)
 	Settings.save_settings()
 	DebugOverlay.refresh()
 

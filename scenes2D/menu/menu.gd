@@ -5,7 +5,7 @@ signal replace_main_scene
 
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
-const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
+const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const SETTINGS_PATH: String = "res://scenes2D/settings/settings.tscn"
 
 var loading_path: String = ""
@@ -15,15 +15,11 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 @onready var ui: Control = $UI
-@onready var main: Control = ui.get_node(^"Main")
-@onready var play_button: Button = main.get_node(^"Play")
-@onready var play_online_button: Button = main.get_node(^"PlayOnline")
-@onready var settings_button: Button = main.get_node(^"Settings")
-@onready var quit_button: Button = main.get_node(^"Quit")
-
-@onready var online: Control = ui.get_node(^"Online")
-@onready var online_port: SpinBox = online.get_node(^"Port")
-@onready var online_address: LineEdit = online.get_node(^"Address")
+@onready var main: Control = ui.get_node(^"VBox")
+@onready var play_button: Button = main.get_node(^"PlayRow/Play")
+@onready var play_online_button: Button = main.get_node(^"PlayOnlineRow/PlayOnline")
+@onready var settings_button: Button = main.get_node(^"SettingsRow/Settings")
+@onready var quit_button: Button = main.get_node(^"QuitRow/Quit")
 
 @onready var loading: HBoxContainer = ui.get_node(^"Loading")
 @onready var loading_progress: ProgressBar = loading.get_node(^"Progress")
@@ -34,7 +30,7 @@ func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
 
 	if DisplayServer.get_name() == "headless":
-		_on_host_pressed.call_deferred()
+		_on_play_online_pressed.call_deferred()
 
 	play_button.grab_focus()
 
@@ -75,38 +71,8 @@ func _on_quit_pressed() -> void:
 	get_tree().quit()
 
 
-func _on_cancel_pressed() -> void:
-	main.show()
-	play_button.grab_focus()
-	online.hide()
-
-
 func _on_play_online_pressed() -> void:
-	online.show()
-	main.hide()
-
-
-func _on_host_pressed() -> void:
-	peer = ENetMultiplayerPeer.new()
-	var err: Error = peer.create_server(int(online_port.value))
-	if err != OK:
-		CrashHandler.show_error(
-			"Falha ao criar servidor na porta %d.\nErro: %s\n\nVerifique se a porta está em uso." % [int(online_port.value), error_string(err)],
-			_on_play_online_pressed
-		)
-		return
-	if peer.host == null:
-		CrashHandler.show_error(
-			"Servidor criado, mas host ENet é nulo.\nTente outra porta ou reinicie o jogo.",
-			_on_play_online_pressed
-		)
-		return
-	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
-	loading_path = LEVEL_BASE_PATH
-	online.hide()
-	main.hide()
-	loading.show()
-	ResourceLoader.load_threaded_request(loading_path, "", true)
+	emit_signal("replace_main_scene", load(PLAYONLINE_PATH))
 
 
 func _on_developer_pressed() -> void:
@@ -115,30 +81,4 @@ func _on_developer_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
-		if online.visible:
-			_on_cancel_pressed()
-		else:
-			_on_quit_pressed()
-
-
-func _on_connect_pressed() -> void:
-	peer = ENetMultiplayerPeer.new()
-	var err: Error = peer.create_client(online_address.text, int(online_port.value))
-	if err != OK:
-		CrashHandler.show_error(
-			"Falha ao conectar em %s:%d.\nErro: %s\n\nVerifique o endereço e a porta." % [online_address.text, int(online_port.value), error_string(err)],
-			_on_play_online_pressed
-		)
-		return
-	if peer.host == null:
-		CrashHandler.show_error(
-			"Conexão iniciada, mas host ENet é nulo.\nTente novamente.",
-			_on_play_online_pressed
-		)
-		return
-	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
-	loading_path = LEVEL_BASE_PATH
-	online.hide()
-	main.hide()
-	loading.show()
-	ResourceLoader.load_threaded_request(loading_path, "", true)
+		_on_quit_pressed()

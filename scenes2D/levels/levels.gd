@@ -8,8 +8,8 @@ const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn
 
 var loading_path: String = ""
 
-@onready var level1_button: Button = $UI/ButtonGrid/Level1Button
-@onready var level_base_button: Button = $UI/ButtonGrid/LevelBaseButton
+@onready var level1_button: Button = $UI/VBox/Level1Row/Level1Button
+@onready var level_base_button: Button = $UI/VBox/LevelBaseRow/LevelBaseButton
 @onready var back_button: Button = $UI/Actions/BackButton
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress

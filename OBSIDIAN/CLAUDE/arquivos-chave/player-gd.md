@@ -1,4 +1,4 @@
-# player/player.gd
+# scenes3D/players/player/player.gd
 
 **Classe:** `Player extends CharacterBody3D`
 
@@ -78,7 +78,7 @@ PlayerModel/.../GunBone/ShootFrom → Marker3D
 
 ---
 
-## Caminho: `player/player.gd`
+## Caminho: `scenes3D/players/player/player.gd`
 
 ---
 

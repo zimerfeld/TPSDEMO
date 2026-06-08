@@ -20,9 +20,9 @@ const _PALETTE := [
 var _canvas_layer: CanvasLayer = null
 # inst_id → {tooltip: PanelContainer, ctrl_border: Panel, color: Color}
 var _overlay_map: Dictionary = {}
-# Instance ids of the per-mesh "ID" Label3D nodes, so their `visible` can be
-# kept in sync every frame with the saved "show_id" setting.
-var _id_labels: Array = []
+# 3D tooltip line labels: Label3D instance_id → kind ("type"/"name"/"id"). Their
+# `visible` is synced every frame with the saved show_type/show_name/show_id.
+var _label3d_lines: Dictionary = {}
 var _fps_label: Label = null
 var _grid_mesh: MeshInstance3D = null
 var _palette_index: int = 0
@@ -44,19 +44,15 @@ func _ready() -> void:
 	call_deferred("_setup_scene_name_label")
 
 
-func _is_debug_on() -> bool:
-	return Settings.config_file.get_value("game", "debug_mode", false)
-
-
-# 2D (Control) overlays are shown when the legacy master debug toggle (Developer
-# screen) OR the dedicated 2D toggle (Settings → Debug) is on.
+# 2D (Control) overlays are shown when the "Show Debug 2D" toggle
+# (Settings → Debug) is on.
 func _is_debug_2d_on() -> bool:
-	return _is_debug_on() or Settings.config_file.get_value("game", "debug_2d", false)
+	return Settings.config_file.get_value("game", "debug_2d", false)
 
 
-# 3D (MeshInstance3D) overlays follow the master toggle OR the dedicated 3D toggle.
+# 3D (MeshInstance3D) overlays follow the "Show Debug 3D" toggle.
 func _is_debug_3d_on() -> bool:
-	return _is_debug_on() or Settings.config_file.get_value("game", "debug_3d", false)
+	return Settings.config_file.get_value("game", "debug_3d", false)
 
 
 # The overlay canvas/scan is needed whenever either category is enabled.
@@ -70,6 +66,23 @@ func _is_fps_on() -> bool:
 
 func _is_show_id_on() -> bool:
 	return Settings.config_file.get_value("game", "show_id", false)
+
+
+func _is_show_type_on() -> bool:
+	return Settings.config_file.get_value("game", "show_type", false)
+
+
+func _is_show_name_on() -> bool:
+	return Settings.config_file.get_value("game", "show_name", false)
+
+
+# Visibility of a tooltip line ("type" / "name" / "id") from the saved config.
+func _line_visible(kind: String) -> bool:
+	match kind:
+		"type": return _is_show_type_on()
+		"name": return _is_show_name_on()
+		"id": return _is_show_id_on()
+	return false
 
 
 func _is_show_grid_on() -> bool:
@@ -144,19 +157,18 @@ func _process(_delta: float) -> void:
 		if current is Node3D and _is_show_grid_on():
 			call_deferred("_update_grid")
 
-	# Toggle the 3D "ID" labels' visibility from the saved show_id setting,
+	# Toggle each 3D tooltip line (TYPE / Name / ID) from the saved config,
 	# the same way the 2D overlays react to the saved configuration.
-	if not _id_labels.is_empty():
-		var show_id := _is_show_id_on()
+	if not _label3d_lines.is_empty():
 		var stale_ids: Array = []
-		for lid in _id_labels:
+		for lid in _label3d_lines:
 			var node := instance_from_id(lid)
 			if node is Label3D:
-				(node as Label3D).visible = show_id
+				(node as Label3D).visible = _line_visible(_label3d_lines[lid])
 			else:
 				stale_ids.append(lid)
 		for s in stale_ids:
-			_id_labels.erase(s)
+			_label3d_lines.erase(s)
 
 	if _canvas_layer == null:
 		return
@@ -181,6 +193,9 @@ func _process(_delta: float) -> void:
 				tip_x = rect.position.x - tooltip.size.x
 			tooltip.position = Vector2(tip_x, rect.position.y)
 			tooltip.visible = shown
+			entry.type_lbl.visible = _is_show_type_on()
+			entry.name_lbl.visible = _is_show_name_on()
+			entry.id_lbl.visible = _is_show_id_on()
 		else:
 			if is_instance_valid(tooltip):
 				tooltip.queue_free()
@@ -244,7 +259,7 @@ func _clear_all() -> void:
 
 	if get_tree().current_scene != null:
 		_remove_3d_labels(get_tree().current_scene)
-	_id_labels.clear()
+	_label3d_lines.clear()
 
 	if is_instance_valid(_canvas_layer):
 		_canvas_layer.queue_free()
@@ -373,11 +388,33 @@ func _add_2d(ctrl: Control) -> void:
 	tooltip.add_theme_stylebox_override("panel", tip_style)
 	tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	# One label per line (TYPE / Name / ID, nesta ordem) para que cada uma possa
+	# ser ligada/desligada por `visible` conforme show_type/show_name/show_id.
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 0)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var type_lbl := _make_overlay_label("TYPE: %s" % ctrl.get_class())
+	var name_lbl := _make_overlay_label("Name: %s" % ctrl.name)
+	var id_lbl := _make_overlay_label("ID: %d" % id)
+	type_lbl.visible = _is_show_type_on()
+	name_lbl.visible = _is_show_name_on()
+	id_lbl.visible = _is_show_id_on()
+	vbox.add_child(type_lbl)
+	vbox.add_child(name_lbl)
+	vbox.add_child(id_lbl)
+	tooltip.add_child(vbox)
+	tooltip.position = Vector2(rect.position.x + rect.size.x, rect.position.y)
+	_canvas_layer.add_child(tooltip)
+
+	_overlay_map[id] = {
+		"tooltip": tooltip, "ctrl_border": ctrl_border, "color": color,
+		"type_lbl": type_lbl, "name_lbl": name_lbl, "id_lbl": id_lbl,
+	}
+
+
+func _make_overlay_label(text: String) -> Label:
 	var lbl := Label.new()
-	if _is_show_id_on():
-		lbl.text = "TYPE: %s\nID: %d  Name: %s" % [ctrl.get_class(), id, ctrl.name]
-	else:
-		lbl.text = "TYPE: %s\nName: %s" % [ctrl.get_class(), ctrl.name]
+	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 10)
 	lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 0.0, 0.92))
 	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
@@ -385,11 +422,7 @@ func _add_2d(ctrl: Control) -> void:
 	lbl.add_theme_constant_override("shadow_offset_y", 1)
 	lbl.add_theme_constant_override("shadow_as_outline", 1)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	tooltip.add_child(lbl)
-	tooltip.position = Vector2(rect.position.x + rect.size.x, rect.position.y)
-	_canvas_layer.add_child(tooltip)
-
-	_overlay_map[id] = {"tooltip": tooltip, "ctrl_border": ctrl_border, "color": color}
+	return lbl
 
 
 func _next_color() -> Color:
@@ -404,38 +437,31 @@ func _add_3d(mesh: MeshInstance3D) -> void:
 	# Skip the debug grid itself
 	if mesh == _grid_mesh:
 		return
-	var lbl := Label3D.new()
-	lbl.name = "DebugLabel3D"
-	lbl.text = "TYPE: %s\nName: %s" % [mesh.get_class(), mesh.name]
-	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	lbl.no_depth_test = true
-	lbl.pixel_size = 0.005
-	lbl.font_size = 14
-	lbl.modulate = Color.YELLOW
-	lbl.outline_size = 4
-	lbl.outline_modulate = Color(0, 0, 0, 0.8)
-	lbl.position = Vector3(0.0, 0.5, 0.0)
-	lbl.set_meta(_LABEL3D_META, true)
-
-	# The ID lives on its own child label so its visibility can be toggled at
-	# runtime from the saved "show_id" setting (mirrors the 2D tooltip behaviour).
-	var id_lbl := Label3D.new()
-	id_lbl.name = "DebugLabel3D_ID"
-	id_lbl.text = "ID: %d" % mesh.get_instance_id()
-	id_lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	id_lbl.no_depth_test = true
-	id_lbl.pixel_size = 0.005
-	id_lbl.font_size = 14
-	id_lbl.modulate = Color.YELLOW
-	id_lbl.outline_size = 4
-	id_lbl.outline_modulate = Color(0, 0, 0, 0.8)
-	id_lbl.position = Vector3(0.0, -0.18, 0.0)
-	id_lbl.visible = _is_show_id_on()
-	lbl.add_child(id_lbl)
-	_id_labels.append(id_lbl.get_instance_id())
+	# One Label3D per line (TYPE / Name / ID, top to bottom). Each is toggled by
+	# `visible` from the saved show_type/show_name/show_id settings.
+	var lines := [
+		{"kind": "type", "text": "TYPE: %s" % mesh.get_class(), "y": 0.68},
+		{"kind": "name", "text": "Name: %s" % mesh.name, "y": 0.5},
+		{"kind": "id", "text": "ID: %d" % mesh.get_instance_id(), "y": 0.32},
+	]
+	for line in lines:
+		var lbl := Label3D.new()
+		lbl.name = "DebugLabel3D_" + str(line["kind"])
+		lbl.text = str(line["text"])
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.no_depth_test = true
+		lbl.pixel_size = 0.005
+		lbl.font_size = 14
+		lbl.modulate = Color.YELLOW
+		lbl.outline_size = 4
+		lbl.outline_modulate = Color(0, 0, 0, 0.8)
+		lbl.position = Vector3(0.0, line["y"], 0.0)
+		lbl.visible = _line_visible(line["kind"])
+		lbl.set_meta(_LABEL3D_META, true)
+		mesh.add_child(lbl)
+		_label3d_lines[lbl.get_instance_id()] = line["kind"]
 
 	mesh.set_meta(_LABEL3D_META, true)
-	mesh.add_child(lbl)
 
 
 func _remove_3d_labels(node: Node) -> void:

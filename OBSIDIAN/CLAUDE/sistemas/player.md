@@ -1,8 +1,8 @@
 # Sistema do Player
 
-**Classe:** `Player` extends `CharacterBody3D`  
-**Script:** `player/player.gd`  
-**Cena:** `player/player.tscn`
+**Classe:** `Player` extends `CharacterBody3D`
+**Script:** `scenes3D/players/player/player.gd`
+**Cena:** `scenes3D/players/player/player.tscn`
 
 ---
 

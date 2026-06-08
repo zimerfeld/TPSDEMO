@@ -63,6 +63,7 @@ light_specular = 0.0
 [node name="Music" type="AudioStreamPlayer" parent="." unique_id=362430891]
 stream = ExtResource("3")
 autoplay = true
+bus = &"Music"
 
 [node name="UI" type="Control" parent="." unique_id=1949324373]
 layout_mode = 3
@@ -159,7 +160,7 @@ offset_top = -135.0
 offset_right = -130.0
 offset_bottom = -100.0
 
-[node name="Label" type="Label" parent="UI/Loading" unique_id=2004861435]
+[node name="LoadingLabel" type="Label" parent="UI/Loading" unique_id=2004861435]
 layout_mode = 2
 text = "Loading..."
 

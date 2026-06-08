@@ -59,7 +59,7 @@ Player.animate()  [roda apenas nos clientes]
 ```
 Pressionar aim:
   - toggled_aim = false
-  
+
 Soltar aim em < 0.4s:
   - current_aim = true (toggle ligado)
   - toggled_aim = true

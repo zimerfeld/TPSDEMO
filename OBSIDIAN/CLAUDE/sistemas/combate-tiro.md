@@ -6,15 +6,15 @@
 
 | Arquivo | Papel |
 |---|---|
-| `player/player.gd` | Instancia a bala, dispara RPC `shoot()` |
-| `player/bullet/bullet.gd` | Física da bala, detecção de colisão, chama `hit.rpc()` |
-| `player/bullet/bullet.tscn` | Cena da bala: CharacterBody3D + AnimationPlayer + OmniLight |
+| `scenes3D/players/player/player.gd` | Instancia a bala, dispara RPC `shoot()` |
+| `scenes3D/players/player/bullet/bullet.gd` | Física da bala, detecção de colisão, chama `hit.rpc()` |
+| `scenes3D/players/player/bullet/bullet.tscn` | Cena da bala: CharacterBody3D + AnimationPlayer + OmniLight |
 
 ---
 
 ## Ciclo de Tiro
 
-1. `player_input.shooting == true` (Input capturado no cliente local)
+1. `player_input.shooting` (Input capturado no cliente local)
 2. Servidor verifica `fire_cooldown.time_left == 0`
 3. Servidor instancia `bullet.tscn`, posiciona em `ShootFrom`, aplica direção
 4. `shoot.rpc()` → `call_local` → partículas + flash + som + camera shake (trauma 0.35)

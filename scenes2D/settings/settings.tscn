@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://er6ung1hi5fm"]
 
-[ext_resource type="Script" uid="uid://dro3r72khmv6c" path="res://scenes2D/settings/settings.gd" id="1"]
+[ext_resource type="Script" uid="uid://cblcs6ji5p7mh" path="res://scenes2D/settings/settings.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
 
 [node name="Settings" type="Node" unique_id=683111983]
@@ -35,54 +35,57 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/side_margin = 12
-theme_override_font_sizes/font_size = 16
-current_tab = 0
+theme_override_font_sizes/font_size = 30
+current_tab = 1
 
 [node name="Display" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=1753421457]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 metadata/_tab_index = 0
 
-[node name="DisplayMode" type="HBoxContainer" parent="UI/VBox/Tabs/Display" unique_id=226502833]
+[node name="DisplayModeRow" type="HBoxContainer" parent="UI/VBox/Tabs/Display" unique_id=226502833]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Display/DisplayMode" unique_id=675032541]
+[node name="DisplayModeLabel" type="Label" parent="UI/VBox/Tabs/Display/DisplayModeRow" unique_id=675032541]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Display Mode:"
 
-[node name="Windowed" type="Button" parent="UI/VBox/Tabs/Display/DisplayMode" unique_id=1277494296]
+[node name="DisplayModeWindowed" type="Button" parent="UI/VBox/Tabs/Display/DisplayModeRow" unique_id=1277494296]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Window"
 
-[node name="Fullscreen" type="Button" parent="UI/VBox/Tabs/Display/DisplayMode" unique_id=2109473313]
+[node name="DisplayModeFullscreen" type="Button" parent="UI/VBox/Tabs/Display/DisplayModeRow" unique_id=2109473313]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Fullscreen"
 
-[node name="ExclusiveFullscreen" type="Button" parent="UI/VBox/Tabs/Display/DisplayMode" unique_id=1521508192]
+[node name="DisplayModeExclusiveFullscreen" type="Button" parent="UI/VBox/Tabs/Display/DisplayModeRow" unique_id=1521508192]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Exclusive Fullscreen"
 
-[node name="VSync" type="HBoxContainer" parent="UI/VBox/Tabs/Display" unique_id=278946806]
+[node name="VSyncRow" type="HBoxContainer" parent="UI/VBox/Tabs/Display" unique_id=278946806]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Display/VSync" unique_id=1509648480]
+[node name="VSyncLabel" type="Label" parent="UI/VBox/Tabs/Display/VSyncRow" unique_id=1509648480]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Vertical Synchronization:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Display/VSync" unique_id=1559449085]
+[node name="VSyncDisabled" type="Button" parent="UI/VBox/Tabs/Display/VSyncRow" unique_id=1559449085]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -90,7 +93,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Display/VSync" unique_id=477405141]
+[node name="VSyncEnabled" type="Button" parent="UI/VBox/Tabs/Display/VSyncRow" unique_id=477405141]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -98,7 +101,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="Adaptive" type="Button" parent="UI/VBox/Tabs/Display/VSync" unique_id=510521833]
+[node name="VSyncAdaptive" type="Button" parent="UI/VBox/Tabs/Display/VSyncRow" unique_id=510521833]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -106,7 +109,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Adaptive"
 
-[node name="Mailbox" type="Button" parent="UI/VBox/Tabs/Display/VSync" unique_id=625956473]
+[node name="VSyncMailbox" type="Button" parent="UI/VBox/Tabs/Display/VSyncRow" unique_id=625956473]
 modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -114,65 +117,66 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Mailbox"
 
-[node name="MaxFPS" type="HBoxContainer" parent="UI/VBox/Tabs/Display" unique_id=1652101558]
+[node name="MaxFPSRow" type="HBoxContainer" parent="UI/VBox/Tabs/Display" unique_id=1652101558]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=1943116286]
+[node name="MaxFPSLabel" type="Label" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1943116286]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "FPS Limit:"
 
-[node name="30" type="Button" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=2144026009]
+[node name="MaxFPS30" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=2144026009]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "30"
 
-[node name="40" type="Button" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=1588464051]
+[node name="MaxFPS40" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1588464051]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "40"
 
-[node name="60" type="Button" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=1358979402]
+[node name="MaxFPS60" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1358979402]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "60"
 
-[node name="72" type="Button" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=3120625]
+[node name="MaxFPS72" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=3120625]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "72"
 
-[node name="90" type="Button" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=799638044]
+[node name="MaxFPS90" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=799638044]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "90"
 
-[node name="120" type="Button" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=1298204000]
+[node name="MaxFPS120" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1298204000]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "120"
 
-[node name="144" type="Button" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=76845268]
+[node name="MaxFPS144" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=76845268]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "144"
 
-[node name="Unlimited" type="Button" parent="UI/VBox/Tabs/Display/MaxFPS" unique_id=1424560293]
+[node name="MaxFPSUnlimited" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1424560293]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -180,21 +184,21 @@ toggle_mode = true
 text = "Unlimited"
 
 [node name="Resolution" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=1989077829]
-visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 metadata/_tab_index = 1
 
-[node name="ResolutionScale" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1031780035]
+[node name="ResolutionScaleRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1031780035]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Resolution/ResolutionScale" unique_id=508499270]
+[node name="ResolutionScaleLabel" type="Label" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=508499270]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Resolution Scale:"
 
-[node name="UltraPerformance" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScale" unique_id=740219616]
+[node name="ResolutionScaleUltraPerformance" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=740219616]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -202,7 +206,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Ultra Performance"
 
-[node name="Performance" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScale" unique_id=953203544]
+[node name="ResolutionScalePerformance" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=953203544]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -210,7 +214,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Performance"
 
-[node name="Balanced" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScale" unique_id=526087253]
+[node name="ResolutionScaleBalanced" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=526087253]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -218,7 +222,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Balanced"
 
-[node name="Quality" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScale" unique_id=1914469154]
+[node name="ResolutionScaleQuality" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1914469154]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -226,7 +230,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Quality"
 
-[node name="UltraQuality" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScale" unique_id=1040171739]
+[node name="ResolutionScaleUltraQuality" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1040171739]
 modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -234,7 +238,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Ultra Quality"
 
-[node name="Native" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScale" unique_id=1619859450]
+[node name="ResolutionScaleNative" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1619859450]
 modulate = Color(1, 0.376471, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -242,16 +246,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Native"
 
-[node name="ScaleFilter" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1250048858]
+[node name="ScaleFilterRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1250048858]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Resolution/ScaleFilter" unique_id=2001379291]
+[node name="ScaleFilterLabel" type="Label" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=2001379291]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Resolution Scale Filter:"
 
-[node name="Bilinear" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilter" unique_id=1603751638]
+[node name="ScaleFilterBilinear" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=1603751638]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -259,7 +264,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Bilinear"
 
-[node name="FSR1" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilter" unique_id=2082513038]
+[node name="ScaleFilterFSR1" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=2082513038]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -267,7 +272,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "AMD FSR 1.0"
 
-[node name="MetalFXSpatial" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilter" unique_id=1298911820]
+[node name="ScaleFilterMetalFXSpatial" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=1298911820]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -275,7 +280,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "MetalFX Spatial"
 
-[node name="FSR2" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilter" unique_id=863375471]
+[node name="ScaleFilterFSR2" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=863375471]
 modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -283,7 +288,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "AMD FSR 2.2"
 
-[node name="MetalFXTemporal" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilter" unique_id=458892095]
+[node name="ScaleFilterMetalFXTemporal" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=458892095]
 modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -297,16 +302,17 @@ layout_mode = 2
 theme_override_constants/separation = 8
 metadata/_tab_index = 2
 
-[node name="TAA" type="HBoxContainer" parent="UI/VBox/Tabs/Antialiasing" unique_id=349706084]
+[node name="TAARow" type="HBoxContainer" parent="UI/VBox/Tabs/Antialiasing" unique_id=349706084]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Antialiasing/TAA" unique_id=444337486]
+[node name="TAALabel" type="Label" parent="UI/VBox/Tabs/Antialiasing/TAARow" unique_id=444337486]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Temporal Antialiasing:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/TAA" unique_id=1206219815]
+[node name="TAADisabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/TAARow" unique_id=1206219815]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -314,7 +320,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/TAA" unique_id=332415528]
+[node name="TAAEnabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/TAARow" unique_id=332415528]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -322,16 +328,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="MSAA" type="HBoxContainer" parent="UI/VBox/Tabs/Antialiasing" unique_id=124269991]
+[node name="MSAARow" type="HBoxContainer" parent="UI/VBox/Tabs/Antialiasing" unique_id=124269991]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Antialiasing/MSAA" unique_id=283503742]
+[node name="MSAALabel" type="Label" parent="UI/VBox/Tabs/Antialiasing/MSAARow" unique_id=283503742]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Multisample Antialiasing:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/MSAA" unique_id=644636233]
+[node name="MSAADisabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/MSAARow" unique_id=644636233]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -339,7 +346,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="2X" type="Button" parent="UI/VBox/Tabs/Antialiasing/MSAA" unique_id=141278105]
+[node name="MSAA2X" type="Button" parent="UI/VBox/Tabs/Antialiasing/MSAARow" unique_id=141278105]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -347,7 +354,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "2×"
 
-[node name="4X" type="Button" parent="UI/VBox/Tabs/Antialiasing/MSAA" unique_id=568828317]
+[node name="MSAA4X" type="Button" parent="UI/VBox/Tabs/Antialiasing/MSAARow" unique_id=568828317]
 modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -355,7 +362,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "4×"
 
-[node name="8X" type="Button" parent="UI/VBox/Tabs/Antialiasing/MSAA" unique_id=611155180]
+[node name="MSAA8X" type="Button" parent="UI/VBox/Tabs/Antialiasing/MSAARow" unique_id=611155180]
 modulate = Color(1, 0.376471, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -363,16 +370,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "8×"
 
-[node name="FXAA" type="HBoxContainer" parent="UI/VBox/Tabs/Antialiasing" unique_id=240163213]
+[node name="FXAARow" type="HBoxContainer" parent="UI/VBox/Tabs/Antialiasing" unique_id=240163213]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Antialiasing/FXAA" unique_id=108225909]
+[node name="FXAALabel" type="Label" parent="UI/VBox/Tabs/Antialiasing/FXAARow" unique_id=108225909]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Fast Approximate Antialiasing:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/FXAA" unique_id=1799395819]
+[node name="FXAADisabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/FXAARow" unique_id=1799395819]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -380,7 +388,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/FXAA" unique_id=159717514]
+[node name="FXAAEnabled" type="Button" parent="UI/VBox/Tabs/Antialiasing/FXAARow" unique_id=159717514]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -394,16 +402,17 @@ layout_mode = 2
 theme_override_constants/separation = 8
 metadata/_tab_index = 3
 
-[node name="ShadowMapping" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=1245725026]
+[node name="ShadowMappingRow" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=1245725026]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Lighting/ShadowMapping" unique_id=916741178]
+[node name="ShadowMappingLabel" type="Label" parent="UI/VBox/Tabs/Lighting/ShadowMappingRow" unique_id=916741178]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Shadow Mapping:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Lighting/ShadowMapping" unique_id=482674981]
+[node name="ShadowMappingDisabled" type="Button" parent="UI/VBox/Tabs/Lighting/ShadowMappingRow" unique_id=482674981]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -411,7 +420,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Lighting/ShadowMapping" unique_id=1167390716]
+[node name="ShadowMappingEnabled" type="Button" parent="UI/VBox/Tabs/Lighting/ShadowMappingRow" unique_id=1167390716]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -419,16 +428,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="GIType" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=16924772]
+[node name="GITypeRow" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=16924772]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Lighting/GIType" unique_id=448574587]
+[node name="GITypeLabel" type="Label" parent="UI/VBox/Tabs/Lighting/GITypeRow" unique_id=448574587]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Global Illumination Type:"
 
-[node name="LightmapGI" type="Button" parent="UI/VBox/Tabs/Lighting/GIType" unique_id=1993592094]
+[node name="GITypeLightmapGI" type="Button" parent="UI/VBox/Tabs/Lighting/GITypeRow" unique_id=1993592094]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -436,7 +446,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "LightmapGI"
 
-[node name="VoxelGI" type="Button" parent="UI/VBox/Tabs/Lighting/GIType" unique_id=2099992109]
+[node name="GITypeVoxelGI" type="Button" parent="UI/VBox/Tabs/Lighting/GITypeRow" unique_id=2099992109]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -444,7 +454,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "VoxelGI"
 
-[node name="SDFGI" type="Button" parent="UI/VBox/Tabs/Lighting/GIType" unique_id=1010879397]
+[node name="GITypeSDFGI" type="Button" parent="UI/VBox/Tabs/Lighting/GITypeRow" unique_id=1010879397]
 modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -452,16 +462,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "SDFGI"
 
-[node name="GIQuality" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=1875213088]
+[node name="GIQualityRow" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=1875213088]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Lighting/GIQuality" unique_id=1494644817]
+[node name="GIQualityLabel" type="Label" parent="UI/VBox/Tabs/Lighting/GIQualityRow" unique_id=1494644817]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Global Illumination Quality:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Lighting/GIQuality" unique_id=1764280827]
+[node name="GIQualityDisabled" type="Button" parent="UI/VBox/Tabs/Lighting/GIQualityRow" unique_id=1764280827]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -469,7 +480,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Low" type="Button" parent="UI/VBox/Tabs/Lighting/GIQuality" unique_id=1818197037]
+[node name="GIQualityLow" type="Button" parent="UI/VBox/Tabs/Lighting/GIQualityRow" unique_id=1818197037]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -477,7 +488,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Low"
 
-[node name="High" type="Button" parent="UI/VBox/Tabs/Lighting/GIQuality" unique_id=619985483]
+[node name="GIQualityHigh" type="Button" parent="UI/VBox/Tabs/Lighting/GIQualityRow" unique_id=619985483]
 modulate = Color(1, 0.376471, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -485,16 +496,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "High"
 
-[node name="SSAO" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=953669231]
+[node name="SSAORow" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=953669231]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Lighting/SSAO" unique_id=1379764703]
+[node name="SSAOLabel" type="Label" parent="UI/VBox/Tabs/Lighting/SSAORow" unique_id=1379764703]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Screen-Space Ambient Occlusion:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Lighting/SSAO" unique_id=1092760226]
+[node name="SSAODisabled" type="Button" parent="UI/VBox/Tabs/Lighting/SSAORow" unique_id=1092760226]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -502,7 +514,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Medium" type="Button" parent="UI/VBox/Tabs/Lighting/SSAO" unique_id=1949253459]
+[node name="SSAOMedium" type="Button" parent="UI/VBox/Tabs/Lighting/SSAORow" unique_id=1949253459]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -510,7 +522,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Medium"
 
-[node name="High" type="Button" parent="UI/VBox/Tabs/Lighting/SSAO" unique_id=922638916]
+[node name="SSAOHigh" type="Button" parent="UI/VBox/Tabs/Lighting/SSAORow" unique_id=922638916]
 modulate = Color(1, 0.376471, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -518,16 +530,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "High"
 
-[node name="SSIL" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=92858853]
+[node name="SSILRow" type="HBoxContainer" parent="UI/VBox/Tabs/Lighting" unique_id=92858853]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Lighting/SSIL" unique_id=561888308]
+[node name="SSILLabel" type="Label" parent="UI/VBox/Tabs/Lighting/SSILRow" unique_id=561888308]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Screen-Space Indirect Lighting:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Lighting/SSIL" unique_id=2115829312]
+[node name="SSILDisabled" type="Button" parent="UI/VBox/Tabs/Lighting/SSILRow" unique_id=2115829312]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -535,7 +548,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Medium" type="Button" parent="UI/VBox/Tabs/Lighting/SSIL" unique_id=1995068101]
+[node name="SSILMedium" type="Button" parent="UI/VBox/Tabs/Lighting/SSILRow" unique_id=1995068101]
 modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -543,7 +556,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Medium"
 
-[node name="High" type="Button" parent="UI/VBox/Tabs/Lighting/SSIL" unique_id=2076561880]
+[node name="SSILHigh" type="Button" parent="UI/VBox/Tabs/Lighting/SSILRow" unique_id=2076561880]
 modulate = Color(1, 0.376471, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -557,16 +570,17 @@ layout_mode = 2
 theme_override_constants/separation = 8
 metadata/_tab_index = 4
 
-[node name="Bloom" type="HBoxContainer" parent="UI/VBox/Tabs/Effects" unique_id=1558163151]
+[node name="BloomRow" type="HBoxContainer" parent="UI/VBox/Tabs/Effects" unique_id=1558163151]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Effects/Bloom" unique_id=813551206]
+[node name="BloomLabel" type="Label" parent="UI/VBox/Tabs/Effects/BloomRow" unique_id=813551206]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Bloom:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Effects/Bloom" unique_id=713985362]
+[node name="BloomDisabled" type="Button" parent="UI/VBox/Tabs/Effects/BloomRow" unique_id=713985362]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -574,7 +588,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Effects/Bloom" unique_id=1862284814]
+[node name="BloomEnabled" type="Button" parent="UI/VBox/Tabs/Effects/BloomRow" unique_id=1862284814]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -582,16 +596,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="VolumetricFog" type="HBoxContainer" parent="UI/VBox/Tabs/Effects" unique_id=619184342]
+[node name="VolumetricFogRow" type="HBoxContainer" parent="UI/VBox/Tabs/Effects" unique_id=619184342]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/VBox/Tabs/Effects/VolumetricFog" unique_id=480335929]
+[node name="VolumetricFogLabel" type="Label" parent="UI/VBox/Tabs/Effects/VolumetricFogRow" unique_id=480335929]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 28
 text = "Volumetric Fog:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Effects/VolumetricFog" unique_id=330606879]
+[node name="VolumetricFogDisabled" type="Button" parent="UI/VBox/Tabs/Effects/VolumetricFogRow" unique_id=330606879]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -599,7 +614,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Effects/VolumetricFog" unique_id=304040978]
+[node name="VolumetricFogEnabled" type="Button" parent="UI/VBox/Tabs/Effects/VolumetricFogRow" unique_id=304040978]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -607,23 +622,23 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="Debug" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=296233603]
+[node name="Audio" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=1620936754]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 24
 metadata/_tab_index = 5
 
-[node name="Debug2DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug" unique_id=1216189325]
+[node name="MusicRow" type="HBoxContainer" parent="UI/VBox/Tabs/Audio" unique_id=772287494]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Debug2DLabel" type="Label" parent="UI/VBox/Tabs/Debug/Debug2DRow" unique_id=1825609795]
+[node name="MusicLabel" type="Label" parent="UI/VBox/Tabs/Audio/MusicRow" unique_id=1545441746]
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "Show Debug 2D Scene:"
+text = "Música:"
 
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug2DRow"]
+[node name="MusicDisabled" type="Button" parent="UI/VBox/Tabs/Audio/MusicRow" unique_id=1758360252]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -631,86 +646,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug2DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Enabled"
-
-[node name="Debug3DRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug" unique_id=1829917393]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="Debug3DLabel" type="Label" parent="UI/VBox/Tabs/Debug/Debug3DRow" unique_id=1421913928]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Show Debug 3D Scene:"
-
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug3DRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/Debug3DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-tooltip_text = "Exibe tooltip para os objetos"
-text = "Enabled"
-
-[node name="DebugModeRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="DebugModeLabel" type="Label" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Modo Debug:"
-
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/DebugModeRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Enabled"
-
-[node name="ShowIDRow" type="HBoxContainer" parent="UI/VBox/Tabs/Debug"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="ShowIDLabel" type="Label" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Show ID:"
-
-[node name="Disabled" type="Button" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/VBox/Tabs/Debug/ShowIDRow"]
+[node name="MusicEnabled" type="Button" parent="UI/VBox/Tabs/Audio/MusicRow" unique_id=143374184]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2

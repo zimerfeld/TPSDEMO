@@ -1,4 +1,4 @@
-# enemies/red_robot/red_robot.gd
+# scenes3D/enemies/red_robot/red_robot.gd
 
 **Estende:** `CharacterBody3D`
 
@@ -63,7 +63,7 @@ if health <= 0:
 
 ---
 
-## Caminho: `enemies/red_robot/red_robot.gd`
+## Caminho: `scenes3D/enemies/red_robot/red_robot.gd`
 
 ---
 
