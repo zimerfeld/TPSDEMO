@@ -101,6 +101,10 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 
 @onready var _rows: Array = []
 
+# Index of the currently-confirmed video resolution, used to revert the dropdown
+# if the user cancels the confirmation popup.
+var _current_resolution_index: int = 0
+
 
 func _ready() -> void:
 	_rows = [
@@ -138,15 +142,16 @@ func _populate_video_resolutions() -> void:
 	video_resolution_dropdown.clear()
 	for res in VIDEO_RESOLUTIONS:
 		video_resolution_dropdown.add_item(res["nome"])
-	# Reflect the current window size if it matches a preset; otherwise show no
-	# selection rather than implying a resolution that isn't active.
-	var current := DisplayServer.window_get_size()
-	var matched := -1
+	# Load the saved resolution like every other setting. If none was saved (or it
+	# no longer matches a preset), fall back to the first preset as the default.
+	var saved: Vector2i = Settings.config_file.get_value("video", "resolution", Vector2i.ZERO)
+	var matched := 0
 	for i in range(VIDEO_RESOLUTIONS.size()):
-		if VIDEO_RESOLUTIONS[i]["largura"] == current.x and VIDEO_RESOLUTIONS[i]["altura"] == current.y:
+		if VIDEO_RESOLUTIONS[i]["largura"] == saved.x and VIDEO_RESOLUTIONS[i]["altura"] == saved.y:
 			matched = i
 			break
 	video_resolution_dropdown.selected = matched
+	_current_resolution_index = matched
 	video_resolution_dropdown.item_selected.connect(_on_video_resolution_selected)
 
 
@@ -381,6 +386,33 @@ func _on_apply_pressed() -> void:
 func _on_video_resolution_selected(index: int) -> void:
 	if index < 0 or index >= VIDEO_RESOLUTIONS.size():
 		return
+	if index == _current_resolution_index:
+		return
+	# Ask for confirmation in a centered floating window before changing the
+	# resolution; the dropdown reverts to the previous choice if the user cancels.
+	var dlg := ConfirmationDialog.new()
+	dlg.title = "Resolução de vídeo"
+	dlg.dialog_text = "Confirma resolução de video escolhida ?"
+	dlg.get_ok_button().text = "Sim"
+	dlg.get_cancel_button().text = "Não"
+	dlg.confirmed.connect(func() -> void:
+		_apply_video_resolution(index)
+		_current_resolution_index = index
+		var res: Dictionary = VIDEO_RESOLUTIONS[index]
+		Settings.config_file.set_value("video", "resolution", Vector2i(res["largura"], res["altura"]))
+		Settings.save_settings()
+		dlg.queue_free()
+	)
+	# `canceled` covers the "Não" button, the close (X) button and Escape.
+	dlg.canceled.connect(func() -> void:
+		video_resolution_dropdown.selected = _current_resolution_index
+		dlg.queue_free()
+	)
+	add_child(dlg)
+	dlg.popup_centered()
+
+
+func _apply_video_resolution(index: int) -> void:
 	var res: Dictionary = VIDEO_RESOLUTIONS[index]
 	var target := Vector2i(res["largura"], res["altura"])
 	var window := get_window()

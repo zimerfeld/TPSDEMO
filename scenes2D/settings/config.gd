@@ -34,6 +34,8 @@ var DEFAULTS := {
 		display_mode = Window.MODE_EXCLUSIVE_FULLSCREEN,
 		vsync = DisplayServer.VSYNC_ENABLED,
 		max_fps = 0,
+		# First preset in settings.gd VIDEO_RESOLUTIONS (HD 1280 × 720) is the default.
+		resolution = Vector2i(1280, 720),
 		resolution_scale = 1.0,
 		scale_filter = Viewport.SCALING_3D_MODE_METALFX_TEMPORAL if metalfx_supported else Viewport.SCALING_3D_MODE_BILINEAR,
 	},

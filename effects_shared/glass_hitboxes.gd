@@ -1,51 +1,20 @@
 extends Node3D
-## Hitboxes funcionais com aparência de vidro, agrupadas por MEMBRO grande.
+## Hitboxes funcionais com aparência de vidro, UMA por MEMBRO grande.
 ## Grupos: CABEÇA, TRONCO, BRAÇO (D/E), PERNA (D/E).
 ##
-## Cada osso-membro vira: BoneAttachment3D → Area3D (CollisionShape3D capsule)
-## + MeshInstance3D de vidro. As áreas seguem o ângulo/movimento das meshes via
-## BoneAttachment3D. O volume é proporcional ao tamanho do membro (cobre membros
-## grandes, p.ex. do robô). Um Label3D por grupo identifica o membro.
+## Cada membro vira uma única BoxShape3D ajustada aos VÉRTICES da malha skinados
+## àquele membro (AABB no espaço local do osso-raiz do membro → caixa orientada
+## que "abraça" a parte). A caixa é presa via BoneAttachment3D ao osso-raiz, então
+## acompanha a pose/animação. Um Label3D por membro o identifica.
 ## As áreas detectam projéteis e aplicam DANO LOCALIZADO (cabeça = +50%).
-
-# Grupos
-const G_HEAD := "HEAD"
-const G_TORSO := "TORSO"
-const G_ARM_L := "ARM_L"
-const G_ARM_R := "ARM_R"
-const G_LEG_L := "LEG_L"
-const G_LEG_R := "LEG_R"
-
-const GROUP_LABELS := {
-	"HEAD": "CABEÇA",
-	"TORSO": "TRONCO",
-	"ARM_L": "BRAÇO E",
-	"ARM_R": "BRAÇO D",
-	"LEG_L": "PERNA E",
-	"LEG_R": "PERNA D",
-}
 
 const HEAD_MULTIPLIER := 1.5
 const BODY_MULTIPLIER := 1.0
 
-const EXCLUDE_KEYWORDS: Array[String] = [
-	"ik", "scaler", "piston", "pad", "cover", "guard", "cable", "flap",
-	"dongle", "sight", "mod", "slider", "rotator", "orient", "control",
-	"target", "master", "empty", "eye", "mouth", "track", "extender",
-	"recoil", "booster", "fuel", "plate", "heel", "toe", "core", "aim", "dead",
-]
-
 @export var enabled: bool = true
-## Raio mínimo da cápsula.
-@export var radius: float = 0.1
-## Fração do comprimento do membro usada como raio (volume proporcional).
-@export var radius_factor: float = 0.4
-## Raio máximo (limita membros muito longos, p.ex. o tronco do robô).
-@export var max_radius: float = 0.25
-## Raio da cabeça (zona de headshot mais generosa).
-@export var head_radius: float = 0.18
+## Margem (m) somada a cada lado da caixa, para folga sobre a superfície.
+@export var padding: float = 0.03
 @export var glass_color: Color = Color(0.45, 0.8, 1.0, 0.22)
-@export var min_bone_length: float = 0.05
 
 @export_group("Labels 3D")
 @export var show_labels: bool = true
@@ -69,80 +38,136 @@ func build_for(skel: Skeleton3D) -> void:
 		return
 	_character = get_parent()
 	_material = _make_glass_material()
-	var labeled := {}  # grupos que já receberam um Label3D
-	for i in skel.get_bone_count():
-		var group := _group_for(skel.get_bone_name(i))
-		if group == "":
+	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
+	var members := _collect_member_boxes(skel)
+	for group in members:
+		_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"])
+
+
+# ── Coleta de vértices por membro ─────────────────────────────────────────────
+
+func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
+	# 1) Agrupa ossos por membro e escolhe o osso-raiz (mais raso na hierarquia).
+	var group_bones := {}
+	for b in skel.get_bone_count():
+		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names)
+		if g == "":
 			continue
-		# Maior segmento osso→filho define direção/comprimento do membro.
-		var best := Vector3.ZERO
-		var best_len := min_bone_length
-		for c in skel.get_bone_children(i):
-			var off: Vector3 = skel.get_bone_rest(c).origin
-			if off.length() > best_len:
-				best_len = off.length()
-				best = off
-		if best == Vector3.ZERO:
+		if not group_bones.has(g):
+			group_bones[g] = []
+		group_bones[g].append(b)
+
+	var root_bone := {}
+	for g in group_bones:
+		var best: int = group_bones[g][0]
+		var best_depth := _bone_depth(skel, best)
+		for b in group_bones[g]:
+			var d := _bone_depth(skel, b)
+			if d < best_depth:
+				best_depth = d
+				best = b
+		root_bone[g] = best
+
+	# 2) Acumula AABB por membro a partir dos vértices skinados (espaço do osso-raiz).
+	# A posição de cada vértice no REST é reconstruída via a BIND POSE da skin
+	# (get_bind_pose) — isso corrige esqueletos cuja pose de bind difere da de
+	# rest (p.ex. o player); usar só get_bone_global_rest deslocaria as caixas.
+	var bone_rest: Array[Transform3D] = []
+	bone_rest.resize(skel.get_bone_count())
+	for b in skel.get_bone_count():
+		bone_rest[b] = skel.get_bone_global_rest(b)
+	var root_rest_inv := {}
+	for g in root_bone:
+		root_rest_inv[g] = bone_rest[root_bone[g]].affine_inverse()
+
+	var acc := {}  # group → {"min": Vector3, "max": Vector3}
+	for mi in _skinned_meshes(skel):
+		var skin: Skin = mi.skin
+		if skin == null:
 			continue
+		# Por índice de bind: osso do esqueleto + matriz de skinning no rest
+		# (mesh-space → skeleton-space) = rest_global(osso) * bind_pose.
+		var idx_to_bone: PackedInt32Array = PackedInt32Array()
+		idx_to_bone.resize(skin.get_bind_count())
+		var skin_xform: Array[Transform3D] = []
+		skin_xform.resize(skin.get_bind_count())
+		for i in skin.get_bind_count():
+			var bb := skin.get_bind_bone(i)
+			var skb_i := bb if bb >= 0 else skel.find_bone(skin.get_bind_name(i))
+			idx_to_bone[i] = skb_i
+			if skb_i >= 0:
+				skin_xform[i] = bone_rest[skb_i] * skin.get_bind_pose(i)
 
-		var att := BoneAttachment3D.new()
-		att.name = "Hitbox_%s_%s" % [group, skel.get_bone_name(i)]
-		skel.add_child(att)
-		att.bone_name = skel.get_bone_name(i)
+		for s in mi.mesh.get_surface_count():
+			var arr := mi.mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var bones: PackedInt32Array = arr[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
+			if verts.is_empty() or bones.is_empty() or weights.is_empty():
+				continue
+			var per := bones.size() / verts.size()  # influências por vértice (4 ou 8)
+			for vi in verts.size():
+				var best_w := 0.0
+				var best_b := -1
+				for k in per:
+					var w := weights[vi * per + k]
+					if w > best_w:
+						best_w = w
+						best_b = bones[vi * per + k]
+				if best_b < 0 or best_b >= idx_to_bone.size():
+					continue
+				var skb := idx_to_bone[best_b]
+				if skb < 0:
+					continue
+				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names)
+				if g == "":
+					continue
+				var p: Vector3 = root_rest_inv[g] * (skin_xform[best_b] * verts[vi])
+				if not acc.has(g):
+					acc[g] = {"min": p, "max": p}
+				else:
+					acc[g]["min"] = acc[g]["min"].min(p)
+					acc[g]["max"] = acc[g]["max"].max(p)
 
-		var want_label: bool = show_labels and not labeled.has(group) \
-				and DisplayServer.get_name() != "headless"
-		att.add_child(_make_hitbox(best, group, want_label))
-		if want_label:
-			labeled[group] = true
-
-
-func _group_for(bone_name: String) -> String:
-	var n := bone_name.to_lower()
-	for h in head_bone_names:
-		if n == h.to_lower():
-			return G_HEAD
-	for ex in EXCLUDE_KEYWORDS:
-		if n.contains(ex):
-			return ""
-
-	if n.contains("head") or n.contains("neck"):
-		return G_HEAD
-	if n.contains("hips") or n.contains("pelvis") or n.contains("spine") \
-			or n.contains("chest") or n.contains("torso") or n.contains("body"):
-		return G_TORSO
-
-	var side := _side_of(n)
-	if n.contains("shoulder") or n.contains("arm") or n.contains("hand"):
-		if side == "":
-			return ""
-		return G_ARM_L if side == "L" else G_ARM_R
-	if n.contains("thigh") or n.contains("shin") or n.contains("calf") \
-			or n.contains("knee") or n.contains("foot") or n.contains("leg"):
-		if side == "":
-			return ""
-		return G_LEG_L if side == "L" else G_LEG_R
-	return ""
-
-
-func _side_of(n: String) -> String:
-	if n.begins_with("l-") or n.ends_with(".l") or n.contains(".l.") or n.ends_with("_l"):
-		return "L"
-	if n.begins_with("r-") or n.ends_with(".r") or n.contains(".r.") or n.ends_with("_r"):
-		return "R"
-	return ""
+	# 3) Monta AABB final (com folga) por membro que tenha vértices.
+	var out := {}
+	var pad := Vector3(padding, padding, padding)
+	for g in acc:
+		var mn: Vector3 = acc[g]["min"] - pad
+		var mx: Vector3 = acc[g]["max"] + pad
+		out[g] = {"bone": root_bone[g], "aabb": AABB(mn, mx - mn)}
+	return out
 
 
-func _radius_for(group: String, length: float) -> float:
-	if group == G_HEAD:
-		return head_radius
-	return clampf(length * radius_factor, radius, max_radius)
+func _bone_depth(skel: Skeleton3D, b: int) -> int:
+	var d := 0
+	var p := skel.get_bone_parent(b)
+	while p != -1:
+		d += 1
+		p = skel.get_bone_parent(p)
+	return d
 
 
-func _make_hitbox(offset: Vector3, group: String, with_label: bool) -> Area3D:
-	var length: float = offset.length()
-	var r: float = _radius_for(group, length)
-	var mult: float = HEAD_MULTIPLIER if group == G_HEAD else BODY_MULTIPLIER
+func _skinned_meshes(skel: Skeleton3D) -> Array[MeshInstance3D]:
+	var out: Array[MeshInstance3D] = []
+	var stack: Array = [skel]
+	while stack.size() > 0:
+		var n: Node = stack.pop_back()
+		if n is MeshInstance3D and (n as MeshInstance3D).skin != null \
+				and (n as MeshInstance3D).mesh != null:
+			out.append(n as MeshInstance3D)
+		for c in n.get_children():
+			stack.append(c)
+	return out
+
+
+# ── Construção da hitbox de um membro ─────────────────────────────────────────
+
+func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aabb: AABB) -> void:
+	var att := BoneAttachment3D.new()
+	att.name = "Hitbox_%s" % group
+	skel.add_child(att)
+	att.bone_name = skel.get_bone_name(bone_idx)
 
 	var area := Area3D.new()
 	area.collision_layer = hitbox_layer
@@ -150,36 +175,34 @@ func _make_hitbox(offset: Vector3, group: String, with_label: bool) -> Area3D:
 	area.monitoring = true
 	area.monitorable = true
 	area.set_meta("group", group)
+	var mult: float = HEAD_MULTIPLIER if group == BodyParts.HEAD else BODY_MULTIPLIER
 	area.set_meta("damage_multiplier", mult)
 
-	# Alinha o eixo +Y à direção do osso (cápsula acompanha o ângulo do membro).
-	var aligned_basis := _basis_aligned_to(offset.normalized())
-	var xform := Transform3D(aligned_basis, offset * 0.5)
+	var center := box_aabb.position + box_aabb.size * 0.5
 
-	var cap := CapsuleShape3D.new()
-	cap.radius = r
-	cap.height = maxf(length, r * 2.0)
+	var box := BoxShape3D.new()
+	box.size = box_aabb.size
 	var shape := CollisionShape3D.new()
-	shape.shape = cap
-	shape.transform = xform
+	shape.shape = box
+	shape.position = center
 	area.add_child(shape)
 
 	# Visual de vidro (desnecessário em servidor dedicado).
 	if DisplayServer.get_name() != "headless":
-		var mesh := CapsuleMesh.new()
-		mesh.radius = r
-		mesh.height = maxf(length, r * 2.0)
+		var mesh := BoxMesh.new()
+		mesh.size = box_aabb.size
 		var mi := MeshInstance3D.new()
 		mi.mesh = mesh
 		mi.material_override = _material
-		mi.transform = xform
+		mi.position = center
 		area.add_child(mi)
 
-	if with_label:
-		area.add_child(_make_label(GROUP_LABELS.get(group, group), offset * 0.5))
+		if show_labels:
+			var label_pos := center + Vector3(0.0, box_aabb.size.y * 0.5 + 0.08, 0.0)
+			area.add_child(_make_label(BodyParts.label_of(group), label_pos))
 
 	area.body_entered.connect(_on_hitbox_body_entered.bind(area))
-	return area
+	att.add_child(area)
 
 
 func _make_label(text: String, pos: Vector3) -> Label3D:
@@ -219,14 +242,3 @@ func _make_glass_material() -> StandardMaterial3D:
 	m.rim_tint = 0.5
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return m
-
-
-# Rotação que leva +Y até a direção `dir`.
-func _basis_aligned_to(dir: Vector3) -> Basis:
-	var up := Vector3.UP
-	if dir.is_equal_approx(up):
-		return Basis()
-	if dir.is_equal_approx(-up):
-		return Basis.from_euler(Vector3(PI, 0.0, 0.0))
-	var axis := up.cross(dir).normalized()
-	return Basis(axis, up.angle_to(dir))
