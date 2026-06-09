@@ -34,10 +34,6 @@ const PLAYER_HITBOX_LAYER: int = 16
 
 @export_group("Glass Hitboxes")
 @export var hitbox_color: Color = Color(1.0, 0.5, 0.4, 0.22)
-@export var hitbox_radius: float = 0.22
-@export var hitbox_radius_factor: float = 0.55
-@export var hitbox_max_radius: float = 1.0
-@export var hitbox_head_radius: float = 0.45
 @export_group("")
 
 @export var target_position := Vector3()
@@ -106,10 +102,6 @@ func _setup_glass_hitboxes() -> void:
 	gh.detect_layer = 8         # bit4 = projétil (bullet)
 	gh.head_bone_names = (["mouth_eyes"] as Array[String])
 	gh.glass_color = hitbox_color
-	gh.radius = hitbox_radius
-	gh.radius_factor = hitbox_radius_factor
-	gh.max_radius = hitbox_max_radius
-	gh.head_radius = hitbox_head_radius
 	add_child(gh)
 	gh.build_for(skel)
 
