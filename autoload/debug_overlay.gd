@@ -50,7 +50,7 @@ func _is_debug_2d_on() -> bool:
 	return Settings.config_file.get_value("game", "debug_2d", false)
 
 
-# 3D (MeshInstance3D) overlays follow the "Show Debug 3D" toggle.
+# 3D (Skeleton3D bone) overlays follow the "Show Debug 3D" toggle.
 func _is_debug_3d_on() -> bool:
 	return Settings.config_file.get_value("game", "debug_3d", false)
 
@@ -76,11 +76,13 @@ func _is_show_name_on() -> bool:
 	return Settings.config_file.get_value("game", "show_name", false)
 
 
-# Visibility of a tooltip line ("type" / "name" / "id") from the saved config.
+# Visibility of a tooltip line ("type" / "name" / "member" / "id") from the saved
+# config. The body-part line ("member") rides along with the Name toggle.
 func _line_visible(kind: String) -> bool:
 	match kind:
 		"type": return _is_show_type_on()
 		"name": return _is_show_name_on()
+		"member": return _is_show_name_on()
 		"id": return _is_show_id_on()
 	return false
 
@@ -349,9 +351,9 @@ func _tag(node: Node) -> void:
 	if node is Control and not (node is CanvasLayer):
 		if _is_debug_2d_on():
 			_add_2d(node as Control)
-	elif node is MeshInstance3D:
+	elif node is Skeleton3D:
 		if _is_debug_3d_on():
-			_add_3d(node as MeshInstance3D)
+			_add_3d_skeleton(node as Skeleton3D)
 
 
 func _add_2d(ctrl: Control) -> void:
@@ -431,42 +433,54 @@ func _next_color() -> Color:
 	return c
 
 
-func _add_3d(mesh: MeshInstance3D) -> void:
-	if mesh.has_meta(_LABEL3D_META):
+# Rotula apenas os BONES que pertencem a um MEMBRO (CABEÇA/TRONCO/BRAÇO/PERNA);
+# ossos de controle/IK não recebem label. Cada osso rotulado recebe um
+# BoneAttachment3D (segue a pose/animação) com 1 linha Label3D:
+#   Membro: <CABEÇA…>
+# ligada/desligada pelo toggle "Show Name". Usa o mesmo classificador das
+# hitboxes (BodyParts).
+func _add_3d_skeleton(skel: Skeleton3D) -> void:
+	if skel.has_meta(_LABEL3D_META):
 		return
-	# Skip the debug grid itself
-	if mesh == _grid_mesh:
-		return
-	# One Label3D per line (TYPE / Name / ID, top to bottom). Each is toggled by
-	# `visible` from the saved show_type/show_name/show_id settings.
-	var lines := [
-		{"kind": "type", "text": "TYPE: %s" % mesh.get_class(), "y": 0.68},
-		{"kind": "name", "text": "Name: %s" % mesh.name, "y": 0.5},
-		{"kind": "id", "text": "ID: %d" % mesh.get_instance_id(), "y": 0.32},
-	]
-	for line in lines:
-		var lbl := Label3D.new()
-		lbl.name = "DebugLabel3D_" + str(line["kind"])
-		lbl.text = str(line["text"])
-		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		lbl.no_depth_test = true
-		lbl.pixel_size = 0.005
-		lbl.font_size = 14
-		lbl.modulate = Color.YELLOW
-		lbl.outline_size = 4
-		lbl.outline_modulate = Color(0, 0, 0, 0.8)
-		lbl.position = Vector3(0.0, line["y"], 0.0)
-		lbl.visible = _line_visible(line["kind"])
-		lbl.set_meta(_LABEL3D_META, true)
-		mesh.add_child(lbl)
-		_label3d_lines[lbl.get_instance_id()] = line["kind"]
+	for i in skel.get_bone_count():
+		var member := BodyParts.label_of(BodyParts.group_of(skel.get_bone_name(i)))
+		if member == "":
+			continue
 
-	mesh.set_meta(_LABEL3D_META, true)
+		var att := BoneAttachment3D.new()
+		att.name = "DebugBoneLabel_%d" % i
+		att.set_meta(_LABEL3D_META, true)
+		skel.add_child(att)
+		att.bone_name = skel.get_bone_name(i)
+
+		var lines := [
+			{"kind": "member", "text": "Membro: %s" % member, "y": 0.0},
+		]
+		for line in lines:
+			var lbl := Label3D.new()
+			lbl.name = "DebugBoneLine_" + str(line["kind"])
+			lbl.text = str(line["text"])
+			lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			lbl.no_depth_test = true
+			lbl.pixel_size = 0.003
+			lbl.font_size = 14
+			lbl.modulate = Color(1.0, 0.8, 0.2) if line["kind"] == "member" else Color(0.3, 0.9, 1.0)
+			lbl.outline_size = 4
+			lbl.outline_modulate = Color(0, 0, 0, 0.8)
+			lbl.position = Vector3(0.0, line["y"], 0.0)
+			lbl.visible = _line_visible(line["kind"])
+			lbl.set_meta(_LABEL3D_META, true)
+			att.add_child(lbl)
+			_label3d_lines[lbl.get_instance_id()] = line["kind"]
+
+	skel.set_meta(_LABEL3D_META, true)
 
 
 func _remove_3d_labels(node: Node) -> void:
 	for child in node.get_children():
-		if child is Label3D and child.has_meta(_LABEL3D_META):
+		# Os labels de bone ficam sob um BoneAttachment3D criado por nós; remover o
+		# wrapper já leva junto as linhas Label3D filhas.
+		if (child is BoneAttachment3D or child is Label3D) and child.has_meta(_LABEL3D_META):
 			child.queue_free()
 		else:
 			_remove_3d_labels(child)

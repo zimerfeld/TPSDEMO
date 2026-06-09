@@ -63,10 +63,6 @@ var hp: int = MAX_HP
 
 @export_group("Glass Hitboxes")
 @export var hitbox_color: Color = Color(0.45, 0.8, 1.0, 0.22)
-@export var hitbox_radius: float = 0.1
-@export var hitbox_radius_factor: float = 0.4
-@export var hitbox_max_radius: float = 0.22
-@export var hitbox_head_radius: float = 0.16
 
 var _health_bar = null
 
@@ -114,10 +110,6 @@ func _setup_glass_hitboxes() -> void:
 	gh.hitbox_layer = 16        # bit5 = hitboxes do player
 	gh.detect_layer = 8         # bit4 = projétil (bullet)
 	gh.glass_color = hitbox_color
-	gh.radius = hitbox_radius
-	gh.radius_factor = hitbox_radius_factor
-	gh.max_radius = hitbox_max_radius
-	gh.head_radius = hitbox_head_radius
 	add_child(gh)
 	gh.build_for(skel)
 

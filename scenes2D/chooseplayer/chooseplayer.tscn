@@ -46,7 +46,7 @@ mesh = SubResource("QuadMesh_cp1")
 surface_material_override/0 = SubResource("StandardMaterial3D_cp1")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1647900211]
-transform = Transform3D(0.871624, -0.0363083, 0.488828, 0, 0.997253, 0.0740721, -0.490175, -0.064563, 0.86923, 0.0702285, 1.22404, 2.09675)
+transform = Transform3D(0.871624, -0.0363083, 0.488828, 0, 0.997253, 0.0740721, -0.490175, -0.064563, 0.86923, 1.17923, 1.15404, 2.09675)
 
 [node name="SpotLight3D" type="SpotLight3D" parent="." unique_id=516442126]
 transform = Transform3D(0.967027, 0, 0.254675, -0.225291, 0.466312, 0.855452, -0.118758, -0.88462, 0.450936, 0.557445, 2.31204, 0.556668)
