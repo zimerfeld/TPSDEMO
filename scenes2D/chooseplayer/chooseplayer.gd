@@ -60,7 +60,7 @@ func _load_character(index: int) -> void:
 	var char_data: Dictionary = CHARACTERS[index]
 	character_name_label.text = char_data["name"]
 
-	var model_scene: PackedScene = load("res://scenes3D/players/player/model/player.glb")
+	var model_scene: PackedScene = load("res://scenes3D/library/characters/player/player.glb")
 	if model_scene == null:
 		return
 	var model: Node3D = model_scene.instantiate()

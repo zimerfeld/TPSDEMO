@@ -1,0 +1,18 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://bhf6kwdlc7f5h"]
+
+[ext_resource type="Shader" uid="uid://bafg2kigqpcel" path="res://scenes3D/library/characters/red_robot/laser/smoke.gdshader" id="1_c3b66"]
+[ext_resource type="Texture2D" uid="uid://i5ll5xqsm55y" path="res://scenes3D/library/characters/red_robot/laser/BarrelSmokeTexture.png" id="2_8p5qw"]
+
+[sub_resource type="FastNoiseLite" id="29"]
+
+[sub_resource type="NoiseTexture2D" id="30"]
+width = 64
+height = 64
+noise = SubResource("29")
+seamless = true
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_c3b66")
+shader_parameter/smoke_texture = ExtResource("2_8p5qw")
+shader_parameter/noise_texture = SubResource("30")

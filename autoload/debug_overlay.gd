@@ -77,12 +77,14 @@ func _is_show_name_on() -> bool:
 
 
 # Visibility of a tooltip line ("type" / "name" / "member" / "id") from the saved
-# config. The body-part line ("member") rides along with the Name toggle.
+# config. The 3D body-part line ("member") is governed solely by the "Show Debug
+# 3D" toggle — enabling Debug 3D makes the member tooltips visible, disabling it
+# hides them (the labels only exist while Debug 3D is active anyway).
 func _line_visible(kind: String) -> bool:
 	match kind:
 		"type": return _is_show_type_on()
 		"name": return _is_show_name_on()
-		"member": return _is_show_name_on()
+		"member": return _is_debug_3d_on()
 		"id": return _is_show_id_on()
 	return false
 
@@ -246,7 +248,11 @@ func _resolve_overlaps() -> void:
 
 func _build_overlays() -> void:
 	_ensure_canvas()
-	_scan(get_tree().current_scene)
+	# Varre a partir da root (não só de current_scene): o HUD 2D e os esqueletos
+	# do gameplay (player/enemy) ficam fora de current_scene — o main.gd troca as
+	# telas como filhas da root. Assim os overlays 2D e 3D aparecem em qualquer
+	# cena, controlados pelos toggles Debug 2D / Debug 3D.
+	_scan(get_tree().root)
 
 
 func _clear_all() -> void:
@@ -259,8 +265,10 @@ func _clear_all() -> void:
 	_overlay_map.clear()
 	_palette_index = 0
 
-	if get_tree().current_scene != null:
-		_remove_3d_labels(get_tree().current_scene)
+	# Varre a partir da root: player/enemy ficam fora de current_scene (o main.gd
+	# troca telas como filhas da root), então remover só de current_scene deixaria
+	# os labels órfãos e visíveis ao desligar o Debug 3D.
+	_remove_3d_labels(get_tree().root)
 	_label3d_lines.clear()
 
 	if is_instance_valid(_canvas_layer):
@@ -344,7 +352,10 @@ func _scan(node: Node) -> void:
 func _tag(node: Node) -> void:
 	if not is_instance_valid(node):
 		return
+	# Não rotula a própria UI de debug (canvas dos overlays 2D e o label de cena).
 	if is_instance_valid(_canvas_layer) and _canvas_layer.is_ancestor_of(node):
+		return
+	if is_instance_valid(_persistent_canvas) and _persistent_canvas.is_ancestor_of(node):
 		return
 	if node.has_meta(_LABEL3D_META):
 		return
@@ -437,8 +448,8 @@ func _next_color() -> Color:
 # ossos de controle/IK não recebem label. Cada osso rotulado recebe um
 # BoneAttachment3D (segue a pose/animação) com 1 linha Label3D:
 #   Membro: <CABEÇA…>
-# ligada/desligada pelo toggle "Show Name". Usa o mesmo classificador das
-# hitboxes (BodyParts).
+# Visível/invisível conforme o toggle "Show Debug 3D". Usa o mesmo classificador
+# das hitboxes (BodyParts).
 func _add_3d_skeleton(skel: Skeleton3D) -> void:
 	if skel.has_meta(_LABEL3D_META):
 		return
