@@ -3,7 +3,7 @@ extends Node3D
 
 signal quit
 
-const RedRobot: PackedScene = preload("res://scenes3D/enemies/red_robot/red_robot.tscn")
+const RedRobot: PackedScene = preload("res://scenes3D/library/characters/red_robot/red_robot.tscn")
 var _player_scene: PackedScene
 
 var lightmap_gi: LightmapGI = null

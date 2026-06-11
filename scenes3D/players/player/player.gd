@@ -224,7 +224,7 @@ func apply_input(delta: float) -> void:
 			var shoot_origin: Vector3 = shoot_from.global_transform.origin
 			var shoot_dir: Vector3 = (player_input.shoot_target - shoot_origin).normalized()
 
-			var bullet: CharacterBody3D = preload("res://scenes3D/players/player/bullet/bullet.tscn").instantiate()
+			var bullet: CharacterBody3D = preload("res://scenes3D/library/characters/player/bullet/bullet.tscn").instantiate()
 			bullet.weapon_damage = weapon_damage
 			bullet.shooter = self
 			get_parent().add_child(bullet, true)
