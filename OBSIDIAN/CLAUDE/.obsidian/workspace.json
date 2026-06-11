@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "arquivos-chave/glass-hitboxes-gd.md",
+                "file": "sistemas/sistema-de-vida.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "glass-hitboxes-gd"
+              "title": "sistema-de-vida"
             }
           }
         ]
@@ -183,15 +183,15 @@
       "bases:Create new base": false
     }
   },
-  "active": "02c7e4bd7c4ae971",
+  "active": "0f1602aa8c929b75",
   "lastOpenFiles": [
+    "arquivos-chave/glass-hitboxes-gd.md",
     "convencoes/formatacao.md",
     "convencoes",
     "arquivos-chave/player-input-gd.md",
     "arquivos-chave/player-gd.md",
     "arquivos-chave/main-gd.md",
     "arquivos-chave/health-bar-gd.md",
-    "arquivos-chave/glass-hitboxes-gd.md",
     "arquivos-chave/enemy-health-bar-gd.md",
     "arquivos-chave/bullet-gd.md",
     "arquivos-chave/red-robot-gd.md",
