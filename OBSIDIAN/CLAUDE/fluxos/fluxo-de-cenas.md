@@ -11,7 +11,7 @@ main.tscn (main.gd — roteador)
           ├─► chooseplayer.tscn ─► levels.tscn ─┬─► level_1.tscn
           │                                     └─► level_base.tscn
           ├─► settings.tscn (UI: settings.gd)
-          ├─► developer.tscn ─► models.tscn
+          ├─► developer.tscn ─► models.tscn ─► Exported.tscn (galeria)
           ├─► (Play Online: host / connect) ─► level_base.tscn
           └─► Sair → quit
 ```
@@ -43,7 +43,8 @@ main.tscn (main.gd — roteador)
 - **menu** — Jogar (→ chooseplayer), Configurações (→ settings), Modo Developer (→ developer), Play Online (→ level_base), Sair
 - **settings** — `config.gd` (autoload **Settings**) + `settings.gd` (UI). Abas Display / Resolution / Antialiasing / Lighting / Effects / **Debug**
 - **developer** — toggles HUD FPS / Malha no Solo (estilo Disabled/Enabled) + botão **Modelos 3D**
-- **models** — visualizador dos modelos 3D do level_base com combobox em cascata (categoria → modelo), modelo girando
+- **models** — navegador/extrator de modelos 3D: Categoria → Modelo → Malha (malhas distintas), preview rotacionável, "Salvar como cena 3D" (extrai p/ `library/extracted/`) e botão "Exportados". Detalhes em [[sistemas/biblioteca-de-modelos]]
+- **Exported** (`library/extracted/Exported.tscn`) — galeria que exibe todas as cenas de `library/extracted/` lado a lado; volta para models
 - **chooseplayer** — escolhe personagem (modelo 3D girando) → levels
 - **levels** — Level 1 (`scenes3D/level_1`) ou Level Base (`scenes3D/level_base`), load assíncrono
 
@@ -53,7 +54,7 @@ main.tscn (main.gd — roteador)
 
 | Sinal | Emitido por | Recebido por |
 |---|---|---|
-| `replace_main_scene(scene)` | menu, settings, chooseplayer, developer, models, levels | `main.gd` → troca de cena |
+| `replace_main_scene(scene)` | menu, settings, chooseplayer, developer, models, Exported, levels | `main.gd` → troca de cena |
 | `quit` | chooseplayer, developer | `main.gd` → `go_to_main_menu()` |
 
 ---
