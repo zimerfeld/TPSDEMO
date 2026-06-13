@@ -6,12 +6,12 @@ signal quit
 const CHARACTERS: Array[Dictionary] = [
 	{
 		"name": "PLAYER",
-		"scene_path": "res://scenes3D/players/player/player.tscn",
+		"scene_path": "res://scenes3D/library/characters/players/player/player.tscn",
 		"tint": Color(1.0, 1.0, 1.0, 1.0),
 	},
 	{
 		"name": "PLAYERA",
-		"scene_path": "res://scenes3D/players/playera/playera.tscn",
+		"scene_path": "res://scenes3D/library/characters/players/playera/playera.tscn",
 		"tint": Color(1.0, 0.55, 0.65, 1.0),
 	},
 ]

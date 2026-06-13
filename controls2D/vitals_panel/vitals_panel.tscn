@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://controls2D/vitals_panel/vitals_panel.gd" id="1"]
 [ext_resource type="Theme" path="res://themes/cyberpunk.tres" id="2"]
 [ext_resource type="Script" path="res://addons/godot_ai/runtime/draw_recipe.gd" id="3"]
-[ext_resource type="Script" path="res://scripts/shield_gradient.gd" id="4"]
+[ext_resource type="Script" path="res://scenes2D/cyberpunkhud/scripts/shield_gradient.gd" id="4"]
 
 [node name="VitalsPanel" type="PanelContainer"]
 custom_minimum_size = Vector2(360, 0)

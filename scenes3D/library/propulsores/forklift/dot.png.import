@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://betukudu60g68"
-path.s3tc="res://.godot/imported/flying_forklift_normal.png-f1515803a3e6e54c3d6b262a3c6fdae9.s3tc.ctex"
+uid="uid://vq5qafqqevuj"
+path.s3tc="res://.godot/imported/dot.png-7b6c7f8f2e1453b42a577b6f48f0ac00.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://scenes3D/library/props/forklift/flying_forklift_normal.png"
-dest_files=["res://.godot/imported/flying_forklift_normal.png-f1515803a3e6e54c3d6b262a3c6fdae9.s3tc.ctex"]
+source_file="res://scenes3D/library/propulsores/forklift/dot.png"
+dest_files=["res://.godot/imported/dot.png-7b6c7f8f2e1453b42a577b6f48f0ac00.s3tc.ctex"]
 
 [params]
 
@@ -22,7 +22,7 @@ compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=1
+compress/normal_map=0
 compress/channel_pack=0
 mipmaps/generate=true
 mipmaps/limit=-1

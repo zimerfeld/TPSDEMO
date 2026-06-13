@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cgimqwcsyb6eu"
-path.s3tc="res://.godot/imported/door_emission.png-820c2ce77fc6264562f32ce1d72d2bb4.s3tc.ctex"
+uid="uid://bxper5316531s"
+path.s3tc="res://.godot/imported/flying_forklift_emission.png-17c43ba34d79c9ca74102db79a18e2b6.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://scenes3D/door/textures/door_emission.png"
-dest_files=["res://.godot/imported/door_emission.png-820c2ce77fc6264562f32ce1d72d2bb4.s3tc.ctex"]
+source_file="res://scenes3D/library/propulsores/forklift/flying_forklift_emission.png"
+dest_files=["res://.godot/imported/flying_forklift_emission.png-17c43ba34d79c9ca74102db79a18e2b6.s3tc.ctex"]
 
 [params]
 

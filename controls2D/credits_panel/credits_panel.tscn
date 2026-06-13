@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" path="res://controls2D/credits_panel/credits_panel.gd" id="1"]
 [ext_resource type="Theme" path="res://themes/cyberpunk.tres" id="2"]
-[ext_resource type="Script" path="res://scripts/angular_frame.gd" id="3"]
-[ext_resource type="Script" path="res://scripts/orbit_dot.gd" id="4"]
+[ext_resource type="Script" path="res://scenes2D/cyberpunkhud/scripts/angular_frame.gd" id="3"]
+[ext_resource type="Script" path="res://scenes2D/cyberpunkhud/scripts/orbit_dot.gd" id="4"]
 
 [node name="CreditsPanel" type="PanelContainer"]
 theme = ExtResource("2")

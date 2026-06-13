@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bivo3ncbyf02f"
-path="res://.godot/imported/door.dae-076ab6c69b68f321aa0709d8bf21a92f.scn"
+path="res://.godot/imported/door.dae-bd5ddadca9a10b3664070da9fffa24d3.scn"
 
 [deps]
 
-source_file="res://scenes3D/door/model/door.dae"
-dest_files=["res://.godot/imported/door.dae-076ab6c69b68f321aa0709d8bf21a92f.scn"]
+source_file="res://scenes3D/library/structures/door/model/door.dae"
+dest_files=["res://.godot/imported/door.dae-bd5ddadca9a10b3664070da9fffa24d3.scn"]
 
 [params]
 
@@ -41,12 +41,12 @@ _subresources={
 "materials": {
 "door": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://scenes3D/door/model/door.tres",
+"use_external/fallback_path": "res://scenes3D/library/structures/door/model/door.tres",
 "use_external/path": "uid://bjy37rys7arg0"
 },
 "door_unlockedemission": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://scenes3D/door/model/door_unlockedemission.tres",
+"use_external/fallback_path": "res://scenes3D/library/structures/door/model/door_unlockedemission.tres",
 "use_external/path": "uid://c6q1h8dxh631b"
 }
 }

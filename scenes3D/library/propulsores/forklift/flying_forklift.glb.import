@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://uqw7mo453h5m"
-path="res://.godot/imported/flying_forklift.glb-bd4c865cab75a24d74327fb469836ba4.scn"
+path="res://.godot/imported/flying_forklift.glb-f27cf385b274133946d0f5ed14162deb.scn"
 
 [deps]
 
-source_file="res://scenes3D/library/props/forklift/flying_forklift.glb"
-dest_files=["res://.godot/imported/flying_forklift.glb-bd4c865cab75a24d74327fb469836ba4.scn"]
+source_file="res://scenes3D/library/propulsores/forklift/flying_forklift.glb"
+dest_files=["res://.godot/imported/flying_forklift.glb-f27cf385b274133946d0f5ed14162deb.scn"]
 
 [params]
 
@@ -41,12 +41,12 @@ _subresources={
 "materials": {
 "flying_forklift": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://scenes3D/library/props/forklift/flying_forklift.tres",
+"use_external/fallback_path": "res://scenes3D/library/propulsores/forklift/flying_forklift.tres",
 "use_external/path": "uid://bb4rjtvtwl1a3"
 },
 "mid_cargo_box": {
 "use_external/enabled": true,
-"use_external/fallback_path": "res://scenes3D/library/props/forklift/mid_cargo_box.tres",
+"use_external/fallback_path": "res://scenes3D/library/propulsores/forklift/mid_cargo_box.tres",
 "use_external/path": "uid://fqclk6lbdf03"
 }
 }

@@ -1,8 +1,8 @@
 [gd_scene load_steps=10 format=3 uid="uid://dln4kthc3tvfv"]
 
-[ext_resource type="PackedScene" uid="uid://uqw7mo453h5m" path="res://scenes3D/library/props/forklift/flying_forklift.glb" id="1"]
-[ext_resource type="Texture2D" uid="uid://vq5qafqqevuj" path="res://scenes3D/library/props/forklift/dot.png" id="2"]
-[ext_resource type="Script" uid="uid://dcqnfagy55nrx" path="res://scenes3D/library/props/forklift/flying_forklift.gd" id="3"]
+[ext_resource type="PackedScene" uid="uid://uqw7mo453h5m" path="res://scenes3D/library/propulsores/forklift/flying_forklift.glb" id="1"]
+[ext_resource type="Texture2D" uid="uid://vq5qafqqevuj" path="res://scenes3D/library/propulsores/forklift/dot.png" id="2"]
+[ext_resource type="Script" uid="uid://dcqnfagy55nrx" path="res://scenes3D/library/propulsores/forklift/flying_forklift.gd" id="3"]
 [ext_resource type="Texture2D" uid="uid://biye81cs18sdp" path="res://effects_shared/spotlight_projector.png" id="4_47076"]
 
 [sub_resource type="BoxShape3D" id="1"]

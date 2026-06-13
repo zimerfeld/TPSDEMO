@@ -153,7 +153,7 @@ func show_health_hud(distance: float = -1.0) -> void:
 		return
 	if DisplayServer.get_name() == "headless":
 		return
-	var hud = preload("res://scenes3D/enemies/enemy_health_bar.gd").get_shared(get_tree().current_scene)
+	var hud = preload("res://scenes3D/library/characters/enemies/enemy_health_bar.gd").get_shared(get_tree().current_scene)
 	hud.show_enemy(enemy_name, maxi(health, 0), max_health, distance)
 
 
@@ -161,7 +161,7 @@ func show_health_hud(distance: float = -1.0) -> void:
 func hide_health_hud() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
-	var hud = preload("res://scenes3D/enemies/enemy_health_bar.gd").get_shared(get_tree().current_scene)
+	var hud = preload("res://scenes3D/library/characters/enemies/enemy_health_bar.gd").get_shared(get_tree().current_scene)
 	hud.hide_now()
 
 

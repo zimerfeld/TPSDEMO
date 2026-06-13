@@ -81,6 +81,19 @@ text = "Categoria:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
+[node name="PrefixRow" type="HBoxContainer" parent="UI/Selectors"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Selectors/PrefixRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Prefixo:"
+
+[node name="cboPrefix" type="OptionButton" parent="UI/Selectors/PrefixRow"]
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
 [node name="ModelRow" type="HBoxContainer" parent="UI/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16
@@ -132,7 +145,6 @@ offset_top = 110.0
 offset_right = 150.0
 offset_bottom = 160.0
 grow_horizontal = 2
-button_pressed = true
 text = "Rotação"
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
