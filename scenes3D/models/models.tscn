@@ -114,20 +114,11 @@ theme_override_constants/separation = 16
 [node name="Label" type="Label" parent="UI/Selectors/MeshRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-text = "Malha:"
+text = "Parte:"
 
 [node name="cboMeshes" type="OptionButton" parent="UI/Selectors/MeshRow"]
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
-
-[node name="SaveRow" type="HBoxContainer" parent="UI/Selectors"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="SaveButton" type="Button" parent="UI/Selectors/SaveRow"]
-custom_minimum_size = Vector2(486, 50)
-layout_mode = 2
-text = "Salvar como cena 3D"
 
 [node name="StatusLabel" type="Label" parent="UI/Selectors"]
 custom_minimum_size = Vector2(486, 0)
@@ -169,11 +160,4 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Voltar"
 
-[node name="ExportedButton" type="Button" parent="UI/Actions"]
-custom_minimum_size = Vector2(200, 50)
-layout_mode = 2
-theme_override_font_sizes/font_size = 30
-text = "Exportados"
-
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/ExportedButton" to="." method="_on_open_exported_pressed"]

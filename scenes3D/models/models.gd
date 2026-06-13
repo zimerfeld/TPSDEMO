@@ -4,30 +4,19 @@ signal replace_main_scene(resource: PackedScene)
 
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 
-# Gallery of everything under library/extracted/, opened by the "Exportados" button.
-const EXPORTED_PATH: String = "res://scenes3D/library/extracted/Exported.tscn"
-
-# Models that level_base.gd assembles dynamically (red robot + player). Copied
-# into library/extracted/ and surfaced as the synthetic "Level Base" entry in the
-# Personagens category, which previews them side by side.
-const LEVEL_BASE_GROUP: Array[String] = [
-	"res://scenes3D/library/extracted/red_robot.glb",
-	"res://scenes3D/library/extracted/player.glb",
-]
-const LEVEL_BASE_LABEL: String = "Level Base (dinâmicos)"
-
 # First option in the prefix dropdown: no filtering, show every model in the
 # category. Selecting a real prefix narrows the model list to that group.
 const ALL_PREFIXES_LABEL: String = "Todos"
+
+# First option in the part dropdown: preview the assembled model with every piece
+# in place. Selecting a real part below it isolates that single distinct mesh.
+const WHOLE_MODEL_LABEL: String = "Modelo completo"
 
 # Root of the 3D model library. Models live in res://scenes3D/library/<tipo>/<modelo>/
 # (e.g. characters/red_robot, props/forklift, structures/core). The selection
 # dropdowns below are built by scanning this folder, so dropping a new model
 # folder in here makes it show up automatically — no code change needed.
 const LIBRARY_ROOT: String = "res://scenes3D/library"
-
-# Where "Salvar como cena 3D" writes the extracted, reusable mesh scenes.
-const EXTRACT_ROOT: String = "res://scenes3D/library/extracted"
 
 # Model categories shown in the dropdown, in display order. Only these
 # subfolders of LIBRARY_ROOT are scanned — support folders that also live under
@@ -55,7 +44,6 @@ var _categories: Array = []
 #   {"label", "mesh": Mesh, "name": String, "count": int, "has_collision": bool, "skinned": bool}
 var _model_scene: PackedScene = null
 var _mesh_catalog: Array = []
-var _selected_mesh: int = -1
 
 # The models of the current category that pass the active prefix filter, in the
 # same order as the Model dropdown — so the dropdown index maps straight back to
@@ -79,7 +67,6 @@ var _pitch: float = 0.0
 @onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
-@onready var save_button: Button = $UI/Selectors/SaveRow/SaveButton
 @onready var status_label: Label = $UI/Selectors/StatusLabel
 @onready var rotate_toggle: CheckButton = $UI/RotateToggle
 
@@ -94,7 +81,6 @@ func _ready() -> void:
 	cbo_prefix.item_selected.connect(_on_prefix_selected)
 	cbo_models.item_selected.connect(_on_model_selected)
 	cbo_meshes.item_selected.connect(_on_mesh_selected)
-	save_button.pressed.connect(_on_save_pressed)
 
 	rotate_toggle.button_pressed = _auto_rotate
 	rotate_toggle.toggled.connect(_on_rotate_toggled)
@@ -164,63 +150,38 @@ func _populate_models() -> void:
 		cbo_models.select(0)
 		_on_model_selected(0)
 	else:
-		_selected_mesh = -1
+		_model_scene = null
+		_mesh_catalog = []
 		_clear_preview()
 		cbo_meshes.clear()
 		status_label.text = "Nenhum modelo neste grupo."
 
 
+# Selecting a model previews the whole thing assembled (every related object in
+# place) and rebuilds the Part dropdown: "Modelo completo" first, then each
+# distinct mesh so the user can drill into a single piece afterwards.
 func _on_model_selected(index: int) -> void:
 	var model: Dictionary = _filtered_models[index]
-
-	# Synthetic grouping entry (e.g. "Level Base"): show its models together
-	# instead of browsing a single model's distinct meshes.
-	if model.has("group_paths"):
-		_show_group(model["group_paths"])
-		return
-
 	_model_scene = load(model["path"])
 	_mesh_catalog = _build_mesh_catalog(_model_scene)
 
 	cbo_meshes.clear()
+	cbo_meshes.add_item(WHOLE_MODEL_LABEL)
 	for entry in _mesh_catalog:
 		cbo_meshes.add_item(entry["label"])
-	status_label.text = "%d malha(s) distinta(s)" % _mesh_catalog.size()
-	if not _mesh_catalog.is_empty():
-		cbo_meshes.select(0)
-		_on_mesh_selected(0)
-	else:
-		_selected_mesh = -1
-		_clear_preview()
+	cbo_meshes.select(0)
+	_on_mesh_selected(0)
 
 
-# Show every model in a group side by side (used by the "Level Base" entry,
-# which mirrors the models level_base.gd spawns dynamically).
-func _show_group(paths: Array) -> void:
-	_clear_preview()
-	_model_scene = null
-	_mesh_catalog = []
-	_selected_mesh = -1
-	cbo_meshes.clear()
-
-	var shown := 0
-	var total := paths.size()
-	for index in total:
-		var scene := load(paths[index]) as PackedScene
-		if scene == null:
-			continue
-		var instance := scene.instantiate()
-		model_holder.add_child(instance)
-		if instance is Node3D:
-			_fit_to_view(instance as Node3D, 1.6)
-			(instance as Node3D).position.x += (index - (total - 1) * 0.5) * 2.2
-		shown += 1
-	status_label.text = "Grupo: %d modelo(s) lado a lado" % shown
-
-
+# Part dropdown index 0 is the assembled model; indices 1.. map to the distinct
+# meshes in _mesh_catalog (shifted by the leading "Modelo completo" entry).
 func _on_mesh_selected(index: int) -> void:
-	_selected_mesh = index
-	_preview_mesh(index)
+	if index <= 0:
+		_preview_whole_model()
+		status_label.text = "Modelo completo — %d parte(s)" % _mesh_catalog.size()
+	else:
+		_preview_mesh(index - 1)
+		status_label.text = "Parte: %s" % _mesh_catalog[index - 1]["label"]
 
 
 func _on_rotate_toggled(pressed: bool) -> void:
@@ -250,9 +211,6 @@ func _scan_library() -> Array:
 					"prefix": _prefix_of(model_dir),
 				})
 
-		if category["key"] == "characters" and _level_base_group_available():
-			models.append({"name": LEVEL_BASE_LABEL, "group_paths": LEVEL_BASE_GROUP})
-
 		if not models.is_empty():
 			models.sort_custom(func(a, b): return a["name"] < b["name"])
 			result.append({
@@ -262,15 +220,6 @@ func _scan_library() -> Array:
 			})
 
 	return result
-
-
-# The synthetic "Level Base" entry only shows up once its models exist in
-# library/extracted/ (they are plain copies of the glb the level spawns).
-func _level_base_group_available() -> bool:
-	for path in LEVEL_BASE_GROUP:
-		if not ResourceLoader.exists(path):
-			return false
-	return true
 
 
 # Pick the previewable resource in a model folder: the raw imported model
@@ -394,6 +343,18 @@ func _preview_mesh(index: int) -> void:
 	_fit_to_view(mesh_instance)
 
 
+# Show the whole model with every object in place (the default view when a model
+# is picked), centered and fit to view.
+func _preview_whole_model() -> void:
+	_clear_preview()
+	if _model_scene == null:
+		return
+	var instance := _model_scene.instantiate()
+	model_holder.add_child(instance)
+	if instance is Node3D:
+		_fit_to_view(instance as Node3D)
+
+
 # Center and scale a model so it fits nicely in front of the camera, regardless
 # of its original size. target_size is the largest dimension after scaling.
 func _fit_to_view(model: Node3D, target_size: float = 2.0) -> void:
@@ -423,62 +384,6 @@ func _fit_to_view(model: Node3D, target_size: float = 2.0) -> void:
 	model.position = -bounds.get_center() * scale_factor
 
 
-# --- Extraction (save as reusable scene) ------------------------------------
-
-# Re-instantiate the source model, grab the first node that uses the selected
-# mesh (with its collision subtree, if any), normalize its transform and pack it
-# into a standalone .tscn under EXTRACT_ROOT/<categoria>/.
-func _on_save_pressed() -> void:
-	if _selected_mesh < 0 or _selected_mesh >= _mesh_catalog.size() or _model_scene == null:
-		return
-	var entry: Dictionary = _mesh_catalog[_selected_mesh]
-	var target_id := (entry["mesh"] as Mesh).get_instance_id()
-
-	var instance := _model_scene.instantiate()
-	var nodes: Array = instance.find_children("*", "MeshInstance3D", true, false)
-	if instance is MeshInstance3D:
-		nodes.append(instance)
-	var source: Node = null
-	for node in nodes:
-		var mesh_instance := node as MeshInstance3D
-		if mesh_instance.mesh != null and mesh_instance.mesh.get_instance_id() == target_id:
-			source = node
-			break
-
-	if source == null:
-		instance.free()
-		status_label.text = "Não foi possível localizar a malha."
-		return
-
-	# Duplicate the subtree (mesh + collision), drop the baked placement transform
-	# so the reusable prop sits at the origin, and re-own it under the new root.
-	var root := source.duplicate()
-	instance.free()
-	root.name = entry["name"]
-	if root is Node3D:
-		(root as Node3D).transform = Transform3D.IDENTITY
-	_reown(root, root)
-
-	var dir := EXTRACT_ROOT.path_join(_categories[cbo_category.selected]["key"])
-	DirAccess.make_dir_recursive_absolute(dir)
-	var file := dir.path_join(entry["name"] + ".tscn")
-
-	var packed := PackedScene.new()
-	var pack_err := packed.pack(root)
-	root.free()
-	if pack_err != OK:
-		status_label.text = "Erro ao empacotar (%d)." % pack_err
-		return
-	var save_err := ResourceSaver.save(packed, file)
-	status_label.text = ("Salvo: " + file) if save_err == OK else "Erro ao salvar (%d)." % save_err
-
-
-func _reown(node: Node, owner_root: Node) -> void:
-	for child in node.get_children():
-		child.owner = owner_root
-		_reown(child, owner_root)
-
-
 # --- Misc -------------------------------------------------------------------
 
 # "red_robot" -> "Red Robot", "core_out_light" -> "Core Out Light".
@@ -492,10 +397,6 @@ func _prettify(raw_name: String) -> String:
 
 func _on_back_pressed() -> void:
 	emit_signal("replace_main_scene", load(DEVELOPER_PATH))
-
-
-func _on_open_exported_pressed() -> void:
-	emit_signal("replace_main_scene", load(EXPORTED_PATH))
 
 
 func _input(input_event: InputEvent) -> void:
