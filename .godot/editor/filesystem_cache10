@@ -1,7 +1,7 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1781361201
+::res://::1781362448
 AIPrompts.txt::TextFile::-1::1780762580::0::1::::<><><>0<>0<><>::
-default_bus_layout.tres::AudioBusLayout::1513395931677394583::1781360960::0::1::::<><><>0<>0<><>::
+default_bus_layout.tres::AudioBusLayout::1513395931677394583::1781361204::0::1::::<><><>0<>0<><>::
 godot-ai-LICENSE.txt::TextFile::-1::1781352566::0::1::::<><><>0<>0<><>::
 icon.png::CompressedTexture2D::5155990029088567404::1780671757::1781352566::1::::<><><>0<>0<>c545e4749ec5fd0f354370d82205a14c<>res://.godot/imported/icon.png-487276ed1e3a0c39cad0279d744ee560.ctex::
 LICENSE.md::TextFile::-1::1781352366::0::1::::<><><>0<>0<><>::
@@ -368,11 +368,13 @@ red_robot_albedo.png::CompressedTexture2D::3960607092664748408::1781219558::1781
 red_robot_emission.png::CompressedTexture2D::3820212747274398393::1781219558::1781352667::1::::<><><>0<>0<>d82bcefe8af3489e9635eb63f35a9fc0<>res://.godot/imported/red_robot_emission.png-99fa985aa7131017d4ad7a7985037153.s3tc.ctex::
 red_robot_normal.png::CompressedTexture2D::7206848084414336995::1781219558::1781352668::1::::<><><>0<>0<>10eada2c8591d333ec475d6901025657<>res://.godot/imported/red_robot_normal.png-e6e1881aea8a59299019f62e3631c60d.s3tc.ctex::
 red_robot_orm.png::CompressedTexture2D::6558456688870366825::1781219558::1781352668::1::::<><><>0<>0<>bebc79ebabf6aa09bfbc0b642340ad70<>res://.godot/imported/red_robot_orm.png-b7d6f102a7a792193a2db3e0f6ae0b7d.s3tc.ctex::
-::res://scenes3D/library/extracted/::1781353181
+::res://scenes3D/library/extracted/::1781362022
 exported.gd::GDScript::1377988860657149444::1781353181::0::1::::<>Node3D<><>0<>0<><>::
 Exported.tscn::PackedScene::-1::1781353181::0::1::::<><><>0<>0<><>::res://scenes3D/library/extracted/exported.gd<>uid://buithemedemo1::::res://ui/ui_theme.tres
 player.glb::PackedScene::1475166038872392651::1781353181::1781353181::1::::<><><>0<>0<>a3983376646ac436893f187a0207e100<>res://.godot/imported/player.glb-236a0b7cf7c1ce01be3ba9acb312e024.scn::
 red_robot.glb::PackedScene::4629468352354619454::1781353181::1781353181::1::::<><><>0<>0<>1e909be2604cda5e6222c4afc77152aa<>res://.godot/imported/red_robot.glb-02f98d3d8a835aa51beb3b57a482e9b1.scn::
+::res://scenes3D/library/extracted/characters/::1781362022
+Robot_Body.tscn::PackedScene::-1::1781362022::0::1::::<><><>0<>0<><>::res://scenes3D/library/characters/player/playerobot.tres<>res://scenes3D/library/characters/player/robotemitter.tres
 ::res://scenes3D/library/geometry/::1781352670
 environment.tres::Environment::5713950467851375276::1781352670::0::1::::<><><>0<>0<><>::
 giprobe_data.res::VoxelGIData::4000601969252555345::1781219559::0::1::::<><><>0<>0<><>::
