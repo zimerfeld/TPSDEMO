@@ -3,7 +3,7 @@ extends Area3D
 
 var open: bool = false
 
-@onready var animation_player: AnimationPlayer = $DoorModel/AnimationPlayer
+@onready var animation_player: AnimationPlayer = $DoorModel2/AnimationPlayer
 
 
 func _on_door_body_entered(body: Node3D) -> void:
