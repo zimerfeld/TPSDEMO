@@ -43,6 +43,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme = ExtResource("2")
 
 [node name="TitleLabel" type="Label" parent="UI"]
@@ -93,6 +94,20 @@ text = "Modelo:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
+[node name="GroupRow" type="HBoxContainer" parent="UI/Selectors"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Selectors/GroupRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Grupo:"
+
+[node name="cboGroup" type="OptionButton" parent="UI/Selectors/GroupRow"]
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
 [node name="PartRow" type="HBoxContainer" parent="UI/Selectors"]
 visible = false
 layout_mode = 2
@@ -106,6 +121,19 @@ text = "Peça:"
 [node name="cboParts" type="OptionButton" parent="UI/Selectors/PartRow"]
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
+
+[node name="RotateToggle" type="CheckButton" parent="UI"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 110.0
+offset_right = 150.0
+offset_bottom = 160.0
+grow_horizontal = 2
+button_pressed = true
+text = "Rotação"
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1

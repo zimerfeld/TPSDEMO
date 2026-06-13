@@ -19,25 +19,53 @@ const CATEGORIES: Array[Dictionary] = [
 	{"key": "structures", "label": "Estruturas"},
 ]
 
+# When a model breaks down into more part-groups than this, the flat Peça list
+# becomes too long to fit on screen, so we insert a "Grupo" dropdown that
+# partitions the pieces by name prefix (Peça then lists only the chosen group).
+const SUBGROUP_THRESHOLD: int = 12
+
+# How fast the dragged model rotates, in radians per pixel of mouse motion.
+const DRAG_SENSITIVITY: float = 0.01
+
+# Auto-rotation speed in radians per second when the toggle is on.
+const AUTO_ROTATE_SPEED: float = 0.6
+
 # Built at _ready by scanning LIBRARY_ROOT. Each entry:
 #   {"key": String, "label": String, "models": Array[{"name", "path"}]}
 var _categories: Array = []
 
 # Currently selected model and the breakdown of its sub-parts. Big collection
-# models (structures, props) bundle dozens/hundreds of meshes — _parts groups
-# them by base name so each distinct piece can be viewed on its own.
+# models (structures, props) bundle dozens/hundreds of meshes — they get grouped
+# by base name so each distinct piece can be viewed on its own.
 # Each part entry: {"label": String, "key": String}; key "" means "whole model".
 var _model_scene: PackedScene = null
-var _parts: Array = []
 
-var _model_rot_y: float = 0.0
+# When the part list is large it is partitioned into prefix sub-groups. Each
+# entry: {"label": String, "parts": Array[{"label","key"}]}; index 0 is always
+# "Tudo (modelo inteiro)" with an empty parts list.
+var _subgroups: Array = []
+var _use_subgroups: bool = false
+
+# Parts currently listed in the Peça dropdown (each {"label","key"}). With the
+# Grupo dropdown active this is the chosen group's slice; otherwise it is the
+# whole flat list.
+var _current_parts: Array = []
+
 var _suffix_re: RegEx = RegEx.new()
+
+# Rotation state. The holder either spins on its own (auto) or follows the mouse
+# while the left button is held; dragging temporarily overrides auto-rotation.
+var _auto_rotate: bool = true
+var _dragging: bool = false
 
 @onready var model_holder: Node3D = $ModelHolder
 @onready var cbo_category: OptionButton = $UI/Selectors/CategoryRow/cboCategory
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
+@onready var cbo_group: OptionButton = $UI/Selectors/GroupRow/cboGroup
+@onready var group_row: HBoxContainer = $UI/Selectors/GroupRow
 @onready var cbo_parts: OptionButton = $UI/Selectors/PartRow/cboParts
 @onready var part_row: HBoxContainer = $UI/Selectors/PartRow
+@onready var rotate_toggle: CheckButton = $UI/RotateToggle
 
 
 func _ready() -> void:
@@ -49,7 +77,11 @@ func _ready() -> void:
 		cbo_category.add_item(category["label"])
 	cbo_category.item_selected.connect(_on_category_selected)
 	cbo_models.item_selected.connect(_on_model_selected)
+	cbo_group.item_selected.connect(_on_group_selected)
 	cbo_parts.item_selected.connect(_on_part_selected)
+
+	rotate_toggle.button_pressed = _auto_rotate
+	rotate_toggle.toggled.connect(_on_rotate_toggled)
 
 	if not _categories.is_empty():
 		cbo_category.select(0)
@@ -57,9 +89,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# Slowly rotate the previewed model, like the character on the choose-player screen.
-	_model_rot_y += delta * 0.6
-	model_holder.rotation.y = _model_rot_y
+	# Slowly spin the previewed model, like the character on the choose-player
+	# screen — but pause while the user is hand-rotating it with the mouse.
+	if _auto_rotate and not _dragging:
+		model_holder.rotate(Vector3.UP, delta * AUTO_ROTATE_SPEED)
 
 
 func _on_category_selected(index: int) -> void:
@@ -78,8 +111,8 @@ func _on_model_selected(index: int) -> void:
 	_populate_parts()
 
 
-func _on_part_selected(index: int) -> void:
-	_apply_part(index)
+func _on_rotate_toggled(pressed: bool) -> void:
+	_auto_rotate = pressed
 
 
 # --- Library scanning -------------------------------------------------------
@@ -135,20 +168,104 @@ func _find_model_file(folder: String) -> String:
 
 # --- Parts (sub-model breakdown) --------------------------------------------
 
-# Inspect the selected model's top-level children, group them by base name
-# (e.g. "prop_cargobox5b_022" -> "prop_cargobox5b") and fill the Peça dropdown
-# with one entry per distinct piece, plus a "Tudo" entry for the whole model.
-# The Peça row is hidden for single-piece models (characters, props).
+# Build the flat part list for the selected model, then decide how to surface it:
+# a short list goes straight into the Peça dropdown; a long list is partitioned
+# into prefix sub-groups behind the Grupo dropdown.
 func _populate_parts() -> void:
-	_parts = _build_parts(_model_scene)
+	var entries := _build_parts(_model_scene)
+	var real_parts: Array = entries.slice(1)
+	_use_subgroups = real_parts.size() > SUBGROUP_THRESHOLD
+
+	if _use_subgroups:
+		_subgroups = _build_subgroups(real_parts)
+		group_row.visible = true
+		cbo_group.clear()
+		for sub in _subgroups:
+			cbo_group.add_item(sub["label"])
+		cbo_group.select(0)
+		_on_group_selected(0)
+	else:
+		_subgroups = []
+		group_row.visible = false
+		cbo_group.clear()
+		_current_parts = entries
+		_fill_parts_dropdown()
+		part_row.visible = _current_parts.size() > 1
+		_apply_part(_current_parts[0]["key"] if not _current_parts.is_empty() else "")
+
+
+# Partition the flat part list into "Tipo › Prefixo" buckets: first by node type
+# (Personagem / Node3D / Malha), then by the first segment of each base name
+# (e.g. "prop_cargobox5b" / "prop_barrel" -> "Malha › Prop"). Buckets are ordered
+# by type rank then prefix. Index 0 is the whole-model entry; selecting it hides
+# the Peça dropdown.
+func _build_subgroups(real_parts: Array) -> Array:
+	var buckets: Dictionary = {}
+	var order: Array = []
+	for part in real_parts:
+		var prefix := _prefix_of(part["key"])
+		var combo := "%d|%s" % [part["type_rank"], prefix]
+		if not buckets.has(combo):
+			buckets[combo] = {
+				"type_rank": part["type_rank"],
+				"type_label": part["type_label"],
+				"prefix": prefix,
+				"parts": [],
+			}
+			order.append(combo)
+		buckets[combo]["parts"].append(part)
+
+	order.sort_custom(func(a, b):
+		var ba: Dictionary = buckets[a]
+		var bb: Dictionary = buckets[b]
+		if ba["type_rank"] != bb["type_rank"]:
+			return ba["type_rank"] < bb["type_rank"]
+		return ba["prefix"] < bb["prefix"])
+
+	var groups: Array = [{"label": "Tudo (modelo inteiro)", "parts": []}]
+	for combo in order:
+		var bucket: Dictionary = buckets[combo]
+		groups.append({
+			"label": "%s › %s (%d)" % [
+				bucket["type_label"], _prettify(bucket["prefix"]), bucket["parts"].size()
+			],
+			"parts": bucket["parts"],
+		})
+	return groups
+
+
+func _on_group_selected(index: int) -> void:
+	if index <= 0:
+		_current_parts = []
+		part_row.visible = false
+		_apply_part("")
+		return
+
+	_current_parts = _subgroups[index]["parts"]
+	part_row.visible = true
+	_fill_parts_dropdown()
+	if not _current_parts.is_empty():
+		_apply_part(_current_parts[0]["key"])
+
+
+func _on_part_selected(index: int) -> void:
+	if index < 0 or index >= _current_parts.size():
+		return
+	_apply_part(_current_parts[index]["key"])
+
+
+func _fill_parts_dropdown() -> void:
 	cbo_parts.clear()
-	for part in _parts:
+	for part in _current_parts:
 		cbo_parts.add_item(part["label"])
-	part_row.visible = _parts.size() > 1
-	cbo_parts.select(0)
-	_apply_part(0)
+	if cbo_parts.item_count > 0:
+		cbo_parts.select(0)
 
 
+# Inspect the selected model's top-level children, group them by base name
+# (e.g. "prop_cargobox5b_022" -> "prop_cargobox5b") and return one entry per
+# distinct piece, plus a leading "Tudo" entry for the whole model. A single-group
+# model returns just the "Tudo" entry.
 func _build_parts(scene: PackedScene) -> Array:
 	var result: Array = [{"label": "Tudo (modelo inteiro)", "key": ""}]
 	if scene == null:
@@ -157,6 +274,7 @@ func _build_parts(scene: PackedScene) -> Array:
 	var instance := scene.instantiate()
 	var order: Array = []
 	var counts: Dictionary = {}
+	var types: Dictionary = {}
 	for child in instance.get_children():
 		# Skip non-visual children (auto-generated collision bodies, etc.) so the
 		# list only offers pieces that actually render.
@@ -166,6 +284,9 @@ func _build_parts(scene: PackedScene) -> Array:
 		if not counts.has(key):
 			counts[key] = 0
 			order.append(key)
+			# Remember the node class of the first child in this group so the Grupo
+			# dropdown can bucket pieces by type (see _type_bucket / _build_subgroups).
+			types[key] = _type_bucket(child)
 		counts[key] += 1
 	instance.free()
 
@@ -178,19 +299,37 @@ func _build_parts(scene: PackedScene) -> Array:
 		var label: String = _prettify(key)
 		if counts[key] > 1:
 			label += " (%d)" % counts[key]
-		result.append({"label": label, "key": key})
+		var bucket: Dictionary = types[key]
+		result.append({
+			"label": label,
+			"key": key,
+			"type_rank": bucket["rank"],
+			"type_label": bucket["label"],
+		})
 	return result
 
 
-# "prop_cargobox5b_022" -> "prop_cargobox5b", "Spot_010" -> "Spot".
-# Strips trailing _<number> groups without eating mid-name digits
-# (e.g. "FLOOR_reactor120_Eleavotr_002" -> "FLOOR_reactor120_Eleavotr").
+# Classify a top-level child into a node-type bucket. Tested most-specific-first
+# so MeshInstance3D is matched before the Node3D catch-all (every 3D node is a
+# Node3D — testing it first would swallow everything). "rank" sets the display
+# order in the Grupo dropdown (Personagem, then Node3D, then Malha).
+func _type_bucket(node: Node) -> Dictionary:
+	if node is CharacterBody3D:
+		return {"rank": 0, "label": "Personagem"}
+	if node is MeshInstance3D:
+		return {"rank": 2, "label": "Malha"}
+	return {"rank": 1, "label": "Node3D"}
+
+
 func _has_visual(node: Node) -> bool:
 	if node is VisualInstance3D:
 		return true
 	return not node.find_children("*", "VisualInstance3D", true, false).is_empty()
 
 
+# "prop_cargobox5b_022" -> "prop_cargobox5b", "Spot_010" -> "Spot".
+# Strips trailing _<number> groups without eating mid-name digits
+# (e.g. "FLOOR_reactor120_Eleavotr_002" -> "FLOOR_reactor120_Eleavotr").
 func _group_key(node_name: String) -> String:
 	var result := node_name
 	while true:
@@ -204,19 +343,25 @@ func _group_key(node_name: String) -> String:
 	return result
 
 
+# First name segment used to bucket parts into sub-groups: the text before the
+# first underscore (e.g. "prop_cargobox5b" -> "prop"), or the whole name when
+# there is no underscore.
+func _prefix_of(key: String) -> String:
+	var idx := key.find("_")
+	return key.substr(0, idx) if idx > 0 else key
+
+
 # --- Preview ----------------------------------------------------------------
 
 # Show the whole model (key "") or just the children belonging to one part group.
-func _apply_part(index: int) -> void:
+func _apply_part(part_key: String) -> void:
 	for child in model_holder.get_children():
 		child.queue_free()
 	model_holder.rotation = Vector3.ZERO
-	_model_rot_y = 0.0
 
-	if _model_scene == null or index < 0 or index >= _parts.size():
+	if _model_scene == null:
 		return
 
-	var part_key: String = _parts[index]["key"]
 	var instance := _model_scene.instantiate()
 
 	if part_key == "":
@@ -288,3 +433,16 @@ func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
 		_on_back_pressed()
 		get_viewport().set_input_as_handled()
+
+
+# Hold the left mouse button over the render area and drag to hand-rotate the
+# model on any axis (horizontal -> yaw, vertical -> pitch). Clicks that land on a
+# dropdown or button are consumed by those controls first, so only drags over the
+# empty 3D view reach here.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		_dragging = event.pressed
+	elif event is InputEventMouseMotion and _dragging:
+		var motion := event as InputEventMouseMotion
+		model_holder.rotate(Vector3.UP, -motion.relative.x * DRAG_SENSITIVITY)
+		model_holder.rotate(Vector3.RIGHT, -motion.relative.y * DRAG_SENSITIVITY)
