@@ -24,7 +24,7 @@ static var _instance = null
 static func get_shared(parent: Node):
     if _instance != null and is_instance_valid(_instance):
         return _instance
-    _instance = (preload("res://scenes3D/enemies/enemy_health_bar.gd")).new()
+    _instance = (preload("res://scenes3D/library/characters/enemies/enemy_health_bar.gd")).new()
     parent.add_child(_instance)   # parent = get_tree().current_scene
     return _instance
 ```

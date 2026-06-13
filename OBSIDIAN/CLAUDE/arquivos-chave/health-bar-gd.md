@@ -70,7 +70,7 @@ func _setup_health_bar() -> void:
     # $InputSynchronizer (não o onready) pois o setter pode rodar antes do _ready
     if $InputSynchronizer.get_multiplayer_authority() != multiplayer.get_unique_id():
         return                       # só o player local vê o HUD
-    _health_bar = preload("res://scenes3D/players/player/health_bar.gd").new()
+    _health_bar = preload("res://scenes3D/library/characters/players/player/health_bar.gd").new()
     _health_bar.name = "HealthBar"
     add_child(_health_bar)
     _health_bar.update_health(hp, MAX_HP)

@@ -8,7 +8,7 @@ path="res://.godot/imported/flying_forklift.blend-79cc2974be187e3a12a167da3e8d98
 
 [deps]
 
-source_file="res://scenes3D/library/props/forklift/flying_forklift.blend"
+source_file="res://scenes3D/library/propulsores/forklift/flying_forklift.blend"
 dest_files=["res://.godot/imported/flying_forklift.blend-79cc2974be187e3a12a167da3e8d9815.scn"]
 
 [params]

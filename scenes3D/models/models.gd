@@ -16,6 +16,10 @@ const LEVEL_BASE_GROUP: Array[String] = [
 ]
 const LEVEL_BASE_LABEL: String = "Level Base (dinâmicos)"
 
+# First option in the prefix dropdown: no filtering, show every model in the
+# category. Selecting a real prefix narrows the model list to that group.
+const ALL_PREFIXES_LABEL: String = "Todos"
+
 # Root of the 3D model library. Models live in res://scenes3D/library/<tipo>/<modelo>/
 # (e.g. characters/red_robot, props/forklift, structures/core). The selection
 # dropdowns below are built by scanning this folder, so dropping a new model
@@ -30,7 +34,7 @@ const EXTRACT_ROOT: String = "res://scenes3D/library/extracted"
 # library/ (e.g. geometry/, textures/) are intentionally ignored here.
 const CATEGORIES: Array[Dictionary] = [
 	{"key": "characters", "label": "Personagens"},
-	{"key": "props", "label": "Props"},
+	{"key": "propulsores", "label": "Propulsores"},
 	{"key": "structures", "label": "Estruturas"},
 ]
 
@@ -53,18 +57,26 @@ var _model_scene: PackedScene = null
 var _mesh_catalog: Array = []
 var _selected_mesh: int = -1
 
+# The models of the current category that pass the active prefix filter, in the
+# same order as the Model dropdown — so the dropdown index maps straight back to
+# an entry. Rebuilt whenever the category or prefix changes.
+var _filtered_models: Array = []
+# Active prefix filter ("" = ALL_PREFIXES_LABEL, i.e. no filtering).
+var _prefix_filter: String = ""
+
 # Rotation state. The holder either spins on its own (auto) or follows the mouse
 # while the left button is held; dragging temporarily overrides auto-rotation.
 # Yaw and pitch are tracked separately and rebuilt as an Euler rotation with no
 # roll, so mouse motion only ever turns the model about the two orthogonal axes
 # (horizontal -> yaw on Y, vertical -> pitch on X).
-var _auto_rotate: bool = true
+var _auto_rotate: bool = false
 var _dragging: bool = false
 var _yaw: float = 0.0
 var _pitch: float = 0.0
 
 @onready var model_holder: Node3D = $ModelHolder
 @onready var cbo_category: OptionButton = $UI/Selectors/CategoryRow/cboCategory
+@onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
 @onready var save_button: Button = $UI/Selectors/SaveRow/SaveButton
@@ -79,6 +91,7 @@ func _ready() -> void:
 	for category in _categories:
 		cbo_category.add_item(category["label"])
 	cbo_category.item_selected.connect(_on_category_selected)
+	cbo_prefix.item_selected.connect(_on_prefix_selected)
 	cbo_models.item_selected.connect(_on_model_selected)
 	cbo_meshes.item_selected.connect(_on_mesh_selected)
 	save_button.pressed.connect(_on_save_pressed)
@@ -101,17 +114,64 @@ func _process(delta: float) -> void:
 
 
 func _on_category_selected(index: int) -> void:
-	cbo_models.clear()
-	var models: Array = _categories[index]["models"]
+	_populate_prefixes(index)
+	_populate_models()
+
+
+# Build the prefix dropdown for a category: "Todos" plus each distinct model
+# prefix (the first underscore-separated token, e.g. "core" for core /
+# core_out_light). The synthetic "Level Base" entry has no prefix and only shows
+# up under "Todos". Selecting resets the filter to "Todos".
+func _populate_prefixes(category_index: int) -> void:
+	var models: Array = _categories[category_index]["models"]
+	var seen: Dictionary = {}
+	var prefixes: Array = []
 	for entry in models:
+		var prefix: String = entry.get("prefix", "")
+		if prefix != "" and not seen.has(prefix):
+			seen[prefix] = true
+			prefixes.append(prefix)
+	prefixes.sort()
+
+	cbo_prefix.clear()
+	cbo_prefix.add_item(ALL_PREFIXES_LABEL)
+	cbo_prefix.set_item_metadata(0, "")
+	for prefix in prefixes:
+		cbo_prefix.add_item(_prettify(prefix))
+		cbo_prefix.set_item_metadata(cbo_prefix.item_count - 1, prefix)
+	cbo_prefix.select(0)
+	_prefix_filter = ""
+
+
+func _on_prefix_selected(index: int) -> void:
+	_prefix_filter = cbo_prefix.get_item_metadata(index)
+	_populate_models()
+
+
+# Fill the Model dropdown with the current category's models that match the
+# active prefix filter, then select the first one.
+func _populate_models() -> void:
+	cbo_models.clear()
+	_filtered_models = []
+	var models: Array = _categories[cbo_category.selected]["models"]
+	for entry in models:
+		if _prefix_filter != "" and entry.get("prefix", "") != _prefix_filter:
+			continue
+		_filtered_models.append(entry)
 		cbo_models.add_item(entry["name"])
+
 	if cbo_models.item_count > 0:
 		cbo_models.select(0)
 		_on_model_selected(0)
+	else:
+		_selected_mesh = -1
+		_clear_preview()
+		cbo_meshes.clear()
+		status_label.text = "Nenhum modelo neste grupo."
 
 
 func _on_model_selected(index: int) -> void:
-	var model: Dictionary = _categories[cbo_category.selected]["models"][index]
+	var model: Dictionary = _filtered_models[index]
 
 	# Synthetic grouping entry (e.g. "Level Base"): show its models together
 	# instead of browsing a single model's distinct meshes.
@@ -184,7 +244,11 @@ func _scan_library() -> Array:
 			var model_path := type_path.path_join(model_dir)
 			var file_path := _find_model_file(model_path)
 			if file_path != "":
-				models.append({"name": _prettify(model_dir), "path": file_path})
+				models.append({
+					"name": _prettify(model_dir),
+					"path": file_path,
+					"prefix": _prefix_of(model_dir),
+				})
 
 		if category["key"] == "characters" and _level_base_group_available():
 			models.append({"name": LEVEL_BASE_LABEL, "group_paths": LEVEL_BASE_GROUP})
@@ -283,6 +347,13 @@ func _build_mesh_catalog(scene: PackedScene) -> Array:
 		entry["label"] = label
 		result.append(entry)
 	return result
+
+
+# Grouping prefix of a model folder: the first underscore-separated token.
+# "core_out_light" -> "core", "red_robot" -> "red", "forklift" -> "forklift".
+func _prefix_of(folder_name: String) -> String:
+	var parts := folder_name.split("_", false)
+	return parts[0] if not parts.is_empty() else folder_name
 
 
 # "prop_cargobox5b_022" -> "prop_cargobox5b", "Spot_010" -> "Spot".
