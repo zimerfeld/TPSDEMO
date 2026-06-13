@@ -65,7 +65,7 @@ layout_mode = 0
 offset_left = 40.0
 offset_top = 140.0
 offset_right = 560.0
-offset_bottom = 260.0
+offset_bottom = 520.0
 theme_override_constants/separation = 16
 
 [node name="CategoryRow" type="HBoxContainer" parent="UI/Selectors"]
@@ -94,33 +94,33 @@ text = "Modelo:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="GroupRow" type="HBoxContainer" parent="UI/Selectors"]
-visible = false
+[node name="MeshRow" type="HBoxContainer" parent="UI/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/GroupRow"]
+[node name="Label" type="Label" parent="UI/Selectors/MeshRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-text = "Grupo:"
+text = "Malha:"
 
-[node name="cboGroup" type="OptionButton" parent="UI/Selectors/GroupRow"]
+[node name="cboMeshes" type="OptionButton" parent="UI/Selectors/MeshRow"]
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="PartRow" type="HBoxContainer" parent="UI/Selectors"]
-visible = false
+[node name="SaveRow" type="HBoxContainer" parent="UI/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/PartRow"]
-custom_minimum_size = Vector2(150, 0)
+[node name="SaveButton" type="Button" parent="UI/Selectors/SaveRow"]
+custom_minimum_size = Vector2(486, 50)
 layout_mode = 2
-text = "Peça:"
+text = "Salvar como cena 3D"
 
-[node name="cboParts" type="OptionButton" parent="UI/Selectors/PartRow"]
-custom_minimum_size = Vector2(320, 50)
+[node name="StatusLabel" type="Label" parent="UI/Selectors"]
+custom_minimum_size = Vector2(486, 0)
 layout_mode = 2
+text = "-"
+autowrap_mode = 2
 
 [node name="RotateToggle" type="CheckButton" parent="UI"]
 layout_mode = 1
@@ -157,4 +157,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Voltar"
 
+[node name="ExportedButton" type="Button" parent="UI/Actions"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Exportados"
+
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/ExportedButton" to="." method="_on_open_exported_pressed"]

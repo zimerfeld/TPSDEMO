@@ -15,6 +15,7 @@
 | [[sistemas/multiplayer]] | Arquitetura server-authoritative |
 | [[sistemas/sistema-de-vida]] | HP, barra de vida, respawn |
 | [[sistemas/dano-localizado]] | Dano por arma, hitboxes Area3D por membro, headshot |
+| [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, grupo Level Base |
 
 ---
 
@@ -55,7 +56,7 @@
 
 - Organização: **scenes2D/** (telas de UI: menu, settings, chooseplayer, developer, levels) e **scenes3D/** (players, enemies, door, level_1, level_base, models)
 - Autoloads: **Settings** (`scenes2D/settings/config.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**
-- Telas extras: **developer** (toggles de debug) → **models** (visualizador 3D do level_base); **settings** com aba Debug
+- Telas extras: **developer** (toggles de debug) → **models** (navegador/extrator de modelos 3D) → **Exported** (galeria de `library/extracted/`); **settings** com aba Debug
 - Motor: **Godot 4.x**
 - Modo de rede: **ENet / OfflineMultiplayerPeer** (server-authoritative)
 - Player: `CharacterBody3D` com root motion
