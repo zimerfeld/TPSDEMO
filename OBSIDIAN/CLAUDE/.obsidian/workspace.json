@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "sistemas/sistema-de-vida.md",
+                "file": "arquivos-chave/player-gd.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "sistema-de-vida"
+              "title": "player-gd"
             }
           }
         ]
@@ -185,25 +185,26 @@
   },
   "active": "0f1602aa8c929b75",
   "lastOpenFiles": [
-    "arquivos-chave/glass-hitboxes-gd.md",
-    "convencoes/formatacao.md",
-    "convencoes",
     "arquivos-chave/player-input-gd.md",
-    "arquivos-chave/player-gd.md",
-    "arquivos-chave/main-gd.md",
-    "arquivos-chave/health-bar-gd.md",
-    "arquivos-chave/enemy-health-bar-gd.md",
-    "arquivos-chave/bullet-gd.md",
     "arquivos-chave/red-robot-gd.md",
     "fluxos/fluxo-de-tiro.md",
     "fluxos/fluxo-de-input.md",
     "fluxos/fluxo-de-cenas.md",
-    "sistemas/sistema-de-vida.md",
-    "sistemas/player.md",
     "sistemas/multiplayer.md",
+    "sistemas/player.md",
     "sistemas/inimigos.md",
     "sistemas/dano-localizado.md",
     "sistemas/combate-tiro.md",
-    "000-INDEX.md"
+    "sistemas/biblioteca-de-modelos.md",
+    "000-INDEX.md",
+    "sistemas/sistema-de-vida.md",
+    "arquivos-chave/glass-hitboxes-gd.md",
+    "convencoes/formatacao.md",
+    "convencoes",
+    "arquivos-chave/player-gd.md",
+    "arquivos-chave/main-gd.md",
+    "arquivos-chave/health-bar-gd.md",
+    "arquivos-chave/enemy-health-bar-gd.md",
+    "arquivos-chave/bullet-gd.md"
   ]
 }
