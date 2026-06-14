@@ -126,17 +126,30 @@ layout_mode = 2
 text = "-"
 autowrap_mode = 2
 
-[node name="RotateToggle" type="CheckButton" parent="UI"]
+[node name="Toggles" type="VBoxContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -150.0
-offset_top = 110.0
-offset_right = 150.0
-offset_bottom = 160.0
+offset_left = -170.0
+offset_top = 100.0
+offset_right = 170.0
+offset_bottom = 260.0
 grow_horizontal = 2
+theme_override_constants/separation = 8
+
+[node name="RotateToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
 text = "Rotação"
+
+[node name="CollidersToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+text = "Colisores"
+
+[node name="EffectsToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+button_pressed = true
+text = "Efeitos de gameplay"
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1

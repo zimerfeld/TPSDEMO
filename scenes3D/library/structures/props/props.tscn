@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" uid="uid://dnmn2m57dfxiu" path="res://scenes3D/library/structures/props/props.glb" id="1"]
+
+[node name="Props" type="Node3D"]
+
+[node name="PropsModel" parent="." instance=ExtResource("1")]
