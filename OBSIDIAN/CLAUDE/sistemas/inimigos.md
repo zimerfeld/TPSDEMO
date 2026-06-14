@@ -1,7 +1,7 @@
 # Sistema de Inimigos — Red Robot
 
-**Script:** `scenes3D/enemies/red_robot/red_robot.gd`
-**Cena:** `scenes3D/enemies/red_robot/red_robot.tscn`
+**Script:** `library3D/characters/red_robot/red_robot.gd`
+**Cena:** `library3D/characters/red_robot/red_robot.tscn`
 
 ---
 
@@ -50,7 +50,7 @@ APPROACH ──► AIM ──► SHOOTING
 
 ## HUD de Vida (Boss Bar)
 
-- `scenes3D/enemies/enemy_health_bar.gd` — `CanvasLayer` compartilhado no **topo-centro**
+- `library3D/characters/enemies/enemy_health_bar.gd` — `CanvasLayer` compartilhado no **topo-centro**
 - Acionado por:
   - `hit()` → `show_health_hud()` (ao ser atingido)
   - **mira do player entra** → `player_input._update_enemy_focus()` chama `show_health_hud()`
@@ -102,12 +102,12 @@ func hit() -> void:
 
 ---
 
-## Hitboxes de Vidro (visuais)
+## Colliders de membro (dano localizado)
 
-- `_setup_glass_hitboxes()` no `_ready` cria envólucros de vidro por membro
-- Usa `effects_shared/glass_hitboxes.gd` sobre `RedRobotModel/Armature/Skeleton3D`
-- Só em clientes com tela e se `not dead`; ~11 envólucros (Body, ombros, braços, mãos, pernas)
-- Ver [[arquivos-chave/glass-hitboxes-gd]]
+- `_setup_limb_colliders()` no `_ready` (se `not dead`) cria colliders 3D nativos (`StaticBody3D` + `BoxShape3D`) por membro
+- Usa `effects_shared/limb_colliders.gd` sobre `RedRobotModel/Armature/Skeleton3D` (`head_bone_names = ["mouth_eyes"]`)
+- Layer 32 (bit6); o bullet do player colide fisicamente e aplica dano localizado
+- Ver [[arquivos-chave/limb-colliders-gd]]
 
 ---
 
@@ -115,4 +115,4 @@ func hit() -> void:
 
 - [[sistemas/combate-tiro]]
 - [[arquivos-chave/red-robot-gd]]
-- [[arquivos-chave/glass-hitboxes-gd]]
+- [[arquivos-chave/limb-colliders-gd]]

@@ -1,7 +1,7 @@
 class_name BodyParts
 extends RefCounted
 ## Classificação de ossos em MEMBROS (CABEÇA, TRONCO, BRAÇO E/D, PERNA E/D).
-## Compartilhado pelas hitboxes de vidro (glass_hitboxes.gd) e pelo overlay de
+## Compartilhado pelos colliders de membro (limb_colliders.gd) e pelo overlay de
 ## debug 3D (debug_overlay.gd), para que ambos usem o MESMO mapeamento.
 
 const HEAD := "HEAD"

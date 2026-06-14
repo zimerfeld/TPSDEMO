@@ -1,4 +1,4 @@
-# main/main.gd
+# scenes2D/main/main.gd
 
 **Estende:** `Node`
 
@@ -48,7 +48,7 @@ level_base.tscn → quit       → go_to_main_menu()
 
 ---
 
-## Caminho: `main/main.gd`
+## Caminho: `scenes2D/main/main.gd`
 
 ---
 

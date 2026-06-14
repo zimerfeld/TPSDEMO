@@ -6,6 +6,32 @@ Check out this demo on the asset library: https://godotengine.org/asset-library/
 
 ![Screenshot of TPS demo](screenshots/screenshot.webp)
 
+## Overview
+
+Starting from the original Godot TPS demo, this project grows it into a small
+third-person shooter sandbox. At a high level it offers:
+
+- **Menu-driven flow** — a main menu leads to character selection, a level
+  picker, a settings screen, a developer screen, and online play.
+- **Playable characters** — selectable player variants that move, aim, jump and
+  shoot, with first-person camera control and a local health HUD.
+- **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a
+  laser, and a flying bomber (Criatura Alada) that orbits the player and drops
+  bombs.
+- **Localized damage** — per-limb native 3D colliders (head, torso, arms, legs)
+  sized to each character's mesh, so hits to different body parts deal different
+  damage (headshots deal extra). Both bullets and the enemy laser respect them.
+- **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2),
+  a full complex level (Level Base), plus online (host/connect) play.
+- **3D model library + viewer** — reusable 3D assets organized by type under
+  `library3D/`, browsable in-game through the Models screen (category → model →
+  part) with toggles for rotation, animation, sound, colliders and effects.
+- **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap,
+  vitals, crosshair, pause menu, scanlines, and more).
+- **Debug tooling** — a debug overlay (FPS HUD, ground grid, and per-node
+  TYPE/ID tooltips on 2D and 3D nodes), toggled from the developer screen and the
+  settings "Debug" tab.
+
 ## Godot versions
 
 - The [`master`](https://github.com/godotengine/tps-demo) branch is compatible with the latest stable Godot version (currently 4.x).
@@ -45,22 +71,42 @@ You can either download from the Godot Asset Library, clone this repository, or
 
 ## Project structure
 
-UI screens live under `scenes2D/`, 3D content under `scenes3D/`:
+2D screens and UI live under `scenes2D/`, 3D levels under `scenes3D/`, and the
+reusable 3D asset library under `library3D/`:
 
-- `scenes2D/` — `menu`, `settings`, `chooseplayer`, `developer`, `levels`
-- `scenes3D/` — `players`, `enemies`, `door`, `level_1`, `level_base`, `models`
+- `scenes2D/` — all 2D screens and UI:
+  - `main` — entry scene. `main.gd` is a router that swaps screens in as
+    children (reacting to the `replace_main_scene` / `quit` signals) instead of
+    calling `SceneTree.change_scene`, so `current_scene` stays `main`.
+  - `menu`, `chooseplayer`, `levels`, `settings`, `developer`, `playonline` —
+    the navigation screens.
+  - `controls2D` — reusable UI widgets (cyberpunk HUD, minimap, vitals, ability
+    bar, crosshair, pause menu, scanlines, log feed, etc.).
+  - `controls` — a 2D controls viewer (the 2D analog of the Models screen) that
+    browses and previews the `controls2D` widgets through a dropdown.
+  - `cyberpunkhud` — assembled HUD screen built from `controls2D` widgets.
+- `scenes3D/` — 3D levels and tools: `level_1`, `level_2`, `level_base`, and the
+  `models` viewer.
+- `library3D/` — 3D asset library, organized by type: `characters`,
+  `propulsores`, `structures`, `weapons`, plus `geometry` and `textures` support
+  folders. New model folders dropped in here show up automatically in the Models
+  viewer.
+- `effects_shared/` — cross-character helpers: `limb_colliders.gd` (per-limb
+  native colliders for localized damage), `body_parts.gd` (bone → limb
+  classification), and shared blast/shadow assets.
 - `autoload/` — global singletons: `config.gd` (registered as `Settings`),
-  `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`
-- `main/main.tscn` is the entry scene. `main.gd` is a router that swaps screens
-  in as children — reacting to the `replace_main_scene` / `quit` signals —
-  instead of using `SceneTree.change_scene`, so `current_scene` stays `main`.
+  `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`.
+- `ui/`, `themes/` — shared theme resources. `tools/` — headless helper scripts.
+- `OBSIDIAN/` — project documentation vault.
 
 Screen flow:
 
 ```
-menu ─┬─ chooseplayer ─► levels ─► level_1 / level_base
+menu ─┬─ chooseplayer ─► levels ─► level_1 / level_2 / level_base
       ├─ settings
-      ├─ developer ─► models        (3D model viewer for level_base assets)
+      ├─ developer ─┬─ models       (3D model viewer for library3D assets)
+      │             └─ controls     (2D controls viewer for controls2D widgets)
+      ├─ cyberpunk hud              (assembled HUD preview)
       └─ play online ─► level_base
 ```
 

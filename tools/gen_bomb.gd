@@ -1,9 +1,9 @@
 extends SceneTree
 # Gera a bomb.tscn (projétil lançado pela criatura alada).
 
-const OUT := "res://scenes3D/library/characters/criatura_alada/bomb.tscn"
-const GD := "res://scenes3D/library/characters/criatura_alada/bomb.gd"
-const BOOM := "res://scenes3D/library/characters/player/bullet/bullet_explode.wav"
+const OUT := "res://library3D/weapons/bomb/bomb.tscn"
+const GD := "res://library3D/weapons/bomb/bomb.gd"
+const BOOM := "res://library3D/characters/player/bullet/bullet_explode.wav"
 
 var _root: Node
 

@@ -1,4 +1,4 @@
-# scenes3D/players/player/bullet/bullet.gd
+# library3D/characters/player/bullet/bullet.gd
 
 **Estende:** `CharacterBody3D`
 
@@ -49,9 +49,9 @@ func _physics_process(delta):
 ## Dano por arma + localizado (atualizado)
 
 - `weapon_damage` (atribuído pelo atirador), `shooter` (evita auto-dano), `_registered` (idempotente)
-- `register_hit(target, mult)` — chamado por uma Area3D de membro → `target.hit.rpc(weapon_damage*mult)`
-- `_fallback_body_damage` — dano de TRONCO (1x) se acertou o corpo sem área específica
-- `collision_layer = 8` (bit4) para ser detectado pelas hitboxes; `mask = 3` inalterada
+- `_apply_hit(collider)` — no `move_and_collide`: lê metas `damage_multiplier`/`character` do collider de membro → `character.hit.rpc(round(weapon_damage*mult))`
+- Fallback de TRONCO (1x) no mesmo `_apply_hit` se acertou o corpo (capsule) sem um membro
+- `collision_layer = 8` (bit4); `mask = 51` (mundo/corpos `3` + membros `16` + `32`) para colidir com os membros
 - **Inerte se `shooter == null`** (cobre o `BulletCache` da cena e bullets em clientes)
 - Ver [[sistemas/dano-localizado]]
 

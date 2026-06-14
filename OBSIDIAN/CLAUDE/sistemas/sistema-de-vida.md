@@ -8,8 +8,8 @@
 
 | Arquivo | Ação |
 |---|---|
-| `scenes3D/players/player/player.gd` | Adicionado HP, `hit()` com dano, `respawn()` RPC |
-| `scenes3D/players/player/health_bar.gd` | **NOVO** — CanvasLayer com ProgressBar + Label |
+| `library3D/characters/players/player/player.gd` | Adicionado HP, `hit()` com dano, `respawn()` RPC |
+| `library3D/characters/players/player/health_bar.gd` | **NOVO** — CanvasLayer com ProgressBar + Label |
 
 ---
 
@@ -39,7 +39,7 @@ bullet._physics_process()
 
 ---
 
-## Barra de Vida — `scenes3D/players/player/health_bar.gd`
+## Barra de Vida — `library3D/characters/players/player/health_bar.gd`
 
 - Estende `CanvasLayer` (layer = 10)
 - Criado programaticamente (sem .tscn)
