@@ -3,12 +3,14 @@ extends Node
 signal replace_main_scene
 
 const LEVEL_1_PATH: String = "res://scenes3D/level_1/level_1.tscn"
+const LEVEL_2_PATH: String = "res://scenes3D/level_2/level_2.tscn"
 const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 
 var loading_path: String = ""
 
 @onready var level1_button: Button = $UI/VBox/Level1Row/Level1Button
+@onready var level2_button: Button = $UI/VBox/Level2Row/Level2Button
 @onready var level_base_button: Button = $UI/VBox/LevelBaseRow/LevelBaseButton
 @onready var back_button: Button = $UI/Actions/BackButton
 @onready var loading: HBoxContainer = $UI/Loading
@@ -29,6 +31,7 @@ func _process(_delta: float) -> void:
 		else:
 			print("Error while loading scene: " + str(status))
 			level1_button.show()
+			level2_button.show()
 			level_base_button.show()
 			loading.hide()
 
@@ -40,6 +43,16 @@ func _on_loading_done_timer_timeout() -> void:
 func _on_level_1_pressed() -> void:
 	loading_path = LEVEL_1_PATH
 	level1_button.hide()
+	level2_button.hide()
+	level_base_button.hide()
+	loading.show()
+	ResourceLoader.load_threaded_request(loading_path, "", true)
+
+
+func _on_level_2_pressed() -> void:
+	loading_path = LEVEL_2_PATH
+	level1_button.hide()
+	level2_button.hide()
 	level_base_button.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
@@ -48,6 +61,7 @@ func _on_level_1_pressed() -> void:
 func _on_level_base_pressed() -> void:
 	loading_path = LEVEL_BASE_PATH
 	level1_button.hide()
+	level2_button.hide()
 	level_base_button.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)

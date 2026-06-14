@@ -1,3 +1,3 @@
 extends Node
 
-var scene_path: String = "res://scenes3D/players/player/player.tscn"
+var scene_path: String = "res://library3D/characters/players/player/player.tscn"

@@ -6,7 +6,7 @@ modelos 3D do projeto. Alcançada por **developer → Modelos 3D**; volta com
 
 ## Biblioteca de assets
 
-Tudo sob `res://scenes3D/library/<tipo>/<modelo>/`:
+Tudo sob `res://library3D/<tipo>/<modelo>/`:
 
 - `characters/` — `player`, `red_robot`
 - `props/` — `forklift`
@@ -67,6 +67,15 @@ transform embutido + colisão filha (`StaticBody3D`/`CollisionShape3D`): Core 35
 CoreOutLight 4, Lights 4 (+luminárias), Props 86 (+`VehicleWheel3D` das scificars),
 Structure 104. Forklift tem hierarquia limpa (3 empilhadeiras). Scificars (em
 props.glb) ficam planas (rodas + carroceria como irmãos, sem nó-pai por carro).
+
+## Viewer de controles 2D (análogo)
+
+`scenes2D/controls/controls.tscn` (`controls.gd`) é o equivalente 2D desta tela:
+um dropdown lista cada controle em `scenes2D/controls2D/<nome>/<nome>.tscn` e o
+selecionado é instanciado num `SubViewport` de preview (isola controles que cobrem
+a tela inteira, como `scanlines`/`pause_menu`, e o `cyberpunk_hud`, que é
+`CanvasLayer`). Acessível pela tela `developer` (botão "Controles 2D", ao lado de
+"Modelos 3D"). Soltar uma nova pasta de controle aparece automaticamente.
 
 ## Relacionado
 

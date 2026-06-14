@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c2wr6pr5xqa5i"]
 
-[ext_resource type="Script" uid="uid://c0uji4b3cr51r" path="res://scenes2D/developer/developer.gd" id="1"]
+[ext_resource type="Script" uid="uid://ddst33p6uenw6" path="res://scenes2D/developer/developer.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
 
 [sub_resource type="Environment" id="1"]
@@ -246,11 +246,11 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -330.0
+offset_left = -360.0
 offset_top = -100.0
-offset_right = 330.0
+offset_right = 360.0
 offset_bottom = -50.0
-theme_override_constants/separation = 60
+theme_override_constants/separation = 40
 alignment = 1
 
 [node name="BackButton" type="Button" parent="UI/Actions" unique_id=844862653]
@@ -265,5 +265,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Modelos 3D"
 
+[node name="Controls2DButton" type="Button" parent="UI/Actions"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Controles 2D"
+
 [connection signal="pressed" from="UI/Actions/Models3DButton" to="." method="_on_models_pressed"]
+[connection signal="pressed" from="UI/Actions/Controls2DButton" to="." method="_on_controls_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]

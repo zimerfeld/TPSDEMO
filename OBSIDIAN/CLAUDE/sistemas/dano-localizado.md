@@ -1,7 +1,8 @@
 # Sistema de Dano por Arma + Hitboxes Localizadas
 
-> Implementado em 2026-06-06. Substitui o dano fixo por dano da **arma** do atacante,
-> com **hitboxes funcionais Area3D** por grupo de membro e **dano localizado**.
+> Implementado em 2026-06-06; migrado para **colliders 3D nativos** em 2026-06-14.
+> Dano pela **arma** do atacante, com **`StaticBody3D` por grupo de membro** e
+> **dano localizado** (colisão física, não mais Area3D de "vidro").
 
 ---
 
@@ -16,9 +17,9 @@
 
 ---
 
-## Grupos de hitbox (exibidos)
+## Grupos de hitbox (membros)
 
-`effects_shared/glass_hitboxes.gd` classifica ossos em grupos e cria **uma Area3D por osso**, marcada com grupo + multiplicador:
+`effects_shared/limb_colliders.gd` classifica ossos em grupos e cria **um `StaticBody3D` por membro** (com `CollisionShape3D`/`BoxShape3D` ajustado aos vértices skinados), com metas `group` + `damage_multiplier`:
 
 | Grupo | Multiplicador | Dano |
 |---|---|---|
@@ -36,33 +37,33 @@ Lado detectado por sufixo `.L/.R` (player) ou prefixo `L-/R-` (enemy).
 | Bit | Valor | Uso |
 |---|---|---|
 | bit4 | `8` | Projétil (bullet) — `collision_layer` do bullet |
-| bit5 | `16` | Hitboxes do **player** |
-| bit6 | `32` | Hitboxes do **enemy** |
+| bit5 | `16` | Colliders de membro do **player** |
+| bit6 | `32` | Colliders de membro do **enemy** |
 
-- Bullet mantém `mask = 3` (física do mundo/corpos **inalterada**); ganhou `layer = 8` só para ser detectável pelas áreas.
-- Áreas: `monitoring=true`, `mask = 8` (detectam o bullet).
+- Bullet: `layer = 8`, `mask = 51` (`3` mundo/corpos + `16` + `32`) para colidir fisicamente com os membros.
+- Colliders de membro: `StaticBody3D` na layer 16/32, `mask = 0` (passivos — são atingidos, não detectam).
 
 ---
 
 ## Fluxo do dano (player → enemy)
 
 ```
-bullet (server) entra numa Area3D de membro do enemy
-  → Area3D.body_entered → glass_hitboxes._on_hitbox_body_entered
-      → ignora se body.shooter == dono (sem auto-dano)
-      → bullet.register_hit(enemy, multiplicador)
-          → enemy.hit.rpc(round(weapon_damage * multiplicador))   [server]
-          → bullet explode
-Fallback: se o bullet acerta o CORPO sem área específica → dano de TRONCO (1x)
-          via bullet._fallback_body_damage (deferido; idempotente com _registered)
+bullet (server) colide fisicamente (move_and_collide) com um collider de membro do enemy
+  → bullet._apply_hit(collider)
+      → lê metas damage_multiplier + character; ignora se character == shooter
+      → enemy.hit.rpc(round(weapon_damage * multiplicador))   [server]
+      → bullet explode
+Fallback: se o bullet acerta o CORPO (capsule) sem um membro → dano de TRONCO (1x)
+          no mesmo _apply_hit (idempotente com _registered)
 ```
 
-`collision_shape.set_deferred("disabled")` mantém a shape ativa no frame para a área registrar.
+O atirador exclui os próprios colliders de membro do projétil (`player._exclude_own_limbs`)
+para o tiro não nascer acertando o próprio braço/arma.
 
 ## Fluxo do dano (enemy → player)
 
 `red_robot.shoot()` (server): roll de precisão → `_damage_player()` lança um raio
-contra as hitboxes do player (bit5, `collide_with_areas`) → multiplicador do membro →
+contra os colliders de membro do player (bit5, `collide_with_bodies`) → multiplicador do membro →
 `player.hit.rpc(weapon_damage * mult)`.
 
 ---
@@ -89,9 +90,9 @@ O enemy aguarda aproximar (`shoot_countdown = 0`) enquanto o player está fora d
 
 ## Tuning no inspector (nó do personagem)
 
-Em **Player** e **RedRobot** (grupo "Glass Hitboxes"): `hitbox_color`, `hitbox_radius`,
-`hitbox_head_radius` — repassados ao `GlassHitboxes`. Também em `glass_hitboxes.gd`:
-`glass_color`, `radius`, `head_radius`, `min_bone_length`, `hitbox_layer`, `detect_layer`.
+Em `limb_colliders.gd` (nó `LimbColliders`): `enabled`, `padding`, `head_bone_names`
+(`["mouth_eyes"]` no enemy), `hitbox_layer` (16 player / 32 enemy). Os exports de
+cor/raio do antigo sistema de vidro foram removidos.
 
 > Verificado via MCP do Godot ([[godot-mcp]]): laser do enemy aplica 25 (arma),
 > lookup de hitbox funcional, cache não causa mais dano no início, sem erros.
@@ -102,7 +103,7 @@ Em **Player** e **RedRobot** (grupo "Glass Hitboxes"): `hitbox_color`, `hitbox_r
 
 - [[sistemas/combate-tiro]]
 - [[sistemas/sistema-de-vida]]
-- [[arquivos-chave/glass-hitboxes-gd]]
+- [[arquivos-chave/limb-colliders-gd]]
 - [[arquivos-chave/bullet-gd]]
 - [[arquivos-chave/red-robot-gd]]
 - [[arquivos-chave/enemy-health-bar-gd]]
