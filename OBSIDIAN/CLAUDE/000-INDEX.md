@@ -33,14 +33,14 @@
 
 | Arquivo | Nota |
 |---|---|
-| `scenes3D/players/player/player.gd` | [[arquivos-chave/player-gd]] |
-| `scenes3D/players/player/player_input.gd` | [[arquivos-chave/player-input-gd]] |
-| `scenes3D/players/player/health_bar.gd` | [[arquivos-chave/health-bar-gd]] |
-| `scenes3D/enemies/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
-| `effects_shared/glass_hitboxes.gd` | [[arquivos-chave/glass-hitboxes-gd]] |
-| `scenes3D/enemies/red_robot/red_robot.gd` | [[arquivos-chave/red-robot-gd]] |
-| `scenes3D/players/player/bullet/bullet.gd` | [[arquivos-chave/bullet-gd]] |
-| `main/main.gd` | [[arquivos-chave/main-gd]] |
+| `library3D/characters/players/player/player.gd` | [[arquivos-chave/player-gd]] |
+| `library3D/characters/players/player/player_input.gd` | [[arquivos-chave/player-input-gd]] |
+| `library3D/characters/players/player/health_bar.gd` | [[arquivos-chave/health-bar-gd]] |
+| `library3D/characters/enemies/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
+| `effects_shared/limb_colliders.gd` | [[arquivos-chave/limb-colliders-gd]] |
+| `library3D/characters/red_robot/red_robot.gd` | [[arquivos-chave/red-robot-gd]] |
+| `library3D/characters/player/bullet/bullet.gd` | [[arquivos-chave/bullet-gd]] |
+| `scenes2D/main/main.gd` | [[arquivos-chave/main-gd]] |
 
 ---
 

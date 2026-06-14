@@ -1,4 +1,4 @@
-# scenes3D/players/player/player_input.gd
+# library3D/characters/players/player/player_input.gd
 
 **Classe:** `PlayerInputSynchronizer extends MultiplayerSynchronizer`
 
@@ -89,7 +89,7 @@ else:
 
 ---
 
-## Caminho: `scenes3D/players/player/player_input.gd`
+## Caminho: `library3D/characters/players/player/player_input.gd`
 
 ---
 

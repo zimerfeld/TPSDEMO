@@ -69,6 +69,17 @@ theme_override_font_sizes/font_size = 30
 text = "Level 1"
 alignment = 0
 
+[node name="Level2Row" type="HBoxContainer" parent="UI/VBox"]
+layout_mode = 2
+
+[node name="Level2Button" type="Button" parent="UI/VBox/Level2Row" unique_id=1572114993]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "Level 2"
+alignment = 0
+
 [node name="LevelBaseRow" type="HBoxContainer" parent="UI/VBox"]
 layout_mode = 2
 
@@ -127,6 +138,7 @@ wait_time = 0.5
 one_shot = true
 
 [connection signal="pressed" from="UI/VBox/Level1Row/Level1Button" to="." method="_on_level_1_pressed"]
+[connection signal="pressed" from="UI/VBox/Level2Row/Level2Button" to="." method="_on_level_2_pressed"]
 [connection signal="pressed" from="UI/VBox/LevelBaseRow/LevelBaseButton" to="." method="_on_level_base_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

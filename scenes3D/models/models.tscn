@@ -114,20 +114,11 @@ theme_override_constants/separation = 16
 [node name="Label" type="Label" parent="UI/Selectors/MeshRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-text = "Malha:"
+text = "Parte:"
 
 [node name="cboMeshes" type="OptionButton" parent="UI/Selectors/MeshRow"]
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
-
-[node name="SaveRow" type="HBoxContainer" parent="UI/Selectors"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="SaveButton" type="Button" parent="UI/Selectors/SaveRow"]
-custom_minimum_size = Vector2(486, 50)
-layout_mode = 2
-text = "Salvar como cena 3D"
 
 [node name="StatusLabel" type="Label" parent="UI/Selectors"]
 custom_minimum_size = Vector2(486, 0)
@@ -135,17 +126,42 @@ layout_mode = 2
 text = "-"
 autowrap_mode = 2
 
-[node name="RotateToggle" type="CheckButton" parent="UI"]
+[node name="Toggles" type="VBoxContainer" parent="UI"]
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -150.0
-offset_top = 110.0
-offset_right = 150.0
-offset_bottom = 160.0
-grow_horizontal = 2
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 100.0
+offset_right = -20.0
+offset_bottom = 380.0
+grow_horizontal = 0
+theme_override_constants/separation = 8
+
+[node name="RotateToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
 text = "Rotação"
+
+[node name="AnimationToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Animação"
+
+[node name="AudioToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Som"
+
+[node name="CollidersToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Colisores"
+
+[node name="EffectsToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Efeitos de gameplay"
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
@@ -169,11 +185,4 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Voltar"
 
-[node name="ExportedButton" type="Button" parent="UI/Actions"]
-custom_minimum_size = Vector2(200, 50)
-layout_mode = 2
-theme_override_font_sizes/font_size = 30
-text = "Exportados"
-
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/ExportedButton" to="." method="_on_open_exported_pressed"]

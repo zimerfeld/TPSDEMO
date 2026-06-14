@@ -6,9 +6,9 @@
 
 | Arquivo | Papel |
 |---|---|
-| `scenes3D/players/player/player.gd` | Instancia a bala, dispara RPC `shoot()` |
-| `scenes3D/players/player/bullet/bullet.gd` | Física da bala, detecção de colisão, chama `hit.rpc()` |
-| `scenes3D/players/player/bullet/bullet.tscn` | Cena da bala: CharacterBody3D + AnimationPlayer + OmniLight |
+| `library3D/characters/players/player/player.gd` | Instancia a bala, dispara RPC `shoot()` |
+| `library3D/characters/player/bullet/bullet.gd` | Física da bala, detecção de colisão, chama `hit.rpc()` |
+| `library3D/characters/player/bullet/bullet.tscn` | Cena da bala: CharacterBody3D + AnimationPlayer + OmniLight |
 
 ---
 

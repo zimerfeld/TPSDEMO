@@ -4,6 +4,7 @@ signal quit
 signal replace_main_scene(resource: PackedScene)
 
 const MODELS_PATH: String = "res://scenes3D/models/models.tscn"
+const CONTROLS_PATH: String = "res://scenes2D/controls/controls.tscn"
 
 # Each row is a Disabled/Enabled pair behaving like a single toggle. Maps the row
 # node (under UI/Options) to the "game" config key it controls. Changes are saved
@@ -49,6 +50,10 @@ func _on_toggle(button_pressed: bool, key: String) -> void:
 
 func _on_models_pressed() -> void:
 	emit_signal("replace_main_scene", load(MODELS_PATH))
+
+
+func _on_controls_pressed() -> void:
+	emit_signal("replace_main_scene", load(CONTROLS_PATH))
 
 
 func _on_back_pressed() -> void:
