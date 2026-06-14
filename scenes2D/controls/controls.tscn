@@ -1,0 +1,111 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes2D/controls/controls.gd" id="1"]
+[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
+
+[node name="Controls" type="Node"]
+script = ExtResource("1")
+
+[node name="Background" type="CanvasLayer" parent="."]
+layer = -2
+
+[node name="Bg" type="ColorRect" parent="Background"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.043137256, 0.050980393, 0.101960786, 1)
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2")
+
+[node name="TitleLabel" type="Label" parent="UI"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 30.0
+offset_right = 400.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 40
+text = "Controles 2D"
+horizontal_alignment = 1
+
+[node name="Selectors" type="VBoxContainer" parent="UI"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 130.0
+offset_right = 700.0
+offset_bottom = 230.0
+theme_override_constants/separation = 12
+
+[node name="ControlRow" type="HBoxContainer" parent="UI/Selectors"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Selectors/ControlRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Controle:"
+
+[node name="cboControl" type="OptionButton" parent="UI/Selectors/ControlRow"]
+custom_minimum_size = Vector2(360, 50)
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="UI/Selectors"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+text = "-"
+autowrap_mode = 2
+
+[node name="PreviewContainer" type="SubViewportContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 240.0
+offset_right = -40.0
+offset_bottom = -120.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="UI/PreviewContainer"]
+transparent_bg = true
+disable_3d = true
+handle_input_locally = false
+size = Vector2i(1840, 720)
+render_target_update_mode = 4
+
+[node name="Actions" type="HBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -100.0
+offset_right = 200.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+alignment = 1
+
+[node name="BackButton" type="Button" parent="UI/Actions"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Voltar"
+
+[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]

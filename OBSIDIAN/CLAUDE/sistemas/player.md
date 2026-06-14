@@ -1,8 +1,8 @@
 # Sistema do Player
 
 **Classe:** `Player` extends `CharacterBody3D`
-**Script:** `scenes3D/players/player/player.gd`
-**Cena:** `scenes3D/players/player/player.tscn`
+**Script:** `library3D/characters/players/player/player.gd`
+**Cena:** `library3D/characters/players/player/player.tscn`
 
 ---
 
@@ -80,12 +80,12 @@
 
 ---
 
-## Hitboxes de Vidro (visuais)
+## Colliders de membro (dano localizado)
 
-- `_setup_glass_hitboxes()` no `_ready` cria envólucros de vidro por membro
-- Usa `effects_shared/glass_hitboxes.gd` sobre `PlayerModel/Robot_Skeleton/Skeleton3D`
-- Só em clientes com tela (`!= "headless"`); ~26 envólucros (membros maiores)
-- Ver [[arquivos-chave/glass-hitboxes-gd]]
+- `_setup_limb_colliders()` no `_ready` cria colliders 3D nativos (`StaticBody3D` + `BoxShape3D`) por membro
+- Usa `effects_shared/limb_colliders.gd` sobre `PlayerModel/Robot_Skeleton/Skeleton3D` (playera herda de Player)
+- Layer 16 (bit5); o bullet colide fisicamente. Ao atirar, o player exclui os próprios colliders (`_exclude_own_limbs`)
+- Ver [[arquivos-chave/limb-colliders-gd]]
 
 ---
 
@@ -96,4 +96,4 @@
 - [[sistemas/multiplayer]]
 - [[arquivos-chave/player-gd]]
 - [[arquivos-chave/player-input-gd]]
-- [[arquivos-chave/glass-hitboxes-gd]]
+- [[arquivos-chave/limb-colliders-gd]]

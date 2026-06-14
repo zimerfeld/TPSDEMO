@@ -3,8 +3,8 @@ extends SceneTree
 # Raiz CharacterBody3D + colisão + script de voo (inimigo voador).
 # Uso: Godot --headless --path <projeto> --script res://tools/gen_criatura_alada.gd
 
-const OUT_DIR := "res://scenes3D/library/characters/criatura_alada"
-const REL_DIR := "scenes3D/library/characters/criatura_alada"
+const OUT_DIR := "res://library3D/characters/criatura_alada"
+const REL_DIR := "library3D/characters/criatura_alada"
 const TSCN := OUT_DIR + "/criatura_alada.tscn"
 const PNG := OUT_DIR + "/criatura_alada_albedo.png"
 const WAV := OUT_DIR + "/criatura_alada_motor.wav"

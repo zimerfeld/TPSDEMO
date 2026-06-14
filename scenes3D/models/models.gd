@@ -12,11 +12,11 @@ const ALL_PREFIXES_LABEL: String = "Todos"
 # in place. Selecting a real part below it isolates that single distinct mesh.
 const WHOLE_MODEL_LABEL: String = "Modelo completo"
 
-# Root of the 3D model library. Models live in res://scenes3D/library/<tipo>/<modelo>/
+# Root of the 3D model library. Models live in res://library3D/<tipo>/<modelo>/
 # (e.g. characters/red_robot, props/forklift, structures/core). The selection
 # dropdowns below are built by scanning this folder, so dropping a new model
 # folder in here makes it show up automatically — no code change needed.
-const LIBRARY_ROOT: String = "res://scenes3D/library"
+const LIBRARY_ROOT: String = "res://library3D"
 
 # Model categories shown in the dropdown, in display order. Only these
 # subfolders of LIBRARY_ROOT are scanned — support folders that also live under
@@ -25,6 +25,7 @@ const CATEGORIES: Array[Dictionary] = [
 	{"key": "characters", "label": "Personagens"},
 	{"key": "propulsores", "label": "Propulsores"},
 	{"key": "structures", "label": "Estruturas"},
+	{"key": "weapons", "label": "Armas"},
 ]
 
 # How fast the dragged model rotates, in radians per pixel of mouse motion.
@@ -69,9 +70,13 @@ var _pitch: float = 0.0
 
 # Whole-model preview toggles. Colliders draws wireframe gizmos for the
 # (otherwise invisible) CollisionShape3D volumes; effects shows the model's
-# gameplay flourishes (particles, lights, bone-mounted laser/muzzle meshes).
+# gameplay flourishes (particles, lights, bone-mounted laser/muzzle meshes);
+# animation plays the model's AnimationPlayer; audio plays its sound emitters.
+# All start off so a freshly-picked model previews static and silent.
 var _show_colliders: bool = false
-var _show_effects: bool = true
+var _show_effects: bool = false
+var _play_animation: bool = false
+var _play_audio: bool = false
 
 @onready var model_holder: Node3D = $ModelHolder
 @onready var cbo_category: OptionButton = $UI/Selectors/CategoryRow/cboCategory
@@ -80,6 +85,8 @@ var _show_effects: bool = true
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
 @onready var status_label: Label = $UI/Selectors/StatusLabel
 @onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
+@onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
+@onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
 @onready var colliders_toggle: CheckButton = $UI/Toggles/CollidersToggle
 @onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
 
@@ -97,6 +104,10 @@ func _ready() -> void:
 
 	rotate_toggle.button_pressed = _auto_rotate
 	rotate_toggle.toggled.connect(_on_rotate_toggled)
+	animation_toggle.button_pressed = _play_animation
+	animation_toggle.toggled.connect(_on_animation_toggled)
+	audio_toggle.button_pressed = _play_audio
+	audio_toggle.toggled.connect(_on_audio_toggled)
 	colliders_toggle.button_pressed = _show_colliders
 	colliders_toggle.toggled.connect(_on_colliders_toggled)
 	effects_toggle.button_pressed = _show_effects
@@ -207,6 +218,16 @@ func _on_rotate_toggled(pressed: bool) -> void:
 	_auto_rotate = pressed
 
 
+func _on_animation_toggled(pressed: bool) -> void:
+	_play_animation = pressed
+	_refresh_preview()
+
+
+func _on_audio_toggled(pressed: bool) -> void:
+	_play_audio = pressed
+	_refresh_preview()
+
+
 func _on_colliders_toggled(pressed: bool) -> void:
 	_show_colliders = pressed
 	_refresh_preview()
@@ -262,21 +283,38 @@ func _scan_library() -> Array:
 # (.glb / .gltf) if present — so we show the mesh without running any gameplay
 # script — otherwise an assembled scene (.tscn). Only files directly in the
 # folder are considered (subfolders like audio/ or bullet/ are ignored).
+# A folder may hold more than one scene (e.g. criatura_alada/ also ships
+# bomb.tscn, the projectile it drops); the file whose basename matches the
+# folder name is the model itself, so it wins over any sibling scene.
 func _find_model_file(folder: String) -> String:
 	var access := DirAccess.open(folder)
 	if access == null:
 		return ""
+	var model_name := folder.get_file()
 	var mesh_path: String = ""
+	var mesh_named: String = ""
 	var scene_path: String = ""
+	var scene_named: String = ""
 	for file_name in access.get_files():
+		var is_named := file_name.get_basename() == model_name
 		match file_name.get_extension().to_lower():
 			"glb", "gltf":
 				if mesh_path == "":
 					mesh_path = folder.path_join(file_name)
+				if is_named and mesh_named == "":
+					mesh_named = folder.path_join(file_name)
 			"tscn":
 				if scene_path == "":
 					scene_path = folder.path_join(file_name)
-	return mesh_path if mesh_path != "" else scene_path
+				if is_named and scene_named == "":
+					scene_named = folder.path_join(file_name)
+	if mesh_named != "":
+		return mesh_named
+	if mesh_path != "":
+		return mesh_path
+	if scene_named != "":
+		return scene_named
+	return scene_path
 
 
 # Pick the resource for the assembled "Modelo completo" view: the authored scene
@@ -287,9 +325,18 @@ func _find_display_file(folder: String) -> String:
 	var access := DirAccess.open(folder)
 	if access == null:
 		return ""
+	var model_name := folder.get_file()
+	var scene_path: String = ""
 	for file_name in access.get_files():
 		if file_name.get_extension().to_lower() == "tscn":
-			return folder.path_join(file_name)
+			# The scene named after the folder is the model; a sibling scene
+			# (e.g. bomb.tscn next to criatura_alada.tscn) must not shadow it.
+			if file_name.get_basename() == model_name:
+				return folder.path_join(file_name)
+			if scene_path == "":
+				scene_path = folder.path_join(file_name)
+	if scene_path != "":
+		return scene_path
 	return _find_model_file(folder)
 
 
@@ -406,11 +453,51 @@ func _preview_whole_model() -> void:
 	_strip_scripts(instance)
 	if not _show_effects:
 		_hide_gameplay_effects(instance)
+	# Suppress autoplay BEFORE the subtree enters the tree (autoplay fires on
+	# tree entry), then kick off playback below only for the toggles that are on.
+	var av_state := _suppress_autoplay(instance)
 	model_holder.add_child(instance)
+	_apply_av_playback(av_state)
 	if instance is Node3D:
 		_fit_to_view(instance as Node3D)
 	if _show_colliders:
 		_add_collider_gizmos(instance)
+
+
+# Clear the autoplay on every AnimationPlayer and audio emitter so nothing starts
+# the instant the subtree enters the tree. Returns the captured state so playback
+# can be (re)started afterwards from inside the tree, per the Animation/Som toggles.
+func _suppress_autoplay(instance: Node) -> Dictionary:
+	var anim_autoplay: Dictionary = {}
+	for node in instance.find_children("*", "AnimationPlayer", true, false):
+		var ap := node as AnimationPlayer
+		anim_autoplay[ap] = ap.autoplay
+		ap.autoplay = ""
+
+	var audio_players: Array = []
+	for cls in ["AudioStreamPlayer", "AudioStreamPlayer3D", "AudioStreamPlayer2D"]:
+		audio_players.append_array(instance.find_children("*", cls, true, false))
+	for node in audio_players:
+		node.set("autoplay", false)
+
+	return {"anim": anim_autoplay, "audio": audio_players}
+
+
+# Start the model's animation and/or sound depending on the toggles. Animation
+# uses the original autoplay clip (falling back to the first available); audio
+# plays every emitter that has a stream. Off toggles leave it static and silent.
+func _apply_av_playback(state: Dictionary) -> void:
+	if _play_animation:
+		for ap: AnimationPlayer in state["anim"]:
+			var clip: String = state["anim"][ap]
+			if clip == "" and not ap.get_animation_list().is_empty():
+				clip = ap.get_animation_list()[0]
+			if clip != "" and ap.has_animation(clip):
+				ap.play(clip)
+	if _play_audio:
+		for node in state["audio"]:
+			if node.get("stream") != null:
+				node.play()
 
 
 # Recursively detach every script in the instanced subtree before it enters the

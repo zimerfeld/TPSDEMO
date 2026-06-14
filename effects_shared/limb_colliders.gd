@@ -1,0 +1,193 @@
+extends Node3D
+## Colliders 3D NATIVOS (StaticBody3D + CollisionShape3D), UM por MEMBRO grande.
+## Grupos: CABEÇA, TRONCO, BRAÇO (D/E), PERNA (D/E).
+##
+## Cada membro vira uma única BoxShape3D ajustada aos VÉRTICES da malha skinados
+## àquele membro (AABB no espaço local do osso-raiz do membro → caixa orientada
+## que "abraça" a parte). O collider é preso via BoneAttachment3D ao osso-raiz,
+## então acompanha a pose/animação. Cada StaticBody3D carrega o multiplicador de
+## DANO LOCALIZADO (cabeça = +50%) e uma referência ao personagem dono, em metas.
+## Os projéteis colidem fisicamente com esses corpos (move_and_collide) e o laser
+## do inimigo os atinge por raycast contra CORPOS — não há mais Area3D nem visual.
+
+const HEAD_MULTIPLIER := 1.5
+const BODY_MULTIPLIER := 1.0
+
+@export var enabled: bool = true
+## Margem (m) somada a cada lado da caixa, para folga sobre a superfície.
+@export var padding: float = 0.03
+
+@export_group("Mapeamento de Bones")
+## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
+@export var head_bone_names: Array[String] = []
+
+@export_group("Colisão")
+## Layer dos colliders de membro (bit5=16 player, bit6=32 enemy). Os projéteis
+## incluem essas layers no seu collision_mask para colidir com os membros.
+@export_flags_3d_physics var hitbox_layer: int = 16
+
+var _character: Node = null
+## Todos os StaticBody3D criados (para o atirador excluir os próprios da colisão).
+var _bodies: Array[StaticBody3D] = []
+
+
+func build_for(skel: Skeleton3D) -> void:
+	if not enabled or skel == null:
+		return
+	_character = get_parent()
+	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
+	var members := _collect_member_boxes(skel)
+	for group in members:
+		_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"])
+
+
+## Lista os StaticBody3D dos membros (usada para excluir os próprios colliders da
+## colisão do projétil que o personagem dispara — senão ele acertaria a si mesmo).
+func get_limb_bodies() -> Array[StaticBody3D]:
+	return _bodies
+
+
+# ── Coleta de vértices por membro ─────────────────────────────────────────────
+
+func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
+	# 1) Agrupa ossos por membro e escolhe o osso-raiz (mais raso na hierarquia).
+	var group_bones := {}
+	for b in skel.get_bone_count():
+		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names)
+		if g == "":
+			continue
+		if not group_bones.has(g):
+			group_bones[g] = []
+		group_bones[g].append(b)
+
+	var root_bone := {}
+	for g in group_bones:
+		var best: int = group_bones[g][0]
+		var best_depth := _bone_depth(skel, best)
+		for b in group_bones[g]:
+			var d := _bone_depth(skel, b)
+			if d < best_depth:
+				best_depth = d
+				best = b
+		root_bone[g] = best
+
+	# 2) Acumula AABB por membro a partir dos vértices skinados (espaço do osso-raiz).
+	# A posição de cada vértice no REST é reconstruída via a BIND POSE da skin
+	# (get_bind_pose) — isso corrige esqueletos cuja pose de bind difere da de
+	# rest (p.ex. o player); usar só get_bone_global_rest deslocaria as caixas.
+	var bone_rest: Array[Transform3D] = []
+	bone_rest.resize(skel.get_bone_count())
+	for b in skel.get_bone_count():
+		bone_rest[b] = skel.get_bone_global_rest(b)
+	var root_rest_inv := {}
+	for g in root_bone:
+		root_rest_inv[g] = bone_rest[root_bone[g]].affine_inverse()
+
+	var acc := {}  # group → {"min": Vector3, "max": Vector3}
+	for mi in _skinned_meshes(skel):
+		var skin: Skin = mi.skin
+		if skin == null:
+			continue
+		# Por índice de bind: osso do esqueleto + matriz de skinning no rest
+		# (mesh-space → skeleton-space) = rest_global(osso) * bind_pose.
+		var idx_to_bone: PackedInt32Array = PackedInt32Array()
+		idx_to_bone.resize(skin.get_bind_count())
+		var skin_xform: Array[Transform3D] = []
+		skin_xform.resize(skin.get_bind_count())
+		for i in skin.get_bind_count():
+			var bb := skin.get_bind_bone(i)
+			var skb_i := bb if bb >= 0 else skel.find_bone(skin.get_bind_name(i))
+			idx_to_bone[i] = skb_i
+			if skb_i >= 0:
+				skin_xform[i] = bone_rest[skb_i] * skin.get_bind_pose(i)
+
+		for s in mi.mesh.get_surface_count():
+			var arr := mi.mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var bones: PackedInt32Array = arr[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
+			if verts.is_empty() or bones.is_empty() or weights.is_empty():
+				continue
+			var per := bones.size() / verts.size()  # influências por vértice (4 ou 8)
+			for vi in verts.size():
+				var best_w := 0.0
+				var best_b := -1
+				for k in per:
+					var w := weights[vi * per + k]
+					if w > best_w:
+						best_w = w
+						best_b = bones[vi * per + k]
+				if best_b < 0 or best_b >= idx_to_bone.size():
+					continue
+				var skb := idx_to_bone[best_b]
+				if skb < 0:
+					continue
+				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names)
+				if g == "":
+					continue
+				var p: Vector3 = root_rest_inv[g] * (skin_xform[best_b] * verts[vi])
+				if not acc.has(g):
+					acc[g] = {"min": p, "max": p}
+				else:
+					acc[g]["min"] = acc[g]["min"].min(p)
+					acc[g]["max"] = acc[g]["max"].max(p)
+
+	# 3) Monta AABB final (com folga) por membro que tenha vértices.
+	var out := {}
+	var pad := Vector3(padding, padding, padding)
+	for g in acc:
+		var mn: Vector3 = acc[g]["min"] - pad
+		var mx: Vector3 = acc[g]["max"] + pad
+		out[g] = {"bone": root_bone[g], "aabb": AABB(mn, mx - mn)}
+	return out
+
+
+func _bone_depth(skel: Skeleton3D, b: int) -> int:
+	var d := 0
+	var p := skel.get_bone_parent(b)
+	while p != -1:
+		d += 1
+		p = skel.get_bone_parent(p)
+	return d
+
+
+func _skinned_meshes(skel: Skeleton3D) -> Array[MeshInstance3D]:
+	var out: Array[MeshInstance3D] = []
+	var stack: Array = [skel]
+	while stack.size() > 0:
+		var n: Node = stack.pop_back()
+		if n is MeshInstance3D and (n as MeshInstance3D).skin != null \
+				and (n as MeshInstance3D).mesh != null:
+			out.append(n as MeshInstance3D)
+		for c in n.get_children():
+			stack.append(c)
+	return out
+
+
+# ── Construção do collider de um membro ───────────────────────────────────────
+
+func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aabb: AABB) -> void:
+	var att := BoneAttachment3D.new()
+	att.name = "Hitbox_%s" % group
+	skel.add_child(att)
+	att.bone_name = skel.get_bone_name(bone_idx)
+
+	var body := StaticBody3D.new()
+	body.name = "Collider_%s" % group
+	body.collision_layer = hitbox_layer
+	body.collision_mask = 0   # passivo: é atingido, não detecta nada
+	var mult: float = HEAD_MULTIPLIER if group == BodyParts.HEAD else BODY_MULTIPLIER
+	body.set_meta("group", group)
+	body.set_meta("damage_multiplier", mult)
+	body.set_meta("character", _character)
+
+	var center := box_aabb.position + box_aabb.size * 0.5
+	var box := BoxShape3D.new()
+	box.size = box_aabb.size
+	var shape := CollisionShape3D.new()
+	shape.shape = box
+	shape.position = center
+	body.add_child(shape)
+
+	att.add_child(body)
+	_bodies.append(body)
