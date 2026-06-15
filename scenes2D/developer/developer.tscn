@@ -239,6 +239,32 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
+[node name="MembrosRow" type="HBoxContainer" parent="UI/Options"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="MembrosLabel" type="Label" parent="UI/Options/MembrosRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Membros:"
+
+[node name="Disabled" type="Button" parent="UI/Options/MembrosRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Options/MembrosRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
 [node name="Actions" type="HBoxContainer" parent="UI" unique_id=1614213473]
 layout_mode = 1
 anchors_preset = 7

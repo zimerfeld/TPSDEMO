@@ -34,6 +34,15 @@ const DRAG_SENSITIVITY: float = 0.01
 # Auto-rotation speed in radians per second when the toggle is on.
 const AUTO_ROTATE_SPEED: float = 0.6
 
+# Mouse-wheel zoom: the camera slides along its view axis toward/away from the
+# model. ZOOM_STEP is how much one wheel notch changes the target distance;
+# ZOOM_MIN/MAX clamp it; ZOOM_SMOOTH is the per-second approach rate that makes
+# the move glide instead of snapping.
+const ZOOM_STEP: float = 0.6
+const ZOOM_MIN: float = 1.2
+const ZOOM_MAX: float = 12.0
+const ZOOM_SMOOTH: float = 10.0
+
 # Built at _ready by scanning LIBRARY_ROOT. Each entry:
 #   {"key": String, "label": String, "models": Array[{"name", "path"}]}
 var _categories: Array = []
@@ -50,6 +59,9 @@ var _categories: Array = []
 var _model_scene: PackedScene = null
 var _display_scene: PackedScene = null
 var _mesh_catalog: Array = []
+# Resource path of the currently previewed model, used to look up per-character
+# data such as the head bone(s) that BodyParts can't infer from the name alone.
+var _current_model_path: String = ""
 
 # The models of the current category that pass the active prefix filter, in the
 # same order as the Model dropdown — so the dropdown index maps straight back to
@@ -79,6 +91,12 @@ var _play_animation: bool = false
 var _play_audio: bool = false
 
 @onready var model_holder: Node3D = $ModelHolder
+@onready var camera: Camera3D = $Camera3D
+
+# Mouse-wheel zoom state: the camera's distance from the model along its local Z.
+# _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
+var _zoom: float = 0.0
+var _zoom_target: float = 0.0
 @onready var cbo_category: OptionButton = $UI/Selectors/CategoryRow/cboCategory
 @onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
@@ -92,6 +110,8 @@ var _play_audio: bool = false
 
 
 func _ready() -> void:
+	_zoom = camera.position.z
+	_zoom_target = _zoom
 	_categories = _scan_library()
 
 	cbo_category.clear()
@@ -125,6 +145,10 @@ func _process(delta: float) -> void:
 		_yaw += delta * AUTO_ROTATE_SPEED
 	# Rebuild rotation from yaw/pitch with roll fixed at 0 (orthogonal axes only).
 	model_holder.rotation = Vector3(_pitch, _yaw, 0.0)
+	# Glide the camera toward the wheel-set zoom distance instead of snapping.
+	if not is_equal_approx(_zoom, _zoom_target):
+		_zoom = lerpf(_zoom, _zoom_target, minf(ZOOM_SMOOTH * delta, 1.0))
+		camera.position.z = _zoom
 
 
 func _on_category_selected(index: int) -> void:
@@ -191,6 +215,7 @@ func _populate_models() -> void:
 # distinct mesh so the user can drill into a single piece afterwards.
 func _on_model_selected(index: int) -> void:
 	var model: Dictionary = _filtered_models[index]
+	_current_model_path = model["path"]
 	_model_scene = load(model["path"])
 	_display_scene = load(model.get("display_path", model["path"]))
 	_mesh_catalog = _build_mesh_catalog(_model_scene)
@@ -366,6 +391,14 @@ func _build_mesh_catalog(scene: PackedScene) -> Array:
 			var has_collision := not mesh_instance.find_children(
 				"*", "CollisionShape3D", true, false
 			).is_empty()
+			# Capture the instance's materials so a single-part preview keeps its
+			# look. Some models (criatura_alada) paint their meshes via
+			# material_override / per-surface overrides on the INSTANCE rather than
+			# baking them into the Mesh surfaces — without this the isolated part
+			# would render untextured.
+			var surface_overrides: Array = []
+			for s in mesh_instance.mesh.get_surface_count():
+				surface_overrides.append(mesh_instance.get_surface_override_material(s))
 			by_mesh[id] = entries.size()
 			entries.append({
 				"mesh": mesh_instance.mesh,
@@ -373,6 +406,8 @@ func _build_mesh_catalog(scene: PackedScene) -> Array:
 				"count": 0,
 				"has_collision": has_collision,
 				"skinned": mesh_instance.skin != null,
+				"material_override": mesh_instance.material_override,
+				"surface_overrides": surface_overrides,
 			})
 		entries[by_mesh[id]]["count"] += 1
 	instance.free()
@@ -435,7 +470,14 @@ func _preview_mesh(index: int) -> void:
 	if index < 0 or index >= _mesh_catalog.size():
 		return
 	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.mesh = _mesh_catalog[index]["mesh"]
+	var entry: Dictionary = _mesh_catalog[index]
+	mesh_instance.mesh = entry["mesh"]
+	# Re-apply the materials captured from the source instance so painted-by-
+	# override models (e.g. criatura_alada) keep their texture in the part view.
+	mesh_instance.material_override = entry.get("material_override", null)
+	var surface_overrides: Array = entry.get("surface_overrides", [])
+	for s in surface_overrides.size():
+		mesh_instance.set_surface_override_material(s, surface_overrides[s])
 	model_holder.add_child(mesh_instance)
 	_fit_to_view(mesh_instance)
 
@@ -458,6 +500,11 @@ func _preview_whole_model() -> void:
 	var av_state := _suppress_autoplay(instance)
 	model_holder.add_child(instance)
 	_apply_av_playback(av_state)
+	if _show_colliders:
+		# Build the per-member colliders (best-fit sphere/box/capsule) so they show
+		# up green — the preview strips the gameplay script that normally builds
+		# them, so we construct them here just for display.
+		_add_member_colliders(instance)
 	if instance is Node3D:
 		_fit_to_view(instance as Node3D)
 	if _show_colliders:
@@ -536,6 +583,71 @@ func _add_collider_gizmos(instance: Node) -> void:
 		gizmo.mesh = shape_node.shape.get_debug_mesh()
 		gizmo.material_override = mat
 		shape_node.add_child(gizmo)
+
+
+# Per-character: head bone(s) BodyParts can't infer from the name (it excludes
+# "eye"/"mouth"), so the model browser names them explicitly for the preview.
+const _MODEL_HEAD_BONES := {
+	"red_robot": ["mouth_eyes"],
+}
+
+
+# Build best-fit colliders that wrap each body MEMBER (sphere head, box torso,
+# capsule limbs) so they render green via the gizmos above. The gameplay script
+# that normally builds these is stripped from the preview, so we build them here.
+# Skeleton characters reuse the shared LimbColliders builder; the criatura (no
+# skeleton) is grouped by mesh-node name instead.
+func _add_member_colliders(instance: Node) -> void:
+	var skels: Array = instance.find_children("*", "Skeleton3D", true, false)
+	if not skels.is_empty():
+		var lc := LimbColliders.new()
+		lc.hitbox_layer = 64        # own layer — does not touch damage layers (16/32)
+		lc.padding = 0.1            # small gap around the mesh (~the "10px" margin)
+		lc.head_bone_names = _head_bones_for_current()
+		instance.add_child(lc)
+		lc.build_for(skels[0] as Skeleton3D)
+		return
+	_add_mesh_member_colliders(instance)
+
+
+func _head_bones_for_current() -> Array[String]:
+	var out: Array[String] = []
+	for key in _MODEL_HEAD_BONES:
+		if _current_model_path.contains(key):
+			for b in _MODEL_HEAD_BONES[key]:
+				out.append(b)
+			break
+	return out
+
+
+# Member colliders for a rig that has no Skeleton3D (criatura_alada): group the
+# visible mesh nodes by BodyParts (head/torso/legs from their names) and wrap each
+# group with the same best-fit geometry, in the instance's local space.
+func _add_mesh_member_colliders(instance: Node) -> void:
+	var groups: Dictionary = {}   # group -> AABB (instance-local)
+	var inv := (instance as Node3D).global_transform.affine_inverse()
+	for node in instance.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if mi.mesh == null or not mi.is_visible_in_tree():
+			continue
+		var g := BodyParts.group_of(mi.name)
+		if g == "":
+			continue
+		var box := (inv * mi.global_transform) * mi.get_aabb()
+		groups[g] = box if not groups.has(g) else (groups[g] as AABB).merge(box)
+
+	var holder := Node3D.new()
+	holder.name = "MemberColliders"
+	instance.add_child(holder)
+	for g in groups:
+		var aabb: AABB = (groups[g] as AABB).grow(0.1)
+		var body := StaticBody3D.new()
+		body.name = "Collider_%s" % g
+		body.collision_layer = 64
+		body.collision_mask = 0
+		body.set_meta("member_label", BodyParts.label_of(g))
+		body.add_child(LimbColliders.make_member_shape(g, aabb))
+		holder.add_child(body)
 
 
 # Center and scale a model so it fits nicely in front of the camera, regardless
@@ -617,6 +729,14 @@ func _input(input_event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		_dragging = event.pressed
+	elif event is InputEventMouseButton and event.pressed and \
+			event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		# Wheel forward -> approach the model (smaller distance).
+		_zoom_target = clampf(_zoom_target - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+	elif event is InputEventMouseButton and event.pressed and \
+			event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		# Wheel backward -> pull away from the model (larger distance).
+		_zoom_target = clampf(_zoom_target + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	elif event is InputEventMouseMotion and _dragging:
 		var motion := event as InputEventMouseMotion
 		_yaw += motion.relative.x * DRAG_SENSITIVITY
