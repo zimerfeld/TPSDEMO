@@ -14,20 +14,29 @@ A `StartScreen` entra no grupo `no_debug_overlay` (sem tooltips de debug).
 ```
 main.tscn (main.gd — roteador + tela inicial: robô no pedestal + overlay)
    └─► menu.tscn (menu.gd)
-          ├─► chooseplayer.tscn ─► levels.tscn ─┬─► level_1.tscn
-          │                                     └─► level_base.tscn
+          ├─► play ───────► chooseplayer.tscn ─► levels.tscn ─┬─► level_1.tscn
+          │                                                   ├─► level_2.tscn
+          │                                                   └─► level_base.tscn
+          ├─► play online ─► playonline.tscn ─► level_base.tscn
           ├─► settings.tscn (UI: settings.gd)
-          ├─► developer.tscn ─► models.tscn ─► Exported.tscn (galeria)
-          ├─► (Play Online: host / connect) ─► level_base.tscn
+          ├─► developer.tscn ─┬─► models.tscn   (visualizador de modelos 3D)
+          │                   └─► controls.tscn (visualizador de controles 2D)
           └─► Sair → quit
 ```
+
+(`Exported.tscn` / galeria "Exportados" não existe mais — o botão foi removido da tela
+models. `cyberpunkhud` é cena avulsa de preview, fora do fluxo de navegação.)
 
 ---
 
 ## Pastas
 
-- **scenes2D/** (telas de UI): `menu`, `settings`, `chooseplayer`, `developer`, `levels`
-- **scenes3D/** (conteúdo 3D): `players`, `enemies`, `door`, `level_1`, `level_base`, `models`
+- **scenes2D/** (telas + UI): `main` (roteador), `menu`, `chooseplayer`, `levels`, `settings`, `developer`, `playonline`, `controls` (viewer 2D) e `controls2D/` (widgets de HUD reutilizáveis: crosshair, minimap_panel, vitals_panel, pause_menu, scanlines, cyberpunk_hud, …)
+- **scenes3D/** (níveis + ferramentas 3D): `level_1`, `level_2`, `level_base`, `models` (viewer)
+- **library3D/** (assets 3D por tipo): `characters`, `propulsores`, `structures`, `weapons`, + `geometry`/`textures` (suporte)
+- **effects_shared/** (helpers entre personagens): `limb_colliders.gd`, `body_parts.gd`, `weapon_parts.gd` + assets de blast/sombra
+- **autoload/**: `crash_handler`, `player_selection`, `debug_overlay` (o **Settings** fica em `scenes2D/settings/config.gd`)
+- **ui/** + **themes/**: temas (`ui_theme.tres`, `cyberpunk.tres`) · **tools/**+**_gen/**: geradores headless `gen_*.gd` · **addons/**: plugin `godot_ai` (MCP) · **OBSIDIAN/**: este cofre
 
 ## Autoloads
 
