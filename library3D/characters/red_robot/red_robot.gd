@@ -96,6 +96,9 @@ func _setup_limb_colliders() -> void:
 	lc.name = "LimbColliders"
 	lc.hitbox_layer = 32        # bit6 = colliders de membro do enemy
 	lc.head_bone_names = (["mouth_eyes"] as Array[String])
+	# O corpo do red_robot é o osso genérico "Bone.001", que o classificador não
+	# reconhece — sem isto ele ficaria sem collider de TRONCO (só a cabeça).
+	lc.torso_bone_names = (["Bone.001"] as Array[String])
 	add_child(lc)
 	lc.build_for(skel)
 

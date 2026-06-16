@@ -19,16 +19,23 @@
 
 ## Grupos de hitbox (membros)
 
-`effects_shared/limb_colliders.gd` classifica ossos em grupos e cria **um `StaticBody3D` por membro** (com `CollisionShape3D`/`BoxShape3D` ajustado aos vértices skinados), com metas `group` + `damage_multiplier`:
+`effects_shared/limb_colliders.gd` classifica ossos em grupos e cria **um `StaticBody3D` por membro** (ajustado aos vértices skinados, AABB no espaço do osso-raiz), com metas `group` + `damage_multiplier`. A forma é escolhida por `make_member_shape()`:
 
-| Grupo | Multiplicador | Dano |
+| Grupo | Forma | Multiplicador |
 |---|---|---|
-| **CABEÇA** (head/neck) | `1.5` | +50% |
-| **TRONCO** (hips/spine/chest/body) | `1.0` | dano da arma |
-| **BRAÇO D/E** (shoulder/arm/forearm/hand + lado) | `1.0` | dano da arma |
-| **PERNA D/E** (thigh/shin/knee/foot/leg + lado) | `1.0` | dano da arma |
+| **CABEÇA** (head/neck) | `SphereShape3D` | `1.5` (+50%) |
+| **TRONCO** (hips/spine/chest/body) | `BoxShape3D` | `1.0` |
+| **BRAÇO D/E** (shoulder/arm/forearm/hand/**wing** + lado) | `CapsuleShape3D` (eixo longo) | `1.0` |
+| **PERNA D/E** (thigh/shin/knee/foot/leg + lado) | `CapsuleShape3D` (eixo longo) | `1.0` |
 
-Lado detectado por sufixo `.L/.R` (player) ou prefixo `L-/R-` (enemy).
+Lado detectado por sufixo `.L/.R` (player) ou prefixo `L-/R-` (enemy). `wing` conta
+como BRAÇO (criaturas aladas: criatura_alada, robot_*_alado).
+
+**Ajuste fino do tamanho** (2026-06-16) — para os colliders ficarem mais justos ao
+corpo: `CROSS_SHRINK = 0.82` (raio/largura/profundidade), `LENGTH_SHRINK = 0.95`
+(eixo longo) e `LIMB_RADIUS_RATIO = 0.32` (teto do raio da cápsula como fração do
+comprimento, garantindo que um membro de AABB quase cúbico — ex.: o braço direito do
+player, que segura a arma — ainda leia como **cápsula** e não como bola).
 
 ---
 
@@ -91,8 +98,10 @@ O enemy aguarda aproximar (`shoot_countdown = 0`) enquanto o player está fora d
 ## Tuning no inspector (nó do personagem)
 
 Em `limb_colliders.gd` (nó `LimbColliders`): `enabled`, `padding`, `head_bone_names`
-(`["mouth_eyes"]` no enemy), `hitbox_layer` (16 player / 32 enemy). Os exports de
-cor/raio do antigo sistema de vidro foram removidos.
+(`["mouth_eyes"]` no enemy), `torso_bone_names` (força um osso de nome genérico para
+TRONCO — `["Bone.001"]` no red_robot, cujo corpo não era reconhecido e ficava **sem
+collider de tronco**), `hitbox_layer` (16 player / 32 enemy). Os exports de cor/raio
+do antigo sistema de vidro foram removidos.
 
 > Verificado via MCP do Godot ([[godot-mcp]]): laser do enemy aplica 25 (arma),
 > lookup de hitbox funcional, cache não causa mais dano no início, sem erros.

@@ -21,6 +21,10 @@ const BODY_MULTIPLIER := 1.0
 @export_group("Mapeamento de Bones")
 ## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
 @export var head_bone_names: Array[String] = []
+## Nomes de bones forçados para o grupo TRONCO (ignora exclusões) — para corpos
+## cujo osso principal tem nome genérico que o classificador não reconhece
+## (ex.: red_robot, cujo corpo é o osso "Bone.001").
+@export var torso_bone_names: Array[String] = []
 
 @export_group("Colisão")
 ## Layer dos colliders de membro (bit5=16 player, bit6=32 enemy). Os projéteis
@@ -54,7 +58,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 	# 1) Agrupa ossos por membro e escolhe o osso-raiz (mais raso na hierarquia).
 	var group_bones := {}
 	for b in skel.get_bone_count():
-		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names)
+		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names, torso_bone_names)
 		if g == "":
 			continue
 		if not group_bones.has(g):
@@ -124,7 +128,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 				var skb := idx_to_bone[best_b]
 				if skb < 0:
 					continue
-				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names)
+				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names, torso_bone_names)
 				if g == "":
 					continue
 				var p: Vector3 = root_rest_inv[g] * (skin_xform[best_b] * verts[vi])
@@ -190,6 +194,15 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	_bodies.append(body)
 
 
+# How tightly the wrapped geometry hugs the body. The raw AABB (already padded)
+# tends to float a little loose around the limb, so we pull the cross-section
+# (radius / box width+depth) in and trim the length slightly — the colliders sit
+# closer to the character without leaving the mesh poking out.
+const CROSS_SHRINK := 0.82   # width/depth and radius multiplier
+const LENGTH_SHRINK := 0.95  # along a limb's long axis
+const LIMB_RADIUS_RATIO := 0.32  # max capsule radius as a fraction of its length
+
+
 # Pick the geometry that best wraps a member from its (padded) AABB: a SPHERE for
 # the head, a BOX for the torso, and a CAPSULE aligned to the long axis for the
 # elongated limbs (arms/legs). Returns a positioned/oriented CollisionShape3D.
@@ -202,13 +215,14 @@ static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D
 
 	if group == BodyParts.HEAD:
 		var sphere := SphereShape3D.new()
-		sphere.radius = 0.5 * maxf(size.x, maxf(size.y, size.z))
+		sphere.radius = 0.5 * maxf(size.x, maxf(size.y, size.z)) * CROSS_SHRINK
 		shape.shape = sphere
 		return shape
 
 	if group == BodyParts.TORSO:
 		var box := BoxShape3D.new()
-		box.size = size
+		# Keep the full height; pull only width/depth in so it hugs the chest.
+		box.size = Vector3(size.x * CROSS_SHRINK, size.y, size.z * CROSS_SHRINK)
 		shape.shape = box
 		return shape
 
@@ -220,10 +234,16 @@ static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D
 		long_axis = 2
 	var others := [size.x, size.y, size.z]
 	others.remove_at(long_axis)
+	var length := size[long_axis] * LENGTH_SHRINK
+	var radius := 0.5 * maxf(others[0], others[1]) * CROSS_SHRINK
+	# Keep limbs visibly elongated: cap the radius to a fraction of the length so a
+	# compact, near-cubic AABB (e.g. the player's gun-holding right arm, whose pose
+	# fattens its bounds) still reads as a proper capsule instead of a ball.
+	radius = minf(radius, length * LIMB_RADIUS_RATIO)
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.5 * maxf(others[0], others[1])
+	capsule.radius = radius
 	# CapsuleShape3D.height is the full length including the two hemisphere caps.
-	capsule.height = maxf(size[long_axis], 2.0 * capsule.radius)
+	capsule.height = maxf(length, 2.0 * capsule.radius)
 	shape.shape = capsule
 	# The capsule extends along its local Y; rotate so Y maps onto the long axis.
 	if long_axis == 0:

@@ -1,12 +1,18 @@
 # Fluxo de Cenas
 
-`main.tscn` (Node, `main.gd`) é um **roteador**: instancia cada tela como filha
-de si mesmo (não usa `SceneTree.change_scene`), reagindo aos sinais
-`replace_main_scene` e `quit`. Por isso `get_tree().current_scene` continua sendo
-`main` durante todo o jogo.
+`main.tscn` (Node, `main.gd`) é um **roteador** E a **tela inicial**: instancia
+cada tela como filha de si mesmo (não usa `SceneTree.change_scene`), reagindo aos
+sinais `replace_main_scene` e `quit`. Por isso `get_tree().current_scene` continua
+sendo `main` durante todo o jogo.
+
+A abertura vive na sub-árvore `StartScreen` (filha da raiz, já montada em
+`main.tscn`): robô 3D (`player.glb`) sobre um **pedestal** como fundo + overlay 2D
+(título/leitura/status). Após `minimum_wait_time` (~2 s) `main.gd` faz fade e troca
+a `StartScreen` pelo menu. Não há mais `StartScreens/StartScreen.tscn` (removido).
+A `StartScreen` entra no grupo `no_debug_overlay` (sem tooltips de debug).
 
 ```
-main.tscn (main.gd — roteador)
+main.tscn (main.gd — roteador + tela inicial: robô no pedestal + overlay)
    └─► menu.tscn (menu.gd)
           ├─► chooseplayer.tscn ─► levels.tscn ─┬─► level_1.tscn
           │                                     └─► level_base.tscn
