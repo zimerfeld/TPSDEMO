@@ -4,7 +4,6 @@ extends Node
 signal replace_main_scene
 
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
-const CYBERPUNK_HUD_PATH: String = "res://scenes2D/cyberpunkhud/cyberpunkhud.tscn"
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const SETTINGS_PATH: String = "res://scenes2D/settings/settings.tscn"
@@ -28,7 +27,13 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
 
 func _ready() -> void:
+	# Read every stored setting from disk and apply it before the menu is shown, so the
+	# window, rendering, resolution and audio all reflect the saved configuration on
+	# entry (not just whatever was applied when the game first launched).
+	Settings.load_settings()
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
+	Settings.apply_window_resolution(get_window())
+	Settings.apply_audio_settings()
 
 	if DisplayServer.get_name() == "headless":
 		_on_play_online_pressed.call_deferred()
@@ -78,10 +83,6 @@ func _on_play_online_pressed() -> void:
 
 func _on_developer_pressed() -> void:
 	emit_signal("replace_main_scene", load(DEVELOPER_PATH))
-
-
-func _on_cyberpunk_hud_pressed() -> void:
-	emit_signal("replace_main_scene", load(CYBERPUNK_HUD_PATH))
 
 
 func _input(input_event: InputEvent) -> void:

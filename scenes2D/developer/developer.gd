@@ -17,6 +17,7 @@ const _TOGGLES: Dictionary = {
 	"ShowTypeRow": "show_type",
 	"ShowNameRow": "show_name",
 	"ShowIDRow": "show_id",
+	"MembrosRow": "show_members",
 }
 
 

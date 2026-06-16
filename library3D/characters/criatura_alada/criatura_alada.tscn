@@ -334,6 +334,7 @@ shape = SubResource("CapsuleShape3D_xm241")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, -0.3)
 
 [node name="Rig" type="Node3D" parent="." unique_id=1021622707]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Torso" type="MeshInstance3D" parent="Rig" unique_id=2026301460]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.8, 0, 1, 0)
@@ -603,6 +604,7 @@ libraries/ = SubResource("AnimationLibrary_55bvn")
 autoplay = &"voar"
 
 [node name="Motor" type="AudioStreamPlayer3D" parent="." unique_id=197634935]
+bus = &"SFX"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0.2)
 stream = SubResource("AudioStreamWAV_l8y5w")
 volume_db = -4.0

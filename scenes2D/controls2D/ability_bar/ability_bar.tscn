@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes2D/controls2D/ability_bar/ability_bar.gd" id="1"]
 [ext_resource type="Theme" path="res://themes/cyberpunk.tres" id="2"]
-[ext_resource type="Script" path="res://scenes2D/cyberpunkhud/scripts/cooldown_gauge.gd" id="3"]
+[ext_resource type="Script" path="res://scenes2D/controls2D/cooldown_gauge/cooldown_gauge.gd" id="3"]
 
 [node name="AbilityBar" type="HBoxContainer"]
 theme = ExtResource("2")

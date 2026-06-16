@@ -1,6 +1,9 @@
 extends Node
 
-const START_SCREEN_PATH: String = "res://scenes2D/main/StartScreens/StartScreen.tscn"
+## main.tscn é a raiz/roteador do jogo. Não há mais tela de abertura separada: o
+## menu já é a primeira tela (a abertura/branding agora vive dentro de menu.tscn).
+## Daqui em diante, change_scene_to_packed troca o menu por qualquer outra tela.
+
 const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
 
 
@@ -10,11 +13,7 @@ func _ready() -> void:
 		Engine.max_fps = 60
 	randomize()
 	get_window().mode = Settings.config_file.get_value("video", "display_mode")
-	show_start_screen()
-
-
-func show_start_screen() -> void:
-	_swap_root_scene(ResourceLoader.load(START_SCREEN_PATH))
+	go_to_main_menu()
 
 
 func go_to_main_menu() -> void:

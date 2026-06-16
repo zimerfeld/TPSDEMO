@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vbthmihujy8f"
-path="res://.godot/imported/startscreen_training_surreal.png-5a440d3b92a68461011e16d4413ca674.ctex"
+uid="uid://rnmvkjamf1xm"
+path="res://.godot/imported/shot.png-40eb1c3287d5a496e7f15041e72a9df0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://scenes2D/main/StartScreens/startscreen_training_surreal.png"
-dest_files=["res://.godot/imported/startscreen_training_surreal.png-5a440d3b92a68461011e16d4413ca674.ctex"]
+source_file="res://_gen/shot.png"
+dest_files=["res://.godot/imported/shot.png-40eb1c3287d5a496e7f15041e72a9df0.ctex"]
 
 [params]
 

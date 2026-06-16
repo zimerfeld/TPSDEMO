@@ -48,12 +48,12 @@ theme = ExtResource("2")
 
 [node name="TitleLabel" type="Label" parent="UI"]
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -400.0
+anchors_preset = 10
+anchor_left = 0.0
+anchor_right = 1.0
+offset_left = 0.0
 offset_top = 30.0
-offset_right = 400.0
+offset_right = 0.0
 offset_bottom = 100.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 40
@@ -120,6 +120,32 @@ text = "Parte:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
+[node name="AnimationRow" type="HBoxContainer" parent="UI/Selectors"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Selectors/AnimationRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Animação:"
+
+[node name="cboAnimations" type="OptionButton" parent="UI/Selectors/AnimationRow"]
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
+[node name="EffectsRow" type="HBoxContainer" parent="UI/Selectors"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Selectors/EffectsRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Efeitos Especiais:"
+
+[node name="cboEffects" type="OptionButton" parent="UI/Selectors/EffectsRow"]
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
 [node name="StatusLabel" type="Label" parent="UI/Selectors"]
 custom_minimum_size = Vector2(486, 0)
 layout_mode = 2
@@ -151,7 +177,12 @@ text = "Animação"
 [node name="AudioToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Som"
+text = "Audio"
+
+[node name="FalasToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Falas"
 
 [node name="CollidersToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
@@ -161,18 +192,18 @@ text = "Colisores"
 [node name="EffectsToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Efeitos de gameplay"
+text = "Efeitos especiais"
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
+anchors_preset = 12
+anchor_left = 0.0
 anchor_top = 1.0
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -330.0
+offset_left = 0.0
 offset_top = -100.0
-offset_right = 330.0
+offset_right = 0.0
 offset_bottom = -50.0
 grow_horizontal = 2
 grow_vertical = 0

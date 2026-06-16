@@ -4,6 +4,12 @@ const _LABEL3D_META := &"_dbg_label3d"
 const _BORDER_WIDTH := 2
 const _TOOLTIP_GAP := 4.0
 
+# Screens that opt out of ALL debug overlays/tooltips — 2D control borders AND 3D
+# member labels — regardless of the debug toggles. A screen joins this group and
+# its whole subtree is skipped. Used by the menu and the start screen, whose 3D
+# robot is purely decorative (no member tooltips wanted, independent of config).
+const _NO_OVERLAY_GROUP := &"no_debug_overlay"
+
 const _PALETTE := [
 	Color(1.0, 0.25, 0.25),
 	Color(0.25, 0.85, 0.25),
@@ -55,9 +61,15 @@ func _is_debug_3d_on() -> bool:
 	return Settings.config_file.get_value("game", "debug_3d", false)
 
 
-# The overlay canvas/scan is needed whenever either category is enabled.
+# The per-member body-part labels (CABEÇA/TRONCO/BRAÇO…) have their own
+# developer toggle "Membros", independent of Debug 3D.
+func _is_show_members_on() -> bool:
+	return Settings.config_file.get_value("game", "show_members", false)
+
+
+# The overlay canvas/scan is needed whenever any category is enabled.
 func _is_overlay_active() -> bool:
-	return _is_debug_2d_on() or _is_debug_3d_on()
+	return _is_debug_2d_on() or _is_debug_3d_on() or _is_show_members_on()
 
 
 func _is_fps_on() -> bool:
@@ -77,16 +89,25 @@ func _is_show_name_on() -> bool:
 
 
 # Visibility of a tooltip line ("type" / "name" / "member" / "id") from the saved
-# config. The 3D body-part line ("member") is governed solely by the "Show Debug
-# 3D" toggle — enabling Debug 3D makes the member tooltips visible, disabling it
-# hides them (the labels only exist while Debug 3D is active anyway).
+# config. The 3D body-part line ("member") follows the dedicated "Membros" toggle
+# (Show Debug 3D also still shows it, for backward compatibility).
 func _line_visible(kind: String) -> bool:
 	match kind:
 		"type": return _is_show_type_on()
 		"name": return _is_show_name_on()
-		"member": return _is_debug_3d_on()
+		"member": return _is_show_members_on() or _is_debug_3d_on()
 		"id": return _is_show_id_on()
 	return false
+
+
+func _has_any_2d_line_enabled() -> bool:
+	return _is_show_type_on() or _is_show_name_on() or _is_show_id_on()
+
+
+func _line_visible_2d(kind: String) -> bool:
+	if _has_any_2d_line_enabled():
+		return _line_visible(kind)
+	return kind == "name"
 
 
 func _is_show_grid_on() -> bool:
@@ -196,10 +217,14 @@ func _process(_delta: float) -> void:
 			if tooltip.size.x > 0 and tip_x + tooltip.size.x > vp_size.x:
 				tip_x = rect.position.x - tooltip.size.x
 			tooltip.position = Vector2(tip_x, rect.position.y)
-			tooltip.visible = shown
-			entry.type_lbl.visible = _is_show_type_on()
-			entry.name_lbl.visible = _is_show_name_on()
-			entry.id_lbl.visible = _is_show_id_on()
+			entry.type_lbl.visible = _line_visible_2d("type")
+			entry.name_lbl.visible = _line_visible_2d("name")
+			entry.id_lbl.visible = _line_visible_2d("id")
+			tooltip.visible = shown and (
+				entry.type_lbl.visible
+				or entry.name_lbl.visible
+				or entry.id_lbl.visible
+			)
 		else:
 			if is_instance_valid(tooltip):
 				tooltip.queue_free()
@@ -357,13 +382,15 @@ func _tag(node: Node) -> void:
 		return
 	if is_instance_valid(_persistent_canvas) and _persistent_canvas.is_ancestor_of(node):
 		return
+	if _is_overlay_exempt(node):
+		return
 	if node.has_meta(_LABEL3D_META):
 		return
 	if node is Control and not (node is CanvasLayer):
 		if _is_debug_2d_on():
 			_add_2d(node as Control)
 	elif node is Skeleton3D:
-		if _is_debug_3d_on():
+		if _is_debug_3d_on() or _is_show_members_on():
 			_add_3d_skeleton(node as Skeleton3D)
 
 
@@ -409,9 +436,9 @@ func _add_2d(ctrl: Control) -> void:
 	var type_lbl := _make_overlay_label("TYPE: %s" % ctrl.get_class())
 	var name_lbl := _make_overlay_label("Name: %s" % ctrl.name)
 	var id_lbl := _make_overlay_label("ID: %d" % id)
-	type_lbl.visible = _is_show_type_on()
-	name_lbl.visible = _is_show_name_on()
-	id_lbl.visible = _is_show_id_on()
+	type_lbl.visible = _line_visible_2d("type")
+	name_lbl.visible = _line_visible_2d("name")
+	id_lbl.visible = _line_visible_2d("id")
 	vbox.add_child(type_lbl)
 	vbox.add_child(name_lbl)
 	vbox.add_child(id_lbl)
@@ -444,19 +471,52 @@ func _next_color() -> Color:
 	return c
 
 
+# True when `node` is inside a screen that opted out of all debug overlays (it or
+# any ancestor is in `_NO_OVERLAY_GROUP`).
+func _is_overlay_exempt(node: Node) -> bool:
+	var n: Node = node
+	while n != null:
+		if n.is_in_group(_NO_OVERLAY_GROUP):
+			return true
+		n = n.get_parent()
+	return false
+
+
 # Rotula apenas os BONES que pertencem a um MEMBRO (CABEÇA/TRONCO/BRAÇO/PERNA);
 # ossos de controle/IK não recebem label. Cada osso rotulado recebe um
 # BoneAttachment3D (segue a pose/animação) com 1 linha Label3D:
 #   Membro: <CABEÇA…>
 # Visível/invisível conforme o toggle "Show Debug 3D". Usa o mesmo classificador
 # das hitboxes (BodyParts).
+func _bone_depth(skel: Skeleton3D, b: int) -> int:
+	var d := 0
+	var p := skel.get_bone_parent(b)
+	while p != -1:
+		d += 1
+		p = skel.get_bone_parent(p)
+	return d
+
+
 func _add_3d_skeleton(skel: Skeleton3D) -> void:
 	if skel.has_meta(_LABEL3D_META):
 		return
+	# One label per MEMBER, not per bone: a limb spans several bones (shoulder,
+	# arm, hand) that all map to the same group, so anchor the single "Membro: …"
+	# tag to the shallowest bone of each group to avoid a cluttered pile of labels.
+	var rep_bone := {}      # group → bone index (shallowest)
+	var rep_depth := {}
 	for i in skel.get_bone_count():
-		var member := BodyParts.label_of(BodyParts.group_of(skel.get_bone_name(i)))
-		if member == "":
+		var g := BodyParts.group_of(skel.get_bone_name(i))
+		if g == "":
 			continue
+		var d := _bone_depth(skel, i)
+		if not rep_bone.has(g) or d < rep_depth[g]:
+			rep_bone[g] = i
+			rep_depth[g] = d
+
+	for g in rep_bone:
+		var i: int = rep_bone[g]
+		var member := BodyParts.label_of(g)
 
 		var att := BoneAttachment3D.new()
 		att.name = "DebugBoneLabel_%d" % i

@@ -1,3 +1,4 @@
+class_name LimbColliders
 extends Node3D
 ## Colliders 3D NATIVOS (StaticBody3D + CollisionShape3D), UM por MEMBRO grande.
 ## Grupos: CABEÇA, TRONCO, BRAÇO (D/E), PERNA (D/E).
@@ -20,6 +21,10 @@ const BODY_MULTIPLIER := 1.0
 @export_group("Mapeamento de Bones")
 ## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
 @export var head_bone_names: Array[String] = []
+## Nomes de bones forçados para o grupo TRONCO (ignora exclusões) — para corpos
+## cujo osso principal tem nome genérico que o classificador não reconhece
+## (ex.: red_robot, cujo corpo é o osso "Bone.001").
+@export var torso_bone_names: Array[String] = []
 
 @export_group("Colisão")
 ## Layer dos colliders de membro (bit5=16 player, bit6=32 enemy). Os projéteis
@@ -53,7 +58,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 	# 1) Agrupa ossos por membro e escolhe o osso-raiz (mais raso na hierarquia).
 	var group_bones := {}
 	for b in skel.get_bone_count():
-		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names)
+		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names, torso_bone_names)
 		if g == "":
 			continue
 		if not group_bones.has(g):
@@ -108,6 +113,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 			var weights: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
 			if verts.is_empty() or bones.is_empty() or weights.is_empty():
 				continue
+			@warning_ignore("integer_division")
 			var per := bones.size() / verts.size()  # influências por vértice (4 ou 8)
 			for vi in verts.size():
 				var best_w := 0.0
@@ -122,7 +128,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 				var skb := idx_to_bone[best_b]
 				if skb < 0:
 					continue
-				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names)
+				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names, torso_bone_names)
 				if g == "":
 					continue
 				var p: Vector3 = root_rest_inv[g] * (skin_xform[best_b] * verts[vi])
@@ -179,15 +185,81 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	var mult: float = HEAD_MULTIPLIER if group == BodyParts.HEAD else BODY_MULTIPLIER
 	body.set_meta("group", group)
 	body.set_meta("damage_multiplier", mult)
+	body.set_meta("member_label", BodyParts.label_of(group))
 	body.set_meta("character", _character)
 
-	var center := box_aabb.position + box_aabb.size * 0.5
-	var box := BoxShape3D.new()
-	box.size = box_aabb.size
-	var shape := CollisionShape3D.new()
-	shape.shape = box
-	shape.position = center
-	body.add_child(shape)
+	body.add_child(make_member_shape(group, box_aabb))
 
 	att.add_child(body)
 	_bodies.append(body)
+
+
+# How tightly the wrapped geometry hugs the body. The raw AABB (already padded)
+# tends to float a little loose around the limb, so we pull the cross-section
+# (radius / box width+depth) in and trim the length slightly — the colliders sit
+# closer to the character without leaving the mesh poking out.
+const CROSS_SHRINK := 0.82   # width/depth and radius multiplier
+const LENGTH_SHRINK := 0.95  # along a limb's long axis
+const LIMB_RADIUS_RATIO := 0.32  # max capsule radius as a fraction of its length
+
+
+# Pick the geometry that best wraps a member from its (padded) AABB: a SPHERE for
+# the head, a BOX for the torso, and a CAPSULE aligned to the long axis for the
+# elongated limbs (arms/legs). Returns a positioned/oriented CollisionShape3D.
+# Static so the model browser can reuse it for non-skeleton rigs (criatura).
+static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D:
+	var kind := "capsule"
+	if group == BodyParts.HEAD:
+		kind = "sphere"
+	elif group == BodyParts.TORSO:
+		kind = "box"
+	return make_shape(kind, box_aabb)
+
+
+# Build a positioned/oriented CollisionShape3D of an explicit `kind`
+# ("sphere"/"box"/"capsule") fitted to the AABB. Lets non-character rigs (weapons)
+# choose the shape per part (e.g. a CAPSULE barrel, BOX receiver/grip).
+static func make_shape(kind: String, box_aabb: AABB) -> CollisionShape3D:
+	var size := box_aabb.size
+	var center := box_aabb.position + size * 0.5
+	var shape := CollisionShape3D.new()
+	shape.position = center
+
+	if kind == "sphere":
+		var sphere := SphereShape3D.new()
+		sphere.radius = 0.5 * maxf(size.x, maxf(size.y, size.z)) * CROSS_SHRINK
+		shape.shape = sphere
+		return shape
+
+	if kind == "box":
+		var box := BoxShape3D.new()
+		# Keep the full height; pull only width/depth in so it hugs the part.
+		box.size = Vector3(size.x * CROSS_SHRINK, size.y, size.z * CROSS_SHRINK)
+		shape.shape = box
+		return shape
+
+	# Capsule along the longest axis (0=x, 1=y, 2=z).
+	var long_axis := 0
+	if size.y >= size.x and size.y >= size.z:
+		long_axis = 1
+	elif size.z >= size.x and size.z >= size.y:
+		long_axis = 2
+	var others := [size.x, size.y, size.z]
+	others.remove_at(long_axis)
+	var length := size[long_axis] * LENGTH_SHRINK
+	var radius := 0.5 * maxf(others[0], others[1]) * CROSS_SHRINK
+	# Keep limbs visibly elongated: cap the radius to a fraction of the length so a
+	# compact, near-cubic AABB (e.g. the player's gun-holding right arm, whose pose
+	# fattens its bounds) still reads as a proper capsule instead of a ball.
+	radius = minf(radius, length * LIMB_RADIUS_RATIO)
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = radius
+	# CapsuleShape3D.height is the full length including the two hemisphere caps.
+	capsule.height = maxf(length, 2.0 * capsule.radius)
+	shape.shape = capsule
+	# The capsule extends along its local Y; rotate so Y maps onto the long axis.
+	if long_axis == 0:
+		shape.rotation = Vector3(0.0, 0.0, PI * 0.5)   # Y -> X
+	elif long_axis == 2:
+		shape.rotation = Vector3(PI * 0.5, 0.0, 0.0)   # Y -> Z
+	return shape
