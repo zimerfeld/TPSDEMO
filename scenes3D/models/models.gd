@@ -4,12 +4,14 @@ signal replace_main_scene(resource: PackedScene)
 
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 
-# First option in the prefix dropdown: no filtering, show every model in the
-# category. Selecting a real prefix narrows the model list to that group.
-const ALL_PREFIXES_LABEL: String = "Todos"
+# Placeholder shown as the first, default-selected option of every dropdown.
+# Picking it means "nothing chosen yet": dependent dropdowns reset to this same
+# placeholder and the preview is cleared. In the prefix dropdown it doubles as
+# "no filter" (it replaced the old "Todos"), so it lists every model.
+const SELECT_LABEL: String = "Selecione..."
 
-# First option in the part dropdown: preview the assembled model with every piece
-# in place. Selecting a real part below it isolates that single distinct mesh.
+# Selectable option in the part dropdown (right below "Selecione...") that previews
+# the whole assembled model. Picking a real part below it isolates one distinct mesh.
 const WHOLE_MODEL_LABEL: String = "Modelo completo"
 
 # Root of the 3D model library. Models live in res://library3D/<tipo>/<modelo>/
@@ -115,6 +117,7 @@ func _ready() -> void:
 	_categories = _scan_library()
 
 	cbo_category.clear()
+	cbo_category.add_item(SELECT_LABEL)
 	for category in _categories:
 		cbo_category.add_item(category["label"])
 	cbo_category.item_selected.connect(_on_category_selected)
@@ -133,9 +136,10 @@ func _ready() -> void:
 	effects_toggle.button_pressed = _show_effects
 	effects_toggle.toggled.connect(_on_effects_toggled)
 
-	if not _categories.is_empty():
-		cbo_category.select(0)
-		_on_category_selected(0)
+	# Start blank: every dropdown shows "Selecione..." and nothing is previewed
+	# until the user drills down Categoria -> Prefixo -> Modelo -> Parte.
+	cbo_category.select(0)
+	_on_category_selected(0)
 
 
 func _process(delta: float) -> void:
@@ -151,15 +155,23 @@ func _process(delta: float) -> void:
 		camera.position.z = _zoom
 
 
+# Category dropdown index 0 is the "Selecione..." placeholder; real categories
+# start at index 1 (mapping to _categories[index - 1]). Selecting the placeholder
+# blanks the whole dependent chain (prefix, model, part) and clears the preview.
 func _on_category_selected(index: int) -> void:
-	_populate_prefixes(index)
+	if index <= 0:
+		_reset_prefixes()
+		_reset_models()
+		status_label.text = "Selecione uma categoria."
+		return
+	_populate_prefixes(index - 1)
 	_populate_models()
 
 
-# Build the prefix dropdown for a category: "Todos" plus each distinct model
-# prefix (the first underscore-separated token, e.g. "core" for core /
-# core_out_light). The synthetic "Level Base" entry has no prefix and only shows
-# up under "Todos". Selecting resets the filter to "Todos".
+# Build the prefix dropdown for a category: "Selecione..." (no filter, every model
+# in the category) plus each distinct model prefix (the first underscore-separated
+# token, e.g. "core" for core / core_out_light). Selecting resets the filter to
+# none. The placeholder carries an empty metadata string so it means "no filter".
 func _populate_prefixes(category_index: int) -> void:
 	var models: Array = _categories[category_index]["models"]
 	var seen: Dictionary = {}
@@ -172,11 +184,21 @@ func _populate_prefixes(category_index: int) -> void:
 	prefixes.sort()
 
 	cbo_prefix.clear()
-	cbo_prefix.add_item(ALL_PREFIXES_LABEL)
+	cbo_prefix.add_item(SELECT_LABEL)
 	cbo_prefix.set_item_metadata(0, "")
 	for prefix in prefixes:
 		cbo_prefix.add_item(_prettify(prefix))
 		cbo_prefix.set_item_metadata(cbo_prefix.item_count - 1, prefix)
+	cbo_prefix.select(0)
+	_prefix_filter = ""
+
+
+# Reset the prefix dropdown to just the "Selecione..." placeholder (no category
+# chosen, so there is nothing to filter).
+func _reset_prefixes() -> void:
+	cbo_prefix.clear()
+	cbo_prefix.add_item(SELECT_LABEL)
+	cbo_prefix.set_item_metadata(0, "")
 	cbo_prefix.select(0)
 	_prefix_filter = ""
 
@@ -186,57 +208,97 @@ func _on_prefix_selected(index: int) -> void:
 	_populate_models()
 
 
-# Fill the Model dropdown with the current category's models that match the
-# active prefix filter, then select the first one.
+# Fill the Model dropdown with "Selecione..." plus the current category's models
+# that match the active prefix filter. The placeholder stays selected, so no model
+# is previewed until the user picks one — and the Part dropdown is reset to blank.
 func _populate_models() -> void:
 	cbo_models.clear()
+	cbo_models.add_item(SELECT_LABEL)
 	_filtered_models = []
-	var models: Array = _categories[cbo_category.selected]["models"]
+	var cat_index := cbo_category.selected - 1
+	if cat_index < 0:
+		cbo_models.select(0)
+		_reset_meshes_and_preview()
+		status_label.text = "Selecione uma categoria."
+		return
+
+	var models: Array = _categories[cat_index]["models"]
 	for entry in models:
 		if _prefix_filter != "" and entry.get("prefix", "") != _prefix_filter:
 			continue
 		_filtered_models.append(entry)
 		cbo_models.add_item(entry["name"])
 
-	if cbo_models.item_count > 0:
-		cbo_models.select(0)
-		_on_model_selected(0)
-	else:
-		_model_scene = null
-		_display_scene = null
-		_mesh_catalog = []
-		_clear_preview()
-		cbo_meshes.clear()
+	cbo_models.select(0)
+	_reset_meshes_and_preview()
+	if _filtered_models.is_empty():
 		status_label.text = "Nenhum modelo neste grupo."
+	else:
+		status_label.text = "Selecione um modelo."
 
 
-# Selecting a model previews the whole thing assembled (every related object in
-# place) and rebuilds the Part dropdown: "Modelo completo" first, then each
-# distinct mesh so the user can drill into a single piece afterwards.
+# Reset the Model dropdown to just the "Selecione..." placeholder and clear the
+# parts dropdown and preview below it.
+func _reset_models() -> void:
+	cbo_models.clear()
+	cbo_models.add_item(SELECT_LABEL)
+	cbo_models.select(0)
+	_filtered_models = []
+	_reset_meshes_and_preview()
+
+
+# Reset the Part dropdown to just the "Selecione..." placeholder and clear the
+# previewed mesh/model and its cached scenes.
+func _reset_meshes_and_preview() -> void:
+	_model_scene = null
+	_display_scene = null
+	_mesh_catalog = []
+	cbo_meshes.clear()
+	cbo_meshes.add_item(SELECT_LABEL)
+	cbo_meshes.select(0)
+	_clear_preview()
+
+
+# Model dropdown index 0 is the "Selecione..." placeholder; real models start at
+# index 1 (mapping to _filtered_models[index - 1]). Selecting a real model rebuilds
+# the Part dropdown ("Selecione...", then "Modelo completo", then each distinct
+# mesh) but leaves the placeholder selected, so nothing previews until a part is
+# picked. Selecting the placeholder blanks the part dropdown and the preview.
 func _on_model_selected(index: int) -> void:
-	var model: Dictionary = _filtered_models[index]
+	if index <= 0:
+		_reset_meshes_and_preview()
+		status_label.text = "Selecione um modelo."
+		return
+
+	var model: Dictionary = _filtered_models[index - 1]
 	_current_model_path = model["path"]
 	_model_scene = load(model["path"])
 	_display_scene = load(model.get("display_path", model["path"]))
 	_mesh_catalog = _build_mesh_catalog(_model_scene)
 
 	cbo_meshes.clear()
+	cbo_meshes.add_item(SELECT_LABEL)
 	cbo_meshes.add_item(WHOLE_MODEL_LABEL)
 	for entry in _mesh_catalog:
 		cbo_meshes.add_item(entry["label"])
 	cbo_meshes.select(0)
-	_on_mesh_selected(0)
+	_clear_preview()
+	status_label.text = "Selecione uma parte."
 
 
-# Part dropdown index 0 is the assembled model; indices 1.. map to the distinct
-# meshes in _mesh_catalog (shifted by the leading "Modelo completo" entry).
+# Part dropdown index 0 is the "Selecione..." placeholder (nothing previewed),
+# index 1 is the assembled "Modelo completo", and indices 2.. map to the distinct
+# meshes in _mesh_catalog (shifted by the two leading entries).
 func _on_mesh_selected(index: int) -> void:
 	if index <= 0:
+		_clear_preview()
+		status_label.text = "Selecione uma parte."
+	elif index == 1:
 		_preview_whole_model()
 		status_label.text = "Modelo completo — %d parte(s)" % _mesh_catalog.size()
 	else:
-		_preview_mesh(index - 1)
-		status_label.text = "Parte: %s" % _mesh_catalog[index - 1]["label"]
+		_preview_mesh(index - 2)
+		status_label.text = "Parte: %s" % _mesh_catalog[index - 2]["label"]
 
 
 func _on_rotate_toggled(pressed: bool) -> void:
