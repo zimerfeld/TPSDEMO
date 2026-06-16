@@ -4,6 +4,12 @@ const _LABEL3D_META := &"_dbg_label3d"
 const _BORDER_WIDTH := 2
 const _TOOLTIP_GAP := 4.0
 
+# Screens that opt out of ALL debug overlays/tooltips — 2D control borders AND 3D
+# member labels — regardless of the debug toggles. A screen joins this group and
+# its whole subtree is skipped. Used by the menu and the start screen, whose 3D
+# robot is purely decorative (no member tooltips wanted, independent of config).
+const _NO_OVERLAY_GROUP := &"no_debug_overlay"
+
 const _PALETTE := [
 	Color(1.0, 0.25, 0.25),
 	Color(0.25, 0.85, 0.25),
@@ -362,6 +368,8 @@ func _tag(node: Node) -> void:
 		return
 	if is_instance_valid(_persistent_canvas) and _persistent_canvas.is_ancestor_of(node):
 		return
+	if _is_overlay_exempt(node):
+		return
 	if node.has_meta(_LABEL3D_META):
 		return
 	if node is Control and not (node is CanvasLayer):
@@ -447,6 +455,17 @@ func _next_color() -> Color:
 	var c: Color = _PALETTE[_palette_index % _PALETTE.size()]
 	_palette_index += 1
 	return c
+
+
+# True when `node` is inside a screen that opted out of all debug overlays (it or
+# any ancestor is in `_NO_OVERLAY_GROUP`).
+func _is_overlay_exempt(node: Node) -> bool:
+	var n: Node = node
+	while n != null:
+		if n.is_in_group(_NO_OVERLAY_GROUP):
+			return true
+		n = n.get_parent()
+	return false
 
 
 # Rotula apenas os BONES que pertencem a um MEMBRO (CABEÇA/TRONCO/BRAÇO/PERNA);

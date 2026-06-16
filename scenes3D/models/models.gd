@@ -155,9 +155,11 @@ func _process(delta: float) -> void:
 		camera.position.z = _zoom
 
 
-# Category dropdown index 0 is the "Selecione..." placeholder; real categories
-# start at index 1 (mapping to _categories[index - 1]). Selecting the placeholder
-# blanks the whole dependent chain (prefix, model, part) and clears the preview.
+# Sequential gating: each dropdown below Categoria stays DISABLED until the one
+# directly above it holds a real (non-"Selecione...") choice. So the user is forced
+# down the chain Categoria -> Prefixo -> Modelo -> Parte. Category index 0 is the
+# "Selecione..." placeholder (real categories start at index 1). Selecting it blanks
+# and disables the whole chain below and clears the preview.
 func _on_category_selected(index: int) -> void:
 	if index <= 0:
 		_reset_prefixes()
@@ -165,13 +167,14 @@ func _on_category_selected(index: int) -> void:
 		status_label.text = "Selecione uma categoria."
 		return
 	_populate_prefixes(index - 1)
-	_populate_models()
+	# Prefix is now enabled but still on its placeholder, so Modelo/Parte stay locked.
+	_reset_models()
+	status_label.text = "Selecione um prefixo."
 
 
-# Build the prefix dropdown for a category: "Selecione..." (no filter, every model
-# in the category) plus each distinct model prefix (the first underscore-separated
-# token, e.g. "core" for core / core_out_light). Selecting resets the filter to
-# none. The placeholder carries an empty metadata string so it means "no filter".
+# Build the prefix dropdown for a category: "Selecione..." (placeholder) plus each
+# distinct model prefix (the first underscore-separated token, e.g. "robot" for
+# robot_01 / robot_02). Enables the dropdown; the placeholder carries empty metadata.
 func _populate_prefixes(category_index: int) -> void:
 	var models: Array = _categories[category_index]["models"]
 	var seen: Dictionary = {}
@@ -190,46 +193,53 @@ func _populate_prefixes(category_index: int) -> void:
 		cbo_prefix.add_item(_prettify(prefix))
 		cbo_prefix.set_item_metadata(cbo_prefix.item_count - 1, prefix)
 	cbo_prefix.select(0)
+	cbo_prefix.disabled = false
 	_prefix_filter = ""
 
 
-# Reset the prefix dropdown to just the "Selecione..." placeholder (no category
-# chosen, so there is nothing to filter).
+# Reset the prefix dropdown to just the "Selecione..." placeholder and DISABLE it
+# (no category chosen, so there is nothing to filter yet).
 func _reset_prefixes() -> void:
 	cbo_prefix.clear()
 	cbo_prefix.add_item(SELECT_LABEL)
 	cbo_prefix.set_item_metadata(0, "")
 	cbo_prefix.select(0)
+	cbo_prefix.disabled = true
 	_prefix_filter = ""
 
 
 func _on_prefix_selected(index: int) -> void:
 	_prefix_filter = cbo_prefix.get_item_metadata(index)
-	_populate_models()
+	if _prefix_filter == "":
+		# Back to the placeholder: re-lock Modelo and Parte.
+		_reset_models()
+		status_label.text = "Selecione um prefixo."
+	else:
+		_populate_models()
 
 
 # Fill the Model dropdown with "Selecione..." plus the current category's models
-# that match the active prefix filter. The placeholder stays selected, so no model
-# is previewed until the user picks one — and the Part dropdown is reset to blank.
+# that match the chosen prefix, and ENABLE it. The placeholder stays selected, so no
+# model is previewed until the user picks one — and the Part dropdown stays locked.
 func _populate_models() -> void:
 	cbo_models.clear()
 	cbo_models.add_item(SELECT_LABEL)
 	_filtered_models = []
 	var cat_index := cbo_category.selected - 1
 	if cat_index < 0:
-		cbo_models.select(0)
-		_reset_meshes_and_preview()
+		_reset_models()
 		status_label.text = "Selecione uma categoria."
 		return
 
 	var models: Array = _categories[cat_index]["models"]
 	for entry in models:
-		if _prefix_filter != "" and entry.get("prefix", "") != _prefix_filter:
+		if entry.get("prefix", "") != _prefix_filter:
 			continue
 		_filtered_models.append(entry)
 		cbo_models.add_item(entry["name"])
 
 	cbo_models.select(0)
+	cbo_models.disabled = false
 	_reset_meshes_and_preview()
 	if _filtered_models.is_empty():
 		status_label.text = "Nenhum modelo neste grupo."
@@ -237,18 +247,19 @@ func _populate_models() -> void:
 		status_label.text = "Selecione um modelo."
 
 
-# Reset the Model dropdown to just the "Selecione..." placeholder and clear the
-# parts dropdown and preview below it.
+# Reset the Model dropdown to just the "Selecione..." placeholder, DISABLE it, and
+# clear the parts dropdown and preview below it.
 func _reset_models() -> void:
 	cbo_models.clear()
 	cbo_models.add_item(SELECT_LABEL)
 	cbo_models.select(0)
+	cbo_models.disabled = true
 	_filtered_models = []
 	_reset_meshes_and_preview()
 
 
-# Reset the Part dropdown to just the "Selecione..." placeholder and clear the
-# previewed mesh/model and its cached scenes.
+# Reset the Part dropdown to just the "Selecione..." placeholder, DISABLE it, and
+# clear the previewed mesh/model and its cached scenes.
 func _reset_meshes_and_preview() -> void:
 	_model_scene = null
 	_display_scene = null
@@ -256,6 +267,7 @@ func _reset_meshes_and_preview() -> void:
 	cbo_meshes.clear()
 	cbo_meshes.add_item(SELECT_LABEL)
 	cbo_meshes.select(0)
+	cbo_meshes.disabled = true
 	_clear_preview()
 
 
@@ -282,6 +294,7 @@ func _on_model_selected(index: int) -> void:
 	for entry in _mesh_catalog:
 		cbo_meshes.add_item(entry["label"])
 	cbo_meshes.select(0)
+	cbo_meshes.disabled = false
 	_clear_preview()
 	status_label.text = "Selecione uma parte."
 
@@ -554,6 +567,10 @@ func _preview_whole_model() -> void:
 	if _display_scene == null:
 		return
 	var instance := _display_scene.instantiate()
+	# Level the model: disregard any baked angular tilt the .glb root carries so it
+	# previews upright. The user's drag then rotates it on orthogonal axes only.
+	if instance is Node3D:
+		(instance as Node3D).rotation = Vector3.ZERO
 	_strip_scripts(instance)
 	if not _show_effects:
 		_hide_gameplay_effects(instance)
@@ -653,6 +670,12 @@ const _MODEL_HEAD_BONES := {
 	"red_robot": ["mouth_eyes"],
 }
 
+# Per-character TORSO bone(s) the classifier can't infer from a generic name — same
+# role as _MODEL_HEAD_BONES but for the trunk (red_robot's body is "Bone.001").
+const _MODEL_TORSO_BONES := {
+	"red_robot": ["Bone.001"],
+}
+
 
 # Build best-fit colliders that wrap each body MEMBER (sphere head, box torso,
 # capsule limbs) so they render green via the gizmos above. The gameplay script
@@ -664,8 +687,9 @@ func _add_member_colliders(instance: Node) -> void:
 	if not skels.is_empty():
 		var lc := LimbColliders.new()
 		lc.hitbox_layer = 64        # own layer — does not touch damage layers (16/32)
-		lc.padding = 0.1            # small gap around the mesh (~the "10px" margin)
+		lc.padding = 0.04           # tight gap around the mesh (hugs the body)
 		lc.head_bone_names = _head_bones_for_current()
+		lc.torso_bone_names = _torso_bones_for_current()
 		instance.add_child(lc)
 		lc.build_for(skels[0] as Skeleton3D)
 		return
@@ -673,10 +697,18 @@ func _add_member_colliders(instance: Node) -> void:
 
 
 func _head_bones_for_current() -> Array[String]:
+	return _model_bones_for_current(_MODEL_HEAD_BONES)
+
+
+func _torso_bones_for_current() -> Array[String]:
+	return _model_bones_for_current(_MODEL_TORSO_BONES)
+
+
+func _model_bones_for_current(table: Dictionary) -> Array[String]:
 	var out: Array[String] = []
-	for key in _MODEL_HEAD_BONES:
+	for key in table:
 		if _current_model_path.contains(key):
-			for b in _MODEL_HEAD_BONES[key]:
+			for b in table[key]:
 				out.append(b)
 			break
 	return out
@@ -702,7 +734,7 @@ func _add_mesh_member_colliders(instance: Node) -> void:
 	holder.name = "MemberColliders"
 	instance.add_child(holder)
 	for g in groups:
-		var aabb: AABB = (groups[g] as AABB).grow(0.1)
+		var aabb: AABB = (groups[g] as AABB).grow(0.04)
 		var body := StaticBody3D.new()
 		body.name = "Collider_%s" % g
 		body.collision_layer = 64
@@ -801,6 +833,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom_target = clampf(_zoom_target + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	elif event is InputEventMouseMotion and _dragging:
 		var motion := event as InputEventMouseMotion
-		_yaw += motion.relative.x * DRAG_SENSITIVITY
-		# Pitch is clamped to ±90° so the model can't roll past vertical and flip.
+		# Both axes are clamped to ±90°: pitch (up/down) so it can't flip past
+		# vertical, and yaw (left/right) to the same maximum swing each side.
+		_yaw = clampf(_yaw + motion.relative.x * DRAG_SENSITIVITY, -PI * 0.5, PI * 0.5)
 		_pitch = clampf(_pitch + motion.relative.y * DRAG_SENSITIVITY, -PI * 0.5, PI * 0.5)
