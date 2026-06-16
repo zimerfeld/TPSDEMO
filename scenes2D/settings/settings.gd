@@ -146,6 +146,15 @@ func _ready() -> void:
 
 	_load_current_settings()
 
+	# There is no "Aplicar" button: every option saves + applies the moment it changes.
+	# Connect AFTER _load_current_settings so programmatically setting the initial state
+	# above doesn't fire a spurious apply. The video-resolution dropdown is handled
+	# apart (it keeps its own confirmation dialog in _on_video_resolution_selected).
+	for row in _rows:
+		var group := _group_of(row)
+		if group != null:
+			group.pressed.connect(_on_setting_changed)
+
 
 func _populate_video_resolutions() -> void:
 	video_resolution_dropdown.clear()
@@ -154,8 +163,15 @@ func _populate_video_resolutions() -> void:
 	video_resolution_dropdown.add_item(SELECT_LABEL)
 	for res in VIDEO_RESOLUTIONS:
 		video_resolution_dropdown.add_item(res["nome"])
-	# Load the saved resolution like every other setting. If none was saved (or it
-	# no longer matches a preset), fall back to the "Selecione..." placeholder.
+	_select_saved_resolution()
+	video_resolution_dropdown.item_selected.connect(_on_video_resolution_selected)
+
+
+# Point the dropdown at the preset matching the saved resolution (or the "Selecione..."
+# placeholder if none matches). Setting `selected` programmatically does NOT emit
+# item_selected, so this is safe to call without triggering the confirmation dialog —
+# used on load and after a Reset.
+func _select_saved_resolution() -> void:
 	var saved: Vector2i = Settings.config_file.get_value("video", "resolution", Vector2i.ZERO)
 	var matched := 0
 	for i in range(VIDEO_RESOLUTIONS.size()):
@@ -164,7 +180,6 @@ func _populate_video_resolutions() -> void:
 			break
 	video_resolution_dropdown.selected = matched
 	_current_resolution_index = matched
-	video_resolution_dropdown.item_selected.connect(_on_video_resolution_selected)
 
 
 func _make_button_group(row: Node) -> void:
@@ -172,6 +187,22 @@ func _make_button_group(row: Node) -> void:
 	for btn in row.get_children():
 		if btn is BaseButton:
 			btn.button_group = group
+
+
+# The shared ButtonGroup of a settings row (every BaseButton in the row carries it), or
+# null if the row has no buttons. Used to listen for live changes and to re-fetch groups.
+func _group_of(row: Node) -> ButtonGroup:
+	for btn in row.get_children():
+		if btn is BaseButton:
+			return btn.button_group
+	return null
+
+
+# A button in one of the option rows was clicked: persist + apply every setting now
+# (there is no "Aplicar" button). The pressed button itself is unused — _apply_settings
+# reads the current state of every row.
+func _on_setting_changed(_button: BaseButton) -> void:
+	_apply_settings()
 
 
 func _load_current_settings() -> void:
@@ -273,7 +304,11 @@ func _load_current_settings() -> void:
 	sfx_enabled.button_pressed = Settings.config_file.get_value("audio", "sfx")
 
 
-func _on_apply_pressed() -> void:
+# Persist + apply EVERY option to the live window at once. Called immediately whenever
+# any option changes (no "Aplicar" button). Does not navigate away — only "Voltar"
+# leaves. Note: the video resolution (pixel size) is intentionally NOT touched here; it
+# is applied by _on_video_resolution_selected so its windowed resize isn't overridden.
+func _apply_settings() -> void:
 	if display_mode_windowed.button_pressed:
 		Settings.config_file.set_value("video", "display_mode", Window.MODE_WINDOWED)
 	elif display_mode_fullscreen.button_pressed:
@@ -396,8 +431,6 @@ func _on_apply_pressed() -> void:
 
 	DebugOverlay.refresh()
 
-	emit_signal("replace_main_scene", load(MENU_PATH))
-
 
 func _on_video_resolution_selected(index: int) -> void:
 	if index == _current_resolution_index:
@@ -421,6 +454,13 @@ func _on_video_resolution_selected(index: int) -> void:
 		_current_resolution_index = index
 		var res: Dictionary = VIDEO_RESOLUTIONS[res_index]
 		Settings.config_file.set_value("video", "resolution", Vector2i(res["largura"], res["altura"]))
+		# A fixed pixel size only holds in windowed mode, so lock the display mode to
+		# Window and persist it — otherwise the next live-applied option would snap the
+		# window back to a saved fullscreen mode and undo the resolution. Updating the
+		# radio keeps the Display tab consistent (no spurious apply: setting button_pressed
+		# fires `toggled`, not the group's `pressed` we listen to).
+		Settings.config_file.set_value("video", "display_mode", Window.MODE_WINDOWED)
+		display_mode_windowed.button_pressed = true
 		Settings.save_settings()
 		dlg.queue_free()
 	)
@@ -443,12 +483,40 @@ func _apply_video_resolution(index: int) -> void:
 			or window.mode == Window.MODE_EXCLUSIVE_FULLSCREEN \
 			or window.mode == Window.MODE_MAXIMIZED:
 		window.mode = Window.MODE_WINDOWED
+	# Never let the window grow past the visible screen, or its top/bottom (and the
+	# bottom button bar) would be pushed off the monitor. Clamp to the usable area
+	# (excludes the taskbar) and center the window inside it.
+	var usable := DisplayServer.screen_get_usable_rect(window.current_screen)
+	target.x = mini(target.x, usable.size.x)
+	target.y = mini(target.y, usable.size.y)
 	window.size = target
-	# Re-center on the window's current screen.
-	var screen := window.current_screen
-	var screen_pos := DisplayServer.screen_get_position(screen)
-	var screen_size := DisplayServer.screen_get_size(screen)
-	window.position = screen_pos + (screen_size - target) / 2
+	@warning_ignore("integer_division")
+	window.position = usable.position + (usable.size - target) / 2
+
+
+# "Reset" button: ask for confirmation (same Sim/Não dialog as the video resolution).
+# On "Sim", restore the common-hardware defaults, refresh the controls to match and
+# apply everything to the live window/audio immediately; on "Não", do nothing.
+func _on_reset_pressed() -> void:
+	var dlg := ConfirmationDialog.new()
+	dlg.title = "Restaurar padrões"
+	dlg.dialog_text = "Restaurar todas as configurações para o padrão?"
+	dlg.get_ok_button().text = "Sim"
+	dlg.get_cancel_button().text = "Não"
+	dlg.confirmed.connect(func() -> void:
+		Settings.reset_to_defaults()
+		_load_current_settings()
+		_select_saved_resolution()
+		_apply_settings()
+		Settings.apply_window_resolution(get_window())
+		dlg.queue_free()
+	)
+	# `canceled` covers the "Não" button, the close (X) button and Escape.
+	dlg.canceled.connect(func() -> void:
+		dlg.queue_free()
+	)
+	add_child(dlg)
+	dlg.popup_centered()
 
 
 func _on_back_pressed() -> void:

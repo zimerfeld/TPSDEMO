@@ -45,6 +45,17 @@ third-person shooter sandbox. At a high level it offers:
   background **Música** (the `Music` bus) and **Efeitos de Som** (the `SFX` bus,
   which the `Outside`/`Reactor` gameplay buses route into), each saved and applied
   globally.
+- **Live settings** — the settings screen has no "Apply" button: every option saves
+  and applies the instant it changes. The video-resolution dropdown is the exception:
+  it asks for confirmation, applying (and locking to windowed mode) on "Sim" or
+  reverting to the saved choice on "Não". A **Reset** button (next to "Voltar") restores
+  the built-in common-hardware defaults — after the same Sim/Não confirmation — saving
+  and applying them immediately. With no stored config (fresh install) the game also
+  boots on those defaults. The main menu reads every stored setting from disk and
+  applies it (graphics, resolution and audio) before the menu is shown. A chosen
+  resolution is clamped to the visible screen (so a 4K/8K pick on a smaller monitor
+  can't push the window off-screen), and every screen's bottom button bar and top title
+  label are anchored full-width to their edge so they stay visible at any resolution.
 
 ## Godot versions
 

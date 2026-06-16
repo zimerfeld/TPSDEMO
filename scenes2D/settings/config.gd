@@ -17,6 +17,10 @@ const CONFIG_FILE_PATH = "user://settings.ini"
 # MetalFX is only supported when using the Metal rendering driver.
 var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name() == "metal"
 
+# Built-in baseline tuned for common/average hardware. Used in two places: load_settings
+# fills any missing key with it (so a fresh install with no config file boots on these
+# values), and reset_to_defaults rewrites everything back to it (the settings "Reset"
+# button). Single source of truth for "the defaults".
 var DEFAULTS := {
 	game = {
 		debug_2d = false,
@@ -81,6 +85,36 @@ func apply_audio_settings() -> void:
 	var sfx_bus := AudioServer.get_bus_index("SFX")
 	if sfx_bus != -1:
 		AudioServer.set_bus_mute(sfx_bus, not config_file.get_value("audio", "sfx", true))
+
+
+# Resize the window to the saved video resolution, but only while windowed — a fixed
+# pixel size is meaningless in (exclusive) fullscreen, so it is skipped there. Centered
+# on the window's current screen. Call AFTER apply_graphics_settings (which sets the
+# display mode) so the mode check below sees the saved windowed/fullscreen state.
+func apply_window_resolution(window: Window) -> void:
+	if window.mode != Window.MODE_WINDOWED and window.mode != Window.MODE_MAXIMIZED:
+		return
+	var res: Vector2i = config_file.get_value("video", "resolution", Vector2i.ZERO)
+	if res.x <= 0 or res.y <= 0:
+		return
+	# Clamp to the usable screen so the window (and its bottom UI) never extends past
+	# the monitor, then center it inside that area.
+	var usable := DisplayServer.screen_get_usable_rect(window.current_screen)
+	res.x = mini(res.x, usable.size.x)
+	res.y = mini(res.y, usable.size.y)
+	window.size = res
+	@warning_ignore("integer_division")
+	window.position = usable.position + (usable.size - res) / 2
+
+
+# Overwrite every setting with the built-in DEFAULTS (the common-hardware baseline) and
+# persist. Backs the settings "Reset" button; the caller is responsible for reloading
+# the UI and applying the values to the live window/audio.
+func reset_to_defaults() -> void:
+	for section in DEFAULTS:
+		for key in DEFAULTS[section]:
+			config_file.set_value(section, key, DEFAULTS[section][key])
+	save_settings()
 
 
 func _input(input_event: InputEvent) -> void:
