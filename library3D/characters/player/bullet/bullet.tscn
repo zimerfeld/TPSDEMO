@@ -512,6 +512,7 @@ libraries = {
 }
 
 [node name="ExplosionAudio" type="AudioStreamPlayer3D" parent="."]
+bus = &"SFX"
 stream = ExtResource("3")
 unit_size = 20.0
 

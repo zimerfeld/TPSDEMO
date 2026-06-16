@@ -681,16 +681,42 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
+[node name="SFXRow" type="HBoxContainer" parent="UI/VBox/Tabs/Audio"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="SFXLabel" type="Label" parent="UI/VBox/Tabs/Audio/SFXRow"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Efeitos de Som:"
+
+[node name="SFXDisabled" type="Button" parent="UI/VBox/Tabs/Audio/SFXRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="SFXEnabled" type="Button" parent="UI/VBox/Tabs/Audio/SFXRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
 [node name="Actions" type="HBoxContainer" parent="UI" unique_id=1938356380]
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
+anchors_preset = 12
+anchor_left = 0.0
 anchor_top = 1.0
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -330.0
+offset_left = 0.0
 offset_top = -100.0
-offset_right = 330.0
+offset_right = 0.0
 offset_bottom = -50.0
 grow_horizontal = 2
 grow_vertical = 0
@@ -703,11 +729,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
-[node name="Apply" type="Button" parent="UI/Actions" unique_id=1006366513]
+[node name="Reset" type="Button" parent="UI/Actions"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "Aplicar"
+text = "Reset"
 
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/Apply" to="." method="_on_apply_pressed"]
+[connection signal="pressed" from="UI/Actions/Reset" to="." method="_on_reset_pressed"]

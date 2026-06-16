@@ -27,10 +27,13 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
 
 func _ready() -> void:
-	# A tela menu (e seu robô decorativo) nunca exibe overlays/tooltips de debug —
-	# incluindo os labels de membro do modelo — independentemente das configurações.
-	add_to_group("no_debug_overlay")
+	# Read every stored setting from disk and apply it before the menu is shown, so the
+	# window, rendering, resolution and audio all reflect the saved configuration on
+	# entry (not just whatever was applied when the game first launched).
+	Settings.load_settings()
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
+	Settings.apply_window_resolution(get_window())
+	Settings.apply_audio_settings()
 
 	if DisplayServer.get_name() == "headless":
 		_on_play_online_pressed.call_deferred()

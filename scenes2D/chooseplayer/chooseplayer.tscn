@@ -76,12 +76,12 @@ theme = ExtResource("5")
 
 [node name="TitleLabel" type="Label" parent="UI" unique_id=1699398886]
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -400.0
+anchors_preset = 10
+anchor_left = 0.0
+anchor_right = 1.0
+offset_left = 0.0
 offset_top = 30.0
-offset_right = 400.0
+offset_right = 0.0
 offset_bottom = 100.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 40
@@ -123,14 +123,14 @@ text = ">"
 
 [node name="Actions" type="HBoxContainer" parent="UI" unique_id=385749446]
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
+anchors_preset = 12
+anchor_left = 0.0
 anchor_top = 1.0
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -330.0
+offset_left = 0.0
 offset_top = -100.0
-offset_right = 330.0
+offset_right = 0.0
 offset_bottom = -50.0
 grow_horizontal = 2
 grow_vertical = 0

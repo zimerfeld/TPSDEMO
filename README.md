@@ -25,12 +25,37 @@ third-person shooter sandbox. At a high level it offers:
   a full complex level (Level Base), plus online (host/connect) play.
 - **3D model library + viewer** — reusable 3D assets organized by type under
   `library3D/`, browsable in-game through the Models screen (category → model →
-  part) with toggles for rotation, animation, sound, colliders and effects.
+  part) with toggles for rotation, animation, **Audio** (every non-speech sound:
+  movement, motor, shots…), **Falas** (speech/scream emitters only), colliders and
+  **Efeitos especiais** (everything else linked to the model — particles, lights,
+  bone-mounted laser/muzzle meshes). Each toggle is the master switch for its category
+  (no sound/animation plays while its toggle is off, regardless of the dropdown —
+  including sound driven by animation tracks) and the toggle states are persisted
+  between visits. The "Animação" and "Efeitos Especiais" dropdowns appear only for the
+  assembled "Modelo completo" view; the effects one isolates a single effect when
+  picked. Picking a value in any selector (Categoria → Prefixo → Modelo → Parte) resets
+  every dropdown below it to "Selecione…". Drag to hand-rotate the model up to 180° on
+  both axes (left/right and up/down).
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap,
   vitals, crosshair, pause menu, scanlines, and more).
 - **Debug tooling** — a debug overlay (FPS HUD, ground grid, and per-node
   TYPE/ID tooltips on 2D and 3D nodes), toggled from the developer screen and the
   settings "Debug" tab.
+- **Audio settings** — the settings "Audio" tab has independent controls for
+  background **Música** (the `Music` bus) and **Efeitos de Som** (the `SFX` bus,
+  which the `Outside`/`Reactor` gameplay buses route into), each saved and applied
+  globally.
+- **Live settings** — the settings screen has no "Apply" button: every option saves
+  and applies the instant it changes. The video-resolution dropdown is the exception:
+  it asks for confirmation, applying (and locking to windowed mode) on "Sim" or
+  reverting to the saved choice on "Não". A **Reset** button (next to "Voltar") restores
+  the built-in common-hardware defaults — after the same Sim/Não confirmation — saving
+  and applying them immediately. With no stored config (fresh install) the game also
+  boots on those defaults. The main menu reads every stored setting from disk and
+  applies it (graphics, resolution and audio) before the menu is shown. A chosen
+  resolution is clamped to the visible screen (so a 4K/8K pick on a smaller monitor
+  can't push the window off-screen), and every screen's bottom button bar and top title
+  label are anchored full-width to their edge so they stay visible at any resolution.
 
 ## Godot versions
 
@@ -83,7 +108,8 @@ reusable 3D asset library under `library3D/`:
   - `controls2D` — reusable UI widgets (cyberpunk HUD, minimap, vitals, ability
     bar, crosshair, pause menu, scanlines, log feed, etc.).
   - `controls` — a 2D controls viewer (the 2D analog of the Models screen) that
-    browses and previews the `controls2D` widgets through a dropdown.
+    browses and previews the `controls2D` widgets through a dropdown, centering each
+    previewed widget horizontally and vertically when it is smaller than the view.
   - `cyberpunkhud` — assembled HUD screen built from `controls2D` widgets.
 - `scenes3D/` — 3D levels and tools: `level_1`, `level_2`, `level_base`, and the
   `models` viewer.

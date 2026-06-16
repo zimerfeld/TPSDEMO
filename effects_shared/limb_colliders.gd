@@ -208,25 +208,37 @@ const LIMB_RADIUS_RATIO := 0.32  # max capsule radius as a fraction of its lengt
 # elongated limbs (arms/legs). Returns a positioned/oriented CollisionShape3D.
 # Static so the model browser can reuse it for non-skeleton rigs (criatura).
 static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D:
+	var kind := "capsule"
+	if group == BodyParts.HEAD:
+		kind = "sphere"
+	elif group == BodyParts.TORSO:
+		kind = "box"
+	return make_shape(kind, box_aabb)
+
+
+# Build a positioned/oriented CollisionShape3D of an explicit `kind`
+# ("sphere"/"box"/"capsule") fitted to the AABB. Lets non-character rigs (weapons)
+# choose the shape per part (e.g. a CAPSULE barrel, BOX receiver/grip).
+static func make_shape(kind: String, box_aabb: AABB) -> CollisionShape3D:
 	var size := box_aabb.size
 	var center := box_aabb.position + size * 0.5
 	var shape := CollisionShape3D.new()
 	shape.position = center
 
-	if group == BodyParts.HEAD:
+	if kind == "sphere":
 		var sphere := SphereShape3D.new()
 		sphere.radius = 0.5 * maxf(size.x, maxf(size.y, size.z)) * CROSS_SHRINK
 		shape.shape = sphere
 		return shape
 
-	if group == BodyParts.TORSO:
+	if kind == "box":
 		var box := BoxShape3D.new()
-		# Keep the full height; pull only width/depth in so it hugs the chest.
+		# Keep the full height; pull only width/depth in so it hugs the part.
 		box.size = Vector3(size.x * CROSS_SHRINK, size.y, size.z * CROSS_SHRINK)
 		shape.shape = box
 		return shape
 
-	# Limbs → capsule along the longest axis (0=x, 1=y, 2=z).
+	# Capsule along the longest axis (0=x, 1=y, 2=z).
 	var long_axis := 0
 	if size.y >= size.x and size.y >= size.z:
 		long_axis = 1

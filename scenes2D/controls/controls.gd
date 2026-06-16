@@ -74,8 +74,31 @@ func _on_control_selected(index: int) -> void:
 	if scene == null:
 		status_label.text = "Falha ao carregar: %s" % entry["name"]
 		return
-	preview.add_child(scene.instantiate())
+	var instance := scene.instantiate()
+	preview.add_child(instance)
 	status_label.text = entry["name"]
+	_center_preview(instance)
+
+
+# Centraliza o controle previsualizado no SubViewport, horizontal e verticalmente,
+# "sempre que possível": só recentra o eixo em que o controle é MENOR que o viewport
+# (controles que já preenchem a área toda — scanlines, hud, pause_menu — ficam onde
+# estão). Espera um frame para o layout assentar antes de medir o tamanho real.
+func _center_preview(node: Node) -> void:
+	var control := node as Control
+	if control == null:
+		return
+	await get_tree().process_frame
+	if not is_instance_valid(control):
+		return
+	var viewport_size := Vector2(preview.size)
+	var control_size := control.size
+	var pos := control.position
+	if control_size.x < viewport_size.x:
+		pos.x = (viewport_size.x - control_size.x) * 0.5
+	if control_size.y < viewport_size.y:
+		pos.y = (viewport_size.y - control_size.y) * 0.5
+	control.position = pos
 
 
 # "ability_bar" -> "Ability Bar", "cyberpunk_hud" -> "Cyberpunk Hud".

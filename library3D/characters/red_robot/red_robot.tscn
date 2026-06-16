@@ -11029,19 +11029,23 @@ color = Color(0, 0.976471, 1, 1)
 [node name="SoundEffects" type="Node3D" parent="."]
 
 [node name="Cannon" type="AudioStreamPlayer3D" parent="SoundEffects"]
+bus = &"SFX"
 unit_size = 15.0
 
 [node name="Explosion" type="AudioStreamPlayer3D" parent="SoundEffects"]
+bus = &"SFX"
 stream = ExtResource("17")
 volume_db = 12.0
 unit_size = 15.0
 
 [node name="Hit" type="AudioStreamPlayer3D" parent="SoundEffects"]
+bus = &"SFX"
 stream = SubResource("70")
 volume_db = 3.0
 unit_size = 15.0
 
 [node name="Walk" type="AudioStreamPlayer3D" parent="SoundEffects"]
+bus = &"SFX"
 stream = ExtResource("19")
 volume_db = 3.0
 unit_size = 15.0

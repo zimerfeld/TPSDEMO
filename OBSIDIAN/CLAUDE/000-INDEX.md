@@ -16,6 +16,7 @@
 | [[sistemas/sistema-de-vida]] | HP, barra de vida, respawn |
 | [[sistemas/dano-localizado]] | Dano por arma, hitboxes Area3D por membro, headshot |
 | [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, grupo Level Base |
+| [[sistemas/audio]] | Buses (Master/Outside/Reactor/Music/SFX), controles Música × Efeitos de Som nas settings |
 
 ---
 
@@ -50,6 +51,7 @@
 |---|---|
 | [[convencoes/formatacao]] | Formatação de arquivos (UTF-8 sem BOM, LF, sem trailing ws, newline final) + rebuild do cache de UIDs |
 | [[convencoes/dropdowns]] | Todo OptionButton começa com "Selecione..." (item 0, default); cascata reseta dependentes e a tela |
+| [[convencoes/ancoragem-ui]] | Barras de botões no rodapé usam BOTTOM_WIDE (largura total); resolução limitada à tela útil |
 
 ---
 

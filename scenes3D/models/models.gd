@@ -30,6 +30,12 @@ const CATEGORIES: Array[Dictionary] = [
 	{"key": "weapons", "label": "Armas"},
 ]
 
+# Models follow the Godot/Blender convention (front = -Z), but the preview camera
+# sits on +Z looking toward -Z, so it would face the model's BACK. Rotate the holder
+# 180° by default so the model's FRONT faces the user; the user's ±90° yaw drag then
+# swings around the front.
+const DEFAULT_FRONT_YAW: float = PI
+
 # How fast the dragged model rotates, in radians per pixel of mouse motion.
 const DRAG_SENSITIVITY: float = 0.01
 
@@ -83,14 +89,26 @@ var _yaw: float = 0.0
 var _pitch: float = 0.0
 
 # Whole-model preview toggles. Colliders draws wireframe gizmos for the
-# (otherwise invisible) CollisionShape3D volumes; effects shows the model's
-# gameplay flourishes (particles, lights, bone-mounted laser/muzzle meshes);
-# animation plays the model's AnimationPlayer; audio plays its sound emitters.
-# All start off so a freshly-picked model previews static and silent.
+# (otherwise invisible) CollisionShape3D volumes; animation plays the model's
+# AnimationPlayer; audio plays its NON-speech sound emitters (movement, motor,
+# shots, explosions...) while falas plays only its speech/scream emitters (see
+# _is_speech_audio). Effects ("Efeitos especiais") shows everything else linked to
+# the model that no other toggle covers — particles, lights and bone-mounted
+# laser/muzzle meshes (see _collect_effect_nodes). All start off so a freshly-picked
+# model previews static, silent and clean.
 var _show_colliders: bool = false
-var _show_effects: bool = false
 var _play_animation: bool = false
 var _play_audio: bool = false
+var _play_falas: bool = false
+var _show_effects: bool = false
+
+# AnimationPlayers of the current whole-model preview, used by the "Animação"
+# dropdown to list and play the model's clips.
+var _preview_anim_players: Array = []
+
+# Special-effect nodes of the current whole-model preview, used by the "Efeitos
+# Especiais" dropdown to list and isolate them. Each entry: {"label", "node"}.
+var _preview_effect_nodes: Array = []
 
 @onready var model_holder: Node3D = $ModelHolder
 @onready var camera: Camera3D = $Camera3D
@@ -103,10 +121,15 @@ var _zoom_target: float = 0.0
 @onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
+@onready var animation_row: HBoxContainer = $UI/Selectors/AnimationRow
+@onready var cbo_animations: OptionButton = $UI/Selectors/AnimationRow/cboAnimations
+@onready var effects_row: HBoxContainer = $UI/Selectors/EffectsRow
+@onready var cbo_effects: OptionButton = $UI/Selectors/EffectsRow/cboEffects
 @onready var status_label: Label = $UI/Selectors/StatusLabel
 @onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
 @onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
 @onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
+@onready var falas_toggle: CheckButton = $UI/Toggles/FalasToggle
 @onready var colliders_toggle: CheckButton = $UI/Toggles/CollidersToggle
 @onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
 
@@ -124,6 +147,20 @@ func _ready() -> void:
 	cbo_prefix.item_selected.connect(_on_prefix_selected)
 	cbo_models.item_selected.connect(_on_model_selected)
 	cbo_meshes.item_selected.connect(_on_mesh_selected)
+	cbo_animations.item_selected.connect(_on_animation_selected)
+	cbo_effects.item_selected.connect(_on_effect_selected)
+	_reset_animations()
+	_reset_effects()
+
+	# Restore the toggle states saved on a previous visit, so the browser reopens
+	# exactly as the user left it (see _save_toggle / _on_*_toggled). Defaults match
+	# the field initializers above (everything off) for a first run.
+	_auto_rotate = Settings.config_file.get_value("models", "auto_rotate", _auto_rotate)
+	_play_animation = Settings.config_file.get_value("models", "play_animation", _play_animation)
+	_play_audio = Settings.config_file.get_value("models", "play_audio", _play_audio)
+	_play_falas = Settings.config_file.get_value("models", "play_falas", _play_falas)
+	_show_colliders = Settings.config_file.get_value("models", "show_colliders", _show_colliders)
+	_show_effects = Settings.config_file.get_value("models", "show_effects", _show_effects)
 
 	rotate_toggle.button_pressed = _auto_rotate
 	rotate_toggle.toggled.connect(_on_rotate_toggled)
@@ -131,6 +168,8 @@ func _ready() -> void:
 	animation_toggle.toggled.connect(_on_animation_toggled)
 	audio_toggle.button_pressed = _play_audio
 	audio_toggle.toggled.connect(_on_audio_toggled)
+	falas_toggle.button_pressed = _play_falas
+	falas_toggle.toggled.connect(_on_falas_toggled)
 	colliders_toggle.button_pressed = _show_colliders
 	colliders_toggle.toggled.connect(_on_colliders_toggled)
 	effects_toggle.button_pressed = _show_effects
@@ -148,7 +187,8 @@ func _process(delta: float) -> void:
 	if _auto_rotate and not _dragging:
 		_yaw += delta * AUTO_ROTATE_SPEED
 	# Rebuild rotation from yaw/pitch with roll fixed at 0 (orthogonal axes only).
-	model_holder.rotation = Vector3(_pitch, _yaw, 0.0)
+	# The default 180° yaw turns the model's front toward the camera.
+	model_holder.rotation = Vector3(_pitch, DEFAULT_FRONT_YAW + _yaw, 0.0)
 	# Glide the camera toward the wheel-set zoom distance instead of snapping.
 	if not is_equal_approx(_zoom, _zoom_target):
 		_zoom = lerpf(_zoom, _zoom_target, minf(ZOOM_SMOOTH * delta, 1.0))
@@ -259,7 +299,9 @@ func _reset_models() -> void:
 
 
 # Reset the Part dropdown to just the "Selecione..." placeholder, DISABLE it, and
-# clear the previewed mesh/model and its cached scenes.
+# clear the previewed mesh/model and its cached scenes. Also resets the two dropdowns
+# below Part (Animação, Efeitos Especiais) so changing any upper dropdown cascades all
+# the way down.
 func _reset_meshes_and_preview() -> void:
 	_model_scene = null
 	_display_scene = null
@@ -268,6 +310,8 @@ func _reset_meshes_and_preview() -> void:
 	cbo_meshes.add_item(SELECT_LABEL)
 	cbo_meshes.select(0)
 	cbo_meshes.disabled = true
+	_reset_animations()
+	_reset_effects()
 	_clear_preview()
 
 
@@ -295,6 +339,9 @@ func _on_model_selected(index: int) -> void:
 		cbo_meshes.add_item(entry["label"])
 	cbo_meshes.select(0)
 	cbo_meshes.disabled = false
+	# Part is back on its placeholder, so the dropdowns below it reset/hide too.
+	_reset_animations()
+	_reset_effects()
 	_clear_preview()
 	status_label.text = "Selecione uma parte."
 
@@ -305,37 +352,166 @@ func _on_model_selected(index: int) -> void:
 func _on_mesh_selected(index: int) -> void:
 	if index <= 0:
 		_clear_preview()
+		_reset_animations()
+		_reset_effects()
 		status_label.text = "Selecione uma parte."
 	elif index == 1:
 		_preview_whole_model()
+		# The animation and special-effects dropdowns only apply to "Modelo completo".
+		_populate_animations()
+		_populate_effects()
 		status_label.text = "Modelo completo — %d parte(s)" % _mesh_catalog.size()
 	else:
 		_preview_mesh(index - 2)
+		_reset_animations()
+		_reset_effects()
 		status_label.text = "Parte: %s" % _mesh_catalog[index - 2]["label"]
+
+
+# Fill the "Animação" dropdown with "Selecione..." plus every clip the previewed
+# model exposes; enable it only when there is at least one. Selecting a clip plays
+# it on the preview (see _on_animation_selected). The whole row is shown ONLY for the
+# assembled "Modelo completo" view (see _on_mesh_selected) — single parts and the
+# placeholder hide it via _reset_animations.
+func _populate_animations() -> void:
+	animation_row.visible = true
+	# Preserve the current pick across preview rebuilds (toggling colliders/audio
+	# re-runs the preview), so a chosen clip keeps playing.
+	var prev := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
+	cbo_animations.clear()
+	cbo_animations.add_item(SELECT_LABEL)
+	var seen: Dictionary = {}
+	for ap: AnimationPlayer in _preview_anim_players:
+		for clip in ap.get_animation_list():
+			if not seen.has(clip):
+				seen[clip] = true
+				cbo_animations.add_item(clip)
+	var restore := 0
+	for i in range(1, cbo_animations.item_count):
+		if cbo_animations.get_item_text(i) == prev:
+			restore = i
+			break
+	cbo_animations.select(restore)
+	cbo_animations.disabled = cbo_animations.item_count <= 1
+
+
+# Reset the "Animação" dropdown to just the placeholder, disable it and HIDE the whole
+# row — the combo is only shown for the assembled "Modelo completo" view.
+func _reset_animations() -> void:
+	cbo_animations.clear()
+	cbo_animations.add_item(SELECT_LABEL)
+	cbo_animations.select(0)
+	cbo_animations.disabled = true
+	animation_row.visible = false
+
+
+# Item 0 is "Selecione..." (stop / static rest); items 1.. are clip names. Plays the
+# chosen clip (looping via the player) on every AnimationPlayer that has it — but only
+# while the Animação toggle is on: with it off, picking a clip just updates the pending
+# selection and plays nothing (it starts when the toggle is turned on, via _refresh_preview).
+func _on_animation_selected(index: int) -> void:
+	if not _play_animation:
+		return
+	var clip := "" if index <= 0 else cbo_animations.get_item_text(index)
+	for ap: AnimationPlayer in _preview_anim_players:
+		if not is_instance_valid(ap):
+			continue
+		if clip != "" and ap.has_animation(clip):
+			ap.play(clip)
+		else:
+			ap.stop()
+
+
+# Fill the "Efeitos Especiais" dropdown with "Selecione..." plus one entry per special
+# effect of the previewed model (particles, lights, bone-mounted laser/muzzle meshes —
+# see _collect_effect_nodes). Shown ONLY for the assembled "Modelo completo" view, like
+# the animation dropdown. Preserves the current pick across preview rebuilds.
+func _populate_effects() -> void:
+	effects_row.visible = true
+	var prev := "" if cbo_effects.selected <= 0 else cbo_effects.get_item_text(cbo_effects.selected)
+	cbo_effects.clear()
+	cbo_effects.add_item(SELECT_LABEL)
+	for entry in _preview_effect_nodes:
+		cbo_effects.add_item(entry["label"])
+	var restore := 0
+	for i in range(1, cbo_effects.item_count):
+		if cbo_effects.get_item_text(i) == prev:
+			restore = i
+			break
+	cbo_effects.select(restore)
+	cbo_effects.disabled = cbo_effects.item_count <= 1
+	_apply_effects_visibility()
+
+
+# Reset the "Efeitos Especiais" dropdown to just the placeholder, disable it and HIDE
+# the whole row — the combo is only shown for the assembled "Modelo completo" view.
+func _reset_effects() -> void:
+	cbo_effects.clear()
+	cbo_effects.add_item(SELECT_LABEL)
+	cbo_effects.select(0)
+	cbo_effects.disabled = true
+	effects_row.visible = false
+
+
+# Item 0 is "Selecione..." (show every effect, per the toggle); items 1.. are effect
+# names. Picking one isolates it (only that effect renders); see _apply_effects_visibility.
+func _on_effect_selected(_index: int) -> void:
+	_apply_effects_visibility()
+
+
+# Show/hide the preview's special-effect nodes: nothing while the "Efeitos especiais"
+# toggle is off; with it on, every effect when the dropdown is on "Selecione...", or
+# only the chosen one when a specific effect is picked.
+func _apply_effects_visibility() -> void:
+	var chosen := "" if cbo_effects.selected <= 0 else cbo_effects.get_item_text(cbo_effects.selected)
+	for entry in _preview_effect_nodes:
+		var node: Node3D = entry["node"]
+		if not is_instance_valid(node):
+			continue
+		node.visible = _show_effects and (chosen == "" or entry["label"] == chosen)
 
 
 func _on_rotate_toggled(pressed: bool) -> void:
 	_auto_rotate = pressed
+	_save_toggle("auto_rotate", pressed)
 
 
 func _on_animation_toggled(pressed: bool) -> void:
 	_play_animation = pressed
+	_save_toggle("play_animation", pressed)
 	_refresh_preview()
 
 
 func _on_audio_toggled(pressed: bool) -> void:
 	_play_audio = pressed
+	_save_toggle("play_audio", pressed)
+	_refresh_preview()
+
+
+func _on_falas_toggled(pressed: bool) -> void:
+	_play_falas = pressed
+	_save_toggle("play_falas", pressed)
 	_refresh_preview()
 
 
 func _on_colliders_toggled(pressed: bool) -> void:
 	_show_colliders = pressed
+	_save_toggle("show_colliders", pressed)
 	_refresh_preview()
 
 
+# The special-effect nodes already live in the preview (collected on build), so toggling
+# just flips their visibility — no rebuild needed (cheaper, no flicker).
 func _on_effects_toggled(pressed: bool) -> void:
 	_show_effects = pressed
-	_refresh_preview()
+	_save_toggle("show_effects", pressed)
+	_apply_effects_visibility()
+
+
+# Persist one preview toggle so the model browser reopens with the same options.
+func _save_toggle(key: String, value: bool) -> void:
+	Settings.config_file.set_value("models", key, value)
+	Settings.save_settings()
 
 
 # Re-render the current Part selection so toggle changes take effect.
@@ -534,6 +710,8 @@ func _group_key(node_name: String) -> String:
 func _clear_preview() -> void:
 	for child in model_holder.get_children():
 		child.queue_free()
+	_preview_anim_players = []
+	_preview_effect_nodes = []
 	_yaw = 0.0
 	_pitch = 0.0
 	model_holder.rotation = Vector3.ZERO
@@ -572,22 +750,31 @@ func _preview_whole_model() -> void:
 	if instance is Node3D:
 		(instance as Node3D).rotation = Vector3.ZERO
 	_strip_scripts(instance)
-	if not _show_effects:
-		_hide_gameplay_effects(instance)
+	# Catalog the special-effect nodes (particles, lights, bone-mounted laser/muzzle
+	# meshes). Their visibility is decided by the "Efeitos especiais" toggle + dropdown
+	# via _apply_effects_visibility (called from _populate_effects after this returns);
+	# _fit_to_view ignores them, so framing is unaffected either way.
+	_preview_effect_nodes = _collect_effect_nodes(instance)
 	# Suppress autoplay BEFORE the subtree enters the tree (autoplay fires on
 	# tree entry), then kick off playback below only for the toggles that are on.
 	var av_state := _suppress_autoplay(instance)
 	model_holder.add_child(instance)
+	_preview_anim_players = (av_state["anim"] as Dictionary).keys()
 	_apply_av_playback(av_state)
-	if _show_colliders:
-		# Build the per-member colliders (best-fit sphere/box/capsule) so they show
-		# up green — the preview strips the gameplay script that normally builds
-		# them, so we construct them here just for display.
+	# Detect members for characters and weapons either way: their colliders feed the
+	# always-on member tooltips; for other categories we only build them to draw the
+	# collider gizmos when the toggle is on.
+	var show_members := _current_category_key() in ["characters", "weapons"]
+	if _show_colliders or show_members:
+		# Build the per-member colliders (best-fit sphere/box/capsule) — the preview
+		# strips the gameplay script that normally builds them, so we do it here.
 		_add_member_colliders(instance)
 	if instance is Node3D:
 		_fit_to_view(instance as Node3D)
 	if _show_colliders:
 		_add_collider_gizmos(instance)
+	if show_members:
+		_add_member_labels(instance)
 
 
 # Clear the autoplay on every AnimationPlayer and audio emitter so nothing starts
@@ -609,21 +796,60 @@ func _suppress_autoplay(instance: Node) -> Dictionary:
 	return {"anim": anim_autoplay, "audio": audio_players}
 
 
-# Start the model's animation and/or sound depending on the toggles. Animation
-# uses the original autoplay clip (falling back to the first available); audio
-# plays every emitter that has a stream. Off toggles leave it static and silent.
+# Start the model's animation and/or sound, each gated by its own toggle (the toggle
+# is the master switch). Animation: while the Animação toggle is off NOTHING plays,
+# even with a clip chosen; while on, the "Animação" dropdown's clip plays, falling back
+# to the model's autoplay clip and then its first clip. Audio is split in two: the
+# "Audio" toggle covers every NON-speech emitter (movement, motor, shots...) and the
+# "Falas" toggle covers only the speech/scream emitters (see _is_speech_audio).
 func _apply_av_playback(state: Dictionary) -> void:
+	# Pre-mute the emitters whose toggle is off BEFORE the animation starts. These
+	# models trigger sound from animation "audio"/"method" tracks (not just autoplay),
+	# so silencing the target player's volume is what actually makes the toggle gate
+	# animation-driven audio too — the preview is rebuilt fresh each time, so the
+	# authored volume is restored automatically when the toggle is back on.
+	for node in state["audio"]:
+		var off := not (_play_falas if _is_speech_audio(node) else _play_audio)
+		if off:
+			node.set("volume_db", -80.0)
+
 	if _play_animation:
+		var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
 		for ap: AnimationPlayer in state["anim"]:
-			var clip: String = state["anim"][ap]
-			if clip == "" and not ap.get_animation_list().is_empty():
-				clip = ap.get_animation_list()[0]
+			var clip := chosen
+			if clip == "" or not ap.has_animation(clip):
+				clip = state["anim"][ap]
+				if clip == "" and not ap.get_animation_list().is_empty():
+					clip = ap.get_animation_list()[0]
 			if clip != "" and ap.has_animation(clip):
 				ap.play(clip)
-	if _play_audio:
-		for node in state["audio"]:
-			if node.get("stream") != null:
-				node.play()
+
+	# Start the standalone emitters whose toggle is on (looping motor/engine sounds the
+	# animation never triggers); animation-driven ones already started with the clip.
+	for node in state["audio"]:
+		if node.get("stream") == null:
+			continue
+		var wanted := _play_falas if _is_speech_audio(node) else _play_audio
+		if wanted:
+			node.play()
+
+
+# Classify a model's audio emitter as speech (falas/gritos) vs every other sound
+# (movement, motor, shots, explosions...). The preview can't know an emitter's role
+# beyond its node name, so match common speech/voice tokens; everything else is
+# treated as general audio gated by the "Audio" toggle.
+const _SPEECH_AUDIO_TOKENS := [
+	"voice", "voz", "fala", "falas", "speech", "speak", "talk", "dialog",
+	"grito", "gritos", "scream", "shout", "yell", "vox",
+]
+
+
+func _is_speech_audio(node: Node) -> bool:
+	var name_lower := String(node.name).to_lower()
+	for token in _SPEECH_AUDIO_TOKENS:
+		if name_lower.contains(token):
+			return true
+	return false
 
 
 # Recursively detach every script in the instanced subtree before it enters the
@@ -634,15 +860,19 @@ func _strip_scripts(node: Node) -> void:
 		_strip_scripts(child)
 
 
-# Hide the model's gameplay-only flourishes — particle systems (smoke, thrust),
-# lights, and meshes pinned to a bone (muzzle/laser) — leaving just the body.
-func _hide_gameplay_effects(instance: Node) -> void:
+# Collect the model's gameplay-only flourishes — particle systems (smoke, thrust),
+# lights, and meshes pinned to a bone (muzzle/laser) — the "remaining" elements no
+# other toggle covers. Returned as [{"label", "node"}] for the "Efeitos Especiais"
+# dropdown; the caller decides their visibility via _apply_effects_visibility.
+func _collect_effect_nodes(instance: Node) -> Array:
+	var out: Array = []
 	for node in instance.find_children("*", "Node3D", true, false):
-		var node3d := node as Node3D
-		if node is GPUParticles3D or node is CPUParticles3D or node is Light3D:
-			node3d.visible = false
-		elif node is MeshInstance3D and _under_bone_attachment(node, instance):
-			node3d.visible = false
+		var is_effect := node is GPUParticles3D or node is CPUParticles3D or node is Light3D
+		if not is_effect and node is MeshInstance3D and _under_bone_attachment(node, instance):
+			is_effect = true
+		if is_effect:
+			out.append({"label": _prettify(String(node.name)), "node": node})
+	return out
 
 
 # Draw a wireframe gizmo for every CollisionShape3D so the otherwise-invisible
@@ -662,6 +892,38 @@ func _add_collider_gizmos(instance: Node) -> void:
 		gizmo.mesh = shape_node.shape.get_debug_mesh()
 		gizmo.material_override = mat
 		shape_node.add_child(gizmo)
+
+
+# Detect-and-display: float a billboard label with each member's name (CABEÇA,
+# CANO, …) over its collider. The label is parented to the collider body — which is
+# itself anchored to the animated node (limb pivot / bone) — so it travels WITH the
+# member while the animation plays. `fixed_size` keeps it readable at any scale/zoom.
+# Used for the Personagens and Armas categories.
+func _add_member_labels(instance: Node) -> void:
+	for node in instance.find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if not body.has_meta("member_label"):
+			continue
+		var text: String = str(body.get_meta("member_label"))
+		if text == "":
+			continue
+		var shapes: Array = body.find_children("*", "CollisionShape3D", true, false)
+		if shapes.is_empty():
+			continue
+		# Member centre in the body's local space (the shape carries the offset).
+		var center: Vector3 = (shapes[0] as CollisionShape3D).position
+		var lbl := Label3D.new()
+		lbl.text = text
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.no_depth_test = true
+		lbl.fixed_size = true
+		lbl.pixel_size = 0.0006
+		lbl.font_size = 48
+		lbl.modulate = Color(1.0, 0.85, 0.2)
+		lbl.outline_size = 12
+		lbl.outline_modulate = Color(0, 0, 0, 0.85)
+		body.add_child(lbl)
+		lbl.position = center + Vector3(0.0, 0.06, 0.0)
 
 
 # Per-character: head bone(s) BodyParts can't infer from the name (it excludes
@@ -714,34 +976,93 @@ func _model_bones_for_current(table: Dictionary) -> Array[String]:
 	return out
 
 
-# Member colliders for a rig that has no Skeleton3D (criatura_alada): group the
-# visible mesh nodes by BodyParts (head/torso/legs from their names) and wrap each
-# group with the same best-fit geometry, in the instance's local space.
+# Key ("characters"/"weapons"/…) of the category currently selected, or "" if on
+# the "Selecione..." placeholder. Drives weapon-vs-character member detection.
+func _current_category_key() -> String:
+	var idx := cbo_category.selected - 1
+	if idx < 0 or idx >= _categories.size():
+		return ""
+	return _categories[idx]["key"]
+
+
+# Member colliders for a rig that has no Skeleton3D, grouping the visible mesh nodes
+# by member name. Characters use BodyParts (head/torso/arms/legs → criatura_alada,
+# mecha07); weapons use WeaponParts (cano/corpo/cabo/… → pistola etc.). Each collider
+# is parented to the lowest common ancestor of its member's meshes — that ancestor is
+# the node the animation drives (the limb pivot / recoiling receiver), so the collider
+# (and its tooltip) MOVES WITH THE ANIMATION instead of staying behind.
 func _add_mesh_member_colliders(instance: Node) -> void:
-	var groups: Dictionary = {}   # group -> AABB (instance-local)
-	var inv := (instance as Node3D).global_transform.affine_inverse()
+	var is_weapon := _current_category_key() == "weapons"
+	var members: Dictionary = {}   # group -> {"label": String, "nodes": Array}
 	for node in instance.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.mesh == null or not mi.is_visible_in_tree():
 			continue
-		var g := BodyParts.group_of(mi.name)
+		var g := WeaponParts.group_of(mi.name) if is_weapon else BodyParts.group_of(mi.name)
 		if g == "":
 			continue
-		var box := (inv * mi.global_transform) * mi.get_aabb()
-		groups[g] = box if not groups.has(g) else (groups[g] as AABB).merge(box)
+		if not members.has(g):
+			var lab: String = WeaponParts.label_of(g) if is_weapon else BodyParts.label_of(g)
+			members[g] = {"label": lab, "nodes": []}
+		members[g]["nodes"].append(mi)
 
-	var holder := Node3D.new()
-	holder.name = "MemberColliders"
-	instance.add_child(holder)
-	for g in groups:
-		var aabb: AABB = (groups[g] as AABB).grow(0.04)
+	for g in members:
+		var nodes: Array = members[g]["nodes"]
+		var anchor := _lca(nodes, instance)
+		if anchor == null:
+			anchor = instance
+		# AABB in the anchor's local space: the meshes are rigid under their animated
+		# pivot, so this is pose-independent and stays glued to the moving member.
+		var inv := (anchor as Node3D).global_transform.affine_inverse()
+		var aabb := AABB()
+		var first := true
+		for n in nodes:
+			var mi := n as MeshInstance3D
+			var box := (inv * mi.global_transform) * mi.get_aabb()
+			aabb = box if first else aabb.merge(box)
+			first = false
+		aabb = aabb.grow(0.04)
+
 		var body := StaticBody3D.new()
 		body.name = "Collider_%s" % g
 		body.collision_layer = 64
 		body.collision_mask = 0
-		body.set_meta("member_label", BodyParts.label_of(g))
-		body.add_child(LimbColliders.make_member_shape(g, aabb))
-		holder.add_child(body)
+		body.set_meta("member_label", members[g]["label"])
+		if is_weapon:
+			# Barrel → capsule along its length; receiver/grip/stock/mag → box.
+			var kind := "capsule" if g == WeaponParts.BARREL else "box"
+			body.add_child(LimbColliders.make_shape(kind, aabb))
+		else:
+			body.add_child(LimbColliders.make_member_shape(g, aabb))
+		anchor.add_child(body)
+
+
+# Lowest common ancestor of `nodes` within `root` (inclusive). For a single node it
+# is the node itself; used to anchor a member's collider to the node the animation
+# actually moves.
+func _lca(nodes: Array, root: Node) -> Node:
+	if nodes.is_empty():
+		return root
+	var common: Array = _ancestor_chain(nodes[0], root)
+	for i in range(1, nodes.size()):
+		var chain: Array = _ancestor_chain(nodes[i], root)
+		var k := 0
+		while k < common.size() and k < chain.size() and common[k] == chain[k]:
+			k += 1
+		common = common.slice(0, k)
+	return common[-1] if not common.is_empty() else root
+
+
+# Chain of nodes from `root` down to `node` (inclusive), root first.
+func _ancestor_chain(node: Node, root: Node) -> Array:
+	var chain: Array = []
+	var n: Node = node
+	while n != null:
+		chain.push_front(n)
+		if n == root:
+			break
+		n = n.get_parent()
+	return chain
 
 
 # Center and scale a model so it fits nicely in front of the camera, regardless
@@ -833,7 +1154,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom_target = clampf(_zoom_target + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	elif event is InputEventMouseMotion and _dragging:
 		var motion := event as InputEventMouseMotion
-		# Both axes are clamped to ±90°: pitch (up/down) so it can't flip past
-		# vertical, and yaw (left/right) to the same maximum swing each side.
-		_yaw = clampf(_yaw + motion.relative.x * DRAG_SENSITIVITY, -PI * 0.5, PI * 0.5)
-		_pitch = clampf(_pitch + motion.relative.y * DRAG_SENSITIVITY, -PI * 0.5, PI * 0.5)
+		# Both axes swing up to 180 degrees each side: yaw (left/right) turns the model
+		# all the way around to its back, and pitch (up/down) tilts it all the way over.
+		_yaw = clampf(_yaw + motion.relative.x * DRAG_SENSITIVITY, -PI, PI)
+		_pitch = clampf(_pitch + motion.relative.y * DRAG_SENSITIVITY, -PI, PI)
