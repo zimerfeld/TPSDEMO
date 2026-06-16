@@ -30,6 +30,12 @@ const CATEGORIES: Array[Dictionary] = [
 	{"key": "weapons", "label": "Armas"},
 ]
 
+# Models follow the Godot/Blender convention (front = -Z), but the preview camera
+# sits on +Z looking toward -Z, so it would face the model's BACK. Rotate the holder
+# 180° by default so the model's FRONT faces the user; the user's ±90° yaw drag then
+# swings around the front.
+const DEFAULT_FRONT_YAW: float = PI
+
 # How fast the dragged model rotates, in radians per pixel of mouse motion.
 const DRAG_SENSITIVITY: float = 0.01
 
@@ -92,6 +98,10 @@ var _show_effects: bool = false
 var _play_animation: bool = false
 var _play_audio: bool = false
 
+# AnimationPlayers of the current whole-model preview, used by the "Animação"
+# dropdown to list and play the model's clips.
+var _preview_anim_players: Array = []
+
 @onready var model_holder: Node3D = $ModelHolder
 @onready var camera: Camera3D = $Camera3D
 
@@ -103,6 +113,7 @@ var _zoom_target: float = 0.0
 @onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
+@onready var cbo_animations: OptionButton = $UI/Selectors/AnimationRow/cboAnimations
 @onready var status_label: Label = $UI/Selectors/StatusLabel
 @onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
 @onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
@@ -124,6 +135,8 @@ func _ready() -> void:
 	cbo_prefix.item_selected.connect(_on_prefix_selected)
 	cbo_models.item_selected.connect(_on_model_selected)
 	cbo_meshes.item_selected.connect(_on_mesh_selected)
+	cbo_animations.item_selected.connect(_on_animation_selected)
+	_reset_animations()
 
 	rotate_toggle.button_pressed = _auto_rotate
 	rotate_toggle.toggled.connect(_on_rotate_toggled)
@@ -148,7 +161,8 @@ func _process(delta: float) -> void:
 	if _auto_rotate and not _dragging:
 		_yaw += delta * AUTO_ROTATE_SPEED
 	# Rebuild rotation from yaw/pitch with roll fixed at 0 (orthogonal axes only).
-	model_holder.rotation = Vector3(_pitch, _yaw, 0.0)
+	# The default 180° yaw turns the model's front toward the camera.
+	model_holder.rotation = Vector3(_pitch, DEFAULT_FRONT_YAW + _yaw, 0.0)
 	# Glide the camera toward the wheel-set zoom distance instead of snapping.
 	if not is_equal_approx(_zoom, _zoom_target):
 		_zoom = lerpf(_zoom, _zoom_target, minf(ZOOM_SMOOTH * delta, 1.0))
@@ -305,13 +319,63 @@ func _on_model_selected(index: int) -> void:
 func _on_mesh_selected(index: int) -> void:
 	if index <= 0:
 		_clear_preview()
+		_reset_animations()
 		status_label.text = "Selecione uma parte."
 	elif index == 1:
 		_preview_whole_model()
+		# The animation dropdown only applies to the assembled "Modelo completo".
+		_populate_animations()
 		status_label.text = "Modelo completo — %d parte(s)" % _mesh_catalog.size()
 	else:
 		_preview_mesh(index - 2)
+		_reset_animations()
 		status_label.text = "Parte: %s" % _mesh_catalog[index - 2]["label"]
+
+
+# Fill the "Animação" dropdown with "Selecione..." plus every clip the previewed
+# model exposes; enable it only when there is at least one. Selecting a clip plays
+# it on the preview (see _on_animation_selected); the dropdown is reset/disabled for
+# single-part views and models without animations.
+func _populate_animations() -> void:
+	# Preserve the current pick across preview rebuilds (toggling colliders/audio
+	# re-runs the preview), so a chosen clip keeps playing.
+	var prev := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
+	cbo_animations.clear()
+	cbo_animations.add_item(SELECT_LABEL)
+	var seen: Dictionary = {}
+	for ap: AnimationPlayer in _preview_anim_players:
+		for clip in ap.get_animation_list():
+			if not seen.has(clip):
+				seen[clip] = true
+				cbo_animations.add_item(clip)
+	var restore := 0
+	for i in range(1, cbo_animations.item_count):
+		if cbo_animations.get_item_text(i) == prev:
+			restore = i
+			break
+	cbo_animations.select(restore)
+	cbo_animations.disabled = cbo_animations.item_count <= 1
+
+
+# Reset the "Animação" dropdown to just the placeholder and disable it.
+func _reset_animations() -> void:
+	cbo_animations.clear()
+	cbo_animations.add_item(SELECT_LABEL)
+	cbo_animations.select(0)
+	cbo_animations.disabled = true
+
+
+# Item 0 is "Selecione..." (stop / static rest); items 1.. are clip names. Plays the
+# chosen clip (looping via the player) on every AnimationPlayer that has it.
+func _on_animation_selected(index: int) -> void:
+	var clip := "" if index <= 0 else cbo_animations.get_item_text(index)
+	for ap: AnimationPlayer in _preview_anim_players:
+		if not is_instance_valid(ap):
+			continue
+		if clip != "" and ap.has_animation(clip):
+			ap.play(clip)
+		else:
+			ap.stop()
 
 
 func _on_rotate_toggled(pressed: bool) -> void:
@@ -534,6 +598,7 @@ func _group_key(node_name: String) -> String:
 func _clear_preview() -> void:
 	for child in model_holder.get_children():
 		child.queue_free()
+	_preview_anim_players = []
 	_yaw = 0.0
 	_pitch = 0.0
 	model_holder.rotation = Vector3.ZERO
@@ -578,16 +643,22 @@ func _preview_whole_model() -> void:
 	# tree entry), then kick off playback below only for the toggles that are on.
 	var av_state := _suppress_autoplay(instance)
 	model_holder.add_child(instance)
+	_preview_anim_players = (av_state["anim"] as Dictionary).keys()
 	_apply_av_playback(av_state)
-	if _show_colliders:
-		# Build the per-member colliders (best-fit sphere/box/capsule) so they show
-		# up green — the preview strips the gameplay script that normally builds
-		# them, so we construct them here just for display.
+	# Detect members for characters and weapons either way: their colliders feed the
+	# always-on member tooltips; for other categories we only build them to draw the
+	# collider gizmos when the toggle is on.
+	var show_members := _current_category_key() in ["characters", "weapons"]
+	if _show_colliders or show_members:
+		# Build the per-member colliders (best-fit sphere/box/capsule) — the preview
+		# strips the gameplay script that normally builds them, so we do it here.
 		_add_member_colliders(instance)
 	if instance is Node3D:
 		_fit_to_view(instance as Node3D)
 	if _show_colliders:
 		_add_collider_gizmos(instance)
+	if show_members:
+		_add_member_labels(instance)
 
 
 # Clear the autoplay on every AnimationPlayer and audio emitter so nothing starts
@@ -609,12 +680,16 @@ func _suppress_autoplay(instance: Node) -> Dictionary:
 	return {"anim": anim_autoplay, "audio": audio_players}
 
 
-# Start the model's animation and/or sound depending on the toggles. Animation
-# uses the original autoplay clip (falling back to the first available); audio
-# plays every emitter that has a stream. Off toggles leave it static and silent.
+# Start the model's animation and/or sound. The "Animação" dropdown picks the clip;
+# if it is on "Selecione...", the Animação toggle still plays the autoplay clip
+# (falling back to the first) for backward compatibility. Audio plays every emitter
+# that has a stream. Off / placeholder leave it static and silent.
 func _apply_av_playback(state: Dictionary) -> void:
-	if _play_animation:
-		for ap: AnimationPlayer in state["anim"]:
+	var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
+	for ap: AnimationPlayer in state["anim"]:
+		if chosen != "" and ap.has_animation(chosen):
+			ap.play(chosen)
+		elif _play_animation:
 			var clip: String = state["anim"][ap]
 			if clip == "" and not ap.get_animation_list().is_empty():
 				clip = ap.get_animation_list()[0]
@@ -662,6 +737,38 @@ func _add_collider_gizmos(instance: Node) -> void:
 		gizmo.mesh = shape_node.shape.get_debug_mesh()
 		gizmo.material_override = mat
 		shape_node.add_child(gizmo)
+
+
+# Detect-and-display: float a billboard label with each member's name (CABEÇA,
+# CANO, …) over its collider. The label is parented to the collider body — which is
+# itself anchored to the animated node (limb pivot / bone) — so it travels WITH the
+# member while the animation plays. `fixed_size` keeps it readable at any scale/zoom.
+# Used for the Personagens and Armas categories.
+func _add_member_labels(instance: Node) -> void:
+	for node in instance.find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if not body.has_meta("member_label"):
+			continue
+		var text: String = str(body.get_meta("member_label"))
+		if text == "":
+			continue
+		var shapes: Array = body.find_children("*", "CollisionShape3D", true, false)
+		if shapes.is_empty():
+			continue
+		# Member centre in the body's local space (the shape carries the offset).
+		var center: Vector3 = (shapes[0] as CollisionShape3D).position
+		var lbl := Label3D.new()
+		lbl.text = text
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.no_depth_test = true
+		lbl.fixed_size = true
+		lbl.pixel_size = 0.0006
+		lbl.font_size = 48
+		lbl.modulate = Color(1.0, 0.85, 0.2)
+		lbl.outline_size = 12
+		lbl.outline_modulate = Color(0, 0, 0, 0.85)
+		body.add_child(lbl)
+		lbl.position = center + Vector3(0.0, 0.06, 0.0)
 
 
 # Per-character: head bone(s) BodyParts can't infer from the name (it excludes
@@ -714,34 +821,93 @@ func _model_bones_for_current(table: Dictionary) -> Array[String]:
 	return out
 
 
-# Member colliders for a rig that has no Skeleton3D (criatura_alada): group the
-# visible mesh nodes by BodyParts (head/torso/legs from their names) and wrap each
-# group with the same best-fit geometry, in the instance's local space.
+# Key ("characters"/"weapons"/…) of the category currently selected, or "" if on
+# the "Selecione..." placeholder. Drives weapon-vs-character member detection.
+func _current_category_key() -> String:
+	var idx := cbo_category.selected - 1
+	if idx < 0 or idx >= _categories.size():
+		return ""
+	return _categories[idx]["key"]
+
+
+# Member colliders for a rig that has no Skeleton3D, grouping the visible mesh nodes
+# by member name. Characters use BodyParts (head/torso/arms/legs → criatura_alada,
+# mecha07); weapons use WeaponParts (cano/corpo/cabo/… → pistola etc.). Each collider
+# is parented to the lowest common ancestor of its member's meshes — that ancestor is
+# the node the animation drives (the limb pivot / recoiling receiver), so the collider
+# (and its tooltip) MOVES WITH THE ANIMATION instead of staying behind.
 func _add_mesh_member_colliders(instance: Node) -> void:
-	var groups: Dictionary = {}   # group -> AABB (instance-local)
-	var inv := (instance as Node3D).global_transform.affine_inverse()
+	var is_weapon := _current_category_key() == "weapons"
+	var members: Dictionary = {}   # group -> {"label": String, "nodes": Array}
 	for node in instance.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.mesh == null or not mi.is_visible_in_tree():
 			continue
-		var g := BodyParts.group_of(mi.name)
+		var g := WeaponParts.group_of(mi.name) if is_weapon else BodyParts.group_of(mi.name)
 		if g == "":
 			continue
-		var box := (inv * mi.global_transform) * mi.get_aabb()
-		groups[g] = box if not groups.has(g) else (groups[g] as AABB).merge(box)
+		if not members.has(g):
+			var lab: String = WeaponParts.label_of(g) if is_weapon else BodyParts.label_of(g)
+			members[g] = {"label": lab, "nodes": []}
+		members[g]["nodes"].append(mi)
 
-	var holder := Node3D.new()
-	holder.name = "MemberColliders"
-	instance.add_child(holder)
-	for g in groups:
-		var aabb: AABB = (groups[g] as AABB).grow(0.04)
+	for g in members:
+		var nodes: Array = members[g]["nodes"]
+		var anchor := _lca(nodes, instance)
+		if anchor == null:
+			anchor = instance
+		# AABB in the anchor's local space: the meshes are rigid under their animated
+		# pivot, so this is pose-independent and stays glued to the moving member.
+		var inv := (anchor as Node3D).global_transform.affine_inverse()
+		var aabb := AABB()
+		var first := true
+		for n in nodes:
+			var mi := n as MeshInstance3D
+			var box := (inv * mi.global_transform) * mi.get_aabb()
+			aabb = box if first else aabb.merge(box)
+			first = false
+		aabb = aabb.grow(0.04)
+
 		var body := StaticBody3D.new()
 		body.name = "Collider_%s" % g
 		body.collision_layer = 64
 		body.collision_mask = 0
-		body.set_meta("member_label", BodyParts.label_of(g))
-		body.add_child(LimbColliders.make_member_shape(g, aabb))
-		holder.add_child(body)
+		body.set_meta("member_label", members[g]["label"])
+		if is_weapon:
+			# Barrel → capsule along its length; receiver/grip/stock/mag → box.
+			var kind := "capsule" if g == WeaponParts.BARREL else "box"
+			body.add_child(LimbColliders.make_shape(kind, aabb))
+		else:
+			body.add_child(LimbColliders.make_member_shape(g, aabb))
+		anchor.add_child(body)
+
+
+# Lowest common ancestor of `nodes` within `root` (inclusive). For a single node it
+# is the node itself; used to anchor a member's collider to the node the animation
+# actually moves.
+func _lca(nodes: Array, root: Node) -> Node:
+	if nodes.is_empty():
+		return root
+	var common: Array = _ancestor_chain(nodes[0], root)
+	for i in range(1, nodes.size()):
+		var chain: Array = _ancestor_chain(nodes[i], root)
+		var k := 0
+		while k < common.size() and k < chain.size() and common[k] == chain[k]:
+			k += 1
+		common = common.slice(0, k)
+	return common[-1] if not common.is_empty() else root
+
+
+# Chain of nodes from `root` down to `node` (inclusive), root first.
+func _ancestor_chain(node: Node, root: Node) -> Array:
+	var chain: Array = []
+	var n: Node = node
+	while n != null:
+		chain.push_front(n)
+		if n == root:
+			break
+		n = n.get_parent()
+	return chain
 
 
 # Center and scale a model so it fits nicely in front of the camera, regardless

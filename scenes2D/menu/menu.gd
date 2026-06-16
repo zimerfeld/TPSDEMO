@@ -27,8 +27,7 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
 
 func _ready() -> void:
-	# A tela menu (e seu robô decorativo) nunca exibe overlays/tooltips de debug —
-	# incluindo os labels de membro do modelo — independentemente das configurações.
+	# O menu principal não deve receber overlays/tooltips de debug.
 	add_to_group("no_debug_overlay")
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
 

@@ -120,6 +120,19 @@ text = "Parte:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
+[node name="AnimationRow" type="HBoxContainer" parent="UI/Selectors"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Selectors/AnimationRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Animação:"
+
+[node name="cboAnimations" type="OptionButton" parent="UI/Selectors/AnimationRow"]
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
 [node name="StatusLabel" type="Label" parent="UI/Selectors"]
 custom_minimum_size = Vector2(486, 0)
 layout_mode = 2
