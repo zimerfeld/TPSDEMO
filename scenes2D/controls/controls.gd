@@ -9,6 +9,10 @@ signal replace_main_scene(resource: PackedScene)
 
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 
+# Placeholder shown as the first, default-selected option of the dropdown. Picking
+# it means "nothing chosen yet": the preview is cleared.
+const SELECT_LABEL: String = "Selecione..."
+
 # Raiz da biblioteca de controles 2D. Cada subpasta <nome>/ com um <nome>.tscn é
 # um controle previewável (espelha o scanner da tela Models para a library3D).
 const CONTROLS_ROOT: String = "res://scenes2D/controls2D"
@@ -25,14 +29,16 @@ func _ready() -> void:
 	_controls = _scan_controls()
 
 	cbo_control.clear()
+	cbo_control.add_item(SELECT_LABEL)
 	for entry in _controls:
 		cbo_control.add_item(entry["name"])
 	cbo_control.item_selected.connect(_on_control_selected)
 
-	if not _controls.is_empty():
-		cbo_control.select(0)
-		_on_control_selected(0)
-	else:
+	# Start blank: the dropdown shows "Selecione..." and nothing is previewed until
+	# the user picks a control.
+	cbo_control.select(0)
+	_on_control_selected(0)
+	if _controls.is_empty():
 		status_label.text = "Nenhum controle em %s." % CONTROLS_ROOT
 
 
@@ -52,12 +58,18 @@ func _scan_controls() -> Array:
 
 
 # Mostra o controle selecionado: limpa o preview e instancia a cena no SubViewport.
+# Índice 0 é o placeholder "Selecione..." (nada previsualizado); controles reais
+# começam no índice 1 (mapeando para _controls[index - 1]).
 func _on_control_selected(index: int) -> void:
 	for child in preview.get_children():
 		child.queue_free()
-	if index < 0 or index >= _controls.size():
+	if index <= 0:
+		status_label.text = "Selecione um controle."
 		return
-	var entry: Dictionary = _controls[index]
+	var control_index := index - 1
+	if control_index >= _controls.size():
+		return
+	var entry: Dictionary = _controls[control_index]
 	var scene: PackedScene = load(entry["path"])
 	if scene == null:
 		status_label.text = "Falha ao carregar: %s" % entry["name"]

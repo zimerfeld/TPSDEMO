@@ -1,3 +1,4 @@
+class_name LimbColliders
 extends Node3D
 ## Colliders 3D NATIVOS (StaticBody3D + CollisionShape3D), UM por MEMBRO grande.
 ## Grupos: CABEÇA, TRONCO, BRAÇO (D/E), PERNA (D/E).
@@ -108,6 +109,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 			var weights: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
 			if verts.is_empty() or bones.is_empty() or weights.is_empty():
 				continue
+			@warning_ignore("integer_division")
 			var per := bones.size() / verts.size()  # influências por vértice (4 ou 8)
 			for vi in verts.size():
 				var best_w := 0.0
@@ -179,15 +181,53 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	var mult: float = HEAD_MULTIPLIER if group == BodyParts.HEAD else BODY_MULTIPLIER
 	body.set_meta("group", group)
 	body.set_meta("damage_multiplier", mult)
+	body.set_meta("member_label", BodyParts.label_of(group))
 	body.set_meta("character", _character)
 
-	var center := box_aabb.position + box_aabb.size * 0.5
-	var box := BoxShape3D.new()
-	box.size = box_aabb.size
-	var shape := CollisionShape3D.new()
-	shape.shape = box
-	shape.position = center
-	body.add_child(shape)
+	body.add_child(make_member_shape(group, box_aabb))
 
 	att.add_child(body)
 	_bodies.append(body)
+
+
+# Pick the geometry that best wraps a member from its (padded) AABB: a SPHERE for
+# the head, a BOX for the torso, and a CAPSULE aligned to the long axis for the
+# elongated limbs (arms/legs). Returns a positioned/oriented CollisionShape3D.
+# Static so the model browser can reuse it for non-skeleton rigs (criatura).
+static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D:
+	var size := box_aabb.size
+	var center := box_aabb.position + size * 0.5
+	var shape := CollisionShape3D.new()
+	shape.position = center
+
+	if group == BodyParts.HEAD:
+		var sphere := SphereShape3D.new()
+		sphere.radius = 0.5 * maxf(size.x, maxf(size.y, size.z))
+		shape.shape = sphere
+		return shape
+
+	if group == BodyParts.TORSO:
+		var box := BoxShape3D.new()
+		box.size = size
+		shape.shape = box
+		return shape
+
+	# Limbs → capsule along the longest axis (0=x, 1=y, 2=z).
+	var long_axis := 0
+	if size.y >= size.x and size.y >= size.z:
+		long_axis = 1
+	elif size.z >= size.x and size.z >= size.y:
+		long_axis = 2
+	var others := [size.x, size.y, size.z]
+	others.remove_at(long_axis)
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = 0.5 * maxf(others[0], others[1])
+	# CapsuleShape3D.height is the full length including the two hemisphere caps.
+	capsule.height = maxf(size[long_axis], 2.0 * capsule.radius)
+	shape.shape = capsule
+	# The capsule extends along its local Y; rotate so Y maps onto the long axis.
+	if long_axis == 0:
+		shape.rotation = Vector3(0.0, 0.0, PI * 0.5)   # Y -> X
+	elif long_axis == 2:
+		shape.rotation = Vector3(PI * 0.5, 0.0, 0.0)   # Y -> Z
+	return shape

@@ -4,6 +4,11 @@ signal replace_main_scene
 
 const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
 
+# Placeholder shown as the first, default-selected option of the resolution
+# dropdown. Picking it leaves the window untouched; it stays the default until a
+# saved resolution matches a preset, in which case that preset is selected instead.
+const SELECT_LABEL: String = "Selecione..."
+
 # Resolution presets for the "Resolução Vídeo" dropdown. Selecting one resizes
 # the game window to that exact pixel size immediately (see
 # _on_video_resolution_selected).
@@ -140,15 +145,18 @@ func _ready() -> void:
 
 func _populate_video_resolutions() -> void:
 	video_resolution_dropdown.clear()
+	# Index 0 is the "Selecione..." placeholder; presets start at index 1 (mapping
+	# to VIDEO_RESOLUTIONS[index - 1]).
+	video_resolution_dropdown.add_item(SELECT_LABEL)
 	for res in VIDEO_RESOLUTIONS:
 		video_resolution_dropdown.add_item(res["nome"])
 	# Load the saved resolution like every other setting. If none was saved (or it
-	# no longer matches a preset), fall back to the first preset as the default.
+	# no longer matches a preset), fall back to the "Selecione..." placeholder.
 	var saved: Vector2i = Settings.config_file.get_value("video", "resolution", Vector2i.ZERO)
 	var matched := 0
 	for i in range(VIDEO_RESOLUTIONS.size()):
 		if VIDEO_RESOLUTIONS[i]["largura"] == saved.x and VIDEO_RESOLUTIONS[i]["altura"] == saved.y:
-			matched = i
+			matched = i + 1
 			break
 	video_resolution_dropdown.selected = matched
 	_current_resolution_index = matched
@@ -384,9 +392,14 @@ func _on_apply_pressed() -> void:
 
 
 func _on_video_resolution_selected(index: int) -> void:
-	if index < 0 or index >= VIDEO_RESOLUTIONS.size():
-		return
 	if index == _current_resolution_index:
+		return
+	if index <= 0:
+		# "Selecione..." placeholder: leave the window resolution untouched.
+		_current_resolution_index = index
+		return
+	var res_index := index - 1
+	if res_index >= VIDEO_RESOLUTIONS.size():
 		return
 	# Ask for confirmation in a centered floating window before changing the
 	# resolution; the dropdown reverts to the previous choice if the user cancels.
@@ -396,9 +409,9 @@ func _on_video_resolution_selected(index: int) -> void:
 	dlg.get_ok_button().text = "Sim"
 	dlg.get_cancel_button().text = "Não"
 	dlg.confirmed.connect(func() -> void:
-		_apply_video_resolution(index)
+		_apply_video_resolution(res_index)
 		_current_resolution_index = index
-		var res: Dictionary = VIDEO_RESOLUTIONS[index]
+		var res: Dictionary = VIDEO_RESOLUTIONS[res_index]
 		Settings.config_file.set_value("video", "resolution", Vector2i(res["largura"], res["altura"]))
 		Settings.save_settings()
 		dlg.queue_free()

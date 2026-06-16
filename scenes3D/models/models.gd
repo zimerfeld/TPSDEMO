@@ -4,12 +4,14 @@ signal replace_main_scene(resource: PackedScene)
 
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 
-# First option in the prefix dropdown: no filtering, show every model in the
-# category. Selecting a real prefix narrows the model list to that group.
-const ALL_PREFIXES_LABEL: String = "Todos"
+# Placeholder shown as the first, default-selected option of every dropdown.
+# Picking it means "nothing chosen yet": dependent dropdowns reset to this same
+# placeholder and the preview is cleared. In the prefix dropdown it doubles as
+# "no filter" (it replaced the old "Todos"), so it lists every model.
+const SELECT_LABEL: String = "Selecione..."
 
-# First option in the part dropdown: preview the assembled model with every piece
-# in place. Selecting a real part below it isolates that single distinct mesh.
+# Selectable option in the part dropdown (right below "Selecione...") that previews
+# the whole assembled model. Picking a real part below it isolates one distinct mesh.
 const WHOLE_MODEL_LABEL: String = "Modelo completo"
 
 # Root of the 3D model library. Models live in res://library3D/<tipo>/<modelo>/
@@ -34,6 +36,15 @@ const DRAG_SENSITIVITY: float = 0.01
 # Auto-rotation speed in radians per second when the toggle is on.
 const AUTO_ROTATE_SPEED: float = 0.6
 
+# Mouse-wheel zoom: the camera slides along its view axis toward/away from the
+# model. ZOOM_STEP is how much one wheel notch changes the target distance;
+# ZOOM_MIN/MAX clamp it; ZOOM_SMOOTH is the per-second approach rate that makes
+# the move glide instead of snapping.
+const ZOOM_STEP: float = 0.6
+const ZOOM_MIN: float = 1.2
+const ZOOM_MAX: float = 12.0
+const ZOOM_SMOOTH: float = 10.0
+
 # Built at _ready by scanning LIBRARY_ROOT. Each entry:
 #   {"key": String, "label": String, "models": Array[{"name", "path"}]}
 var _categories: Array = []
@@ -50,6 +61,9 @@ var _categories: Array = []
 var _model_scene: PackedScene = null
 var _display_scene: PackedScene = null
 var _mesh_catalog: Array = []
+# Resource path of the currently previewed model, used to look up per-character
+# data such as the head bone(s) that BodyParts can't infer from the name alone.
+var _current_model_path: String = ""
 
 # The models of the current category that pass the active prefix filter, in the
 # same order as the Model dropdown — so the dropdown index maps straight back to
@@ -79,6 +93,12 @@ var _play_animation: bool = false
 var _play_audio: bool = false
 
 @onready var model_holder: Node3D = $ModelHolder
+@onready var camera: Camera3D = $Camera3D
+
+# Mouse-wheel zoom state: the camera's distance from the model along its local Z.
+# _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
+var _zoom: float = 0.0
+var _zoom_target: float = 0.0
 @onready var cbo_category: OptionButton = $UI/Selectors/CategoryRow/cboCategory
 @onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
@@ -92,9 +112,12 @@ var _play_audio: bool = false
 
 
 func _ready() -> void:
+	_zoom = camera.position.z
+	_zoom_target = _zoom
 	_categories = _scan_library()
 
 	cbo_category.clear()
+	cbo_category.add_item(SELECT_LABEL)
 	for category in _categories:
 		cbo_category.add_item(category["label"])
 	cbo_category.item_selected.connect(_on_category_selected)
@@ -113,9 +136,10 @@ func _ready() -> void:
 	effects_toggle.button_pressed = _show_effects
 	effects_toggle.toggled.connect(_on_effects_toggled)
 
-	if not _categories.is_empty():
-		cbo_category.select(0)
-		_on_category_selected(0)
+	# Start blank: every dropdown shows "Selecione..." and nothing is previewed
+	# until the user drills down Categoria -> Prefixo -> Modelo -> Parte.
+	cbo_category.select(0)
+	_on_category_selected(0)
 
 
 func _process(delta: float) -> void:
@@ -125,17 +149,29 @@ func _process(delta: float) -> void:
 		_yaw += delta * AUTO_ROTATE_SPEED
 	# Rebuild rotation from yaw/pitch with roll fixed at 0 (orthogonal axes only).
 	model_holder.rotation = Vector3(_pitch, _yaw, 0.0)
+	# Glide the camera toward the wheel-set zoom distance instead of snapping.
+	if not is_equal_approx(_zoom, _zoom_target):
+		_zoom = lerpf(_zoom, _zoom_target, minf(ZOOM_SMOOTH * delta, 1.0))
+		camera.position.z = _zoom
 
 
+# Category dropdown index 0 is the "Selecione..." placeholder; real categories
+# start at index 1 (mapping to _categories[index - 1]). Selecting the placeholder
+# blanks the whole dependent chain (prefix, model, part) and clears the preview.
 func _on_category_selected(index: int) -> void:
-	_populate_prefixes(index)
+	if index <= 0:
+		_reset_prefixes()
+		_reset_models()
+		status_label.text = "Selecione uma categoria."
+		return
+	_populate_prefixes(index - 1)
 	_populate_models()
 
 
-# Build the prefix dropdown for a category: "Todos" plus each distinct model
-# prefix (the first underscore-separated token, e.g. "core" for core /
-# core_out_light). The synthetic "Level Base" entry has no prefix and only shows
-# up under "Todos". Selecting resets the filter to "Todos".
+# Build the prefix dropdown for a category: "Selecione..." (no filter, every model
+# in the category) plus each distinct model prefix (the first underscore-separated
+# token, e.g. "core" for core / core_out_light). Selecting resets the filter to
+# none. The placeholder carries an empty metadata string so it means "no filter".
 func _populate_prefixes(category_index: int) -> void:
 	var models: Array = _categories[category_index]["models"]
 	var seen: Dictionary = {}
@@ -148,11 +184,21 @@ func _populate_prefixes(category_index: int) -> void:
 	prefixes.sort()
 
 	cbo_prefix.clear()
-	cbo_prefix.add_item(ALL_PREFIXES_LABEL)
+	cbo_prefix.add_item(SELECT_LABEL)
 	cbo_prefix.set_item_metadata(0, "")
 	for prefix in prefixes:
 		cbo_prefix.add_item(_prettify(prefix))
 		cbo_prefix.set_item_metadata(cbo_prefix.item_count - 1, prefix)
+	cbo_prefix.select(0)
+	_prefix_filter = ""
+
+
+# Reset the prefix dropdown to just the "Selecione..." placeholder (no category
+# chosen, so there is nothing to filter).
+func _reset_prefixes() -> void:
+	cbo_prefix.clear()
+	cbo_prefix.add_item(SELECT_LABEL)
+	cbo_prefix.set_item_metadata(0, "")
 	cbo_prefix.select(0)
 	_prefix_filter = ""
 
@@ -162,56 +208,97 @@ func _on_prefix_selected(index: int) -> void:
 	_populate_models()
 
 
-# Fill the Model dropdown with the current category's models that match the
-# active prefix filter, then select the first one.
+# Fill the Model dropdown with "Selecione..." plus the current category's models
+# that match the active prefix filter. The placeholder stays selected, so no model
+# is previewed until the user picks one — and the Part dropdown is reset to blank.
 func _populate_models() -> void:
 	cbo_models.clear()
+	cbo_models.add_item(SELECT_LABEL)
 	_filtered_models = []
-	var models: Array = _categories[cbo_category.selected]["models"]
+	var cat_index := cbo_category.selected - 1
+	if cat_index < 0:
+		cbo_models.select(0)
+		_reset_meshes_and_preview()
+		status_label.text = "Selecione uma categoria."
+		return
+
+	var models: Array = _categories[cat_index]["models"]
 	for entry in models:
 		if _prefix_filter != "" and entry.get("prefix", "") != _prefix_filter:
 			continue
 		_filtered_models.append(entry)
 		cbo_models.add_item(entry["name"])
 
-	if cbo_models.item_count > 0:
-		cbo_models.select(0)
-		_on_model_selected(0)
-	else:
-		_model_scene = null
-		_display_scene = null
-		_mesh_catalog = []
-		_clear_preview()
-		cbo_meshes.clear()
+	cbo_models.select(0)
+	_reset_meshes_and_preview()
+	if _filtered_models.is_empty():
 		status_label.text = "Nenhum modelo neste grupo."
+	else:
+		status_label.text = "Selecione um modelo."
 
 
-# Selecting a model previews the whole thing assembled (every related object in
-# place) and rebuilds the Part dropdown: "Modelo completo" first, then each
-# distinct mesh so the user can drill into a single piece afterwards.
+# Reset the Model dropdown to just the "Selecione..." placeholder and clear the
+# parts dropdown and preview below it.
+func _reset_models() -> void:
+	cbo_models.clear()
+	cbo_models.add_item(SELECT_LABEL)
+	cbo_models.select(0)
+	_filtered_models = []
+	_reset_meshes_and_preview()
+
+
+# Reset the Part dropdown to just the "Selecione..." placeholder and clear the
+# previewed mesh/model and its cached scenes.
+func _reset_meshes_and_preview() -> void:
+	_model_scene = null
+	_display_scene = null
+	_mesh_catalog = []
+	cbo_meshes.clear()
+	cbo_meshes.add_item(SELECT_LABEL)
+	cbo_meshes.select(0)
+	_clear_preview()
+
+
+# Model dropdown index 0 is the "Selecione..." placeholder; real models start at
+# index 1 (mapping to _filtered_models[index - 1]). Selecting a real model rebuilds
+# the Part dropdown ("Selecione...", then "Modelo completo", then each distinct
+# mesh) but leaves the placeholder selected, so nothing previews until a part is
+# picked. Selecting the placeholder blanks the part dropdown and the preview.
 func _on_model_selected(index: int) -> void:
-	var model: Dictionary = _filtered_models[index]
+	if index <= 0:
+		_reset_meshes_and_preview()
+		status_label.text = "Selecione um modelo."
+		return
+
+	var model: Dictionary = _filtered_models[index - 1]
+	_current_model_path = model["path"]
 	_model_scene = load(model["path"])
 	_display_scene = load(model.get("display_path", model["path"]))
 	_mesh_catalog = _build_mesh_catalog(_model_scene)
 
 	cbo_meshes.clear()
+	cbo_meshes.add_item(SELECT_LABEL)
 	cbo_meshes.add_item(WHOLE_MODEL_LABEL)
 	for entry in _mesh_catalog:
 		cbo_meshes.add_item(entry["label"])
 	cbo_meshes.select(0)
-	_on_mesh_selected(0)
+	_clear_preview()
+	status_label.text = "Selecione uma parte."
 
 
-# Part dropdown index 0 is the assembled model; indices 1.. map to the distinct
-# meshes in _mesh_catalog (shifted by the leading "Modelo completo" entry).
+# Part dropdown index 0 is the "Selecione..." placeholder (nothing previewed),
+# index 1 is the assembled "Modelo completo", and indices 2.. map to the distinct
+# meshes in _mesh_catalog (shifted by the two leading entries).
 func _on_mesh_selected(index: int) -> void:
 	if index <= 0:
+		_clear_preview()
+		status_label.text = "Selecione uma parte."
+	elif index == 1:
 		_preview_whole_model()
 		status_label.text = "Modelo completo — %d parte(s)" % _mesh_catalog.size()
 	else:
-		_preview_mesh(index - 1)
-		status_label.text = "Parte: %s" % _mesh_catalog[index - 1]["label"]
+		_preview_mesh(index - 2)
+		status_label.text = "Parte: %s" % _mesh_catalog[index - 2]["label"]
 
 
 func _on_rotate_toggled(pressed: bool) -> void:
@@ -366,6 +453,14 @@ func _build_mesh_catalog(scene: PackedScene) -> Array:
 			var has_collision := not mesh_instance.find_children(
 				"*", "CollisionShape3D", true, false
 			).is_empty()
+			# Capture the instance's materials so a single-part preview keeps its
+			# look. Some models (criatura_alada) paint their meshes via
+			# material_override / per-surface overrides on the INSTANCE rather than
+			# baking them into the Mesh surfaces — without this the isolated part
+			# would render untextured.
+			var surface_overrides: Array = []
+			for s in mesh_instance.mesh.get_surface_count():
+				surface_overrides.append(mesh_instance.get_surface_override_material(s))
 			by_mesh[id] = entries.size()
 			entries.append({
 				"mesh": mesh_instance.mesh,
@@ -373,6 +468,8 @@ func _build_mesh_catalog(scene: PackedScene) -> Array:
 				"count": 0,
 				"has_collision": has_collision,
 				"skinned": mesh_instance.skin != null,
+				"material_override": mesh_instance.material_override,
+				"surface_overrides": surface_overrides,
 			})
 		entries[by_mesh[id]]["count"] += 1
 	instance.free()
@@ -435,7 +532,14 @@ func _preview_mesh(index: int) -> void:
 	if index < 0 or index >= _mesh_catalog.size():
 		return
 	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.mesh = _mesh_catalog[index]["mesh"]
+	var entry: Dictionary = _mesh_catalog[index]
+	mesh_instance.mesh = entry["mesh"]
+	# Re-apply the materials captured from the source instance so painted-by-
+	# override models (e.g. criatura_alada) keep their texture in the part view.
+	mesh_instance.material_override = entry.get("material_override", null)
+	var surface_overrides: Array = entry.get("surface_overrides", [])
+	for s in surface_overrides.size():
+		mesh_instance.set_surface_override_material(s, surface_overrides[s])
 	model_holder.add_child(mesh_instance)
 	_fit_to_view(mesh_instance)
 
@@ -458,6 +562,11 @@ func _preview_whole_model() -> void:
 	var av_state := _suppress_autoplay(instance)
 	model_holder.add_child(instance)
 	_apply_av_playback(av_state)
+	if _show_colliders:
+		# Build the per-member colliders (best-fit sphere/box/capsule) so they show
+		# up green — the preview strips the gameplay script that normally builds
+		# them, so we construct them here just for display.
+		_add_member_colliders(instance)
 	if instance is Node3D:
 		_fit_to_view(instance as Node3D)
 	if _show_colliders:
@@ -536,6 +645,71 @@ func _add_collider_gizmos(instance: Node) -> void:
 		gizmo.mesh = shape_node.shape.get_debug_mesh()
 		gizmo.material_override = mat
 		shape_node.add_child(gizmo)
+
+
+# Per-character: head bone(s) BodyParts can't infer from the name (it excludes
+# "eye"/"mouth"), so the model browser names them explicitly for the preview.
+const _MODEL_HEAD_BONES := {
+	"red_robot": ["mouth_eyes"],
+}
+
+
+# Build best-fit colliders that wrap each body MEMBER (sphere head, box torso,
+# capsule limbs) so they render green via the gizmos above. The gameplay script
+# that normally builds these is stripped from the preview, so we build them here.
+# Skeleton characters reuse the shared LimbColliders builder; the criatura (no
+# skeleton) is grouped by mesh-node name instead.
+func _add_member_colliders(instance: Node) -> void:
+	var skels: Array = instance.find_children("*", "Skeleton3D", true, false)
+	if not skels.is_empty():
+		var lc := LimbColliders.new()
+		lc.hitbox_layer = 64        # own layer — does not touch damage layers (16/32)
+		lc.padding = 0.1            # small gap around the mesh (~the "10px" margin)
+		lc.head_bone_names = _head_bones_for_current()
+		instance.add_child(lc)
+		lc.build_for(skels[0] as Skeleton3D)
+		return
+	_add_mesh_member_colliders(instance)
+
+
+func _head_bones_for_current() -> Array[String]:
+	var out: Array[String] = []
+	for key in _MODEL_HEAD_BONES:
+		if _current_model_path.contains(key):
+			for b in _MODEL_HEAD_BONES[key]:
+				out.append(b)
+			break
+	return out
+
+
+# Member colliders for a rig that has no Skeleton3D (criatura_alada): group the
+# visible mesh nodes by BodyParts (head/torso/legs from their names) and wrap each
+# group with the same best-fit geometry, in the instance's local space.
+func _add_mesh_member_colliders(instance: Node) -> void:
+	var groups: Dictionary = {}   # group -> AABB (instance-local)
+	var inv := (instance as Node3D).global_transform.affine_inverse()
+	for node in instance.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if mi.mesh == null or not mi.is_visible_in_tree():
+			continue
+		var g := BodyParts.group_of(mi.name)
+		if g == "":
+			continue
+		var box := (inv * mi.global_transform) * mi.get_aabb()
+		groups[g] = box if not groups.has(g) else (groups[g] as AABB).merge(box)
+
+	var holder := Node3D.new()
+	holder.name = "MemberColliders"
+	instance.add_child(holder)
+	for g in groups:
+		var aabb: AABB = (groups[g] as AABB).grow(0.1)
+		var body := StaticBody3D.new()
+		body.name = "Collider_%s" % g
+		body.collision_layer = 64
+		body.collision_mask = 0
+		body.set_meta("member_label", BodyParts.label_of(g))
+		body.add_child(LimbColliders.make_member_shape(g, aabb))
+		holder.add_child(body)
 
 
 # Center and scale a model so it fits nicely in front of the camera, regardless
@@ -617,6 +791,14 @@ func _input(input_event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		_dragging = event.pressed
+	elif event is InputEventMouseButton and event.pressed and \
+			event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		# Wheel forward -> approach the model (smaller distance).
+		_zoom_target = clampf(_zoom_target - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+	elif event is InputEventMouseButton and event.pressed and \
+			event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		# Wheel backward -> pull away from the model (larger distance).
+		_zoom_target = clampf(_zoom_target + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	elif event is InputEventMouseMotion and _dragging:
 		var motion := event as InputEventMouseMotion
 		_yaw += motion.relative.x * DRAG_SENSITIVITY
