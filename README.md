@@ -128,16 +128,59 @@ reusable 3D asset library under `library3D/`:
 Screen flow:
 
 ```
-menu ─┬─ chooseplayer ─► levels ─► level_1 / level_2 / level_base
+menu ─┬─ play ───────► chooseplayer ─► levels ─► level_1 / level_2 / level_base
+      ├─ play online ─► playonline ──► level_base
       ├─ settings
-      ├─ developer ─┬─ models       (3D model viewer for library3D assets)
-      │             └─ controls     (2D controls viewer for controls2D widgets)
-      ├─ cyberpunk hud              (assembled HUD preview)
-      └─ play online ─► level_base
+      ├─ developer ──┬─ models    (3D model viewer for library3D assets)
+      │              └─ controls  (2D controls viewer for controls2D widgets)
+      └─ quit
 ```
 
-The `developer` screen and the `settings` "Debug" tab toggle the `DebugOverlay`
-(FPS HUD, ground grid, and per-node TYPE/ID tooltips on 2D and 3D nodes).
+`main.gd` is the router: each screen emits `replace_main_scene` and `main` swaps it
+in, so the back buttons (and <kbd>Escape</kbd>) just navigate to the previous screen
+the same way. The `settings` screen applies and persists every change immediately (no
+"Apply" button) and the `menu` re-applies all stored settings on entry. The
+`developer` screen and the `settings` "Debug" tab toggle the `DebugOverlay` (FPS HUD,
+ground grid, and per-node TYPE/ID tooltips on 2D and 3D nodes). The `cyberpunkhud`
+scene is a standalone assembled-HUD preview, not part of this navigation flow.
+
+Folder and subfolder layout:
+
+```
+TPSDEMO/
+├─ scenes2D/             # 2D screens, UI and reusable widgets
+│  ├─ main/              # entry scene + router (main.gd swaps screens in)
+│  ├─ menu/              # main menu
+│  ├─ chooseplayer/      # character picker (3D preview)
+│  ├─ levels/            # level selector
+│  ├─ settings/          # settings screen + Settings autoload (config.gd)
+│  ├─ developer/         # developer tools menu (debug toggles, links to viewers)
+│  ├─ playonline/        # host/connect online screen
+│  ├─ controls/          # 2D widget viewer (analog of the Models screen)
+│  └─ controls2D/        # reusable HUD widgets: crosshair, minimap_panel, vitals_panel,
+│                        #   ability_bar, pause_menu, scanlines, log_feed, cyberpunk_hud, …
+├─ scenes3D/             # 3D levels and tools
+│  ├─ level_1/ level_2/ level_base/   # playable levels
+│  └─ models/            # 3D model viewer/inspector for the library3D assets
+├─ library3D/            # reusable 3D asset library, organized by type
+│  ├─ characters/        # players + enemies (red_robot, criatura_alada, demonio_*,
+│  │                     #   mecha07, robot_01..07_*_{infantil,adulto})
+│  ├─ propulsores/       # propulsion props (forklift)
+│  ├─ structures/        # static structures (door, core, lights, props, structure)
+│  ├─ weapons/           # weapons (pistola_infantil, bomb)
+│  ├─ geometry/          # shared meshes/materials (.tres)
+│  └─ textures/          # shared textures
+├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd,
+│                        #   weapon_parts.gd + shared blast/shadow assets
+├─ autoload/             # global singletons: crash_handler, player_selection, debug_overlay
+│                        #   (Settings lives in scenes2D/settings/config.gd)
+├─ ui/  themes/          # shared Theme resources (ui_theme.tres, cyberpunk.tres)
+├─ tools/  _gen/         # headless GDScript generators for 3D assets (gen_*.gd)
+├─ addons/               # Godot editor plugins (godot_ai — the MCP server)
+├─ OBSIDIAN/             # project documentation vault (mirrors this README)
+├─ screenshots/          # captured preview images
+└─ project.godot · default_bus_layout.tres · file_format.sh   # project config · audio buses · formatter
+```
 
 ## Controls
 
