@@ -838,6 +838,7 @@ material_override = SubResource("StandardMaterial3D_73lov")
 mesh = SubResource("CylinderMesh_npaqo")
 
 [node name="Sound" type="AudioStreamPlayer3D" parent="." unique_id=240668544]
+bus = &"SFX"
 stream = SubResource("AudioStreamWAV_b68wq")
 unit_size = 8.0
 

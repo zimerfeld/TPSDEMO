@@ -164,17 +164,17 @@ text = "Animação"
 [node name="AudioToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Som"
+text = "Audio"
+
+[node name="FalasToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Falas"
 
 [node name="CollidersToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisores"
-
-[node name="EffectsToggle" type="CheckButton" parent="UI/Toggles"]
-layout_mode = 2
-size_flags_horizontal = 8
-text = "Efeitos de gameplay"
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1

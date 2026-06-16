@@ -100,6 +100,16 @@ func _line_visible(kind: String) -> bool:
 	return false
 
 
+func _has_any_2d_line_enabled() -> bool:
+	return _is_show_type_on() or _is_show_name_on() or _is_show_id_on()
+
+
+func _line_visible_2d(kind: String) -> bool:
+	if _has_any_2d_line_enabled():
+		return _line_visible(kind)
+	return kind == "name"
+
+
 func _is_show_grid_on() -> bool:
 	return Settings.config_file.get_value("game", "show_grid", false)
 
@@ -207,10 +217,14 @@ func _process(_delta: float) -> void:
 			if tooltip.size.x > 0 and tip_x + tooltip.size.x > vp_size.x:
 				tip_x = rect.position.x - tooltip.size.x
 			tooltip.position = Vector2(tip_x, rect.position.y)
-			tooltip.visible = shown
-			entry.type_lbl.visible = _is_show_type_on()
-			entry.name_lbl.visible = _is_show_name_on()
-			entry.id_lbl.visible = _is_show_id_on()
+			entry.type_lbl.visible = _line_visible_2d("type")
+			entry.name_lbl.visible = _line_visible_2d("name")
+			entry.id_lbl.visible = _line_visible_2d("id")
+			tooltip.visible = shown and (
+				entry.type_lbl.visible
+				or entry.name_lbl.visible
+				or entry.id_lbl.visible
+			)
 		else:
 			if is_instance_valid(tooltip):
 				tooltip.queue_free()
@@ -422,9 +436,9 @@ func _add_2d(ctrl: Control) -> void:
 	var type_lbl := _make_overlay_label("TYPE: %s" % ctrl.get_class())
 	var name_lbl := _make_overlay_label("Name: %s" % ctrl.name)
 	var id_lbl := _make_overlay_label("ID: %d" % id)
-	type_lbl.visible = _is_show_type_on()
-	name_lbl.visible = _is_show_name_on()
-	id_lbl.visible = _is_show_id_on()
+	type_lbl.visible = _line_visible_2d("type")
+	name_lbl.visible = _line_visible_2d("name")
+	id_lbl.visible = _line_visible_2d("id")
 	vbox.add_child(type_lbl)
 	vbox.add_child(name_lbl)
 	vbox.add_child(id_lbl)

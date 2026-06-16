@@ -27,8 +27,6 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
 
 func _ready() -> void:
-	# O menu principal não deve receber overlays/tooltips de debug.
-	add_to_group("no_debug_overlay")
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
 
 	if DisplayServer.get_name() == "headless":

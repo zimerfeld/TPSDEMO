@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://c80nbk7u633n6"]
 
 [ext_resource type="Script" uid="uid://4pwshyfo5i0d" path="res://scenes2D/menu/menu.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://gnsovrtic7g4" path="res://scenes2D/menu/experiment.hdr" id="2"]
+[ext_resource type="Texture2D" path="res://scenes2D/menu/menu_surreal_training_bg.png" id="2"]
 [ext_resource type="AudioStream" uid="uid://bfq26n228ipa" path="res://scenes2D/menu/menu_intro_music.ogg" id="3"]
 [ext_resource type="Texture2D" uid="uid://c6gsd2mdmea8w" path="res://scenes2D/menu/floor.png" id="4"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="5"]
@@ -48,7 +48,7 @@ mouse_filter = 2
 texture = ExtResource("2")
 expand_mode = 1
 stretch_mode = 6
-modulate = Color(0.58, 0.78, 1, 0.2)
+modulate = Color(0.92, 0.97, 1, 0.98)
 
 [node name="BackdropVeil" type="ColorRect" parent="UI"]
 layout_mode = 1
@@ -58,7 +58,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0156863, 0.0313726, 0.0588235, 0.9)
+color = Color(0.0156863, 0.0313726, 0.0588235, 0.62)
 
 [node name="TopHaze" type="ColorRect" parent="UI"]
 layout_mode = 1
@@ -68,7 +68,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0823529, 0.270588, 0.372549, 0.12)
+color = Color(0.0823529, 0.270588, 0.372549, 0.18)
 
 [node name="Spotlight" type="TextureRect" parent="UI"]
 layout_mode = 1
@@ -186,21 +186,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0.27451, 0.937255, 1, 0.72)
-
-[node name="MenuPlateAccentBottom" type="ColorRect" parent="UI"]
-layout_mode = 1
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = 201.0
-offset_right = 230.0
-offset_bottom = 204.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(1, 0.745098, 0.447059, 0.7)
 
 [node name="VBox" type="VBoxContainer" parent="UI" unique_id=2018224844]
 layout_mode = 1

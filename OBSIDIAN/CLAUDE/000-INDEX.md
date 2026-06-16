@@ -16,6 +16,7 @@
 | [[sistemas/sistema-de-vida]] | HP, barra de vida, respawn |
 | [[sistemas/dano-localizado]] | Dano por arma, hitboxes Area3D por membro, headshot |
 | [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, grupo Level Base |
+| [[sistemas/audio]] | Buses (Master/Outside/Reactor/Music/SFX), controles Música × Efeitos de Som nas settings |
 
 ---
 

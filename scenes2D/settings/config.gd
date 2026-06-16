@@ -29,6 +29,14 @@ var DEFAULTS := {
 	},
 	audio = {
 		music = true,
+		sfx = true,
+	},
+	models = {
+		auto_rotate = false,
+		play_animation = false,
+		play_audio = false,
+		play_falas = false,
+		show_colliders = false,
 	},
 	video = {
 		display_mode = Window.MODE_EXCLUSIVE_FULLSCREEN,
@@ -61,12 +69,17 @@ func _ready() -> void:
 	apply_audio_settings()
 
 
-# Mutes/unmutes the "Music" audio bus from the saved setting, so it applies to
-# every scene's music globally.
+# Mutes/unmutes the "Music" and "SFX" audio buses from the saved settings, so they
+# apply globally to every scene. "Music" carries the background music; "SFX" carries
+# every non-music sound (the gameplay effects buses Outside/Reactor route into it),
+# so each toggle silences its own category independently.
 func apply_audio_settings() -> void:
 	var music_bus := AudioServer.get_bus_index("Music")
 	if music_bus != -1:
 		AudioServer.set_bus_mute(music_bus, not config_file.get_value("audio", "music", true))
+	var sfx_bus := AudioServer.get_bus_index("SFX")
+	if sfx_bus != -1:
+		AudioServer.set_bus_mute(sfx_bus, not config_file.get_value("audio", "sfx", true))
 
 
 func _input(input_event: InputEvent) -> void:

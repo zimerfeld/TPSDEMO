@@ -89,14 +89,16 @@ var _yaw: float = 0.0
 var _pitch: float = 0.0
 
 # Whole-model preview toggles. Colliders draws wireframe gizmos for the
-# (otherwise invisible) CollisionShape3D volumes; effects shows the model's
-# gameplay flourishes (particles, lights, bone-mounted laser/muzzle meshes);
-# animation plays the model's AnimationPlayer; audio plays its sound emitters.
-# All start off so a freshly-picked model previews static and silent.
+# (otherwise invisible) CollisionShape3D volumes; animation plays the model's
+# AnimationPlayer; audio plays its NON-speech sound emitters (movement, motor,
+# shots, explosions...) while falas plays only its speech/scream emitters (see
+# _is_speech_audio). All start off so a freshly-picked model previews static and
+# silent. The model's gameplay flourishes (particles, lights, bone-mounted
+# laser/muzzle meshes) are always hidden so the preview shows just the body.
 var _show_colliders: bool = false
-var _show_effects: bool = false
 var _play_animation: bool = false
 var _play_audio: bool = false
+var _play_falas: bool = false
 
 # AnimationPlayers of the current whole-model preview, used by the "Animação"
 # dropdown to list and play the model's clips.
@@ -113,13 +115,14 @@ var _zoom_target: float = 0.0
 @onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
+@onready var animation_row: HBoxContainer = $UI/Selectors/AnimationRow
 @onready var cbo_animations: OptionButton = $UI/Selectors/AnimationRow/cboAnimations
 @onready var status_label: Label = $UI/Selectors/StatusLabel
 @onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
 @onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
 @onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
+@onready var falas_toggle: CheckButton = $UI/Toggles/FalasToggle
 @onready var colliders_toggle: CheckButton = $UI/Toggles/CollidersToggle
-@onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
 
 
 func _ready() -> void:
@@ -138,16 +141,25 @@ func _ready() -> void:
 	cbo_animations.item_selected.connect(_on_animation_selected)
 	_reset_animations()
 
+	# Restore the toggle states saved on a previous visit, so the browser reopens
+	# exactly as the user left it (see _save_toggle / _on_*_toggled). Defaults match
+	# the field initializers above (everything off) for a first run.
+	_auto_rotate = Settings.config_file.get_value("models", "auto_rotate", _auto_rotate)
+	_play_animation = Settings.config_file.get_value("models", "play_animation", _play_animation)
+	_play_audio = Settings.config_file.get_value("models", "play_audio", _play_audio)
+	_play_falas = Settings.config_file.get_value("models", "play_falas", _play_falas)
+	_show_colliders = Settings.config_file.get_value("models", "show_colliders", _show_colliders)
+
 	rotate_toggle.button_pressed = _auto_rotate
 	rotate_toggle.toggled.connect(_on_rotate_toggled)
 	animation_toggle.button_pressed = _play_animation
 	animation_toggle.toggled.connect(_on_animation_toggled)
 	audio_toggle.button_pressed = _play_audio
 	audio_toggle.toggled.connect(_on_audio_toggled)
+	falas_toggle.button_pressed = _play_falas
+	falas_toggle.toggled.connect(_on_falas_toggled)
 	colliders_toggle.button_pressed = _show_colliders
 	colliders_toggle.toggled.connect(_on_colliders_toggled)
-	effects_toggle.button_pressed = _show_effects
-	effects_toggle.toggled.connect(_on_effects_toggled)
 
 	# Start blank: every dropdown shows "Selecione..." and nothing is previewed
 	# until the user drills down Categoria -> Prefixo -> Modelo -> Parte.
@@ -334,9 +346,11 @@ func _on_mesh_selected(index: int) -> void:
 
 # Fill the "Animação" dropdown with "Selecione..." plus every clip the previewed
 # model exposes; enable it only when there is at least one. Selecting a clip plays
-# it on the preview (see _on_animation_selected); the dropdown is reset/disabled for
-# single-part views and models without animations.
+# it on the preview (see _on_animation_selected). The whole row is shown ONLY for the
+# assembled "Modelo completo" view (see _on_mesh_selected) — single parts and the
+# placeholder hide it via _reset_animations.
 func _populate_animations() -> void:
+	animation_row.visible = true
 	# Preserve the current pick across preview rebuilds (toggling colliders/audio
 	# re-runs the preview), so a chosen clip keeps playing.
 	var prev := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
@@ -357,17 +371,23 @@ func _populate_animations() -> void:
 	cbo_animations.disabled = cbo_animations.item_count <= 1
 
 
-# Reset the "Animação" dropdown to just the placeholder and disable it.
+# Reset the "Animação" dropdown to just the placeholder, disable it and HIDE the whole
+# row — the combo is only shown for the assembled "Modelo completo" view.
 func _reset_animations() -> void:
 	cbo_animations.clear()
 	cbo_animations.add_item(SELECT_LABEL)
 	cbo_animations.select(0)
 	cbo_animations.disabled = true
+	animation_row.visible = false
 
 
 # Item 0 is "Selecione..." (stop / static rest); items 1.. are clip names. Plays the
-# chosen clip (looping via the player) on every AnimationPlayer that has it.
+# chosen clip (looping via the player) on every AnimationPlayer that has it — but only
+# while the Animação toggle is on: with it off, picking a clip just updates the pending
+# selection and plays nothing (it starts when the toggle is turned on, via _refresh_preview).
 func _on_animation_selected(index: int) -> void:
+	if not _play_animation:
+		return
 	var clip := "" if index <= 0 else cbo_animations.get_item_text(index)
 	for ap: AnimationPlayer in _preview_anim_players:
 		if not is_instance_valid(ap):
@@ -380,26 +400,37 @@ func _on_animation_selected(index: int) -> void:
 
 func _on_rotate_toggled(pressed: bool) -> void:
 	_auto_rotate = pressed
+	_save_toggle("auto_rotate", pressed)
 
 
 func _on_animation_toggled(pressed: bool) -> void:
 	_play_animation = pressed
+	_save_toggle("play_animation", pressed)
 	_refresh_preview()
 
 
 func _on_audio_toggled(pressed: bool) -> void:
 	_play_audio = pressed
+	_save_toggle("play_audio", pressed)
+	_refresh_preview()
+
+
+func _on_falas_toggled(pressed: bool) -> void:
+	_play_falas = pressed
+	_save_toggle("play_falas", pressed)
 	_refresh_preview()
 
 
 func _on_colliders_toggled(pressed: bool) -> void:
 	_show_colliders = pressed
+	_save_toggle("show_colliders", pressed)
 	_refresh_preview()
 
 
-func _on_effects_toggled(pressed: bool) -> void:
-	_show_effects = pressed
-	_refresh_preview()
+# Persist one preview toggle so the model browser reopens with the same options.
+func _save_toggle(key: String, value: bool) -> void:
+	Settings.config_file.set_value("models", key, value)
+	Settings.save_settings()
 
 
 # Re-render the current Part selection so toggle changes take effect.
@@ -637,8 +668,9 @@ func _preview_whole_model() -> void:
 	if instance is Node3D:
 		(instance as Node3D).rotation = Vector3.ZERO
 	_strip_scripts(instance)
-	if not _show_effects:
-		_hide_gameplay_effects(instance)
+	# Gameplay flourishes (particles, lights, bone-mounted laser/muzzle meshes) are
+	# always hidden so the preview shows just the body.
+	_hide_gameplay_effects(instance)
 	# Suppress autoplay BEFORE the subtree enters the tree (autoplay fires on
 	# tree entry), then kick off playback below only for the toggles that are on.
 	var av_state := _suppress_autoplay(instance)
@@ -680,25 +712,60 @@ func _suppress_autoplay(instance: Node) -> Dictionary:
 	return {"anim": anim_autoplay, "audio": audio_players}
 
 
-# Start the model's animation and/or sound. The "Animação" dropdown picks the clip;
-# if it is on "Selecione...", the Animação toggle still plays the autoplay clip
-# (falling back to the first) for backward compatibility. Audio plays every emitter
-# that has a stream. Off / placeholder leave it static and silent.
+# Start the model's animation and/or sound, each gated by its own toggle (the toggle
+# is the master switch). Animation: while the Animação toggle is off NOTHING plays,
+# even with a clip chosen; while on, the "Animação" dropdown's clip plays, falling back
+# to the model's autoplay clip and then its first clip. Audio is split in two: the
+# "Audio" toggle covers every NON-speech emitter (movement, motor, shots...) and the
+# "Falas" toggle covers only the speech/scream emitters (see _is_speech_audio).
 func _apply_av_playback(state: Dictionary) -> void:
-	var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
-	for ap: AnimationPlayer in state["anim"]:
-		if chosen != "" and ap.has_animation(chosen):
-			ap.play(chosen)
-		elif _play_animation:
-			var clip: String = state["anim"][ap]
-			if clip == "" and not ap.get_animation_list().is_empty():
-				clip = ap.get_animation_list()[0]
+	# Pre-mute the emitters whose toggle is off BEFORE the animation starts. These
+	# models trigger sound from animation "audio"/"method" tracks (not just autoplay),
+	# so silencing the target player's volume is what actually makes the toggle gate
+	# animation-driven audio too — the preview is rebuilt fresh each time, so the
+	# authored volume is restored automatically when the toggle is back on.
+	for node in state["audio"]:
+		var off := not (_play_falas if _is_speech_audio(node) else _play_audio)
+		if off:
+			node.set("volume_db", -80.0)
+
+	if _play_animation:
+		var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
+		for ap: AnimationPlayer in state["anim"]:
+			var clip := chosen
+			if clip == "" or not ap.has_animation(clip):
+				clip = state["anim"][ap]
+				if clip == "" and not ap.get_animation_list().is_empty():
+					clip = ap.get_animation_list()[0]
 			if clip != "" and ap.has_animation(clip):
 				ap.play(clip)
-	if _play_audio:
-		for node in state["audio"]:
-			if node.get("stream") != null:
-				node.play()
+
+	# Start the standalone emitters whose toggle is on (looping motor/engine sounds the
+	# animation never triggers); animation-driven ones already started with the clip.
+	for node in state["audio"]:
+		if node.get("stream") == null:
+			continue
+		var wanted := _play_falas if _is_speech_audio(node) else _play_audio
+		if wanted:
+			node.play()
+
+
+# Classify a model's audio emitter as speech (falas/gritos) vs every other sound
+# (movement, motor, shots, explosions...). The preview can't know an emitter's role
+# beyond its node name, so match common speech/voice tokens; everything else is
+# treated as general audio gated by the "Audio" toggle.
+const _SPEECH_AUDIO_TOKENS := [
+	"voice", "voz", "fala", "falas", "speech", "speak", "talk", "dialog",
+	"grito", "gritos", "scream", "shout", "yell", "vox",
+]
+
+
+func _is_speech_audio(node: Node) -> bool:
+	var name_lower := String(node.name).to_lower()
+	for token in _SPEECH_AUDIO_TOKENS:
+		if name_lower.contains(token):
+			return true
+	return false
 
 
 # Recursively detach every script in the instanced subtree before it enters the
@@ -999,7 +1066,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom_target = clampf(_zoom_target + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	elif event is InputEventMouseMotion and _dragging:
 		var motion := event as InputEventMouseMotion
-		# Both axes are clamped to ±90°: pitch (up/down) so it can't flip past
-		# vertical, and yaw (left/right) to the same maximum swing each side.
-		_yaw = clampf(_yaw + motion.relative.x * DRAG_SENSITIVITY, -PI * 0.5, PI * 0.5)
-		_pitch = clampf(_pitch + motion.relative.y * DRAG_SENSITIVITY, -PI * 0.5, PI * 0.5)
+		# Both axes swing up to 180 degrees each side: yaw (left/right) turns the model
+		# all the way around to its back, and pitch (up/down) tilts it all the way over.
+		_yaw = clampf(_yaw + motion.relative.x * DRAG_SENSITIVITY, -PI, PI)
+		_pitch = clampf(_pitch + motion.relative.y * DRAG_SENSITIVITY, -PI, PI)

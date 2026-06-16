@@ -104,6 +104,9 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var music_disabled: Button = $UI/VBox/Tabs/Audio/MusicRow/MusicDisabled
 @onready var music_enabled: Button = $UI/VBox/Tabs/Audio/MusicRow/MusicEnabled
 
+@onready var sfx_disabled: Button = $UI/VBox/Tabs/Audio/SFXRow/SFXDisabled
+@onready var sfx_enabled: Button = $UI/VBox/Tabs/Audio/SFXRow/SFXEnabled
+
 @onready var _rows: Array = []
 
 # Index of the currently-confirmed video resolution, used to revert the dropdown
@@ -129,6 +132,7 @@ func _ready() -> void:
 		$UI/VBox/Tabs/Effects/BloomRow,
 		$UI/VBox/Tabs/Effects/VolumetricFogRow,
 		$UI/VBox/Tabs/Audio/MusicRow,
+		$UI/VBox/Tabs/Audio/SFXRow,
 	]
 
 	if not metalfx_supported:
@@ -265,6 +269,9 @@ func _load_current_settings() -> void:
 	music_disabled.button_pressed = not Settings.config_file.get_value("audio", "music")
 	music_enabled.button_pressed = Settings.config_file.get_value("audio", "music")
 
+	sfx_disabled.button_pressed = not Settings.config_file.get_value("audio", "sfx")
+	sfx_enabled.button_pressed = Settings.config_file.get_value("audio", "sfx")
+
 
 func _on_apply_pressed() -> void:
 	if display_mode_windowed.button_pressed:
@@ -370,6 +377,7 @@ func _on_apply_pressed() -> void:
 	Settings.config_file.set_value("rendering", "volumetric_fog", volumetric_fog_enabled.button_pressed)
 
 	Settings.config_file.set_value("audio", "music", music_enabled.button_pressed)
+	Settings.config_file.set_value("audio", "sfx", sfx_enabled.button_pressed)
 
 	Settings.save_settings()
 	Settings.apply_audio_settings()

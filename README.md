@@ -25,12 +25,22 @@ third-person shooter sandbox. At a high level it offers:
   a full complex level (Level Base), plus online (host/connect) play.
 - **3D model library + viewer** — reusable 3D assets organized by type under
   `library3D/`, browsable in-game through the Models screen (category → model →
-  part) with toggles for rotation, animation, sound, colliders and effects.
+  part) with toggles for rotation, animation, **Audio** (every non-speech sound:
+  movement, motor, shots…), **Falas** (speech/scream emitters only) and colliders.
+  Each toggle is the master switch for its category (no sound/animation plays while
+  its toggle is off, regardless of the dropdown — including sound driven by animation
+  tracks) and the toggle states are persisted between visits. The "Animação" dropdown
+  appears only for the assembled "Modelo completo" view. Drag to hand-rotate the model
+  up to 180° on both axes (left/right and up/down).
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap,
   vitals, crosshair, pause menu, scanlines, and more).
 - **Debug tooling** — a debug overlay (FPS HUD, ground grid, and per-node
   TYPE/ID tooltips on 2D and 3D nodes), toggled from the developer screen and the
   settings "Debug" tab.
+- **Audio settings** — the settings "Audio" tab has independent controls for
+  background **Música** (the `Music` bus) and **Efeitos de Som** (the `SFX` bus,
+  which the `Outside`/`Reactor` gameplay buses route into), each saved and applied
+  globally.
 
 ## Godot versions
 
@@ -83,7 +93,8 @@ reusable 3D asset library under `library3D/`:
   - `controls2D` — reusable UI widgets (cyberpunk HUD, minimap, vitals, ability
     bar, crosshair, pause menu, scanlines, log feed, etc.).
   - `controls` — a 2D controls viewer (the 2D analog of the Models screen) that
-    browses and previews the `controls2D` widgets through a dropdown.
+    browses and previews the `controls2D` widgets through a dropdown, centering each
+    previewed widget horizontally and vertically when it is smaller than the view.
   - `cyberpunkhud` — assembled HUD screen built from `controls2D` widgets.
 - `scenes3D/` — 3D levels and tools: `level_1`, `level_2`, `level_base`, and the
   `models` viewer.
