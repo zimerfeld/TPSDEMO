@@ -26,12 +26,16 @@ third-person shooter sandbox. At a high level it offers:
 - **3D model library + viewer** — reusable 3D assets organized by type under
   `library3D/`, browsable in-game through the Models screen (category → model →
   part) with toggles for rotation, animation, **Audio** (every non-speech sound:
-  movement, motor, shots…), **Falas** (speech/scream emitters only) and colliders.
-  Each toggle is the master switch for its category (no sound/animation plays while
-  its toggle is off, regardless of the dropdown — including sound driven by animation
-  tracks) and the toggle states are persisted between visits. The "Animação" dropdown
-  appears only for the assembled "Modelo completo" view. Drag to hand-rotate the model
-  up to 180° on both axes (left/right and up/down).
+  movement, motor, shots…), **Falas** (speech/scream emitters only), colliders and
+  **Efeitos especiais** (everything else linked to the model — particles, lights,
+  bone-mounted laser/muzzle meshes). Each toggle is the master switch for its category
+  (no sound/animation plays while its toggle is off, regardless of the dropdown —
+  including sound driven by animation tracks) and the toggle states are persisted
+  between visits. The "Animação" and "Efeitos Especiais" dropdowns appear only for the
+  assembled "Modelo completo" view; the effects one isolates a single effect when
+  picked. Picking a value in any selector (Categoria → Prefixo → Modelo → Parte) resets
+  every dropdown below it to "Selecione…". Drag to hand-rotate the model up to 180° on
+  both axes (left/right and up/down).
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap,
   vitals, crosshair, pause menu, scanlines, and more).
 - **Debug tooling** — a debug overlay (FPS HUD, ground grid, and per-node

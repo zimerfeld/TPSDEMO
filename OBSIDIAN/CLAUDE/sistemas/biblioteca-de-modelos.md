@@ -32,9 +32,17 @@ recurso `Mesh` via `get_instance_id`), rótulo `Nome (×N) [+col]/[skin]` ordena
 uso. O preview mostra a peça selecionada, centrada/escalada (`_fit_to_view`). Os
 dropdowns são `OptionButton` nativos (sem listas de botões).
 
-O combo **"Animação"** (linha `AnimationRow`) só aparece quando a Parte é **"Modelo
-completo"** (2026-06-16): `_populate_animations()` mostra a linha e `_reset_animations()`
-a esconde (placeholder e partes isoladas). Animação só se aplica ao modelo montado.
+Os combos **"Animação"** (`AnimationRow`) e **"Efeitos Especiais"** (`EffectsRow`,
+abaixo de Animação) só aparecem quando a Parte é **"Modelo completo"** (2026-06-16):
+`_populate_animations()`/`_populate_effects()` mostram as linhas e
+`_reset_animations()`/`_reset_effects()` as escondem (placeholder e partes isoladas).
+Ambos só se aplicam ao modelo montado.
+
+**Cascata de reset (2026-06-16):** mudar qualquer selector reseta **todos** os de
+baixo para "Selecione..." e reabilita só o filho imediato. As funções de reset
+(`_reset_meshes_and_preview`, `_on_model_selected`) agora chamam também
+`_reset_animations()`+`_reset_effects()`, então os dois combos de baixo entram na
+cascata (antes ficavam "presos" visíveis ao trocar um selector acima).
 
 ### Rotação do preview
 
@@ -50,10 +58,9 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (2026-06-16): **Rotação · Animação · Audio · Falas · Colisores**
-(o antigo "Som" virou **Audio** e o "Efeitos de gameplay" foi removido — os
-flourishes de gameplay agora ficam **sempre escondidos** via `_hide_gameplay_effects`).
-Cada toggle é o **interruptor mestre** da sua categoria:
+Toggles atuais (2026-06-16): **Rotação · Animação · Audio · Falas · Colisores ·
+Efeitos especiais** (o antigo "Som" virou **Audio**). Cada toggle é o **interruptor
+mestre** da sua categoria:
 
 - **Animação** — com o toggle desligado **nada anima**, mesmo com um clip escolhido
   no dropdown "Animação"; `_on_animation_selected` retorna cedo e `_apply_av_playback`
@@ -63,6 +70,11 @@ Cada toggle é o **interruptor mestre** da sua categoria:
   motor, tiro, explosão…); desligado, silencia.
 - **Falas** — toca **só** os emissores de **fala/grito**, classificados pelo nome do
   nó (`_is_speech_audio`: voz/voice/fala/grito/scream/shout/yell/…). Desligado, silencia.
+- **Efeitos especiais** — mostra/esconde **tudo o que sobra** ligado ao modelo e que
+  nenhum outro toggle cobre: partículas, luzes e malhas presas a osso (muzzle/laser),
+  coletadas por `_collect_effect_nodes`. O combo **"Efeitos Especiais"** isola **um**
+  efeito (mostra só ele); "Selecione..." mostra **todos** (só com o toggle ligado). A
+  visibilidade é aplicada por `_apply_effects_visibility` sem reconstruir o preview.
 
 ⚠️ Vários modelos disparam som por **tracks de animação** (`type = "audio"`/`"method"`,
 não só autoplay). Por isso `_apply_av_playback` **pré-muta** (volume_db = -80) os
@@ -70,10 +82,11 @@ emissores cujo toggle está desligado **antes** de iniciar a animação — assi
 disparado pela própria animação também respeita Audio/Falas. Como o preview é
 reconstruído a cada toggle, o volume autorado volta sozinho quando religa.
 
-(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 5 estados (rotação,
-animação, audio, falas, colisores) são **persistidos** na seção `[models]` de
-`user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada handler) e
-relidos em `_ready` antes de conectar os sinais, então a tela reabre como foi deixada.
+(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 6 estados (rotação,
+animação, audio, falas, colisores, efeitos especiais) são **persistidos** na seção
+`[models]` de `user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada
+handler) e relidos em `_ready` antes de conectar os sinais, então a tela reabre como
+foi deixada.
 
 ## Extração ("Salvar como cena 3D")
 

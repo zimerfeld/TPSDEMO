@@ -92,17 +92,23 @@ var _pitch: float = 0.0
 # (otherwise invisible) CollisionShape3D volumes; animation plays the model's
 # AnimationPlayer; audio plays its NON-speech sound emitters (movement, motor,
 # shots, explosions...) while falas plays only its speech/scream emitters (see
-# _is_speech_audio). All start off so a freshly-picked model previews static and
-# silent. The model's gameplay flourishes (particles, lights, bone-mounted
-# laser/muzzle meshes) are always hidden so the preview shows just the body.
+# _is_speech_audio). Effects ("Efeitos especiais") shows everything else linked to
+# the model that no other toggle covers — particles, lights and bone-mounted
+# laser/muzzle meshes (see _collect_effect_nodes). All start off so a freshly-picked
+# model previews static, silent and clean.
 var _show_colliders: bool = false
 var _play_animation: bool = false
 var _play_audio: bool = false
 var _play_falas: bool = false
+var _show_effects: bool = false
 
 # AnimationPlayers of the current whole-model preview, used by the "Animação"
 # dropdown to list and play the model's clips.
 var _preview_anim_players: Array = []
+
+# Special-effect nodes of the current whole-model preview, used by the "Efeitos
+# Especiais" dropdown to list and isolate them. Each entry: {"label", "node"}.
+var _preview_effect_nodes: Array = []
 
 @onready var model_holder: Node3D = $ModelHolder
 @onready var camera: Camera3D = $Camera3D
@@ -117,12 +123,15 @@ var _zoom_target: float = 0.0
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
 @onready var animation_row: HBoxContainer = $UI/Selectors/AnimationRow
 @onready var cbo_animations: OptionButton = $UI/Selectors/AnimationRow/cboAnimations
+@onready var effects_row: HBoxContainer = $UI/Selectors/EffectsRow
+@onready var cbo_effects: OptionButton = $UI/Selectors/EffectsRow/cboEffects
 @onready var status_label: Label = $UI/Selectors/StatusLabel
 @onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
 @onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
 @onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
 @onready var falas_toggle: CheckButton = $UI/Toggles/FalasToggle
 @onready var colliders_toggle: CheckButton = $UI/Toggles/CollidersToggle
+@onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
 
 
 func _ready() -> void:
@@ -139,7 +148,9 @@ func _ready() -> void:
 	cbo_models.item_selected.connect(_on_model_selected)
 	cbo_meshes.item_selected.connect(_on_mesh_selected)
 	cbo_animations.item_selected.connect(_on_animation_selected)
+	cbo_effects.item_selected.connect(_on_effect_selected)
 	_reset_animations()
+	_reset_effects()
 
 	# Restore the toggle states saved on a previous visit, so the browser reopens
 	# exactly as the user left it (see _save_toggle / _on_*_toggled). Defaults match
@@ -149,6 +160,7 @@ func _ready() -> void:
 	_play_audio = Settings.config_file.get_value("models", "play_audio", _play_audio)
 	_play_falas = Settings.config_file.get_value("models", "play_falas", _play_falas)
 	_show_colliders = Settings.config_file.get_value("models", "show_colliders", _show_colliders)
+	_show_effects = Settings.config_file.get_value("models", "show_effects", _show_effects)
 
 	rotate_toggle.button_pressed = _auto_rotate
 	rotate_toggle.toggled.connect(_on_rotate_toggled)
@@ -160,6 +172,8 @@ func _ready() -> void:
 	falas_toggle.toggled.connect(_on_falas_toggled)
 	colliders_toggle.button_pressed = _show_colliders
 	colliders_toggle.toggled.connect(_on_colliders_toggled)
+	effects_toggle.button_pressed = _show_effects
+	effects_toggle.toggled.connect(_on_effects_toggled)
 
 	# Start blank: every dropdown shows "Selecione..." and nothing is previewed
 	# until the user drills down Categoria -> Prefixo -> Modelo -> Parte.
@@ -285,7 +299,9 @@ func _reset_models() -> void:
 
 
 # Reset the Part dropdown to just the "Selecione..." placeholder, DISABLE it, and
-# clear the previewed mesh/model and its cached scenes.
+# clear the previewed mesh/model and its cached scenes. Also resets the two dropdowns
+# below Part (Animação, Efeitos Especiais) so changing any upper dropdown cascades all
+# the way down.
 func _reset_meshes_and_preview() -> void:
 	_model_scene = null
 	_display_scene = null
@@ -294,6 +310,8 @@ func _reset_meshes_and_preview() -> void:
 	cbo_meshes.add_item(SELECT_LABEL)
 	cbo_meshes.select(0)
 	cbo_meshes.disabled = true
+	_reset_animations()
+	_reset_effects()
 	_clear_preview()
 
 
@@ -321,6 +339,9 @@ func _on_model_selected(index: int) -> void:
 		cbo_meshes.add_item(entry["label"])
 	cbo_meshes.select(0)
 	cbo_meshes.disabled = false
+	# Part is back on its placeholder, so the dropdowns below it reset/hide too.
+	_reset_animations()
+	_reset_effects()
 	_clear_preview()
 	status_label.text = "Selecione uma parte."
 
@@ -332,15 +353,18 @@ func _on_mesh_selected(index: int) -> void:
 	if index <= 0:
 		_clear_preview()
 		_reset_animations()
+		_reset_effects()
 		status_label.text = "Selecione uma parte."
 	elif index == 1:
 		_preview_whole_model()
-		# The animation dropdown only applies to the assembled "Modelo completo".
+		# The animation and special-effects dropdowns only apply to "Modelo completo".
 		_populate_animations()
+		_populate_effects()
 		status_label.text = "Modelo completo — %d parte(s)" % _mesh_catalog.size()
 	else:
 		_preview_mesh(index - 2)
 		_reset_animations()
+		_reset_effects()
 		status_label.text = "Parte: %s" % _mesh_catalog[index - 2]["label"]
 
 
@@ -398,6 +422,55 @@ func _on_animation_selected(index: int) -> void:
 			ap.stop()
 
 
+# Fill the "Efeitos Especiais" dropdown with "Selecione..." plus one entry per special
+# effect of the previewed model (particles, lights, bone-mounted laser/muzzle meshes —
+# see _collect_effect_nodes). Shown ONLY for the assembled "Modelo completo" view, like
+# the animation dropdown. Preserves the current pick across preview rebuilds.
+func _populate_effects() -> void:
+	effects_row.visible = true
+	var prev := "" if cbo_effects.selected <= 0 else cbo_effects.get_item_text(cbo_effects.selected)
+	cbo_effects.clear()
+	cbo_effects.add_item(SELECT_LABEL)
+	for entry in _preview_effect_nodes:
+		cbo_effects.add_item(entry["label"])
+	var restore := 0
+	for i in range(1, cbo_effects.item_count):
+		if cbo_effects.get_item_text(i) == prev:
+			restore = i
+			break
+	cbo_effects.select(restore)
+	cbo_effects.disabled = cbo_effects.item_count <= 1
+	_apply_effects_visibility()
+
+
+# Reset the "Efeitos Especiais" dropdown to just the placeholder, disable it and HIDE
+# the whole row — the combo is only shown for the assembled "Modelo completo" view.
+func _reset_effects() -> void:
+	cbo_effects.clear()
+	cbo_effects.add_item(SELECT_LABEL)
+	cbo_effects.select(0)
+	cbo_effects.disabled = true
+	effects_row.visible = false
+
+
+# Item 0 is "Selecione..." (show every effect, per the toggle); items 1.. are effect
+# names. Picking one isolates it (only that effect renders); see _apply_effects_visibility.
+func _on_effect_selected(_index: int) -> void:
+	_apply_effects_visibility()
+
+
+# Show/hide the preview's special-effect nodes: nothing while the "Efeitos especiais"
+# toggle is off; with it on, every effect when the dropdown is on "Selecione...", or
+# only the chosen one when a specific effect is picked.
+func _apply_effects_visibility() -> void:
+	var chosen := "" if cbo_effects.selected <= 0 else cbo_effects.get_item_text(cbo_effects.selected)
+	for entry in _preview_effect_nodes:
+		var node: Node3D = entry["node"]
+		if not is_instance_valid(node):
+			continue
+		node.visible = _show_effects and (chosen == "" or entry["label"] == chosen)
+
+
 func _on_rotate_toggled(pressed: bool) -> void:
 	_auto_rotate = pressed
 	_save_toggle("auto_rotate", pressed)
@@ -425,6 +498,14 @@ func _on_colliders_toggled(pressed: bool) -> void:
 	_show_colliders = pressed
 	_save_toggle("show_colliders", pressed)
 	_refresh_preview()
+
+
+# The special-effect nodes already live in the preview (collected on build), so toggling
+# just flips their visibility — no rebuild needed (cheaper, no flicker).
+func _on_effects_toggled(pressed: bool) -> void:
+	_show_effects = pressed
+	_save_toggle("show_effects", pressed)
+	_apply_effects_visibility()
 
 
 # Persist one preview toggle so the model browser reopens with the same options.
@@ -630,6 +711,7 @@ func _clear_preview() -> void:
 	for child in model_holder.get_children():
 		child.queue_free()
 	_preview_anim_players = []
+	_preview_effect_nodes = []
 	_yaw = 0.0
 	_pitch = 0.0
 	model_holder.rotation = Vector3.ZERO
@@ -668,9 +750,11 @@ func _preview_whole_model() -> void:
 	if instance is Node3D:
 		(instance as Node3D).rotation = Vector3.ZERO
 	_strip_scripts(instance)
-	# Gameplay flourishes (particles, lights, bone-mounted laser/muzzle meshes) are
-	# always hidden so the preview shows just the body.
-	_hide_gameplay_effects(instance)
+	# Catalog the special-effect nodes (particles, lights, bone-mounted laser/muzzle
+	# meshes). Their visibility is decided by the "Efeitos especiais" toggle + dropdown
+	# via _apply_effects_visibility (called from _populate_effects after this returns);
+	# _fit_to_view ignores them, so framing is unaffected either way.
+	_preview_effect_nodes = _collect_effect_nodes(instance)
 	# Suppress autoplay BEFORE the subtree enters the tree (autoplay fires on
 	# tree entry), then kick off playback below only for the toggles that are on.
 	var av_state := _suppress_autoplay(instance)
@@ -776,15 +860,19 @@ func _strip_scripts(node: Node) -> void:
 		_strip_scripts(child)
 
 
-# Hide the model's gameplay-only flourishes — particle systems (smoke, thrust),
-# lights, and meshes pinned to a bone (muzzle/laser) — leaving just the body.
-func _hide_gameplay_effects(instance: Node) -> void:
+# Collect the model's gameplay-only flourishes — particle systems (smoke, thrust),
+# lights, and meshes pinned to a bone (muzzle/laser) — the "remaining" elements no
+# other toggle covers. Returned as [{"label", "node"}] for the "Efeitos Especiais"
+# dropdown; the caller decides their visibility via _apply_effects_visibility.
+func _collect_effect_nodes(instance: Node) -> Array:
+	var out: Array = []
 	for node in instance.find_children("*", "Node3D", true, false):
-		var node3d := node as Node3D
-		if node is GPUParticles3D or node is CPUParticles3D or node is Light3D:
-			node3d.visible = false
-		elif node is MeshInstance3D and _under_bone_attachment(node, instance):
-			node3d.visible = false
+		var is_effect := node is GPUParticles3D or node is CPUParticles3D or node is Light3D
+		if not is_effect and node is MeshInstance3D and _under_bone_attachment(node, instance):
+			is_effect = true
+		if is_effect:
+			out.append({"label": _prettify(String(node.name)), "node": node})
+	return out
 
 
 # Draw a wireframe gizmo for every CollisionShape3D so the otherwise-invisible

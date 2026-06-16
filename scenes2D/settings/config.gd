@@ -37,6 +37,7 @@ var DEFAULTS := {
 		play_audio = false,
 		play_falas = false,
 		show_colliders = false,
+		show_effects = false,
 	},
 	video = {
 		display_mode = Window.MODE_EXCLUSIVE_FULLSCREEN,
