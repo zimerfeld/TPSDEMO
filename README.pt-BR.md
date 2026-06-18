@@ -6,7 +6,9 @@
 
 Demo de tiro em terceira pessoa feita com a [Godot Engine](https://godotengine.org).
 
-![Captura de tela da demo TPS](screenshots/screenshot.webp)
+- Ajude a manter este projeto sempre atualizado 💜
+
+[![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
 ## Visão geral
 
@@ -62,7 +64,7 @@ distintas para você diferenciá-los:
   `Label3D` por membro que seguem a pose viva.
 
 Regra de dependência: o master de uma coluna estar ligado **não basta** — cada linha/recurso
-dependente só passa a valer quando *também* selecionado, em sincronia com seu master. Quando o
+dependente só passa a valer quando _também_ selecionado, em sincronia com seu master. Quando o
 master de uma coluna está desligado, os botões dos sub-toggles ficam desativados e escurecidos
 (acinzentados). Quando o master está ligado mas nenhuma linha dependente está selecionada, a
 coluna não mostra nada (a borda e os tooltips 2D só aparecem quando ao menos um de Type/Name/Id

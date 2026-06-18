@@ -6,7 +6,9 @@
 
 Third person shooter demo made using [Godot Engine](https://godotengine.org).
 
-![Screenshot of TPS demo](screenshots/screenshot.webp)
+- Help keep this project always updated 💜
+
+[![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
 ## Overview
 
@@ -62,7 +64,7 @@ light colors so you can tell them apart:
   `Mesh`. Renders per-member `Label3D` tags that follow the live pose.
 
 Dependency rule: a column master being on is **not enough** — each dependent line/feature
-takes effect only when it is *also* selected, in sync with its master. When a column's
+takes effect only when it is _also_ selected, in sync with its master. When a column's
 master is off, its sub-toggle buttons are disabled and dimmed (visually greyed). When a
 master is on but no dependent line is selected, that column shows nothing (the 2D border
 and tooltips appear only once at least one of Type/Name/Id is selected; the 3D labels are
