@@ -12,8 +12,10 @@ var _bar: ProgressBar
 var _name_label: Label
 var _dist_label: Label
 var _hp_label: Label
+var _range_label: Label
 var _hide_timer: float = 0.0
 var _last_distance: float = -1.0
+var _last_range: float = -1.0
 
 
 # Retorna a instância compartilhada, criando-a sob `parent` se necessário.
@@ -95,6 +97,16 @@ func _ready() -> void:
 
 	vbox.add_child(_bar)
 
+	# Alcance da arma do inimigo (em metros), exibido só quando o inimigo possui um
+	# mecanismo de ataque/tiro (weapon_range >= 0). Fica oculto para inimigos sem arma.
+	_range_label = Label.new()
+	_range_label.text = ""
+	_range_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_range_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+	_range_label.add_theme_font_size_override("font_size", 13)
+	_range_label.hide()
+	vbox.add_child(_range_label)
+
 	add_child(_panel)
 	_panel.hide()
 
@@ -106,9 +118,16 @@ func _process(delta: float) -> void:
 			_panel.hide()
 
 
-func show_enemy(enemy_name: String, current: int, maximum: int, distance: float = -1.0) -> void:
+# `distance` (m) aparece ao lado do nome; `weapon_range` (m) é o alcance da arma do
+# inimigo, exibido só quando >= 0 (inimigo com mecanismo de ataque/tiro). -1 mantém o
+# último valor conhecido (ex.: chamada ao ser atingido, sem reinformar o alcance).
+func show_enemy(enemy_name: String, current: int, maximum: int, distance: float = -1.0, weapon_range: float = -1.0) -> void:
 	if not _panel:
 		return
+	# Trocou de inimigo: descarta a distância/alcance do anterior para não vazar valores.
+	if enemy_name != _name_label.text:
+		_last_distance = -1.0
+		_last_range = -1.0
 	_panel.show()
 	_hide_timer = AUTO_HIDE_TIME
 	_name_label.text = enemy_name
@@ -119,6 +138,23 @@ func show_enemy(enemy_name: String, current: int, maximum: int, distance: float 
 	if distance >= 0.0:
 		_last_distance = distance
 	_dist_label.text = ("%.1f m" % _last_distance) if _last_distance >= 0.0 else ""
+
+	# Alcance da arma: só atualiza/exibe quando informado; some se o inimigo não tem arma.
+	if weapon_range >= 0.0:
+		_last_range = weapon_range
+	if _last_range >= 0.0:
+		var word: String = "Alcance" if _locale_is_pt() else "Range"
+		_range_label.text = "%s: %.0f m" % [word, _last_range]
+		_range_label.show()
+	else:
+		_range_label.hide()
+
+
+func _locale_is_pt() -> bool:
+	var loc := get_node_or_null(^"/root/Locale")
+	if loc != null and loc.has_method("get_language"):
+		return loc.get_language() == "pt"
+	return true
 
 
 func hide_now() -> void:

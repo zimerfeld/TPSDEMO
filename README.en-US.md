@@ -19,27 +19,46 @@ third-person shooter sandbox. At a high level it offers:
   settings screen, a developer screen, and online play.
 - **Playable characters** — selectable player variants that move, aim, jump and shoot,
   with first-person camera control and a local health HUD.
-- **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a laser, and
-  a flying bomber (Criatura Alada) that orbits the player and drops bombs.
+- **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
+  ball** (a recolored, red-glowing version of the player's shot), and a flying bomber
+  (Criatura Alada) that orbits the player and drops bombs.
+- **Red Robot AI** — its runtime behaviors and decisions live in a dedicated AI script
+  (`library3D/characters/red_robot/IA/red_robot_ai.gd`): **1.5× faster reload** (first and
+  subsequent shots); it **opens fire** as soon as the player enters weapon range and is more than
+  10 m away; and if the player gets to **10 m or closer**, the robot **runs away in the opposite
+  direction** while still facing/aiming at and shooting the player.
+- **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
+  when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
 - **Localized damage** — per-limb native 3D colliders (head, torso, arms, legs) sized to
   each character's mesh, so hits to different body parts deal different damage (headshots
-  deal extra). Both bullets and the enemy laser respect them.
+  deal extra). Shots pass through the generic body collider to land on the limb colliders.
+  Protruding parts get their OWN box collider (e.g. the Red Robot's **rear leg guard plates**,
+  which the leg capsule wouldn't wrap).
+- **Reusable shooting** — the cannon-bullet and hitscan-laser firing are isolated into
+  reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
+  can use; the player and Red Robot both fire via `CannonShooter`.
 - **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2), a full
   complex level (Level Base), plus online (host/connect) play.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
-  browsable in-game through the Models screen (category → model → part) with toggles for
-  rotation, animation, **Audio** (every non-speech sound: movement, motor, shots…),
-  **Falas** (speech/scream emitters only), colliders and **Efeitos especiais** (everything
-  else linked to the model — particles, lights, bone-mounted laser/muzzle meshes). Each
-  toggle is the master switch for its category (no sound/animation plays while its toggle
-  is off, regardless of the dropdown — including sound driven by animation tracks) and the
-  toggle states are persisted between visits. The "Animação" and "Efeitos Especiais"
-  dropdowns appear only for the assembled "Modelo completo" view; the effects one isolates
-  a single effect when picked. Picking a value in any selector (Categoria → Prefixo →
-  Modelo → Parte) resets every dropdown below it to "Selecione…". Drag to hand-rotate the
+  browsable in-game through the Models screen (category → model → part) with toggles, in
+  order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
+  that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
+  **Audio** (every sound the model emits — movement, motor, shots, explosions, voices) and
+  colliders. Each toggle is the master switch for its category (no sound/animation plays
+  while its toggle is off — including sound driven by animation tracks) and the toggle states
+  are persisted between visits. An animation plays only when **the toggle is on AND a clip is
+  picked** in the "Animação" dropdown (there is no default-clip auto-play anymore). The
+  "Animação" and "Efeitos Especiais" dropdowns appear only for the assembled "Modelo completo"
+  view; the effects one isolates a single effect when picked. Picking a value in any selector
+  (Categoria → Prefixo → Modelo → Parte) resets every dropdown below it to "Selecione…". A red
+  status line tracks the drill-down and floats directly **above the combo it is about**; once a
+  Parte is picked it no longer shows a count, and only appears — above the "Animação"/"Efeitos
+  Especiais" combos — when those have options. Drag to hand-rotate the
   model up to 180° on both axes. Toggling any option acts on the live preview in place — it
-  never reloads the model nor changes the camera/rotation. For Personagens and Armas, a
-  name label (CABEÇA, TRONCO, BRAÇO…) floats over each member's collider; skinned characters
+  never reloads the model nor changes the camera/rotation. For Personagens and Armas, the
+  **Debug 3D tooltip stack** (TYPE/Name/ID/Membro, in cyan) floats over each member's collider —
+  the SAME tooltips as in the levels, driven by the same **Debug 3D** column sub-toggles
+  (developer screen): each line follows `Type`/`Name`/`Id`/`Membros`. Skinned characters
   are framed/centered from their posed colliders so they spin in place instead of drifting.
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap, vitals,
   crosshair, pause menu, scanlines, and more).
@@ -75,50 +94,84 @@ The **Debug 3D** extras are: **Members** (per-limb labels CABEÇA/TRONCO/BRAÇO�
 lines rebuilt every frame from the live pose) and **Mesh** (a cyan AABB wireframe box around
 each MeshInstance3D).
 
-Above the columns, a general section holds **HUD FPS** (`hud_fps`) and **Malha no Solo**
-(`show_grid`) — a 100 m × 100 m wireframe floor grid drawn at the origin in any screen that
-contains 3D content (Modelos 3D, levels). Because `main.gd` swaps screens in as children of
-the `Main` node (so `current_scene` always stays `Main`, a plain `Node`), the grid detects
-the active loaded screen and looks for any `Node3D` descendant rather than checking the root
-type; it is absent on the pure-2D screens (menu/settings/developer).
+Above the columns, a general section holds **HUD FPS** (`hud_fps`), **System Health**
+(`system_health`, see below) and **Malha no Solo** (`show_grid`) — a 100 m × 100 m wireframe
+floor grid drawn at the origin in any screen that contains 3D content (Modelos 3D, levels).
+Because `main.gd` swaps screens in as children of the `Main` node (so `current_scene` always
+stays `Main`, a plain `Node`), the grid detects the active loaded screen and looks for any
+`Node3D` descendant rather than checking the root type; it is absent on the pure-2D screens
+(menu/settings/developer).
+
+## System Health monitor
+
+The developer screen's **System Health** row toggles a global monitoring overlay
+(`autoload/system_health.gd`, autoload **SystemHealth**) — a **draggable floating panel** (grab
+its title bar with the left mouse button to move it; it always stays within the screen, and its
+position is remembered between runs — a settings **Reset** sends it back to the top-right corner).
+It shows: **FPS**, the **real per-process CPU usage** (`CPU`), the game's static memory
+(`Mem. Jogo`), the video memory (`Mem. Vídeo`) and the system RAM used (`Mem. Sistema` = total −
+free physical RAM, e.g. 12.6 / 16.2 GB = 78%). All three memory rows follow the same
+**"used / total (%)"** format, using physical RAM as the common total (e.g. `Mem. Jogo` = 0.4 / 16.2 GB = 2%).
+
+CPU is the actual usage of the Godot process, matching what the OS Task Manager shows for it:
+Godot has no API for it, so a **background thread** samples it from the OS (`Get-Process … .CPU`
+via PowerShell on Windows) and turns successive readings into a percentage across the logical
+cores. It reads **N/D** until the first delta is ready, or on non-Windows platforms. (GPU
+per-process and CPU temperature are not reliably available from the engine, so they are not shown.)
+
+When the system RAM reaches the **90%** safe limit — or CPU stays over it for a few seconds (short
+spikes are tolerated) — the panel turns its alert line red, and, if the in-panel "Pausar ao atingir
+o limite" switch is on (default), it **pauses processing** (`get_tree().paused`) to keep a low-spec
+machine from freezing or crashing the OS, offering a **Retomar** button to resume. The overlay keeps
+running while paused (`PROCESS_MODE_ALWAYS`); resuming latches auto-pause off until usage falls back
+under the limit, so it doesn't immediately re-pause.
 
 ## Localization (EN/PT)
 
 The UI language switches between **Português** and **English** via the **Locale** autoload
 (`autoload/locale.gd`).
 
-- Each language is a flat JSON dictionary in the project root — `pt.json` and `en.json` —
-  with the **same keys** (the canonical, Portuguese-build source text of each Button/Label)
-  mapping to that language's text. `pt.json` is essentially identity (preserves the current
-  look); `en.json` carries the English translations.
+- **Per-scene dictionaries.** Each scene ships its own pair of flat JSON files inside a
+  `Resources/` folder next to its `.tscn` — e.g. `scenes2D/menu/Resources/menu.pt.json` +
+  `menu.en.json`. They share the **same keys** (the canonical authored source text of each
+  Button/Label) mapping to that language's text. At boot Locale recursively scans
+  `scenes2D/` and `scenes3D/`, finds every `*.pt.json` / `*.en.json`, and **merges** them
+  into one lookup table per language — so adding a screen's `Resources/` dictionaries is all
+  it takes (no autoload edit).
 - The choice is persisted in the saved settings (`game/language`, default `pt`) and applied
-  at startup. On `_ready`, Locale loads the dictionary and connects to `node_added`, so every
-  Button/Label that enters the tree is translated automatically — new screens are covered
-  **without per-scene code**. The first time it sees a node it stores the original text in a
-  meta key, so language switches translate from the original rather than from already-
-  translated text.
-- Two language buttons (**Português** / **English**) are anchored at the bottom of the main
-  menu. Pressing one calls `Locale.set_language(...)`, which persists the choice and
-  re-localizes the live tree in place (the active language's button is greyed out).
+  at startup. On `_ready`, Locale connects to `node_added`, so every Button/Label that enters
+  the tree is translated automatically. `OptionButton`/`MenuButton` are skipped (their text is
+  the live selection), and the first time it sees a node it stores the original text in a meta
+  key, so language switches translate from the original rather than already-translated text.
+- **Every screen carries the language buttons.** A bottom-right `LangBar` with **Português** /
+  **English** buttons (the same pattern as the menu) is present on menu, chooseplayer,
+  settings, developer, levels, playonline, controls and models. Pressing one calls
+  `Locale.set_language(...)`, which persists the choice and re-localizes the live tree in
+  place (the active language's button is greyed out).
+- **Code-driven text** (dynamic status lines, dropdown placeholders, the settings tab titles
+  and confirmation dialogs, the System Health panel) can't be reached by the automatic
+  Button/Label localizer, so those nodes join the `Locale.SKIP_GROUP` group and re-apply
+  `Locale.tr_key(...)` themselves on the `language_changed` signal.
 
-**Maintenance rule:** whenever you change or add a Button/Label text in a scene, update the
-matching key in **both** `pt.json` and `en.json` in the same change (PT gets the Portuguese
-text, EN the English one) and validate both JSON files. Because Locale indexes by the source
-text, changing the scene without updating the key breaks the translation.
+**Maintenance rule:** whenever you change or add a UI text in a scene, update the matching key
+in **both** that scene's `Resources/<scene>.pt.json` and `.en.json` in the same change (PT gets
+the Portuguese text, EN the English one) and validate both JSON files. Because Locale indexes
+by the source text, changing the scene without updating the key breaks the translation.
 
 ## Settings
 
-The settings screen has tabs (`Display`, `Resolution`, `Antialiasing`, `Lighting`, `Effects`,
-`Audio`) with a consistent vertical rhythm (row/section spacing of 8). Most rows are a set of
-toggle buttons sharing a green → yellow → orange → red color gradient that reads as
-cheap → expensive (e.g. performance vs. quality), with the green button being the safe/low
-option.
+The settings screen has tabs — in order **`Resolution`, `Display`**, `Antialiasing`,
+`Lighting`, `Effects`, `Audio` — with a consistent vertical rhythm (row/section spacing of 8).
+Tab titles are themselves localized (they come from the child node names, so Locale translates
+them in code). Most rows are a set of toggle buttons sharing a green → yellow → orange → red
+color gradient that reads as cheap → expensive (e.g. performance vs. quality), with the green
+button being the safe/low option.
 
+- **Resolution** — a video-resolution dropdown (tinted light cyan to mark it as a selector),
+  resolution scale, and the scale filter (Bilinear / FSR / MetalFX…).
 - **Display** — Display Mode (Window / Fullscreen / Exclusive Fullscreen), Vertical
   Synchronization, and FPS Limit (30…144 / Unlimited). The mode and FPS-limit buttons are
   colored along the same gradient (higher cap = more demanding = warmer color).
-- **Resolution** — a video-resolution dropdown (tinted light cyan to mark it as a selector),
-  resolution scale, and the scale filter (Bilinear / FSR / MetalFX…).
 - **Antialiasing** — TAA, MSAA and FXAA.
 - **Lighting** — Shadow Mapping, GI Type/Quality, SSAO and SSIL.
 - **Effects** — Bloom and Volumetric Fog.
@@ -175,8 +228,9 @@ asset library under `library3D/`:
 - `effects_shared/` — cross-character helpers: `limb_colliders.gd` (per-limb native colliders for
   localized damage), `body_parts.gd` (bone → limb classification), and shared blast/shadow assets.
 - `autoload/` — global singletons: `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`,
-  `locale.gd`. `Settings` lives in `scenes2D/settings/config.gd`.
-- `pt.json`, `en.json` — UI language dictionaries read by the `Locale` autoload.
+  `locale.gd`, `system_health.gd`. `Settings` lives in `scenes2D/settings/config.gd`.
+- `<scene>/Resources/*.pt.json` + `*.en.json` — per-scene UI language dictionaries, scanned and
+  merged by the `Locale` autoload.
 - `ui/`, `themes/` — shared theme resources. `tools/` — headless helper scripts.
 - `OBSIDIAN/` — project documentation vault (mirrors this README).
 
@@ -194,8 +248,9 @@ menu ─┬─ play ───────► chooseplayer ─► levels ─► l
 `main.gd` is the router: each screen emits `replace_main_scene` and `main` swaps it in, so the
 back buttons (and <kbd>Escape</kbd>) navigate to the previous screen the same way. The `settings`
 screen applies and persists every change immediately and the `menu` re-applies all stored settings
-on entry. The `developer` screen and the `settings` "Debug" tab toggle the `DebugOverlay`. The
-`Locale` autoload switches the UI language (EN/PT) from the menu's language buttons. The
+on entry. The `developer` screen and the `settings` "Debug" tab toggle the `DebugOverlay`, and the
+developer "System Health" row toggles the `SystemHealth` monitor. The `Locale` autoload switches
+the UI language (EN/PT) from the Português/English buttons present on every screen. The
 `cyberpunkhud` scene is a standalone assembled-HUD preview, not part of this navigation flow.
 
 Folder and subfolder layout:
@@ -223,9 +278,9 @@ TPSDEMO/
 │  ├─ geometry/          # shared meshes/materials (.tres)
 │  └─ textures/          # shared textures
 ├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd, …
-├─ autoload/             # global singletons: crash_handler, player_selection, debug_overlay, locale
+├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, system_health
 │                        #   (Settings lives in scenes2D/settings/config.gd)
-├─ pt.json  en.json      # UI language dictionaries (Português / English) read by Locale
+│                        # UI dictionaries live per scene: <scene>/Resources/*.pt.json + *.en.json (read by Locale)
 ├─ ui/  themes/          # shared Theme resources (ui_theme.tres, cyberpunk.tres)
 ├─ tools/  _gen/         # headless GDScript generators for 3D assets (gen_*.gd)
 ├─ addons/               # Godot editor plugins (godot_ai — the MCP server)

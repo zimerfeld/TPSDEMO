@@ -8,17 +8,51 @@ modelos 3D do projeto. Alcançada por **developer → Modelos 3D**; volta com
 
 Tudo sob `res://library3D/<tipo>/<modelo>/`:
 
-- `characters/` — `player`, `red_robot`, `criatura_alada` e os **14 robôs**
-  `robot_01..07_*_{infantil,adulto}` (importados de
-  `C:\GODOT\MODELOS\robos_3d_godot_infantil_adulto` em 2026-06-16; prefixo "robot")
-- `props/` — `forklift`
-- `structures/` — `core`, `core_out_light`, `lights`, `props`, `structure`
+- `characters/` — `player`, `players`, `red_robot`, `criatura_alada`, `demonio_*`,
+  `mecha07_infantil`, `enemies/` e os **14 robôs** `robot_01..07_*_{infantil,adulto}`
+  (importados de `C:\GODOT\MODELOS\robos_3d_godot_infantil_adulto` em 2026-06-16; prefixo "robot")
+- `propulsores/` — `forklift` (era `props/` na versão antiga da nota)
+- `structures/` — `core`, `core_out_light`, `door`, `lights`, `props`, `structure`
+- `weapons/` — `bomb`, `pistola_infantil`
 - pastas de suporte (NÃO categorias): `geometry/` (materiais `.tres`), `textures/`, `extracted/` (saída)
 
-`_scan_library()` varre só as categorias fixas em `const CATEGORIES`
-(characters/props/structures). Por modelo prefere `.glb`/`.gltf` (malha crua, sem
-rodar script de gameplay) e cai para `.tscn`. Novo modelo em
-`library/<tipo>/<nome>/` com um `.glb` aparece sozinho — nada a editar em código.
+`_scan_library()` varre só as **4 categorias fixas** em `const CATEGORIES`
+(characters/propulsores/structures/weapons — pastas de suporte como geometry/textures
+são ignoradas de propósito). Novo modelo em `library3D/<tipo>/<nome>/` com um `.glb`
+aparece sozinho — nada a editar em código.
+
+### Tipos de arquivo importáveis (escaneados)
+
+O navegador reconhece **apenas 3 extensões** (case-insensitive), só dos arquivos
+**diretamente na pasta do modelo** (subpastas como `audio/`, `bullet/` são ignoradas):
+
+| Extensão | Papel |
+|---|---|
+| `.glb` / `.gltf` | malha crua importada (glTF 2.0) — **preferida** |
+| `.tscn` | cena Godot montada — **fallback** |
+
+> [!warning] Formatos como `.obj`, `.fbx`, `.dae` **não aparecem** no navegador.
+> Precisam virar `.glb`/`.gltf` (ou uma cena `.tscn`) antes. glTF (`.glb`/`.gltf`) é
+> o formato recomendado pelo Godot para modelo completo **com animação** (malha +
+> esqueleto + skinning + clips); `.blend`/`.fbx`/`.dae` também animam mas dependem de
+> Blender/FBX2glTF; `.obj` só importa malha estática.
+
+Cada modelo resolve **dois** caminhos, por duas funções distintas:
+
+- **`_find_model_file()`** → `path` (a **malha**, base do catálogo de peças). Prefere,
+  nesta ordem: `.glb`/`.gltf` cujo basename **bate com a pasta** (ex.: `red_robot.glb`
+  em `red_robot/`), depois qualquer `.glb`/`.gltf`, depois `.tscn` homônimo, depois
+  qualquer `.tscn`. A malha crua ganha por mostrar a geometria **sem rodar script de
+  gameplay**. O critério "nome = pasta" evita que uma cena irmã (ex.: `bomb.tscn` em
+  `criatura_alada/`, o projétil) seja confundida com o modelo.
+- **`_find_display_file()`** → `display_path` (a cena do **"Modelo completo"**). Prefere
+  o **`.tscn`** (carrega materiais, efeitos e a variante visível pretendida que o `.glb`
+  cru não tem), caindo para o que `_find_model_file` resolver (o `.glb`) quando não há cena.
+
+Depois de escolher um modelo, `_on_model_selected` faz `load()` dos dois caminhos e
+`_build_mesh_catalog` instancia a cena, varre todos os `MeshInstance3D` e os **deduplica
+pelo recurso `Mesh` compartilhado** (`get_instance_id`) — cada malha distinta lista uma
+vez, ordenada por nº de placements, com marca `[skin]` (skinning/animação) ou `[+col]`.
 
 ## Fluxo da tela
 
@@ -44,6 +78,19 @@ baixo para "Selecione..." e reabilita só o filho imediato. As funções de rese
 `_reset_animations()`+`_reset_effects()`, então os dois combos de baixo entram na
 cascata (antes ficavam "presos" visíveis ao trocar um selector acima).
 
+**StatusLabel (2026-06-18):** a linha de status (vermelha, +2pt) é reposicionada
+dinamicamente logo **acima** do combo a que a mensagem se refere (`_set_status(template,
+row, args)` + `_apply_status` movem o label com `move_child`). Textos via `Locale.tr_key`,
+label no `Locale.SKIP_GROUP` (ver [[sistemas/localizacao]]).
+
+**Após selecionar a Parte (2026-06-18):** o status **NÃO** mostra mais mensagem de
+quantidade ("Modelo completo — N parte(s)") nem rótulo de parte ("Parte: X"). Em vez disso,
+no **"Modelo completo"** o status só aparece **quando** os combos Animação e/ou Efeitos
+Especiais têm opções, posicionado **acima** do primeiro deles (`_update_whole_model_status`):
+"Selecione uma animação." (acima de `AnimationRow`), "Selecione um efeito." (acima de
+`EffectsRow`), ou "Selecione uma animação e/ou um efeito." quando ambos. Numa **parte
+isolada** (sem combos abaixo) o status fica **vazio** (`_clear_status`).
+
 ### Rotação do preview
 
 `_yaw`/`_pitch` separados → `model_holder.rotation = Vector3(_pitch, _yaw, 0)`
@@ -58,26 +105,31 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (2026-06-16): **Rotação · Animação · Audio · Falas · Colisores ·
-Efeitos especiais** (o antigo "Som" virou **Audio**). Cada toggle é o **interruptor
-mestre** da sua categoria:
+Toggles atuais (ordem em 2026-06-18): **Rotação · Animação · Efeitos especiais · Audio ·
+Colisores** (o antigo "Som" virou **Audio**; o toggle **Falas** foi REMOVIDO — o Audio agora
+cobre todos os emissores, inclusive vozes). Cada toggle é o **interruptor mestre** da sua
+categoria:
 
 > [!important] Toggles agem **in-place** (2026-06-17)
 > Nenhum toggle **reconstrói** o preview: o modelo **não é recarregado** e a
 > **câmera/rotação ficam intactas**. Cada handler altera o nó vivo
 > (`_preview_instance`) por um aplicador dedicado em vez de chamar um rebuild.
 
-- **Animação** — com o toggle desligado **nada anima**, mesmo com um clip escolhido
-  no dropdown "Animação"; `_on_animation_selected` retorna cedo. O playback é aplicado
-  **in-place** por `_apply_animation_state()` (toca/para nos `_preview_anim_players`):
-  ligado, toca o clip do dropdown (fallback para o autoplay capturado e depois o 1º clip).
-- **Audio** — toca **todo emissor que NÃO é fala** (movimentação andar/correr/saltar,
-  motor, tiro, explosão…); desligado, silencia. Aplicado por `_apply_audio_state()`.
-- **Falas** — toca **só** os emissores de **fala/grito**, classificados pelo nome do
-  nó (`_is_speech_audio`: voz/voice/fala/grito/scream/shout/yell/…). Desligado, silencia.
+- **Animação** — uma animação só roda quando **ambos**: o toggle está ligado **E** um clip
+  está escolhido no dropdown "Animação" (2026-06-18). Com o toggle desligado **nada anima**
+  (`_on_animation_selected` retorna cedo); com o toggle ligado mas o combo em "Selecione..."
+  também **nada roda** — **não há mais auto-play de clip default/idle**. O playback é aplicado
+  **in-place** por `_apply_animation_state()` (`should_play = _play_animation and chosen != ""`;
+  toca o clip escolhido em quem o tiver, para todos os outros `_preview_anim_players`).
+- **Audio** — toca **todos** os emissores do modelo (movimentação andar/correr/saltar,
+  motor, tiro, explosão, vozes…); desligado, silencia. Aplicado por `_apply_audio_state()`.
+  (Não há mais toggle "Falas" separado.)
 - **Colisores** — `_apply_colliders_visibility()` adiciona/remove os gizmos wireframe
   (`_add_collider_gizmos`, idempotente, nó `_ColliderGizmo`) **sem rebuild**; constrói os
-  colliders de membro sob demanda uma vez (`_ensure_member_colliders`).
+  colliders de membro sob demanda uma vez (`_ensure_member_colliders`). Para **Personagens/
+  Armas** desenha gizmo **só dos colliders de MEMBRO** (`_is_member_collider`, meta
+  `member_label`); pula o collider de corpo genérico do modelo (ex.: a cápsula de corpo do
+  red_robot) e as áreas de detecção/morte, que só eram ruído envolvendo tudo (2026-06-18).
 - **Efeitos especiais** — mostra/esconde **tudo o que sobra** ligado ao modelo e que
   nenhum outro toggle cobre: partículas, luzes e malhas presas a osso (muzzle/laser),
   coletadas por `_collect_effect_nodes`. O combo **"Efeitos Especiais"** isola **um**
@@ -86,17 +138,38 @@ mestre** da sua categoria:
 
 ⚠️ Vários modelos disparam som por **tracks de animação** (`type = "audio"`/`"method"`,
 não só autoplay). Por isso `_apply_audio_state()` **muta** (volume_db = -80) os emissores
-cujo toggle está desligado e restaura o **volume autorado** (capturado por `_capture_av`)
-quando religa — assim o áudio disparado pela própria animação também respeita Audio/Falas,
-sem precisar reconstruir o preview.
+quando o toggle Audio está desligado e restaura o **volume autorado** (capturado por
+`_capture_av`) quando religa — assim o áudio disparado pela própria animação também respeita
+o toggle Audio, sem precisar reconstruir o preview.
 
 🔁 `_capture_av()` também **desativa todo `AnimationTree`** (`active = false`) ao montar o
 preview, para que ele não pose o esqueleto **em paralelo** com o clip tocado direto no
-`AnimationPlayer` — era esse duplo-acionamento que fazia o red_robot parecer **dois modelos
-sobrepostos** ao ligar a animação.
+`AnimationPlayer`.
 
-(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 6 estados (rotação,
-animação, audio, falas, colisores, efeitos especiais) são **persistidos** na seção
+🎭 **Anti-"dois modelos" do red_robot (2026-06-18):** ao ligar a animação o red_robot aparecia
+**duplicado/deslocado**. Duas causas, ambas em `_capture_av`/`_apply_animation_state`:
+- **Root motion:** os clips carregam o root motion num osso (`Skeleton3D:MASTER`) que o
+  `AnimationTree` extraía e o script aplicava ao corpo. Tocando o clip **direto** no
+  `AnimationPlayer`, esse osso era APLICADO, transladando o esqueleto (~1,6 m em Z) → segundo
+  modelo atrás. Correção: `_capture_av` copia `tree.root_motion_track` p/ o player que a tree
+  dirigia → o clip toca **no lugar** (root motion extraído e descartado; drift = 0).
+- **Players de efeito/morte:** o red_robot tem 4 `AnimationPlayer` (locomoção + `ShootAnimation` +
+  `Explosion`/kaboom + blast). O preview tocava o 1º clip de **cada** player → o kaboom
+  revelava os destroços de morte (cópias de partes) sobre o modelo. Correção: sem clip escolhido
+  no dropdown **nada toca** (2026-06-18 — antes o player principal tocava um clip default/idle);
+  com um clip explícito do dropdown, `_apply_animation_state` o toca **só** em quem o tiver e para
+  todos os outros players (ex.: escolher "kaboom" mostra a explosão de propósito, sem o blast/shoot
+  junto). O **player principal** (`_main_anim_player` = o que a tree dirige, ou o mais rico sem tree)
+  segue sendo identificado em `_capture_av` só para achar o `_main_body_root` (corpo vivo a esconder
+  nos clips de morte).
+- **Clip de morte/explosão esconde o corpo vivo (2026-06-18):** o clip `kaboom` torna o nó `Death`
+  (destroços = cópias de partes) **visível** mas NÃO esconde o corpo vivo (isso era feito pelo script,
+  removido no preview) → corpo + destroços = "dois modelos". `_apply_animation_state` esconde o
+  `_main_body_root` (raiz do corpo, ex.: `RedRobotModel`) quando o clip escolhido é de morte
+  (`_is_death_clip`: kaboom/explo/death/die/destr), deixando só a explosão.
+
+(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 5 estados (rotação,
+animação, efeitos especiais, audio, colisores) são **persistidos** na seção
 `[models]` de `user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada
 handler) e relidos em `_ready` antes de conectar os sinais, então a tela reabre como
 foi deixada.
@@ -107,6 +180,26 @@ Para **Personagens** e **Armas**, `_preview_whole_model` constrói os colliders 
 membro (via [[arquivos-chave/limb-colliders-gd|LimbColliders]]) e `_add_member_labels`
 flutua um `Label3D` com o nome do membro (CABEÇA, TRONCO, BRAÇO…) sobre cada collider.
 A fonte do rótulo é **36** (¼ menor que os 48 originais — 2026-06-17), com outline 9.
+
+**Rótulos seguem os toggles Debug 3D + Membros (2026-06-18):** os labels de membro do
+browser só aparecem quando **ambos** os toggles do [[sistemas/debug-overlay]] (tela
+developer) estão ligados — `_member_labels_enabled()` lê `game/debug_3d` **e**
+`game/show_members` do `Settings.config_file`. Com Debug 3D ligado mas Membros **desligado**
+(ou Debug 3D desligado), **nenhum** label é desenhado. Os **colliders** de membro continuam
+sendo construídos sempre (enquadramento posado + gizmo do toggle Colisores) — só os rótulos
+são condicionados. Como o `DebugOverlay` (autoload) **também** rotularia o esqueleto do
+preview, `_preview_whole_model` chama `DebugOverlay.exempt_member_labels(instance)` para o
+overlay **pular só os labels de membro** desse subtree (gizmos de esqueleto/mesh do overlay
+seguem valendo) — assim não há rótulo dobrado, e os do browser (com overrides de
+cabeça/tronco) são a única fonte.
+
+> [!note] Collider de CABEÇA do red_robot = rosto + olhos (2026-06-18)
+> O membro CABEÇA do red_robot é montado a partir de `mouth_eyes` **+ `L-EYE`/`R-EYE`**
+> (override em `_MODEL_HEAD_BONES` e em `red_robot.gd`). Os olhos caem na exclusão por "eye",
+> então sem forçá-los a cabeça pegava só o painel do rosto (~42 vértices) e virava uma esfera
+> minúscula escondida na caixa do TRONCO. Com os olhos, a esfera fica ~`r=0.34` (rosto inteiro).
+> Vale tanto para o gizmo do browser quanto para a **hitbox de headshot** em jogo (mesmo
+> `LimbColliders`) — o headshot ficou um alvo justo.
 
 **Centralização posada (2026-06-17):** o AABB de uma malha **skinada** vem da pose de
 **bind**, que no red_robot fica ~1,4 m fora da pose idle em Z. Usá-lo ancoraria o pivô

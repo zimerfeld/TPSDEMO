@@ -30,6 +30,19 @@ Para cada membro (CABEÇA/TRONCO/BRAÇO…) classificado por `BodyParts`, um
 `Skeleton3D`), **Name** (nome do nó), **ID** (instance id) e **Membro** (parte do corpo).
 Cada linha liga/desliga pela sub-chave correspondente da coluna Debug 3D.
 
+**Isenção de rótulos de membro (2026-06-18):** `DebugOverlay.exempt_member_labels(node)`
+marca um subtree (grupo `_NO_MEMBER_LABELS_GROUP`) cujos rótulos são desenhados por **outro**
+dono — o [[sistemas/biblioteca-de-modelos|browser de modelos]] desenha sua própria PILHA de
+tooltips sobre o preview. `_add_3d_skeleton` pula esses esqueletos (via `_in_group_or_ancestor`),
+evitando rótulo **dobrado**; os gizmos de **esqueleto/mesh** do overlay continuam aplicando.
+
+**Tooltips Debug 3D na cena Models (2026-06-18):** o browser desenha a **mesma pilha** do overlay
+(TYPE/Name/ID/Membro), em **ciano**, com as **mesmas sub-chaves** (`show_type_3d`/`show_name_3d`/
+`show_id_3d`/`show_members`) — só que aqui ele tem os overrides de osso por personagem
+(cabeça/tronco/placas) que o classificador global não tem. Assim os tooltips do Debug 3D
+aparecem **também na cena Models**, sobre cada collider de membro do preview (incl. as placas das
+pernas, `PLACA PERNA E/D`). Antes o browser só desenhava o nome do membro (amarelo).
+
 ## Malha no Solo (grid)
 
 Grade wireframe 100 m × 100 m na origem, para escala/posição em telas 3D

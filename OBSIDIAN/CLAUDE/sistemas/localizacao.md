@@ -3,42 +3,52 @@
 Troca de idioma da UI entre **Português** e **English**, via autoload **Locale**
 (`autoload/locale.gd`).
 
-## Dicionários
+## Dicionários por cena
 
-Cada idioma é um JSON plano na **raiz do projeto**: `pt.json` e `en.json`, mapeando o
-texto canônico (do build em português) de cada Button/Label para o texto daquele idioma.
-Ambos contêm o mesmo conjunto de chaves. `pt.json` é essencialmente identidade
-(preserva a aparência atual); `en.json` traz as traduções.
+Cada cena tem seu **próprio par** de JSON planos numa pasta `Resources/` ao lado do `.tscn`:
+`scenes2D/menu/Resources/menu.pt.json` + `menu.en.json`, `scenes2D/settings/Resources/settings.pt.json`
++ `...en.json`, `scenes3D/models/Resources/models.pt.json` + `...en.json`, etc. Cada par mapeia o
+texto canônico (autorado) de cada Button/Label para o texto daquele idioma e tem o **mesmo conjunto
+de chaves** nos dois idiomas.
+
+Na inicialização o Locale **varre recursivamente** `scenes2D/` e `scenes3D/` (`SCAN_ROOTS`), acha
+todo `*.pt.json` / `*.en.json` e **mescla** tudo numa tabela por idioma. Adicionar os dicionários
+`Resources/` de uma tela nova basta — sem editar o autoload. (Não existe mais `pt.json`/`en.json` na
+raiz do projeto.)
 
 ## Persistência e aplicação
 
 - A escolha é salva em `Settings` → `game/language` (`"pt"` padrão / `"en"`).
-- No `_ready`, o Locale lê o idioma persistido, carrega o dicionário e **conecta-se a
-  `node_added`**: todo Button/Label que entra na árvore tem o `text` traduzido
-  automaticamente — telas novas são cobertas **sem código por cena**.
-- A primeira vez que vê um nó, guarda o texto original em meta (`_loc_src`); trocas de
-  idioma traduzem a partir desse original (não do texto já traduzido).
-- `set_language(lang)` persiste, recarrega o dicionário e **re-localiza a árvore viva**
-  (emite `language_changed`).
+- No `_ready`, o Locale lê o idioma persistido, monta a tabela e **conecta-se a `node_added`**: todo
+  Button/Label que entra na árvore tem o `text` traduzido automaticamente. `OptionButton`/`MenuButton`
+  são **ignorados** (texto = seleção viva).
+- A primeira vez que vê um nó, guarda o texto original em meta (`_loc_src`); trocas de idioma traduzem
+  a partir desse original (não do texto já traduzido).
+- `set_language(lang)` persiste, remonta a tabela e **re-localiza a árvore viva** (emite
+  `language_changed`).
 
-## Botões de idioma
+## Botões de idioma — em TODAS as telas
 
-Ancorados no **rodapé da tela menu** (`UI/LangBar`: "Português" / "English"). O
-`menu.gd` chama `Locale.set_language(...)` e acinzenta o botão do idioma ativo
-(`_update_language_buttons`). Como a re-localização é in-place, o menu atualiza na hora.
+A `UI/LangBar` (HBox no canto inferior direito com botões "Português" / "English", mesmo padrão do
+menu) está em **menu, chooseplayer, settings, developer, levels, playonline, controls e models**.
+Cada script chama `Locale.set_language(...)` e acinzenta o botão do idioma ativo
+(`_update_language_buttons`). Como a re-localização é in-place, a tela atualiza na hora.
 
-## Estender cobertura
+## Textos vindos de código (SKIP_GROUP)
 
-Adicionar novas strings = acrescentar a chave (texto-fonte → tradução) em **ambos** os
-arquivos JSON. Nenhuma mudança de código necessária.
+Textos que o localizador automático não alcança — linhas de status dinâmicas (models, controls),
+placeholders/itens de `OptionButton`, títulos das abas de settings, diálogos de confirmação, e o
+painel **System Health** — entram no grupo `Locale.SKIP_GROUP` e reaplicam `Locale.tr_key(...)`
+sozinhos no sinal `language_changed`. Em `models`, a `StatusLabel` (vermelha, +2pt) é reposicionada
+dinamicamente logo **acima** do combo a que a mensagem se refere (no modo "Modelo completo" fica
+acima dos dropdowns Animação/Efeitos Especiais).
 
 ## Regra — mudou texto, atualize as chaves
 
-**Sempre que alterar ou adicionar um texto de Button/Label em uma cena, atualize a chave
-correspondente em `pt.json` E `en.json` na mesma tarefa, junto com a cena.** Como o Locale
-indexa pelo texto-fonte, mudar a cena sem atualizar a chave quebra a tradução (chave órfã
-no idioma inativo, string sem tradução no outro). PT recebe a tradução em português; EN, em
-inglês. Validar os dois JSON ao final.
+**Sempre que alterar ou adicionar um texto de UI em uma cena, atualize a chave correspondente em
+`Resources/<cena>.pt.json` E `Resources/<cena>.en.json` da própria cena, na mesma tarefa.** Como o
+Locale indexa pelo texto-fonte, mudar a cena sem atualizar a chave quebra a tradução. PT recebe a
+tradução em português; EN, em inglês. Validar os dois JSON ao final.
 
-Relacionado: [[fluxos/fluxo-de-cenas]], [[sistemas/debug-overlay]],
+Relacionado: [[fluxos/fluxo-de-cenas]], [[sistemas/debug-overlay]], [[sistemas/system-health]],
 [[arquivos-chave/main-gd]].

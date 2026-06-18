@@ -75,6 +75,31 @@ AIM_HOLD_THRESHOLD = 0.4 s
 
 ---
 
+## Mira vertical — PROCEDURAL (`get_aim_pitch()` + `procedural_aim.gd`)
+
+A mira vertical do player **não** usa mais o blend additive `AIM-Up`/`AIM-Down` do
+`AnimationNodeAdd3`. Diagnóstico (headless, dirigindo o player real e lendo a direção da
+arma `hand.R+X`): aquele blend **não consegue abaixar o braço** — tanto olhar p/ cima quanto
+p/ baixo davam um leve formato de **V** (mínimo no centro, subindo p/ os dois lados), então a
+metade de baixo aparecia **invertida** (arma para cima ao mirar para baixo). Nenhum valor de
+`add_amount` aponta a arma para baixo — é limitação das próprias animações do rig.
+
+> [!info] Solução procedural (2026-06-18)
+> `player_input.get_aim_pitch()` devolve o pitch da câmera (rad). Em `player.gd` (estado
+> STRAFE) o additive vertical é **desligado** (`parameters/aim/add_amount = 0`) e esse pitch
+> alimenta `_aim_modifier.aim_pitch`. O `SkeletonModifier3D` [[procedural-aim-gd|procedural_aim.gd]]
+> (filho do `Skeleton3D`, criado em `_setup_aim_modifier`) roda, **depois** do AnimationTree,
+> o osso **`chest`** em torno do eixo direito do esqueleto por `aim_pitch * strength`. Como
+> ombros/braços/arma/pescoço são filhos do `chest`, o torso inteiro acompanha a mira para
+> **cima E para baixo**.
+>
+> Tunáveis no modifier (exports): `strength` (fração do pitch, default 0.7), `pitch_axis`
+> (inverter o sinal se a mira ficar trocada), `aim_bone` (default `chest`). Ajuste fino é
+> **visual** (verificar no jogo) — o cache de pose global no headless não reflete o resultado
+> pós-modifier, então direção/magnitude se confirmam rodando o jogo.
+
+---
+
 ## Comportamento em `_ready()`
 
 ```gdscript

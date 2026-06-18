@@ -47,13 +47,143 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/side_margin = 12
 theme_override_font_sizes/font_size = 30
-current_tab = 1
+current_tab = 0
+
+[node name="Resolution" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=1989077829]
+layout_mode = 2
+theme_override_constants/separation = 8
+metadata/_tab_index = 0
+
+[node name="VideoResolutionRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="VideoResolutionLabel" type="Label" parent="UI/VBox/Tabs/Resolution/VideoResolutionRow"]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Resolução Vídeo:"
+
+[node name="VideoResolutionDropdown" type="OptionButton" parent="UI/VBox/Tabs/Resolution/VideoResolutionRow"]
+modulate = Color(0.439216, 0.788235, 1, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+
+[node name="ResolutionScaleRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1031780035]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ResolutionScaleLabel" type="Label" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=508499270]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Resolution Scale:"
+
+[node name="ResolutionScaleUltraPerformance" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=740219616]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Ultra Performance"
+
+[node name="ResolutionScalePerformance" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=953203544]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Performance"
+
+[node name="ResolutionScaleBalanced" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=526087253]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Balanced"
+
+[node name="ResolutionScaleQuality" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1914469154]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Quality"
+
+[node name="ResolutionScaleUltraQuality" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1040171739]
+modulate = Color(1, 0.627451, 0.25098, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Ultra Quality"
+
+[node name="ResolutionScaleNative" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1619859450]
+modulate = Color(1, 0.376471, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Native"
+
+[node name="ScaleFilterRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1250048858]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ScaleFilterLabel" type="Label" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=2001379291]
+custom_minimum_size = Vector2(350, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Resolution Scale Filter:"
+
+[node name="ScaleFilterBilinear" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=1603751638]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Bilinear"
+
+[node name="ScaleFilterFSR1" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=2082513038]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "AMD FSR 1.0"
+
+[node name="ScaleFilterMetalFXSpatial" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=1298911820]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "MetalFX Spatial"
+
+[node name="ScaleFilterFSR2" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=863375471]
+modulate = Color(1, 0.627451, 0.25098, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "AMD FSR 2.2"
+
+[node name="ScaleFilterMetalFXTemporal" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=458892095]
+modulate = Color(1, 0.627451, 0.25098, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "MetalFX Temporal"
 
 [node name="Display" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=1753421457]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
-metadata/_tab_index = 0
+metadata/_tab_index = 1
 
 [node name="DisplayModeRow" type="HBoxContainer" parent="UI/VBox/Tabs/Display" unique_id=226502833]
 layout_mode = 2
@@ -204,136 +334,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Unlimited"
-
-[node name="Resolution" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=1989077829]
-layout_mode = 2
-theme_override_constants/separation = 8
-metadata/_tab_index = 1
-
-[node name="VideoResolutionRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="VideoResolutionLabel" type="Label" parent="UI/VBox/Tabs/Resolution/VideoResolutionRow"]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Resolução Vídeo:"
-
-[node name="VideoResolutionDropdown" type="OptionButton" parent="UI/VBox/Tabs/Resolution/VideoResolutionRow"]
-modulate = Color(0.439216, 0.788235, 1, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 24
-
-[node name="ResolutionScaleRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1031780035]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="ResolutionScaleLabel" type="Label" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=508499270]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Resolution Scale:"
-
-[node name="ResolutionScaleUltraPerformance" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=740219616]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Ultra Performance"
-
-[node name="ResolutionScalePerformance" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=953203544]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Performance"
-
-[node name="ResolutionScaleBalanced" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=526087253]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Balanced"
-
-[node name="ResolutionScaleQuality" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1914469154]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Quality"
-
-[node name="ResolutionScaleUltraQuality" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1040171739]
-modulate = Color(1, 0.627451, 0.25098, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Ultra Quality"
-
-[node name="ResolutionScaleNative" type="Button" parent="UI/VBox/Tabs/Resolution/ResolutionScaleRow" unique_id=1619859450]
-modulate = Color(1, 0.376471, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Native"
-
-[node name="ScaleFilterRow" type="HBoxContainer" parent="UI/VBox/Tabs/Resolution" unique_id=1250048858]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="ScaleFilterLabel" type="Label" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=2001379291]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Resolution Scale Filter:"
-
-[node name="ScaleFilterBilinear" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=1603751638]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "Bilinear"
-
-[node name="ScaleFilterFSR1" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=2082513038]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "AMD FSR 1.0"
-
-[node name="ScaleFilterMetalFXSpatial" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=1298911820]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "MetalFX Spatial"
-
-[node name="ScaleFilterFSR2" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=863375471]
-modulate = Color(1, 0.627451, 0.25098, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "AMD FSR 2.2"
-
-[node name="ScaleFilterMetalFXTemporal" type="Button" parent="UI/VBox/Tabs/Resolution/ScaleFilterRow" unique_id=458892095]
-modulate = Color(1, 0.627451, 0.25098, 1)
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-size_flags_horizontal = 3
-toggle_mode = true
-text = "MetalFX Temporal"
 
 [node name="Antialiasing" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=684957616]
 visible = false
@@ -747,5 +747,36 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Reset"
 
+[node name="LangBar" type="HBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -298.0
+offset_top = -68.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="PortugueseButton" type="Button" parent="UI/LangBar"]
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Português"
+
+[node name="EnglishButton" type="Button" parent="UI/LangBar"]
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "English"
+
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Actions/Reset" to="." method="_on_reset_pressed"]
+[connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]

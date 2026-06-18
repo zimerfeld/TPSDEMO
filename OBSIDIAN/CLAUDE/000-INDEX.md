@@ -10,7 +10,7 @@
 | Nota | Resumo |
 |---|---|
 | [[sistemas/player]] | Movimento, física, animação, câmera |
-| [[sistemas/inimigos]] | Red Robot — IA, estados, laser |
+| [[sistemas/inimigos]] | Red Robot — IA reativa (recarga 1,5× + recuo ≤10 m), estados, HUD com alcance |
 | [[sistemas/combate-tiro]] | Bullet, RPC hit, cooldown |
 | [[sistemas/multiplayer]] | Arquitetura server-authoritative |
 | [[sistemas/sistema-de-vida]] | HP, barra de vida, respawn |
@@ -18,7 +18,8 @@
 | [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, grupo Level Base |
 | [[sistemas/audio]] | Buses (Master/Outside/Reactor/Music/SFX), controles Música × Efeitos de Som nas settings |
 | [[sistemas/debug-overlay]] | DebugOverlay + tela developer em 2 colunas (Debug 2D amarelo / Debug 3D ciano), grid, rótulos 3D |
-| [[sistemas/localizacao]] | Idioma EN/PT: autoload Locale + dicionários pt.json/en.json na raiz, persistido, botões no menu |
+| [[sistemas/system-health]] | Monitor System Health (developer): mem/FPS/CPU-proc., alerta a 90% + auto-pausa de segurança |
+| [[sistemas/localizacao]] | Idioma EN/PT: autoload Locale + dicionários por cena em Resources/*.pt/en.json, persistido, botões em TODAS as telas |
 
 ---
 
@@ -42,6 +43,7 @@
 | `library3D/characters/enemies/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
 | `effects_shared/limb_colliders.gd` | [[arquivos-chave/limb-colliders-gd]] |
 | `library3D/characters/red_robot/red_robot.gd` | [[arquivos-chave/red-robot-gd]] |
+| `library3D/characters/red_robot/IA/red_robot_ai.gd` | [[arquivos-chave/red-robot-ai-gd]] |
 | `library3D/characters/player/bullet/bullet.gd` | [[arquivos-chave/bullet-gd]] |
 | `scenes2D/main/main.gd` | [[arquivos-chave/main-gd]] |
 
@@ -60,7 +62,7 @@
 ## Notas Rápidas
 
 - Organização: **scenes2D/** (telas de UI: menu, settings, chooseplayer, developer, levels) e **scenes3D/** (players, enemies, door, level_1, level_base, models)
-- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **Locale** (`autoload/locale.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**
+- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **Locale** (`autoload/locale.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**, **SystemHealth** (`autoload/system_health.gd`)
 - Telas extras: **developer** (toggles de debug) → **models** (navegador/extrator de modelos 3D) → **Exported** (galeria de `library/extracted/`); **settings** com aba Debug
 - Motor: **Godot 4.x**
 - Modo de rede: **ENet / OfflineMultiplayerPeer** (server-authoritative)

@@ -14,6 +14,11 @@ extends Node3D
 const HEAD_MULTIPLIER := 1.5
 const BODY_MULTIPLIER := 1.0
 
+# Prefixo de "grupo" interno para uma peça com collider próprio (standalone_part_bones).
+# Cada peça vira um grupo único "PART_<osso>", reaproveitando todo o pipeline de membros.
+# Sem ":" no prefixo: nomes de nó do Godot não aceitam ":".
+const _PART_PREFIX := "PART_"
+
 @export var enabled: bool = true
 ## Margem (m) somada a cada lado da caixa, para folga sobre a superfície.
 @export var padding: float = 0.03
@@ -25,6 +30,15 @@ const BODY_MULTIPLIER := 1.0
 ## cujo osso principal tem nome genérico que o classificador não reconhece
 ## (ex.: red_robot, cujo corpo é o osso "Bone.001").
 @export var torso_bone_names: Array[String] = []
+## Nomes de bones forçados para PERNA E/D (ignora exclusões; lado vem do nome L-/R-).
+## Para placas/peças da perna que o classificador descartaria (ex.: red_robot,
+## "L-RearLegGuard"/"R-RearLegGuard", excluídas pela palavra "guard").
+@export var leg_bone_names: Array[String] = []
+## Bones que recebem um collider PRÓPRIO (uma caixa ajustada só aos seus vértices), em vez
+## de serem absorvidos por um membro maior. Para peças SALIENTES que a cápsula do membro não
+## cobriria — ex.: as placas traseiras das pernas do red_robot ("L-/R-RearLegGuard"), que
+## ficam atrás da perna e escapariam da cápsula. O lado (E/D) vem do nome do osso (L-/R-).
+@export var standalone_part_bones: Array[String] = []
 
 @export_group("Colisão")
 ## Layer dos colliders de membro (bit5=16 player, bit6=32 enemy). Os projéteis
@@ -54,11 +68,32 @@ func get_limb_bodies() -> Array[StaticBody3D]:
 
 # ── Coleta de vértices por membro ─────────────────────────────────────────────
 
+# Classifica um osso num grupo de MEMBRO, ou num grupo individual "PART_<osso>" quando o
+# osso está em standalone_part_bones (peça com collider próprio). Intercepta ANTES do
+# classificador normal, então a peça nunca é absorvida pelo membro vizinho.
+func _classify(bone_name: String) -> String:
+	for p in standalone_part_bones:
+		if bone_name.to_lower() == String(p).to_lower():
+			return _PART_PREFIX + bone_name
+	return BodyParts.group_of(bone_name, head_bone_names, torso_bone_names, leg_bone_names)
+
+
+# Rótulo legível de uma peça standalone (a partir do nome do osso). Placas de perna viram
+# "PLACA PERNA E/D"; demais peças usam o próprio nome do osso.
+func _part_label(bone_name: String) -> String:
+	var ln := bone_name.to_lower()
+	if ln.contains("leg") and ln.contains("guard"):
+		match BodyParts.side_of(bone_name):
+			"L": return "PLACA PERNA E"
+			"R": return "PLACA PERNA D"
+	return bone_name
+
+
 func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 	# 1) Agrupa ossos por membro e escolhe o osso-raiz (mais raso na hierarquia).
 	var group_bones := {}
 	for b in skel.get_bone_count():
-		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names, torso_bone_names)
+		var g := _classify(skel.get_bone_name(b))
 		if g == "":
 			continue
 		if not group_bones.has(g):
@@ -128,7 +163,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 				var skb := idx_to_bone[best_b]
 				if skb < 0:
 					continue
-				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names, torso_bone_names)
+				var g := _classify(skel.get_bone_name(skb))
 				if g == "":
 					continue
 				var p: Vector3 = root_rest_inv[g] * (skin_xform[best_b] * verts[vi])
@@ -183,9 +218,11 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	body.collision_layer = hitbox_layer
 	body.collision_mask = 0   # passivo: é atingido, não detecta nada
 	var mult: float = HEAD_MULTIPLIER if group == BodyParts.HEAD else BODY_MULTIPLIER
+	# Peças standalone (PART_*) usam o rótulo derivado do osso; membros normais, o de BodyParts.
+	var label: String = _part_label(skel.get_bone_name(bone_idx)) if group.begins_with(_PART_PREFIX) else BodyParts.label_of(group)
 	body.set_meta("group", group)
 	body.set_meta("damage_multiplier", mult)
-	body.set_meta("member_label", BodyParts.label_of(group))
+	body.set_meta("member_label", label)
 	body.set_meta("character", _character)
 
 	body.add_child(make_member_shape(group, box_aabb))
@@ -211,7 +248,8 @@ static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D
 	var kind := "capsule"
 	if group == BodyParts.HEAD:
 		kind = "sphere"
-	elif group == BodyParts.TORSO:
+	elif group == BodyParts.TORSO or group.begins_with(_PART_PREFIX):
+		# Peças salientes (placas) são chatas/retangulares → caixa, não cápsula.
 		kind = "box"
 	return make_shape(kind, box_aabb)
 

@@ -1,0 +1,16 @@
+O gh não está instalado nesse terminal. No Windows, o caminho mais simples é instalar e reabrir o Git Bash:
+
+winget install --id GitHub.cli --source winget
+
+
+Depois feche e abra o terminal e rode:
+
+gh auth login
+
+gh api repos/zimerfeld/TPSDEMO/traffic/clones
+
+Como você está no MINGW64 (Git Bash/MinTTY), se o login interativo der problema use um destes jeitos:
+
+winpty gh auth login
+
+gh api repos/zimerfeld/TPSDEMO/traffic/clones

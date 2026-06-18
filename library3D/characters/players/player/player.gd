@@ -63,6 +63,9 @@ var hp: int = MAX_HP
 
 var _health_bar = null
 
+# SkeletonModifier3D que faz a mira vertical procedural (gira o torso pelo pitch da câmera).
+var _aim_modifier = null
+
 
 func _ready() -> void:
 	# Pre-initialize orientation transform.
@@ -78,6 +81,9 @@ func _ready() -> void:
 	# Colliders 3D de membro (dano localizado). O projétil colide fisicamente
 	# com eles; construídos em todos os peers (só o servidor simula os tiros).
 	_setup_limb_colliders.call_deferred()
+	# Mira vertical procedural (gira o torso conforme o pitch da câmera). Substitui o
+	# blend additive AIM-Up/AIM-Down, que não conseguia abaixar o braço.
+	_setup_aim_modifier.call_deferred()
 
 
 func _setup_health_bar() -> void:
@@ -109,14 +115,16 @@ func _setup_limb_colliders() -> void:
 	lc.build_for(skel)
 
 
-# Impede que o projétil recém-disparado colida com os próprios colliders de
-# membro do atirador (que envolvem o braço/arma de onde ele nasce).
-func _exclude_own_limbs(bullet: PhysicsBody3D) -> void:
-	var lc := get_node_or_null(^"LimbColliders")
-	if lc == null:
+# Cria o SkeletonModifier3D da mira vertical procedural sob o Skeleton3D do player.
+func _setup_aim_modifier() -> void:
+	if _aim_modifier != null:
 		return
-	for body in lc.get_limb_bodies():
-		bullet.add_collision_exception_with(body)
+	var skel := player_model.get_node_or_null(^"Robot_Skeleton/Skeleton3D") as Skeleton3D
+	if skel == null:
+		return
+	_aim_modifier = preload("res://library3D/characters/players/player/procedural_aim.gd").new()
+	_aim_modifier.name = "ProceduralAim"
+	skel.add_child(_aim_modifier)
 
 
 func _safe_is_server_call(default: bool = false) -> bool:
@@ -164,14 +172,20 @@ func animate(anim: int, _delta: float) -> void:
 
 	elif anim == Animations.STRAFE:
 		animation_tree["parameters/state/transition_request"] = "strafe"
-		# Change aim according to camera rotation.
-		animation_tree["parameters/aim/add_amount"] = player_input.get_aim_rotation()
+		# Vertical aim is now PROCEDURAL (see procedural_aim.gd): the additive AIM-Up/AIM-Down
+		# blend can't lower the arm, so it stays disabled (add_amount 0) and the torso is
+		# rotated by the camera pitch instead.
+		animation_tree["parameters/aim/add_amount"] = 0
+		if _aim_modifier != null:
+			_aim_modifier.aim_pitch = player_input.get_aim_pitch()
 		# The animation's forward/backward axis is reversed.
 		animation_tree["parameters/strafe/blend_position"] = Vector2(motion.x, -motion.y)
 
 	elif anim == Animations.WALK:
-		# Aim to zero (no aiming while walking).
+		# Not aiming while walking: zero the additive blend and the procedural pitch.
 		animation_tree["parameters/aim/add_amount"] = 0
+		if _aim_modifier != null:
+			_aim_modifier.aim_pitch = 0.0
 		# Change state to walk.
 		animation_tree["parameters/state/transition_request"] = "walk"
 		# Blend position for walk speed based checked motion.
@@ -229,15 +243,9 @@ func apply_input(delta: float) -> void:
 			var shoot_origin: Vector3 = shoot_from.global_transform.origin
 			var shoot_dir: Vector3 = (player_input.shoot_target - shoot_origin).normalized()
 
-			var bullet: CharacterBody3D = preload("res://library3D/characters/player/bullet/bullet.tscn").instantiate()
-			bullet.weapon_damage = weapon_damage
-			bullet.shooter = self
-			get_parent().add_child(bullet, true)
-			bullet.global_transform.origin = shoot_origin
-			# If we don't rotate the bullets there is no useful way to control the particles ..
-			bullet.look_at(shoot_origin + shoot_dir)
-			bullet.add_collision_exception_with(self)
-			_exclude_own_limbs(bullet)
+			# Reusable cannon shooter spawns + configures the bullet (default blue look)
+			# and excludes the shooter's own body/limb colliders.
+			CannonShooter.fire(get_parent(), shoot_origin, shoot_dir, weapon_damage, self)
 			shoot.rpc()
 
 	else: # Not in air or aiming, idle.

@@ -113,16 +113,48 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
-[node name="Loading" type="HBoxContainer" parent="UI" unique_id=619865146]
-visible = false
-layout_mode = 0
+[node name="LangBar" type="HBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 100.0
-offset_top = -135.0
-offset_right = -130.0
-offset_bottom = -100.0
+offset_left = -298.0
+offset_top = -68.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="PortugueseButton" type="Button" parent="UI/LangBar"]
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Português"
+
+[node name="EnglishButton" type="Button" parent="UI/LangBar"]
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "English"
+
+[node name="Loading" type="HBoxContainer" parent="UI" unique_id=619865146]
+visible = false
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -160.0
+offset_right = 220.0
+offset_bottom = -120.0
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="LoadingLabel" type="Label" parent="UI/Loading" unique_id=118881584]
 layout_mode = 2
@@ -141,4 +173,6 @@ one_shot = true
 [connection signal="pressed" from="UI/VBox/Level2Row/Level2Button" to="." method="_on_level_2_pressed"]
 [connection signal="pressed" from="UI/VBox/LevelBaseRow/LevelBaseButton" to="." method="_on_level_base_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

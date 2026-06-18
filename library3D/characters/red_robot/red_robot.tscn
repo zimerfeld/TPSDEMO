@@ -10201,11 +10201,12 @@ nodes/state/node = SubResource("51")
 nodes/state/position = Vector2(60, 100)
 node_connections = [&"output", 0, &"hit3", &"aiming", 0, &"state", &"aiming", 1, &"aim", &"hit1", 0, &"aiming", &"hit1", 1, &"Animation 5", &"hit2", 0, &"hit1", &"hit2", 1, &"Animation 6", &"hit3", 0, &"hit2", &"hit3", 1, &"Animation 7", &"state", 0, &"Animation", &"state", 1, &"Animation 3", &"state", 2, &"Animation 2", &"state", 3, &"Animation 4"]
 
-[sub_resource type="SphereShape3D" id="53"]
-radius = 1.11815
+[sub_resource type="CapsuleShape3D" id="53"]
+radius = 0.5
+height = 2.0
 
 [sub_resource type="SphereShape3D" id="54"]
-radius = 20.0
+radius = 30.0
 
 [sub_resource type="Animation" id="55"]
 length = 4.0
@@ -10799,7 +10800,7 @@ parameters/state/transition_request = ""
 parameters/state/current_index = 0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.11655, -0.0212681)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("53")
 
 [node name="PlayerDetectionArea" type="Area3D" parent="."]

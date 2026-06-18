@@ -11,6 +11,7 @@ const CONTROLS_PATH: String = "res://scenes2D/controls/controls.tscn"
 # are saved and applied to the DebugOverlay immediately.
 const _TOGGLES: Dictionary = {
 	"FPSRow": "hud_fps",
+	"SystemHealthRow": "system_health",
 	"ShowGridRow": "show_grid",
 	# Debug 2D column.
 	"Debug2DRow": "debug_2d",
@@ -69,6 +70,29 @@ func _ready() -> void:
 	# is on, so grey their buttons out when the master is disabled.
 	_update_subrows_enabled()
 
+	_update_language_buttons()
+
+
+@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/LangBar/EnglishButton
+
+
+# Grey out the button for the language already active (same pattern as the menu).
+func _update_language_buttons() -> void:
+	var lang := Locale.get_language()
+	portuguese_button.disabled = lang == "pt"
+	english_button.disabled = lang == "en"
+
+
+func _on_portuguese_pressed() -> void:
+	Locale.set_language("pt")
+	_update_language_buttons()
+
+
+func _on_english_pressed() -> void:
+	Locale.set_language("en")
+	_update_language_buttons()
+
 
 func _row(row_name: String) -> HBoxContainer:
 	return $UI.find_child(row_name, true, false) as HBoxContainer
@@ -104,6 +128,9 @@ func _on_toggle(button_pressed: bool, key: String) -> void:
 	Settings.config_file.set_value("game", key, button_pressed)
 	Settings.save_settings()
 	DebugOverlay.refresh()
+	# Show/hide the System Health monitor overlay immediately.
+	if key == "system_health":
+		SystemHealth.refresh()
 	# Toggling a column master enables/disables its dependent sub-toggle buttons.
 	if key == "debug_2d" or key == "debug_3d":
 		_update_subrows_enabled()
