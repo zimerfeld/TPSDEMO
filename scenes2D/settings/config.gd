@@ -26,10 +26,21 @@ var DEFAULTS := {
 		debug_2d = false,
 		debug_3d = false,
 		hud_fps = false,
+		# 2D tooltip lines (Debug 2D column).
 		show_id = false,
 		show_type = false,
 		show_name = false,
+		# 3D label lines (Debug 3D column) — separate from the 2D set so each column
+		# is toggled independently.
+		show_id_3d = false,
+		show_type_3d = false,
+		show_name_3d = false,
+		show_members = false,
+		show_skeleton3d = false,
+		show_mesh3d = false,
 		show_grid = false,
+		# UI language: "pt" (default) or "en". Persisted; read by the Locale autoload.
+		language = "pt",
 	},
 	audio = {
 		music = true,

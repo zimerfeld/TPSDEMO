@@ -25,6 +25,9 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 @onready var loading_progress: ProgressBar = loading.get_node(^"Progress")
 @onready var loading_done_timer: Timer = loading.get_node(^"DoneTimer")
 
+@onready var portuguese_button: Button = ui.get_node(^"LangBar/PortugueseButton")
+@onready var english_button: Button = ui.get_node(^"LangBar/EnglishButton")
+
 
 func _ready() -> void:
 	# Read every stored setting from disk and apply it before the menu is shown, so the
@@ -38,7 +41,16 @@ func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		_on_play_online_pressed.call_deferred()
 
+	_update_language_buttons()
+
 	play_button.grab_focus()
+
+
+# Grey out the button for the language already active so the current choice is clear.
+func _update_language_buttons() -> void:
+	var lang := Locale.get_language()
+	portuguese_button.disabled = lang == "pt"
+	english_button.disabled = lang == "en"
 
 
 func _process(_delta: float) -> void:
@@ -83,6 +95,18 @@ func _on_play_online_pressed() -> void:
 
 func _on_developer_pressed() -> void:
 	emit_signal("replace_main_scene", load(DEVELOPER_PATH))
+
+
+# Language buttons (anchored at the bottom of the menu): switch + persist the UI
+# language. Locale re-localizes the live tree, so the menu updates in place.
+func _on_portuguese_pressed() -> void:
+	Locale.set_language("pt")
+	_update_language_buttons()
+
+
+func _on_english_pressed() -> void:
+	Locale.set_language("en")
+	_update_language_buttons()
 
 
 func _input(input_event: InputEvent) -> void:
