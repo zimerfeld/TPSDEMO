@@ -1,10 +1,10 @@
-# Third Person Shooter Demo — Documentação completa (Português)
+# ZIMARO — Documentação completa (Português)
 
 > Documentação detalhada e extensa em português. Para o resumo bilíngue de alto nível veja
 > [README.md](README.md); a versão em inglês é [README.en-US.md](README.en-US.md).
 > O cofre [`OBSIDIAN/`](OBSIDIAN) espelha este conteúdo com notas por sistema.
 
-Demo de tiro em terceira pessoa feita com a [Godot Engine](https://godotengine.org).
+ZIMARO é um sandbox de tiro em terceira pessoa feito com a [Godot Engine](https://godotengine.org).
 
 - Ajude a manter este projeto sempre atualizado 💜
 
@@ -12,7 +12,7 @@ Demo de tiro em terceira pessoa feita com a [Godot Engine](https://godotengine.o
 
 ## Visão geral
 
-Partindo da demo TPS original da Godot, este projeto a expande para um pequeno sandbox de tiro
+Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro
 em terceira pessoa. Em alto nível, oferece:
 
 - **Fluxo por menus** — um menu principal leva à seleção de personagem, ao seletor de fases, à
@@ -216,8 +216,8 @@ Este projeto tem como alvo o **Godot 4.6.2 (estável)** — baixe-o
 
 ## Executando
 
-Pegue o projeto em [zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO) — clone-o ou
-[baixe um arquivo ZIP](https://github.com/zimerfeld/TPSDEMO/archive/refs/heads/main.zip) — e abra-o
+Pegue o projeto em [zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) — clone-o ou
+[baixe um arquivo ZIP](https://github.com/zimerfeld/ZIMARO/archive/refs/heads/main.zip) — e abra-o
 no Godot 4.6.2.
 
 ## Estrutura do projeto
@@ -271,7 +271,7 @@ preview de HUD montado isolado, fora deste fluxo de navegação.
 Layout de pastas e subpastas:
 
 ```
-TPSDEMO/
+ZIMARO/
 ├─ scenes2D/             # telas 2D, UI e widgets reutilizáveis
 │  ├─ main/              # cena de entrada + roteador (main.gd troca as telas)
 │  ├─ menu/              # menu principal

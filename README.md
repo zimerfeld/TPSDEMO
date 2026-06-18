@@ -1,14 +1,14 @@
-# Third Person Shooter Demo
+# ZIMARO
 
-> 🇬🇧 A small third-person shooter sandbox built on the [Godot Engine](https://godotengine.org) TPS demo.
-> 🇧🇷 Um pequeno sandbox de tiro em terceira pessoa construído sobre a demo TPS da [Godot Engine](https://godotengine.org).
+> 🇬🇧 A small third-person shooter sandbox built on the [Godot Engine](https://godotengine.org).
+> 🇧🇷 Um pequeno sandbox de tiro em terceira pessoa construído sobre a [Godot Engine](https://godotengine.org).
 
 - Help keep this project always updated 💜
 - Ajude a manter este projeto sempre atualizado 💜
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-![Screenshot of TPS demo](screenshots/screenshot.png)
+![Screenshot of ZIMARO](screenshots/screenshot.png)
 
 > 🇬🇧 **This file is a high-level bilingual summary.** Full, detailed docs:
 > **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)**
@@ -19,14 +19,14 @@
 
 ## Overview · Visão geral
 
-🇬🇧 Starting from the original Godot TPS demo, this project grows it into a small third-person
+🇬🇧 Built on the Godot Engine, ZIMARO is a small third-person
 shooter sandbox: a menu-driven flow (character selection, level picker, settings, developer screen,
 online play), playable characters that move/aim/jump/shoot, ground and flying enemies (the Red
 Robot has a reactive AI that reloads faster, opens fire in range and flees when you close in),
 per-limb localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD
 widgets, debug tooling, EN/PT localization and live (no-Apply) settings.
 
-🇧🇷 Partindo da demo TPS original da Godot, este projeto a expande para um pequeno sandbox de tiro em
+🇧🇷 Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro em
 terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, configurações, tela de
 desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atiram, inimigos
 terrestres e voadores (o Red Robot tem uma IA reativa que recarrega mais rápido, abre fogo no
@@ -68,11 +68,11 @@ mesclados no carregamento.
 ## Requirements & running · Requisitos e execução
 
 🇬🇧 Requires **Godot 4.6.2** ([download](https://godotengine.org/download/)). Get the project from
-[zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO) (clone or ZIP) and open it in Godot. Git
+[zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) (clone or ZIP) and open it in Godot. Git
 LFS is not required.
 
 🇧🇷 Requer **Godot 4.6.2** ([download](https://godotengine.org/download/)). Pegue o projeto em
-[zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO) (clone ou ZIP) e abra no Godot. Git LFS não
+[zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) (clone ou ZIP) e abra no Godot. Git LFS não
 é necessário.
 
 ## Project structure · Estrutura do projeto

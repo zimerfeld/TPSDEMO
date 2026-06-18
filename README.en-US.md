@@ -1,10 +1,10 @@
-# Third Person Shooter Demo — Full documentation (English)
+# ZIMARO — Full documentation (English)
 
 > Detailed, extensive English documentation. For the high-level bilingual summary see
 > [README.md](README.md); the Portuguese version is [README.pt-BR.md](README.pt-BR.md).
 > The [`OBSIDIAN/`](OBSIDIAN) vault mirrors this content with per-system notes.
 
-Third person shooter demo made using [Godot Engine](https://godotengine.org).
+ZIMARO is a third-person shooter sandbox made using [Godot Engine](https://godotengine.org).
 
 - Help keep this project always updated 💜
 
@@ -12,7 +12,7 @@ Third person shooter demo made using [Godot Engine](https://godotengine.org).
 
 ## Overview
 
-Starting from the original Godot TPS demo, this project grows it into a small
+Built on the [Godot Engine](https://godotengine.org), ZIMARO is a small
 third-person shooter sandbox. At a high level it offers:
 
 - **Menu-driven flow** — a main menu leads to character selection, a level picker, a
@@ -218,8 +218,8 @@ This project targets **Godot 4.6.2 (stable)** — download it
 
 ## Running
 
-Get the project from [zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO) — clone it or
-[download a ZIP archive](https://github.com/zimerfeld/TPSDEMO/archive/refs/heads/main.zip) — then
+Get the project from [zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) — clone it or
+[download a ZIP archive](https://github.com/zimerfeld/ZIMARO/archive/refs/heads/main.zip) — then
 open it in Godot 4.6.2.
 
 ## Project structure
@@ -273,7 +273,7 @@ the UI language (EN/PT) from the Português/English buttons present on every scr
 Folder and subfolder layout:
 
 ```
-TPSDEMO/
+ZIMARO/
 ├─ scenes2D/             # 2D screens, UI and reusable widgets
 │  ├─ main/              # entry scene + router (main.gd swaps screens in)
 │  ├─ menu/              # main menu
