@@ -11,7 +11,7 @@
 
 ## Como aplicar
 
-Na raiz do repositório (`C:\GODOT\TPSDEMO`), via **Git Bash** no Windows:
+Na raiz do repositório (`C:\GODOT\ZIMARO`), via **Git Bash** no Windows:
 
 ```bash
 bash file_format.sh

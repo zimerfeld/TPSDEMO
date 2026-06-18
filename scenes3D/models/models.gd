@@ -14,6 +14,10 @@ const SELECT_LABEL: String = "Selecione..."
 # the whole assembled model. Picking a real part below it isolates one distinct mesh.
 const WHOLE_MODEL_LABEL: String = "Modelo completo"
 
+# Stable identifier persisted for the "Modelo completo" part selection. Its visible label
+# is translated, so the restore code keys off this sentinel instead of the on-screen text.
+const WHOLE_MODEL_VALUE: String = "__whole_model__"
+
 # Root of the 3D model library. Models live in res://library3D/<tipo>/<modelo>/
 # (e.g. characters/red_robot, props/forklift, structures/core). The selection
 # dropdowns below are built by scanning this folder, so dropping a new model
@@ -211,10 +215,11 @@ func _ready() -> void:
 	Locale.language_changed.connect(_on_language_changed)
 	_update_language_buttons()
 
-	# Start blank: every dropdown shows "Selecione..." and nothing is previewed
-	# until the user drills down Categoria -> Prefixo -> Modelo -> Parte.
-	cbo_category.select(0)
-	_on_category_selected(0)
+	# Reopen exactly where the user left off: replay the persisted selection chain
+	# (Categoria -> Prefixo -> Modelo -> Parte -> Animação/Efeitos). With nothing saved
+	# every dropdown shows "Selecione..." and nothing is previewed — identical to a first
+	# visit, and no real item is ever auto-selected.
+	_restore_selection_chain()
 
 
 # Store a (translatable) status template, its format args and the combo row it refers to,
@@ -294,6 +299,7 @@ func _process(delta: float) -> void:
 # "Selecione..." placeholder (real categories start at index 1). Selecting it blanks
 # and disables the whole chain below and clears the preview.
 func _on_category_selected(index: int) -> void:
+	_save_selection("sel_category", _category_value(index))
 	if index <= 0:
 		_reset_prefixes()
 		_reset_models()
@@ -343,6 +349,7 @@ func _reset_prefixes() -> void:
 
 func _on_prefix_selected(index: int) -> void:
 	_prefix_filter = cbo_prefix.get_item_metadata(index)
+	_save_selection("sel_prefix", _prefix_filter)
 	if _prefix_filter == "":
 		# Back to the placeholder: re-lock Modelo and Parte.
 		_reset_models()
@@ -415,11 +422,13 @@ func _reset_meshes_and_preview() -> void:
 # picked. Selecting the placeholder blanks the part dropdown and the preview.
 func _on_model_selected(index: int) -> void:
 	if index <= 0:
+		_save_selection("sel_model", "")
 		_reset_meshes_and_preview()
 		_set_status("Selecione um modelo.", model_row)
 		return
 
 	var model: Dictionary = _filtered_models[index - 1]
+	_save_selection("sel_model", model["name"])
 	_current_model_path = model["path"]
 	_model_scene = load(model["path"])
 	_display_scene = load(model.get("display_path", model["path"]))
@@ -443,6 +452,7 @@ func _on_model_selected(index: int) -> void:
 # index 1 is the assembled "Modelo completo", and indices 2.. map to the distinct
 # meshes in _mesh_catalog (shifted by the two leading entries).
 func _on_mesh_selected(index: int) -> void:
+	_save_selection("sel_part", _part_value(index))
 	if index <= 0:
 		_clear_preview()
 		_reset_animations()
@@ -528,7 +538,8 @@ func _reset_animations() -> void:
 # chosen clip (looping via the player) on every AnimationPlayer that has it — but only
 # while the Animação toggle is on: with it off, picking a clip just updates the pending
 # selection and plays nothing (it starts when the toggle is turned on, via _refresh_preview).
-func _on_animation_selected(_index: int) -> void:
+func _on_animation_selected(index: int) -> void:
+	_save_selection("sel_animation", "" if index <= 0 else cbo_animations.get_item_text(index))
 	if not _play_animation:
 		return
 	# Play the newly chosen clip in place (the appliers read cbo_animations).
@@ -568,7 +579,8 @@ func _reset_effects() -> void:
 
 # Item 0 is "Selecione..." (show every effect, per the toggle); items 1.. are effect
 # names. Picking one isolates it (only that effect renders); see _apply_effects_visibility.
-func _on_effect_selected(_index: int) -> void:
+func _on_effect_selected(index: int) -> void:
+	_save_selection("sel_effect", "" if index <= 0 else cbo_effects.get_item_text(index))
 	_apply_effects_visibility()
 
 
@@ -622,6 +634,167 @@ func _on_effects_toggled(pressed: bool) -> void:
 func _save_toggle(key: String, value: bool) -> void:
 	Settings.config_file.set_value("models", key, value)
 	Settings.save_settings()
+
+
+# --- Selection persistence + restore ----------------------------------------
+
+# Persist one dropdown selection so the browser reopens on the same chain. Stored by a
+# STABLE value (category key / prefix token / model name / clip / effect label, or the
+# WHOLE_MODEL_VALUE sentinel for "Modelo completo") rather than by index, so it survives
+# the library being re-scanned in a different order. "" means the placeholder.
+func _save_selection(key: String, value: String) -> void:
+	Settings.config_file.set_value("models", key, value)
+	Settings.save_settings()
+
+
+# Stable value for a Categoria index: the category key (index 0 / out of range -> "").
+func _category_value(index: int) -> String:
+	var i := index - 1
+	return String(_categories[i]["key"]) if i >= 0 and i < _categories.size() else ""
+
+
+# Stable value for a Parte index: "" (placeholder), the WHOLE_MODEL_VALUE sentinel
+# ("Modelo completo", index 1) or the mesh label (indices 2..).
+func _part_value(index: int) -> String:
+	if index <= 0:
+		return ""
+	if index == 1:
+		return WHOLE_MODEL_VALUE
+	return cbo_meshes.get_item_text(index)
+
+
+# Replay the persisted Categoria -> Prefixo -> Modelo -> Parte chain (and, for "Modelo
+# completo", the parallel Animação/Efeitos leaves) so the browser reopens exactly where
+# the user left it. select() does not emit item_selected, so each step also calls its
+# handler explicitly — populating the next dropdown just like a real click would.
+#
+# Per saved value at each level:
+#   * empty -> the user simply stopped here: leave this dropdown enabled on its
+#     placeholder, ready to continue. With everything empty this reproduces the blank
+#     first-run start (every combo "Selecione...", nothing previewed).
+#   * stale -> the saved choice no longer exists in the library, so there is "no more
+#     data" for it: DISABLE this dropdown, and since its handler never runs the rest of
+#     the chain below stays disabled too.
+func _restore_selection_chain() -> void:
+	var cfg := Settings.config_file
+	var v_cat: String = cfg.get_value("models", "sel_category", "")
+	var v_pre: String = cfg.get_value("models", "sel_prefix", "")
+	var v_mod: String = cfg.get_value("models", "sel_model", "")
+	var v_part: String = cfg.get_value("models", "sel_part", "")
+	var v_anim: String = cfg.get_value("models", "sel_animation", "")
+	var v_eff: String = cfg.get_value("models", "sel_effect", "")
+
+	# Categoria — the root dropdown is always enabled. A missing/stale value falls back to
+	# the placeholder, which resets and disables the whole chain below it.
+	var ci := _find_category_index(v_cat)
+	if ci <= 0:
+		cbo_category.select(0)
+		_on_category_selected(0)
+		return
+	cbo_category.select(ci)
+	_on_category_selected(ci)
+
+	# Prefixo
+	if v_pre == "":
+		return
+	var pi := _find_prefix_index(v_pre)
+	if pi <= 0:
+		cbo_prefix.disabled = true
+		return
+	cbo_prefix.select(pi)
+	_on_prefix_selected(pi)
+
+	# Modelo
+	if v_mod == "":
+		return
+	var mi := _find_model_index(v_mod)
+	if mi <= 0:
+		cbo_models.disabled = true
+		return
+	cbo_models.select(mi)
+	_on_model_selected(mi)
+
+	# Parte
+	if v_part == "":
+		return
+	var qi := _find_part_index(v_part)
+	if qi <= 0:
+		cbo_meshes.disabled = true
+		return
+	cbo_meshes.select(qi)
+	_on_mesh_selected(qi)
+	# A single isolated mesh exposes no Animação/Efeitos combos below it.
+	if qi != 1:
+		return
+
+	# Animação and Efeitos are parallel leaves of "Modelo completo": restore each on its
+	# own. A stale saved value disables that one combo; an empty one leaves it enabled on
+	# its placeholder (nothing further down depends on either).
+	var ai := _find_combo_text_index(cbo_animations, v_anim)
+	if ai > 0:
+		cbo_animations.select(ai)
+		_on_animation_selected(ai)
+	elif v_anim != "":
+		cbo_animations.disabled = true
+	var ei := _find_combo_text_index(cbo_effects, v_eff)
+	if ei > 0:
+		cbo_effects.select(ei)
+		_on_effect_selected(ei)
+	elif v_eff != "":
+		cbo_effects.disabled = true
+
+
+# Index of the Categoria item with the given category key, or -1 if none/empty.
+func _find_category_index(value: String) -> int:
+	if value == "":
+		return -1
+	for i in range(_categories.size()):
+		if String(_categories[i]["key"]) == value:
+			return i + 1
+	return -1
+
+
+# Index of the Prefixo item whose metadata equals the saved prefix token, or -1.
+func _find_prefix_index(value: String) -> int:
+	if value == "":
+		return -1
+	for i in range(1, cbo_prefix.item_count):
+		if String(cbo_prefix.get_item_metadata(i)) == value:
+			return i
+	return -1
+
+
+# Index of the Modelo item with the given (displayed) model name, or -1.
+func _find_model_index(value: String) -> int:
+	if value == "":
+		return -1
+	for i in range(1, cbo_models.item_count):
+		if cbo_models.get_item_text(i) == value:
+			return i
+	return -1
+
+
+# Index of the Parte item for a saved part value: WHOLE_MODEL_VALUE -> the "Modelo
+# completo" entry at index 1; otherwise the mesh whose label matches. -1 if none/empty.
+func _find_part_index(value: String) -> int:
+	if value == "":
+		return -1
+	if value == WHOLE_MODEL_VALUE:
+		return 1 if cbo_meshes.item_count > 1 else -1
+	for i in range(2, cbo_meshes.item_count):
+		if cbo_meshes.get_item_text(i) == value:
+			return i
+	return -1
+
+
+# Index of the first real (index >= 1) item of `combo` whose text equals `value`, or -1.
+func _find_combo_text_index(combo: OptionButton, value: String) -> int:
+	if value == "":
+		return -1
+	for i in range(1, combo.item_count):
+		if combo.get_item_text(i) == value:
+			return i
+	return -1
 
 
 # --- Library scanning -------------------------------------------------------

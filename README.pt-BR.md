@@ -1,10 +1,10 @@
-# Third Person Shooter Demo — Documentação completa (Português)
+# ZIMARO — Documentação completa (Português)
 
 > Documentação detalhada e extensa em português. Para o resumo bilíngue de alto nível veja
 > [README.md](README.md); a versão em inglês é [README.en-US.md](README.en-US.md).
 > O cofre [`OBSIDIAN/`](OBSIDIAN) espelha este conteúdo com notas por sistema.
 
-Demo de tiro em terceira pessoa feita com a [Godot Engine](https://godotengine.org).
+ZIMARO é um sandbox de tiro em terceira pessoa feito com a [Godot Engine](https://godotengine.org).
 
 - Ajude a manter este projeto sempre atualizado 💜
 
@@ -12,7 +12,7 @@ Demo de tiro em terceira pessoa feita com a [Godot Engine](https://godotengine.o
 
 ## Visão geral
 
-Partindo da demo TPS original da Godot, este projeto a expande para um pequeno sandbox de tiro
+Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro
 em terceira pessoa. Em alto nível, oferece:
 
 - **Fluxo por menus** — um menu principal leva à seleção de personagem, ao seletor de fases, à
@@ -50,7 +50,11 @@ em terceira pessoa. Em alto nível, oferece:
   "Animação" (não há mais auto-play de um clip padrão). Os dropdowns de "Animação" e "Efeitos
   Especiais" aparecem só na visão montada "Modelo completo"; o de efeitos isola um único efeito quando
   escolhido. Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Parte) reseta
-  todos os dropdowns abaixo dele para "Selecione…". Uma linha de status vermelha acompanha a
+  todos os dropdowns abaixo dele para "Selecione…". **Todas as escolhas dos seletores são
+  persistidas** (junto com os toggles), e ao reabrir a tela a cadeia é restaurada exatamente como foi
+  deixada — sem auto-selecionar nenhum item: o primeiro seletor sem escolha salva fica em "Selecione…"
+  pronto para continuar; se uma escolha salva não existir mais na biblioteca, esse seletor (e os
+  abaixo) ficam desabilitados. Uma linha de status vermelha acompanha a
   navegação e flutua logo **acima do combo a que se refere**; ao escolher a Parte ela não mostra mais
   contagem, e só aparece — acima dos combos "Animação"/"Efeitos Especiais" — quando estes têm opções.
   Arraste para girar o modelo à mão em
@@ -104,9 +108,13 @@ vez de checar o tipo da raiz; ele some nas telas puramente 2D (menu/configuraç�
 ## Monitor System Health
 
 A linha **System Health** da tela developer alterna um overlay de monitoramento global
-(`autoload/system_health.gd`, autoload **SystemHealth**) — um **painel flutuante arrastável** (segure
-o botão esquerdo do mouse sobre a barra de título para movê-lo; ele **sempre fica dentro da tela** e
-sua **posição é lembrada entre execuções** — o **Reset** das configurações o devolve ao canto superior
+(`autoload/system_health.gd`, autoload **SystemHealth**) — um **painel flutuante arrastável**. A barra
+de título fica num **cabeçalho com uma linha**: o **texto do título** à esquerda (o **único** ponto
+que move a janela — segure o botão esquerdo do mouse **sobre o título**) e um **botão de fechar vermelho
+estilo Windows (✕)** à direita, cuja área **não** arrasta a janela. Fechar **esconde** o painel mas
+**mantém o monitoramento rodando** (a rede de segurança continua armada e um pico crítico reabre o
+painel); reabra pelo interruptor da tela developer. O painel **sempre fica dentro da tela** e sua
+**posição é lembrada entre execuções** (o **Reset** das configurações o devolve ao canto superior
 direito). Ele mostra: **FPS**, o **uso real de CPU do processo** (`CPU`), a memória estática do jogo
 (`Mem. Jogo`), a memória de vídeo (`Mem. Vídeo`) e a RAM do sistema em uso (`Mem. Sistema` = total −
 RAM física livre; ex.: 12,6 / 16,2 GB = 78%). As três linhas de memória seguem o mesmo padrão
@@ -124,6 +132,15 @@ segundos (picos curtos são tolerados) — o painel deixa a linha de alerta verm
 (`get_tree().paused`) para impedir que uma máquina fraca congele ou trave o SO, oferecendo um botão
 **Retomar**. O overlay continua funcionando mesmo pausado (`PROCESS_MODE_ALWAYS`); ao retomar, trava a
 auto-pausa até o uso voltar abaixo do limite, para não pausar de novo na hora.
+
+Acima disso há a regra **crítica (> 95%)**: enquanto **qualquer** indicador fica acima de 95%, cada
+segundo sustentado conta como um **pico** e dispara um **bip de alerta** (um tom curto sintetizado, no
+bus SFX, audível mesmo pausado). Após **mais de 3 picos consecutivos** (de 1 s cada), o painel é
+**reexibido** (mesmo se o usuário o tinha fechado, desde que habilitado no developer) e o jogo é
+**pausado à força** — **ignorando** o interruptor "Pausar ao atingir o limite". Essa é a garantia
+máxima do brief: **em hipótese alguma** deixar o uso seguir até congelar/travar a máquina — antes
+disso, pausa. Pausar derruba a carga do jogo, então picos de CPU cedem e o usuário pode retomar; um
+recurso ainda crítico (ex.: RAM quase cheia) simplesmente permanece pausado, que é o desfecho seguro.
 
 ## Localização (EN/PT)
 
@@ -199,8 +216,8 @@ Este projeto tem como alvo o **Godot 4.6.2 (estável)** — baixe-o
 
 ## Executando
 
-Pegue o projeto em [zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO) — clone-o ou
-[baixe um arquivo ZIP](https://github.com/zimerfeld/TPSDEMO/archive/refs/heads/main.zip) — e abra-o
+Pegue o projeto em [zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) — clone-o ou
+[baixe um arquivo ZIP](https://github.com/zimerfeld/ZIMARO/archive/refs/heads/main.zip) — e abra-o
 no Godot 4.6.2.
 
 ## Estrutura do projeto
@@ -254,7 +271,7 @@ preview de HUD montado isolado, fora deste fluxo de navegação.
 Layout de pastas e subpastas:
 
 ```
-TPSDEMO/
+ZIMARO/
 ├─ scenes2D/             # telas 2D, UI e widgets reutilizáveis
 │  ├─ main/              # cena de entrada + roteador (main.gd troca as telas)
 │  ├─ menu/              # menu principal

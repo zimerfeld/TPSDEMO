@@ -1,7 +1,7 @@
-# TPS Demo — Índice do Cofre Claude
+# ZIMARO — Índice do Cofre Claude
 
-> Memória viva do projeto Godot 4 Third Person Shooter Demo.
-> Repositório: `C:\GODOT\TPSDEMO` | GitHub: [zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO)
+> Memória viva do projeto Godot 4 ZIMARO (sandbox de tiro em terceira pessoa).
+> Repositório: `C:\GODOT\ZIMARO` | GitHub: [zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO)
 
 ---
 
