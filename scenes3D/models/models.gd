@@ -110,6 +110,20 @@ var _preview_anim_players: Array = []
 # Especiais" dropdown to list and isolate them. Each entry: {"label", "node"}.
 var _preview_effect_nodes: Array = []
 
+# The live preview instance currently under ModelHolder (whole model or single
+# mesh). Toggles act on THIS node in place instead of rebuilding it, so flipping
+# any toggle never reloads the model nor disturbs the camera/rotation.
+var _preview_instance: Node = null
+# Captured at build so the in-place animation/audio appliers can restore state:
+# AnimationPlayer → its authored autoplay clip; audio emitter → its authored
+# volume_db (so a muted-by-toggle emitter can be un-muted without a rebuild).
+var _preview_anim_autoplay: Dictionary = {}
+var _preview_audio_players: Array = []
+var _preview_audio_volumes: Dictionary = {}
+# Whether the per-member colliders were already built for the current preview, so
+# turning the Colliders toggle on later builds them once instead of every time.
+var _member_colliders_built: bool = false
+
 @onready var model_holder: Node3D = $ModelHolder
 @onready var camera: Camera3D = $Camera3D
 
@@ -409,17 +423,11 @@ func _reset_animations() -> void:
 # chosen clip (looping via the player) on every AnimationPlayer that has it — but only
 # while the Animação toggle is on: with it off, picking a clip just updates the pending
 # selection and plays nothing (it starts when the toggle is turned on, via _refresh_preview).
-func _on_animation_selected(index: int) -> void:
+func _on_animation_selected(_index: int) -> void:
 	if not _play_animation:
 		return
-	var clip := "" if index <= 0 else cbo_animations.get_item_text(index)
-	for ap: AnimationPlayer in _preview_anim_players:
-		if not is_instance_valid(ap):
-			continue
-		if clip != "" and ap.has_animation(clip):
-			ap.play(clip)
-		else:
-			ap.stop()
+	# Play the newly chosen clip in place (the appliers read cbo_animations).
+	_apply_animation_state()
 
 
 # Fill the "Efeitos Especiais" dropdown with "Selecione..." plus one entry per special
@@ -476,28 +484,31 @@ func _on_rotate_toggled(pressed: bool) -> void:
 	_save_toggle("auto_rotate", pressed)
 
 
+# Every toggle below acts on the EXISTING preview in place (play/stop, mute, show/
+# hide) — never a rebuild — so the model is not reloaded and the camera/rotation
+# stay exactly as the user left them.
 func _on_animation_toggled(pressed: bool) -> void:
 	_play_animation = pressed
 	_save_toggle("play_animation", pressed)
-	_refresh_preview()
+	_apply_animation_state()
 
 
 func _on_audio_toggled(pressed: bool) -> void:
 	_play_audio = pressed
 	_save_toggle("play_audio", pressed)
-	_refresh_preview()
+	_apply_audio_state()
 
 
 func _on_falas_toggled(pressed: bool) -> void:
 	_play_falas = pressed
 	_save_toggle("play_falas", pressed)
-	_refresh_preview()
+	_apply_audio_state()
 
 
 func _on_colliders_toggled(pressed: bool) -> void:
 	_show_colliders = pressed
 	_save_toggle("show_colliders", pressed)
-	_refresh_preview()
+	_apply_colliders_visibility()
 
 
 # The special-effect nodes already live in the preview (collected on build), so toggling
@@ -512,12 +523,6 @@ func _on_effects_toggled(pressed: bool) -> void:
 func _save_toggle(key: String, value: bool) -> void:
 	Settings.config_file.set_value("models", key, value)
 	Settings.save_settings()
-
-
-# Re-render the current Part selection so toggle changes take effect.
-func _refresh_preview() -> void:
-	if cbo_meshes.item_count > 0:
-		_on_mesh_selected(cbo_meshes.selected)
 
 
 # --- Library scanning -------------------------------------------------------
@@ -710,7 +715,12 @@ func _group_key(node_name: String) -> String:
 func _clear_preview() -> void:
 	for child in model_holder.get_children():
 		child.queue_free()
+	_preview_instance = null
 	_preview_anim_players = []
+	_preview_anim_autoplay = {}
+	_preview_audio_players = []
+	_preview_audio_volumes = {}
+	_member_colliders_built = false
 	_preview_effect_nodes = []
 	_yaw = 0.0
 	_pitch = 0.0
@@ -732,6 +742,7 @@ func _preview_mesh(index: int) -> void:
 	for s in surface_overrides.size():
 		mesh_instance.set_surface_override_material(s, surface_overrides[s])
 	model_holder.add_child(mesh_instance)
+	_preview_instance = mesh_instance
 	_fit_to_view(mesh_instance)
 
 
@@ -755,83 +766,107 @@ func _preview_whole_model() -> void:
 	# via _apply_effects_visibility (called from _populate_effects after this returns);
 	# _fit_to_view ignores them, so framing is unaffected either way.
 	_preview_effect_nodes = _collect_effect_nodes(instance)
-	# Suppress autoplay BEFORE the subtree enters the tree (autoplay fires on
-	# tree entry), then kick off playback below only for the toggles that are on.
-	var av_state := _suppress_autoplay(instance)
+	# Capture autoplay/volumes and DISABLE any AnimationTree BEFORE the subtree
+	# enters the tree, so nothing autostarts and the tree never fights the clip we
+	# drive directly (that double-drive is what made red_robot look like two
+	# overlapping models). Playback is then started below per the active toggles.
+	_capture_av(instance)
 	model_holder.add_child(instance)
-	_preview_anim_players = (av_state["anim"] as Dictionary).keys()
-	_apply_av_playback(av_state)
+	_preview_instance = instance
+	_apply_animation_state()
+	_apply_audio_state()
 	# Detect members for characters and weapons either way: their colliders feed the
 	# always-on member tooltips; for other categories we only build them to draw the
 	# collider gizmos when the toggle is on.
 	var show_members := _current_category_key() in ["characters", "weapons"]
+	_member_colliders_built = false
 	if _show_colliders or show_members:
 		# Build the per-member colliders (best-fit sphere/box/capsule) — the preview
 		# strips the gameplay script that normally builds them, so we do it here.
 		_add_member_colliders(instance)
+		_member_colliders_built = true
 	if instance is Node3D:
-		_fit_to_view(instance as Node3D)
+		# Frame from the POSED body (the member colliders) when we have them: a
+		# skinned mesh's get_aabb() is the bind pose, which for red_robot sits ~1.4 m
+		# off the idle pose in Z — using it would anchor the pivot behind the body so
+		# it swings away when rotated. The collider bounds track the real pose.
+		var posed := _posed_member_bounds(instance) if _member_colliders_built else AABB()
+		if posed.size != Vector3.ZERO:
+			_fit_to_view(instance as Node3D, 2.0, posed)
+		else:
+			_fit_to_view(instance as Node3D)
 	if _show_colliders:
 		_add_collider_gizmos(instance)
 	if show_members:
 		_add_member_labels(instance)
 
 
-# Clear the autoplay on every AnimationPlayer and audio emitter so nothing starts
-# the instant the subtree enters the tree. Returns the captured state so playback
-# can be (re)started afterwards from inside the tree, per the Animation/Som toggles.
-func _suppress_autoplay(instance: Node) -> Dictionary:
-	var anim_autoplay: Dictionary = {}
+# Capture the preview's animation/audio state into fields and neutralise anything
+# that would start on its own, BEFORE the subtree enters the tree (autoplay fires on
+# tree entry). Records each AnimationPlayer's autoplay clip and each emitter's
+# authored volume so the in-place appliers can later (re)start or mute/un-mute them
+# without rebuilding. Also disables every AnimationTree so it never poses the
+# skeleton in parallel with the clip we drive directly.
+func _capture_av(instance: Node) -> void:
+	_preview_anim_players = []
+	_preview_anim_autoplay = {}
 	for node in instance.find_children("*", "AnimationPlayer", true, false):
 		var ap := node as AnimationPlayer
-		anim_autoplay[ap] = ap.autoplay
+		_preview_anim_autoplay[ap] = ap.autoplay
 		ap.autoplay = ""
+		_preview_anim_players.append(ap)
+	for node in instance.find_children("*", "AnimationTree", true, false):
+		(node as AnimationTree).active = false
 
-	var audio_players: Array = []
+	_preview_audio_players = []
+	_preview_audio_volumes = {}
 	for cls in ["AudioStreamPlayer", "AudioStreamPlayer3D", "AudioStreamPlayer2D"]:
-		audio_players.append_array(instance.find_children("*", cls, true, false))
-	for node in audio_players:
-		node.set("autoplay", false)
+		for node in instance.find_children("*", cls, true, false):
+			_preview_audio_players.append(node)
+			_preview_audio_volumes[node] = node.get("volume_db")
+			node.set("autoplay", false)
 
-	return {"anim": anim_autoplay, "audio": audio_players}
+
+# Apply the Animação toggle to the live preview: with it off, stop every player;
+# with it on, play the "Animação" dropdown's clip (falling back to the model's
+# autoplay clip, then its first clip) on each player that has it. Re-applies the
+# audio state afterwards so animation-driven sound respects the Audio/Falas toggles.
+func _apply_animation_state() -> void:
+	var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
+	for ap: AnimationPlayer in _preview_anim_players:
+		if not is_instance_valid(ap):
+			continue
+		if not _play_animation:
+			ap.stop()
+			continue
+		var clip := chosen
+		if clip == "" or not ap.has_animation(clip):
+			clip = _preview_anim_autoplay.get(ap, "")
+			if clip == "" and not ap.get_animation_list().is_empty():
+				clip = ap.get_animation_list()[0]
+		if clip != "" and ap.has_animation(clip):
+			ap.play(clip)
+	_apply_audio_state()
 
 
-# Start the model's animation and/or sound, each gated by its own toggle (the toggle
-# is the master switch). Animation: while the Animação toggle is off NOTHING plays,
-# even with a clip chosen; while on, the "Animação" dropdown's clip plays, falling back
-# to the model's autoplay clip and then its first clip. Audio is split in two: the
-# "Audio" toggle covers every NON-speech emitter (movement, motor, shots...) and the
-# "Falas" toggle covers only the speech/scream emitters (see _is_speech_audio).
-func _apply_av_playback(state: Dictionary) -> void:
-	# Pre-mute the emitters whose toggle is off BEFORE the animation starts. These
-	# models trigger sound from animation "audio"/"method" tracks (not just autoplay),
-	# so silencing the target player's volume is what actually makes the toggle gate
-	# animation-driven audio too — the preview is rebuilt fresh each time, so the
-	# authored volume is restored automatically when the toggle is back on.
-	for node in state["audio"]:
-		var off := not (_play_falas if _is_speech_audio(node) else _play_audio)
-		if off:
-			node.set("volume_db", -80.0)
-
-	if _play_animation:
-		var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
-		for ap: AnimationPlayer in state["anim"]:
-			var clip := chosen
-			if clip == "" or not ap.has_animation(clip):
-				clip = state["anim"][ap]
-				if clip == "" and not ap.get_animation_list().is_empty():
-					clip = ap.get_animation_list()[0]
-			if clip != "" and ap.has_animation(clip):
-				ap.play(clip)
-
-	# Start the standalone emitters whose toggle is on (looping motor/engine sounds the
-	# animation never triggers); animation-driven ones already started with the clip.
-	for node in state["audio"]:
-		if node.get("stream") == null:
+# Apply the Audio/Falas toggles to the live preview's emitters in place: each emitter
+# is muted (volume_db -80) when its toggle is off and restored to its authored volume
+# when on; standalone emitters whose toggle is on are (re)started, the rest stopped.
+# Muting the volume is what also gates sound triggered from animation tracks.
+func _apply_audio_state() -> void:
+	for node in _preview_audio_players:
+		if not is_instance_valid(node):
 			continue
 		var wanted := _play_falas if _is_speech_audio(node) else _play_audio
+		var authored: float = _preview_audio_volumes.get(node, 0.0)
+		node.set("volume_db", authored if wanted else -80.0)
+		if node.get("stream") == null:
+			continue
 		if wanted:
-			node.play()
+			if not node.get("playing"):
+				node.play()
+		else:
+			node.stop()
 
 
 # Classify a model's audio emitter as speech (falas/gritos) vs every other sound
@@ -875,9 +910,39 @@ func _collect_effect_nodes(instance: Node) -> Array:
 	return out
 
 
+# Name carried by every collider wireframe gizmo, so the Colliders toggle can add
+# them once and strip them back out in place without touching anything else.
+const _GIZMO_NAME := "_ColliderGizmo"
+
+
+# Apply the Colliders toggle to the live preview in place: build the member colliders
+# on first use, then add or remove the wireframe gizmos — no rebuild, so the camera
+# and rotation are untouched.
+func _apply_colliders_visibility() -> void:
+	if _preview_instance == null:
+		return
+	if _show_colliders:
+		_ensure_member_colliders()
+		_add_collider_gizmos(_preview_instance)
+	else:
+		for gizmo in _preview_instance.find_children(_GIZMO_NAME, "MeshInstance3D", true, false):
+			gizmo.queue_free()
+
+
+# Build the per-member colliders once for the current preview (idempotent), so the
+# Colliders toggle can draw gizmos for categories whose colliders were not built at
+# preview time (characters/weapons already build them for the member tooltips).
+func _ensure_member_colliders() -> void:
+	if _member_colliders_built or _preview_instance == null:
+		return
+	_add_member_colliders(_preview_instance)
+	_member_colliders_built = true
+
+
 # Draw a wireframe gizmo for every CollisionShape3D so the otherwise-invisible
 # collision volumes can be inspected. Each gizmo is parented under its shape so
-# it inherits the shape transform and the root's fit-to-view scale.
+# it inherits the shape transform and the root's fit-to-view scale. Idempotent: a
+# shape that already carries its gizmo is skipped (the toggle may re-run this).
 func _add_collider_gizmos(instance: Node) -> void:
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -886,9 +951,10 @@ func _add_collider_gizmos(instance: Node) -> void:
 	mat.albedo_color = Color(0.2, 1.0, 0.4, 0.28)
 	for node in instance.find_children("*", "CollisionShape3D", true, false):
 		var shape_node := node as CollisionShape3D
-		if shape_node.shape == null:
+		if shape_node.shape == null or shape_node.has_node(NodePath(_GIZMO_NAME)):
 			continue
 		var gizmo := MeshInstance3D.new()
+		gizmo.name = _GIZMO_NAME
 		gizmo.mesh = shape_node.shape.get_debug_mesh()
 		gizmo.material_override = mat
 		shape_node.add_child(gizmo)
@@ -918,9 +984,10 @@ func _add_member_labels(instance: Node) -> void:
 		lbl.no_depth_test = true
 		lbl.fixed_size = true
 		lbl.pixel_size = 0.0006
-		lbl.font_size = 48
+		# 1/4 smaller than the original 48 (kept the outline proportional).
+		lbl.font_size = 36
 		lbl.modulate = Color(1.0, 0.85, 0.2)
-		lbl.outline_size = 12
+		lbl.outline_size = 9
 		lbl.outline_modulate = Color(0, 0, 0, 0.85)
 		body.add_child(lbl)
 		lbl.position = center + Vector3(0.0, 0.06, 0.0)
@@ -1069,32 +1136,37 @@ func _ancestor_chain(node: Node, root: Node) -> Array:
 # of its original size. target_size is the largest dimension after scaling. Only
 # mesh geometry is measured — lights and particle systems carry huge bounds (the
 # forklift spotlight reaches 50 m) that would otherwise shrink the model to a dot.
-func _fit_to_view(model: Node3D, target_size: float = 2.0) -> void:
-	var visuals: Array = model.find_children("*", "MeshInstance3D", true, false)
-	if model is MeshInstance3D:
-		visuals.append(model)
-
+# `precomputed` (an AABB in `model`'s local space) overrides the mesh measurement:
+# used for skinned characters, whose mesh get_aabb() is the bind pose and can sit
+# well off the posed body (see _posed_member_bounds).
+func _fit_to_view(model: Node3D, target_size: float = 2.0, precomputed = null) -> void:
 	var bounds := AABB()
-	var first := true
-	for node in visuals:
-		var vi := node as MeshInstance3D
-		# Frame only the body: skip hidden meshes (the forklift's unused colour
-		# variants, a character's death debris) and meshes bolted to a bone
-		# (muzzle/laser effects whose long beams would otherwise shrink the body
-		# to a dot).
-		if not vi.is_visible_in_tree():
-			continue
-		if _under_bone_attachment(vi, model):
-			continue
-		var rel := model.global_transform.affine_inverse() * vi.global_transform
-		var box := rel * vi.get_aabb()
+	if precomputed is AABB:
+		bounds = precomputed
+	else:
+		var visuals: Array = model.find_children("*", "MeshInstance3D", true, false)
+		if model is MeshInstance3D:
+			visuals.append(model)
+		var first := true
+		for node in visuals:
+			var vi := node as MeshInstance3D
+			# Frame only the body: skip hidden meshes (the forklift's unused colour
+			# variants, a character's death debris) and meshes bolted to a bone
+			# (muzzle/laser effects whose long beams would otherwise shrink the body
+			# to a dot).
+			if not vi.is_visible_in_tree():
+				continue
+			if _under_bone_attachment(vi, model):
+				continue
+			var rel := model.global_transform.affine_inverse() * vi.global_transform
+			var box := rel * vi.get_aabb()
+			if first:
+				bounds = box
+				first = false
+			else:
+				bounds = bounds.merge(box)
 		if first:
-			bounds = box
-			first = false
-		else:
-			bounds = bounds.merge(box)
-	if first:
-		return
+			return
 
 	var max_dim: float = maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
 	if max_dim <= 0.0:
@@ -1102,6 +1174,32 @@ func _fit_to_view(model: Node3D, target_size: float = 2.0) -> void:
 	var scale_factor := target_size / max_dim
 	model.scale = Vector3.ONE * scale_factor
 	model.position = -bounds.get_center() * scale_factor
+
+
+# Bounds of the POSED body, measured from the per-member colliders (which wrap the
+# skinned vertices in the live pose), in `model`'s local space. Used to frame and
+# CENTER skinned characters correctly — their mesh get_aabb() is the bind pose and
+# for red_robot sits ~1.4 m off in Z, which would put the rotation pivot behind the
+# body. Returns an empty AABB (size 0) when there are no member colliders.
+func _posed_member_bounds(model: Node3D) -> AABB:
+	var inv := model.global_transform.affine_inverse()
+	var bounds := AABB()
+	var first := true
+	for node in model.find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if not body.has_meta("member_label"):
+			continue
+		for cs in body.find_children("*", "CollisionShape3D", true, false):
+			var shape: Shape3D = (cs as CollisionShape3D).shape
+			if shape == null:
+				continue
+			var box := (inv * (cs as CollisionShape3D).global_transform) * shape.get_debug_mesh().get_aabb()
+			if first:
+				bounds = box
+				first = false
+			else:
+				bounds = bounds.merge(box)
+	return bounds
 
 
 # True when `node` hangs under a BoneAttachment3D somewhere below `root` — i.e.

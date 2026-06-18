@@ -62,14 +62,22 @@ Toggles atuais (2026-06-16): **Rotação · Animação · Audio · Falas · Coli
 Efeitos especiais** (o antigo "Som" virou **Audio**). Cada toggle é o **interruptor
 mestre** da sua categoria:
 
+> [!important] Toggles agem **in-place** (2026-06-17)
+> Nenhum toggle **reconstrói** o preview: o modelo **não é recarregado** e a
+> **câmera/rotação ficam intactas**. Cada handler altera o nó vivo
+> (`_preview_instance`) por um aplicador dedicado em vez de chamar um rebuild.
+
 - **Animação** — com o toggle desligado **nada anima**, mesmo com um clip escolhido
-  no dropdown "Animação"; `_on_animation_selected` retorna cedo e `_apply_av_playback`
-  só toca dentro do `if _play_animation`. Ligado, toca o clip do dropdown (com
-  fallback para o autoplay e depois o 1º clip).
+  no dropdown "Animação"; `_on_animation_selected` retorna cedo. O playback é aplicado
+  **in-place** por `_apply_animation_state()` (toca/para nos `_preview_anim_players`):
+  ligado, toca o clip do dropdown (fallback para o autoplay capturado e depois o 1º clip).
 - **Audio** — toca **todo emissor que NÃO é fala** (movimentação andar/correr/saltar,
-  motor, tiro, explosão…); desligado, silencia.
+  motor, tiro, explosão…); desligado, silencia. Aplicado por `_apply_audio_state()`.
 - **Falas** — toca **só** os emissores de **fala/grito**, classificados pelo nome do
   nó (`_is_speech_audio`: voz/voice/fala/grito/scream/shout/yell/…). Desligado, silencia.
+- **Colisores** — `_apply_colliders_visibility()` adiciona/remove os gizmos wireframe
+  (`_add_collider_gizmos`, idempotente, nó `_ColliderGizmo`) **sem rebuild**; constrói os
+  colliders de membro sob demanda uma vez (`_ensure_member_colliders`).
 - **Efeitos especiais** — mostra/esconde **tudo o que sobra** ligado ao modelo e que
   nenhum outro toggle cobre: partículas, luzes e malhas presas a osso (muzzle/laser),
   coletadas por `_collect_effect_nodes`. O combo **"Efeitos Especiais"** isola **um**
@@ -77,16 +85,34 @@ mestre** da sua categoria:
   visibilidade é aplicada por `_apply_effects_visibility` sem reconstruir o preview.
 
 ⚠️ Vários modelos disparam som por **tracks de animação** (`type = "audio"`/`"method"`,
-não só autoplay). Por isso `_apply_av_playback` **pré-muta** (volume_db = -80) os
-emissores cujo toggle está desligado **antes** de iniciar a animação — assim o áudio
-disparado pela própria animação também respeita Audio/Falas. Como o preview é
-reconstruído a cada toggle, o volume autorado volta sozinho quando religa.
+não só autoplay). Por isso `_apply_audio_state()` **muta** (volume_db = -80) os emissores
+cujo toggle está desligado e restaura o **volume autorado** (capturado por `_capture_av`)
+quando religa — assim o áudio disparado pela própria animação também respeita Audio/Falas,
+sem precisar reconstruir o preview.
+
+🔁 `_capture_av()` também **desativa todo `AnimationTree`** (`active = false`) ao montar o
+preview, para que ele não pose o esqueleto **em paralelo** com o clip tocado direto no
+`AnimationPlayer` — era esse duplo-acionamento que fazia o red_robot parecer **dois modelos
+sobrepostos** ao ligar a animação.
 
 (Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 6 estados (rotação,
 animação, audio, falas, colisores, efeitos especiais) são **persistidos** na seção
 `[models]` de `user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada
 handler) e relidos em `_ready` antes de conectar os sinais, então a tela reabre como
 foi deixada.
+
+### Membros e centralização (Personagens/Armas)
+
+Para **Personagens** e **Armas**, `_preview_whole_model` constrói os colliders de
+membro (via [[arquivos-chave/limb-colliders-gd|LimbColliders]]) e `_add_member_labels`
+flutua um `Label3D` com o nome do membro (CABEÇA, TRONCO, BRAÇO…) sobre cada collider.
+A fonte do rótulo é **36** (¼ menor que os 48 originais — 2026-06-17), com outline 9.
+
+**Centralização posada (2026-06-17):** o AABB de uma malha **skinada** vem da pose de
+**bind**, que no red_robot fica ~1,4 m fora da pose idle em Z. Usá-lo ancoraria o pivô
+**atrás** do corpo, e o modelo "escaparia" ao girar. Por isso, quando há colliders de
+membro, `_posed_member_bounds()` mede o corpo **na pose real** (a partir dos colliders) e
+`_fit_to_view(model, 2.0, posed)` centra/escala por esse AABB — o modelo gira **no lugar**.
 
 ## Extração ("Salvar como cena 3D")
 

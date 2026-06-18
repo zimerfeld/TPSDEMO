@@ -1,230 +1,102 @@
 # Third Person Shooter Demo
 
-Third person shooter demo made using [Godot Engine](https://godotengine.org).
-
-Check out this demo on the asset library: https://godotengine.org/asset-library/asset/678
+> 🇬🇧 A small third-person shooter sandbox built on the [Godot Engine](https://godotengine.org) TPS demo.
+> 🇧🇷 Um pequeno sandbox de tiro em terceira pessoa construído sobre a demo TPS da [Godot Engine](https://godotengine.org).
 
 ![Screenshot of TPS demo](screenshots/screenshot.webp)
 
-## Overview
+> 🇬🇧 **This file is a high-level bilingual summary.** Full, detailed docs:
+> **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)**
+> 🇧🇷 **Este arquivo é um resumo bilíngue de alto nível.** Documentação completa e detalhada:
+> **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)**
 
-Starting from the original Godot TPS demo, this project grows it into a small
-third-person shooter sandbox. At a high level it offers:
+---
 
-- **Menu-driven flow** — a main menu leads to character selection, a level
-  picker, a settings screen, a developer screen, and online play.
-- **Playable characters** — selectable player variants that move, aim, jump and
-  shoot, with first-person camera control and a local health HUD.
-- **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a
-  laser, and a flying bomber (Criatura Alada) that orbits the player and drops
-  bombs.
-- **Localized damage** — per-limb native 3D colliders (head, torso, arms, legs)
-  sized to each character's mesh, so hits to different body parts deal different
-  damage (headshots deal extra). Both bullets and the enemy laser respect them.
-- **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2),
-  a full complex level (Level Base), plus online (host/connect) play.
-- **3D model library + viewer** — reusable 3D assets organized by type under
-  `library3D/`, browsable in-game through the Models screen (category → model →
-  part) with toggles for rotation, animation, **Audio** (every non-speech sound:
-  movement, motor, shots…), **Falas** (speech/scream emitters only), colliders and
-  **Efeitos especiais** (everything else linked to the model — particles, lights,
-  bone-mounted laser/muzzle meshes). Each toggle is the master switch for its category
-  (no sound/animation plays while its toggle is off, regardless of the dropdown —
-  including sound driven by animation tracks) and the toggle states are persisted
-  between visits. The "Animação" and "Efeitos Especiais" dropdowns appear only for the
-  assembled "Modelo completo" view; the effects one isolates a single effect when
-  picked. Picking a value in any selector (Categoria → Prefixo → Modelo → Parte) resets
-  every dropdown below it to "Selecione…". Drag to hand-rotate the model up to 180° on
-  both axes (left/right and up/down).
-- **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap,
-  vitals, crosshair, pause menu, scanlines, and more).
-- **Debug tooling** — a debug overlay (FPS HUD, ground grid, and per-node
-  TYPE/ID tooltips on 2D and 3D nodes), toggled from the developer screen and the
-  settings "Debug" tab.
-- **Audio settings** — the settings "Audio" tab has independent controls for
-  background **Música** (the `Music` bus) and **Efeitos de Som** (the `SFX` bus,
-  which the `Outside`/`Reactor` gameplay buses route into), each saved and applied
-  globally.
-- **Live settings** — the settings screen has no "Apply" button: every option saves
-  and applies the instant it changes. The video-resolution dropdown is the exception:
-  it asks for confirmation, applying (and locking to windowed mode) on "Sim" or
-  reverting to the saved choice on "Não". A **Reset** button (next to "Voltar") restores
-  the built-in common-hardware defaults — after the same Sim/Não confirmation — saving
-  and applying them immediately. With no stored config (fresh install) the game also
-  boots on those defaults. The main menu reads every stored setting from disk and
-  applies it (graphics, resolution and audio) before the menu is shown. A chosen
-  resolution is clamped to the visible screen (so a 4K/8K pick on a smaller monitor
-  can't push the window off-screen), and every screen's bottom button bar and top title
-  label are anchored full-width to their edge so they stay visible at any resolution.
+## Overview · Visão geral
 
-## Godot versions
+🇬🇧 Starting from the original Godot TPS demo, this project grows it into a small third-person
+shooter sandbox: a menu-driven flow (character selection, level picker, settings, developer screen,
+online play), playable characters that move/aim/jump/shoot, ground and flying enemies, per-limb
+localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD widgets,
+debug tooling, EN/PT localization and live (no-Apply) settings.
 
-- The [`master`](https://github.com/godotengine/tps-demo) branch is compatible with the latest stable Godot version (currently 4.x).
-- If you are using an older version of Godot, use the appropriate branch for your Godot version:
+🇧🇷 Partindo da demo TPS original da Godot, este projeto a expande para um pequeno sandbox de tiro em
+terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, configurações, tela de
+desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atiram, inimigos
+terrestres e voadores, dano localizado por membro, várias fases, biblioteca de modelos 3D navegável,
+widgets de HUD cyberpunk reutilizáveis, ferramentas de debug, localização EN/PT e configurações ao
+vivo (sem botão Aplicar).
 
-  - [`3.x`](https://github.com/godotengine/tps-demo/tree/3.x) branch
-  for Godot 3.4.x and 3.5.x.
-  - [`3.3`](https://github.com/godotengine/tps-demo/tree/3.3) branch
-  for Godot 3.3.x.
-  - [`3.2`](https://github.com/godotengine/tps-demo/tree/3.2) branch
-  for Godot 3.2.2 or 3.2.3.
-  - [`3.2.1`](https://github.com/godotengine/tps-demo/tree/3.2.1) branch
-  for Godot 3.2.0 or 3.2.1.
-  - [`3.1`](https://github.com/godotengine/tps-demo/tree/3.1) branch
-  for Godot 3.1.x.
+## Features · Funcionalidades
 
-> **Note**
->
-> The repository is big, so expect a high wait time when opening the project for
-> the first time.
+🇬🇧 Highlights: localized damage (native per-limb 3D colliders, headshots deal extra); a Models
+viewer with per-category master toggles (rotation, audio, speech, colliders, special effects) that
+persist between visits; a developer screen whose debug overlay is split into **Debug 2D** (light
+yellow) and **Debug 3D** (light cyan) columns — a master alone shows nothing, each dependent line
+must also be selected; a floor grid for 3D screens; and an EN/PT localization system driven by two
+JSON dictionaries in the project root.
 
-## Git LFS
+🇧🇷 Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra); um
+visualizador Models com toggles mestres por categoria (rotação, áudio, falas, colliders, efeitos
+especiais) que persistem entre visitas; uma tela developer cujo overlay de debug é dividido nas
+colunas **Debug 2D** (amarelo claro) e **Debug 3D** (ciano claro) — o master sozinho não mostra
+nada, cada linha dependente também precisa ser selecionada; uma malha no solo para telas 3D; e um
+sistema de localização EN/PT guiado por dois dicionários JSON na raiz do projeto.
 
-Git LFS is no longer required for the current `master` or `3.x` branches.
+## Requirements & running · Requisitos e execução
 
-You only need Git LFS if you are checking out the `3.1` or `3.2.1` branches.
-Those branches have instructions for Git LFS in their README files.
+🇬🇧 Requires **Godot 4.6.2** ([download](https://godotengine.org/download/)). Get the project from
+[zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO) (clone or ZIP) and open it in Godot. Git
+LFS is not required.
 
-## Running
+🇧🇷 Requer **Godot 4.6.2** ([download](https://godotengine.org/download/)). Pegue o projeto em
+[zimerfeld/TPSDEMO](https://github.com/zimerfeld/TPSDEMO) (clone ou ZIP) e abra no Godot. Git LFS não
+é necessário.
 
-You need [Godot Engine](https://godotengine.org) to run this demo project.
-Download the latest stable version [from the website](https://godotengine.org/download/),
-or [build it from source](https://github.com/godotengine/godot).
+## Project structure · Estrutura do projeto
 
-You can either download from the Godot Asset Library, clone this repository, or
-[download a ZIP archive](https://github.com/godotengine/tps-demo/archive/master.zip).
+🇬🇧 `scenes2D/` (screens, UI, reusable widgets) · `scenes3D/` (levels + Models viewer) · `library3D/`
+(3D assets by type) · `effects_shared/` (cross-character helpers) · `autoload/` (global singletons:
+crash_handler, player_selection, debug_overlay, locale; Settings is `scenes2D/settings/config.gd`) ·
+`pt.json`/`en.json` (UI dictionaries) · `OBSIDIAN/` (documentation vault).
 
-## Project structure
+🇧🇷 `scenes2D/` (telas, UI, widgets reutilizáveis) · `scenes3D/` (fases + visualizador Models) ·
+`library3D/` (assets 3D por tipo) · `effects_shared/` (helpers entre personagens) · `autoload/`
+(singletons globais: crash_handler, player_selection, debug_overlay, locale; o Settings é
+`scenes2D/settings/config.gd`) · `pt.json`/`en.json` (dicionários da UI) · `OBSIDIAN/` (cofre de
+documentação).
 
-2D screens and UI live under `scenes2D/`, 3D levels under `scenes3D/`, and the
-reusable 3D asset library under `library3D/`:
+## Controls · Controles
 
-- `scenes2D/` — all 2D screens and UI:
-  - `main` — entry scene. `main.gd` is a router that swaps screens in as
-    children (reacting to the `replace_main_scene` / `quit` signals) instead of
-    calling `SceneTree.change_scene`, so `current_scene` stays `main`.
-  - `menu`, `chooseplayer`, `levels`, `settings`, `developer`, `playonline` —
-    the navigation screens.
-  - `controls2D` — reusable UI widgets (cyberpunk HUD, minimap, vitals, ability
-    bar, crosshair, pause menu, scanlines, log feed, etc.).
-  - `controls` — a 2D controls viewer (the 2D analog of the Models screen) that
-    browses and previews the `controls2D` widgets through a dropdown, centering each
-    previewed widget horizontally and vertically when it is smaller than the view.
-  - `cyberpunkhud` — assembled HUD screen built from `controls2D` widgets.
-- `scenes3D/` — 3D levels and tools: `level_1`, `level_2`, `level_base`, and the
-  `models` viewer.
-- `library3D/` — 3D asset library, organized by type: `characters`,
-  `propulsores`, `structures`, `weapons`, plus `geometry` and `textures` support
-  folders. New model folders dropped in here show up automatically in the Models
-  viewer.
-- `effects_shared/` — cross-character helpers: `limb_colliders.gd` (per-limb
-  native colliders for localized damage), `body_parts.gd` (bone → limb
-  classification), and shared blast/shadow assets.
-- `autoload/` — global singletons: `config.gd` (registered as `Settings`),
-  `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`.
-- `ui/`, `themes/` — shared theme resources. `tools/` — headless helper scripts.
-- `OBSIDIAN/` — project documentation vault.
+🇬🇧 Move (WASD / arrows / stick), look (mouse / right stick), jump (Space), aim (RMB / L2), shoot
+(LMB / R2, only while aiming), menu/quit (Escape), fullscreen (F11 / Alt+Enter), debug info (F3).
 
-Screen flow:
+🇧🇷 Mover (WASD / setas / analógico), olhar (mouse / analógico direito), pular (Espaço), mirar
+(botão direito / L2), atirar (botão esquerdo / R2, só mirando), menu/sair (Escape), tela cheia (F11 /
+Alt+Enter), info de debug (F3).
 
-```
-menu ─┬─ play ───────► chooseplayer ─► levels ─► level_1 / level_2 / level_base
-      ├─ play online ─► playonline ──► level_base
-      ├─ settings
-      ├─ developer ──┬─ models    (3D model viewer for library3D assets)
-      │              └─ controls  (2D controls viewer for controls2D widgets)
-      └─ quit
-```
+## Code formatting · Formatação de código
 
-`main.gd` is the router: each screen emits `replace_main_scene` and `main` swaps it
-in, so the back buttons (and <kbd>Escape</kbd>) just navigate to the previous screen
-the same way. The `settings` screen applies and persists every change immediately (no
-"Apply" button) and the `menu` re-applies all stored settings on entry. The
-`developer` screen and the `settings` "Debug" tab toggle the `DebugOverlay` (FPS HUD,
-ground grid, and per-node TYPE/ID tooltips on 2D and 3D nodes). The `cyberpunkhud`
-scene is a standalone assembled-HUD preview, not part of this navigation flow.
+🇬🇧 All text files use UTF-8 **without BOM**, LF endings, no trailing whitespace, and a trailing
+newline — enforced by [`file_format.sh`](file_format.sh) (run `bash file_format.sh` from Git Bash).
 
-Folder and subfolder layout:
+🇧🇷 Todos os arquivos de texto usam UTF-8 **sem BOM**, quebras LF, sem espaços ao fim e com quebra de
+linha final — garantido por [`file_format.sh`](file_format.sh) (rode `bash file_format.sh` no Git Bash).
 
-```
-TPSDEMO/
-├─ scenes2D/             # 2D screens, UI and reusable widgets
-│  ├─ main/              # entry scene + router (main.gd swaps screens in)
-│  ├─ menu/              # main menu
-│  ├─ chooseplayer/      # character picker (3D preview)
-│  ├─ levels/            # level selector
-│  ├─ settings/          # settings screen + Settings autoload (config.gd)
-│  ├─ developer/         # developer tools menu (debug toggles, links to viewers)
-│  ├─ playonline/        # host/connect online screen
-│  ├─ controls/          # 2D widget viewer (analog of the Models screen)
-│  └─ controls2D/        # reusable HUD widgets: crosshair, minimap_panel, vitals_panel,
-│                        #   ability_bar, pause_menu, scanlines, log_feed, cyberpunk_hud, …
-├─ scenes3D/             # 3D levels and tools
-│  ├─ level_1/ level_2/ level_base/   # playable levels
-│  └─ models/            # 3D model viewer/inspector for the library3D assets
-├─ library3D/            # reusable 3D asset library, organized by type
-│  ├─ characters/        # players + enemies (red_robot, criatura_alada, demonio_*,
-│  │                     #   mecha07, robot_01..07_*_{infantil,adulto})
-│  ├─ propulsores/       # propulsion props (forklift)
-│  ├─ structures/        # static structures (door, core, lights, props, structure)
-│  ├─ weapons/           # weapons (pistola_infantil, bomb)
-│  ├─ geometry/          # shared meshes/materials (.tres)
-│  └─ textures/          # shared textures
-├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd,
-│                        #   weapon_parts.gd + shared blast/shadow assets
-├─ autoload/             # global singletons: crash_handler, player_selection, debug_overlay
-│                        #   (Settings lives in scenes2D/settings/config.gd)
-├─ ui/  themes/          # shared Theme resources (ui_theme.tres, cyberpunk.tres)
-├─ tools/  _gen/         # headless GDScript generators for 3D assets (gen_*.gd)
-├─ addons/               # Godot editor plugins (godot_ai — the MCP server)
-├─ OBSIDIAN/             # project documentation vault (mirrors this README)
-├─ screenshots/          # captured preview images
-└─ project.godot · default_bus_layout.tres · file_format.sh   # project config · audio buses · formatter
-```
+## Documentation · Documentação
 
-## Controls
+🇬🇧 The detailed docs ([README.en-US.md](README.en-US.md) / [README.pt-BR.md](README.pt-BR.md)) and
+the [`OBSIDIAN/`](OBSIDIAN) vault are the project knowledge base and are kept up to date at the end of
+every change.
 
-- Mouse or <kbd>Gamepad Right Stick</kbd>: Look around
-- <kbd>W</kbd>/<kbd>A</kbd>/<kbd>S</kbd>/<kbd>D</kbd>, <kbd>Arrow keys</kbd>, <kbd>Gamepad Left Analog Stick</kbd> or <kbd>Gamepad D-Pad</kbd>: Move
-- <kbd>Space</kbd>, <kbd>Gamepad A/Cross</kbd>: Jump
-- <kbd>Right Mouse Button</kbd>, <kbd>Gamepad Left Trigger (L2)</kbd> (press to toggle, or hold and release): Aim
-- <kbd>Left Mouse Button</kbd>, <kbd>Gamepad Right Trigger (R2)</kbd>: Shoot (only while aiming)
-- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Go to main menu/quit
-- <kbd>F11</kbd> or <kbd>Alt + Enter</kbd>: Toggle fullscreen
-- <kbd>F3</kbd>: Toggle debugging information (such as FPS counter)
+🇧🇷 As docs detalhadas ([README.en-US.md](README.en-US.md) / [README.pt-BR.md](README.pt-BR.md)) e o
+cofre [`OBSIDIAN/`](OBSIDIAN) são a base de conhecimento do projeto e são mantidos atualizados ao
+final de cada mudança.
 
-## Code formatting
+## License · Licença
 
-All text files in this project must follow a consistent format, enforced by
-[`file_format.sh`](file_format.sh). Always apply it before committing changes:
+🇬🇧 / 🇧🇷 See / Veja [LICENSE.md](LICENSE.md).
 
-- UTF-8 encoding **without BOM**
-- LF (Unix) line endings
-- No trailing whitespace
-- A trailing newline at end of file
+---
 
-Run the formatter from the repository root:
-
-```bash
-bash file_format.sh
-```
-
-On Windows, run it from Git Bash. It requires `dos2unix` and `perl`
-(`recode` is optional). A common cause of `Parse Error: Expected '['` when
-loading a `.tscn`/`.tres` is a stray UTF-8 BOM — running the formatter removes it.
-
-> **Tip:** after moving or renaming scenes/resources, also reopen the project in
-> the Godot editor once so it rebuilds `.godot/uid_cache.bin` and reimports moved
-> assets (this clears `invalid UID … using text path instead` warnings).
-
-## Useful links
-
-- [Main website](https://godotengine.org)
-- [Source code](https://github.com/godotengine/godot)
-- [Documentation](http://docs.godotengine.org)
-- [Community hub](https://godotengine.org/community)
-- [Other demos](https://github.com/godotengine/godot-demo-projects)
-
-## License
-
-See [LICENSE.md](LICENSE.md) for details.
+📖 **Full documentation · Documentação completa:** [English (README.en-US.md)](README.en-US.md) · [Português (README.pt-BR.md)](README.pt-BR.md)

@@ -41,225 +41,384 @@ anchors_preset = 10
 anchor_left = 0.0
 anchor_right = 1.0
 offset_left = 0.0
-offset_top = 30.0
+offset_top = 24.0
 offset_right = 0.0
-offset_bottom = 100.0
+offset_bottom = 88.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 40
 text = "Modo Desenvolvedor"
 horizontal_alignment = 1
 
-[node name="Options" type="VBoxContainer" parent="UI" unique_id=981272199]
+[node name="General" type="VBoxContainer" parent="UI" unique_id=981272199]
 layout_mode = 0
 offset_left = 40.0
-offset_top = 140.0
-offset_right = 900.0
-offset_bottom = 760.0
-theme_override_constants/separation = 24
+offset_top = 110.0
+offset_right = 540.0
+offset_bottom = 230.0
+theme_override_constants/separation = 8
 
-[node name="FPSRow" type="HBoxContainer" parent="UI/Options" unique_id=957747185]
+[node name="FPSRow" type="HBoxContainer" parent="UI/General" unique_id=957747185]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="FPSLabel" type="Label" parent="UI/Options/FPSRow" unique_id=871871927]
-custom_minimum_size = Vector2(300, 0)
+[node name="FPSLabel" type="Label" parent="UI/General/FPSRow" unique_id=871871927]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "HUD FPS:"
 
-[node name="Disabled" type="Button" parent="UI/Options/FPSRow"]
+[node name="Disabled" type="Button" parent="UI/General/FPSRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Options/FPSRow"]
+[node name="Enabled" type="Button" parent="UI/General/FPSRow"]
 modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="ShowGridRow" type="HBoxContainer" parent="UI/Options" unique_id=131747156]
+[node name="ShowGridRow" type="HBoxContainer" parent="UI/General" unique_id=131747156]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowGridLabel" type="Label" parent="UI/Options/ShowGridRow" unique_id=2070753949]
-custom_minimum_size = Vector2(300, 0)
+[node name="ShowGridLabel" type="Label" parent="UI/General/ShowGridRow" unique_id=2070753949]
+custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Malha no Solo:"
 
-[node name="Disabled" type="Button" parent="UI/Options/ShowGridRow"]
+[node name="Disabled" type="Button" parent="UI/General/ShowGridRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Options/ShowGridRow"]
+[node name="Enabled" type="Button" parent="UI/General/ShowGridRow"]
 modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="Debug2DRow" type="HBoxContainer" parent="UI/Options"]
+[node name="Columns" type="HBoxContainer" parent="UI"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 250.0
+offset_right = 1060.0
+offset_bottom = 760.0
+theme_override_constants/separation = 60
+
+[node name="Col2D" type="VBoxContainer" parent="UI/Columns"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Debug2DRow" type="HBoxContainer" parent="UI/Columns/Col2D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Debug2DLabel" type="Label" parent="UI/Options/Debug2DRow"]
-custom_minimum_size = Vector2(300, 0)
+[node name="Debug2DLabel" type="Label" parent="UI/Columns/Col2D/Debug2DRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 1, 0.45, 1)
+theme_override_font_sizes/font_size = 30
 text = "Debug 2D:"
 
-[node name="Disabled" type="Button" parent="UI/Options/Debug2DRow"]
+[node name="Disabled" type="Button" parent="UI/Columns/Col2D/Debug2DRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Options/Debug2DRow"]
+[node name="Enabled" type="Button" parent="UI/Columns/Col2D/Debug2DRow"]
 modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="Debug3DRow" type="HBoxContainer" parent="UI/Options"]
+[node name="ShowTypeRow" type="HBoxContainer" parent="UI/Columns/Col2D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Debug3DLabel" type="Label" parent="UI/Options/Debug3DRow"]
-custom_minimum_size = Vector2(300, 0)
+[node name="ShowTypeLabel" type="Label" parent="UI/Columns/Col2D/ShowTypeRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.45, 1)
 theme_override_font_sizes/font_size = 28
+text = "Type"
+
+[node name="Disabled" type="Button" parent="UI/Columns/Col2D/ShowTypeRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Columns/Col2D/ShowTypeRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
+[node name="ShowNameRow" type="HBoxContainer" parent="UI/Columns/Col2D"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowNameLabel" type="Label" parent="UI/Columns/Col2D/ShowNameRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.45, 1)
+theme_override_font_sizes/font_size = 28
+text = "Name"
+
+[node name="Disabled" type="Button" parent="UI/Columns/Col2D/ShowNameRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Columns/Col2D/ShowNameRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
+[node name="ShowIDRow" type="HBoxContainer" parent="UI/Columns/Col2D"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowIDLabel" type="Label" parent="UI/Columns/Col2D/ShowIDRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.45, 1)
+theme_override_font_sizes/font_size = 28
+text = "Id"
+
+[node name="Disabled" type="Button" parent="UI/Columns/Col2D/ShowIDRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Columns/Col2D/ShowIDRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
+[node name="Col3D" type="VBoxContainer" parent="UI/Columns"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Debug3DRow" type="HBoxContainer" parent="UI/Columns/Col3D"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Debug3DLabel" type="Label" parent="UI/Columns/Col3D/Debug3DRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 1, 1, 1)
+theme_override_font_sizes/font_size = 30
 text = "Debug 3D:"
 
-[node name="Disabled" type="Button" parent="UI/Options/Debug3DRow"]
+[node name="Disabled" type="Button" parent="UI/Columns/Col3D/Debug3DRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Options/Debug3DRow"]
+[node name="Enabled" type="Button" parent="UI/Columns/Col3D/Debug3DRow"]
 modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="ShowTypeRow" type="HBoxContainer" parent="UI/Options"]
+[node name="ShowType3DRow" type="HBoxContainer" parent="UI/Columns/Col3D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowTypeLabel" type="Label" parent="UI/Options/ShowTypeRow"]
-custom_minimum_size = Vector2(300, 0)
+[node name="ShowType3DLabel" type="Label" parent="UI/Columns/Col3D/ShowType3DRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 1, 1, 1)
 theme_override_font_sizes/font_size = 28
-text = "Show TYPE:"
+text = "Type"
 
-[node name="Disabled" type="Button" parent="UI/Options/ShowTypeRow"]
+[node name="Disabled" type="Button" parent="UI/Columns/Col3D/ShowType3DRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Options/ShowTypeRow"]
+[node name="Enabled" type="Button" parent="UI/Columns/Col3D/ShowType3DRow"]
 modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="ShowNameRow" type="HBoxContainer" parent="UI/Options"]
+[node name="ShowName3DRow" type="HBoxContainer" parent="UI/Columns/Col3D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowNameLabel" type="Label" parent="UI/Options/ShowNameRow"]
-custom_minimum_size = Vector2(300, 0)
+[node name="ShowName3DLabel" type="Label" parent="UI/Columns/Col3D/ShowName3DRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 1, 1, 1)
 theme_override_font_sizes/font_size = 28
-text = "Show Name:"
+text = "Name"
 
-[node name="Disabled" type="Button" parent="UI/Options/ShowNameRow"]
+[node name="Disabled" type="Button" parent="UI/Columns/Col3D/ShowName3DRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Options/ShowNameRow"]
+[node name="Enabled" type="Button" parent="UI/Columns/Col3D/ShowName3DRow"]
 modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="ShowIDRow" type="HBoxContainer" parent="UI/Options"]
+[node name="ShowID3DRow" type="HBoxContainer" parent="UI/Columns/Col3D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowIDLabel" type="Label" parent="UI/Options/ShowIDRow"]
-custom_minimum_size = Vector2(300, 0)
+[node name="ShowID3DLabel" type="Label" parent="UI/Columns/Col3D/ShowID3DRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 1, 1, 1)
 theme_override_font_sizes/font_size = 28
-text = "Show ID:"
+text = "Id"
 
-[node name="Disabled" type="Button" parent="UI/Options/ShowIDRow"]
+[node name="Disabled" type="Button" parent="UI/Columns/Col3D/ShowID3DRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Options/ShowIDRow"]
+[node name="Enabled" type="Button" parent="UI/Columns/Col3D/ShowID3DRow"]
 modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="MembrosRow" type="HBoxContainer" parent="UI/Options"]
+[node name="MembrosRow" type="HBoxContainer" parent="UI/Columns/Col3D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="MembrosLabel" type="Label" parent="UI/Options/MembrosRow"]
-custom_minimum_size = Vector2(300, 0)
+[node name="MembrosLabel" type="Label" parent="UI/Columns/Col3D/MembrosRow"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 1, 1, 1)
 theme_override_font_sizes/font_size = 28
-text = "Membros:"
+text = "Members"
 
-[node name="Disabled" type="Button" parent="UI/Options/MembrosRow"]
+[node name="Disabled" type="Button" parent="UI/Columns/Col3D/MembrosRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Options/MembrosRow"]
+[node name="Enabled" type="Button" parent="UI/Columns/Col3D/MembrosRow"]
 modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
+[node name="ShowSkeleton3DRow" type="HBoxContainer" parent="UI/Columns/Col3D"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowSkeleton3DLabel" type="Label" parent="UI/Columns/Col3D/ShowSkeleton3DRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "Skeleton"
+
+[node name="Disabled" type="Button" parent="UI/Columns/Col3D/ShowSkeleton3DRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Columns/Col3D/ShowSkeleton3DRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
+[node name="ShowMesh3DRow" type="HBoxContainer" parent="UI/Columns/Col3D"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowMesh3DLabel" type="Label" parent="UI/Columns/Col3D/ShowMesh3DRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "Mesh"
+
+[node name="Disabled" type="Button" parent="UI/Columns/Col3D/ShowMesh3DRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Columns/Col3D/ShowMesh3DRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
