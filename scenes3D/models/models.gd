@@ -108,6 +108,11 @@ var _preview_anim_players: Array = []
 # default/idle clip; the other players (one-shot effect/death clips like kaboom/blast/shoot)
 # stay stopped so they don't overlay extra debris meshes on the model.
 var _main_anim_player: AnimationPlayer = null
+# The live body subtree (the main player's model root). Hidden while a death/explosion clip
+# plays — those clips reveal the model's debris (e.g. red_robot's kaboom shows the Death
+# parts) WITHOUT hiding the body, so without this the intact body and the debris overlap as
+# "two models". Hiding it leaves only the explosion.
+var _main_body_root: Node3D = null
 
 # Special-effect nodes of the current whole-model preview, used by the "Efeitos
 # Especiais" dropdown to list and isolate them. Each entry: {"label", "node"}.
@@ -789,6 +794,7 @@ func _clear_preview() -> void:
 	_preview_instance = null
 	_preview_anim_players = []
 	_main_anim_player = null
+	_main_body_root = null
 	_preview_anim_autoplay = {}
 	_preview_audio_players = []
 	_preview_audio_volumes = {}
@@ -908,6 +914,9 @@ func _capture_av(instance: Node) -> void:
 		for ap: AnimationPlayer in _preview_anim_players:
 			if _main_anim_player == null or ap.get_animation_list().size() > _main_anim_player.get_animation_list().size():
 				_main_anim_player = ap
+	# The body subtree is the main player's model root (e.g. RedRobotModel), a sibling of
+	# the debris/death node — so hiding it doesn't hide the explosion.
+	_main_body_root = _main_anim_player.get_parent() as Node3D if _main_anim_player != null else null
 
 	_preview_audio_players = []
 	_preview_audio_volumes = {}
@@ -924,6 +933,10 @@ func _capture_av(instance: Node) -> void:
 # audio state afterwards so animation-driven sound respects the Audio/Falas toggles.
 func _apply_animation_state() -> void:
 	var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
+	# A death/explosion clip reveals the model's debris; hide the live body so the preview
+	# shows ONLY the explosion (otherwise the intact body and the debris overlap).
+	if is_instance_valid(_main_body_root):
+		_main_body_root.visible = not (_play_animation and chosen != "" and _is_death_clip(chosen))
 	for ap: AnimationPlayer in _preview_anim_players:
 		if not is_instance_valid(ap):
 			continue
@@ -949,6 +962,13 @@ func _apply_animation_state() -> void:
 		else:
 			ap.stop()
 	_apply_audio_state()
+
+
+# A death/explosion clip (by common naming) that reveals the model's debris instead of
+# animating the body — the live body is hidden while one of these plays.
+func _is_death_clip(clip: String) -> bool:
+	var c := clip.to_lower()
+	return c.contains("kaboom") or c.contains("explo") or c.contains("death") or c.contains("die") or c.contains("destr")
 
 
 # Default clip for the main player when none is explicitly chosen: its authored autoplay,
@@ -1119,6 +1139,12 @@ const _MODEL_TORSO_BONES := {
 	"red_robot": ["Bone.001"],
 }
 
+# Per-character LEG bone(s) the classifier drops (e.g. excluded by "guard"), forced into
+# the leg colliders so the leg PLATES are covered (red_robot's "...RearLegGuard" plates).
+const _MODEL_LEG_BONES := {
+	"red_robot": ["L-RearLegGuard", "R-RearLegGuard"],
+}
+
 
 # Build best-fit colliders that wrap each body MEMBER (sphere head, box torso,
 # capsule limbs) so they render green via the gizmos above. The gameplay script
@@ -1133,6 +1159,7 @@ func _add_member_colliders(instance: Node) -> void:
 		lc.padding = 0.04           # tight gap around the mesh (hugs the body)
 		lc.head_bone_names = _head_bones_for_current()
 		lc.torso_bone_names = _torso_bones_for_current()
+		lc.leg_bone_names = _leg_bones_for_current()
 		instance.add_child(lc)
 		lc.build_for(skels[0] as Skeleton3D)
 		return
@@ -1145,6 +1172,10 @@ func _head_bones_for_current() -> Array[String]:
 
 func _torso_bones_for_current() -> Array[String]:
 	return _model_bones_for_current(_MODEL_TORSO_BONES)
+
+
+func _leg_bones_for_current() -> Array[String]:
+	return _model_bones_for_current(_MODEL_LEG_BONES)
 
 
 func _model_bones_for_current(table: Dictionary) -> Array[String]:

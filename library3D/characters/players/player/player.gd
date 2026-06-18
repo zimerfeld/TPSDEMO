@@ -109,16 +109,6 @@ func _setup_limb_colliders() -> void:
 	lc.build_for(skel)
 
 
-# Impede que o projétil recém-disparado colida com os próprios colliders de
-# membro do atirador (que envolvem o braço/arma de onde ele nasce).
-func _exclude_own_limbs(bullet: PhysicsBody3D) -> void:
-	var lc := get_node_or_null(^"LimbColliders")
-	if lc == null:
-		return
-	for body in lc.get_limb_bodies():
-		bullet.add_collision_exception_with(body)
-
-
 func _safe_is_server_call(default: bool = false) -> bool:
 	if not is_inside_tree():
 		return default
@@ -229,15 +219,9 @@ func apply_input(delta: float) -> void:
 			var shoot_origin: Vector3 = shoot_from.global_transform.origin
 			var shoot_dir: Vector3 = (player_input.shoot_target - shoot_origin).normalized()
 
-			var bullet: CharacterBody3D = preload("res://library3D/characters/player/bullet/bullet.tscn").instantiate()
-			bullet.weapon_damage = weapon_damage
-			bullet.shooter = self
-			get_parent().add_child(bullet, true)
-			bullet.global_transform.origin = shoot_origin
-			# If we don't rotate the bullets there is no useful way to control the particles ..
-			bullet.look_at(shoot_origin + shoot_dir)
-			bullet.add_collision_exception_with(self)
-			_exclude_own_limbs(bullet)
+			# Reusable cannon shooter spawns + configures the bullet (default blue look)
+			# and excludes the shooter's own body/limb colliders.
+			CannonShooter.fire(get_parent(), shoot_origin, shoot_dir, weapon_damage, self)
 			shoot.rpc()
 
 	else: # Not in air or aiming, idle.

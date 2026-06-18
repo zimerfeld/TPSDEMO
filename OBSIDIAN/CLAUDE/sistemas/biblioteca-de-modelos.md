@@ -117,6 +117,11 @@ preview, para que ele não pose o esqueleto **em paralelo** com o clip tocado di
   sem clip escolhido ("Selecione..."), **só ele** toca um clip default (autoplay → "Idle*" →
   1º); os demais ficam parados (`_apply_animation_state`). Com um clip explícito do dropdown,
   toca em quem o tiver (ex.: escolher "kaboom" mostra a explosão de propósito).
+- **Clip de morte/explosão esconde o corpo vivo (2026-06-18):** o clip `kaboom` torna o nó `Death`
+  (destroços = cópias de partes) **visível** mas NÃO esconde o corpo vivo (isso era feito pelo script,
+  removido no preview) → corpo + destroços = "dois modelos". `_apply_animation_state` esconde o
+  `_main_body_root` (raiz do corpo, ex.: `RedRobotModel`) quando o clip escolhido é de morte
+  (`_is_death_clip`: kaboom/explo/death/die/destr), deixando só a explosão.
 
 (Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 5 estados (rotação,
 animação, efeitos especiais, audio, colisores) são **persistidos** na seção

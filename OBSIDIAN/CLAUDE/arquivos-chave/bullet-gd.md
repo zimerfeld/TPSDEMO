@@ -57,6 +57,7 @@ func _physics_process(delta):
   genérica do corpo e atinge o collider de MEMBRO atrás dela (dano localizado de verdade, com headshot).
   Sem isso, a esfera de corpo do red_robot (raio ~1,12 m) interceptava todo tiro → sempre 1×.
 - `collision_layer = 8` (bit4); `mask = 51` (mundo/corpos `3` + membros `16` + `32`) para colidir com os membros
+- **Aparência configurável (2026-06-18):** `tint` (cor do efeito: luz + rastro), `ball_color` (cor da bola), `ball_scale` (tamanho) — sentinela alpha 0 = "não mexer" (mantém o tiro azul do player). Aplicados em `_apply_visuals()` no `_ready`. O **`CannonShooter`** (`effects_shared/cannon_shooter.gd`) instancia e configura o bullet; usado por player (azul) e red_robot (bola preta + efeito vermelho). Ver [[sistemas/dano-localizado]].
 - **Inerte se `shooter == null`** (cobre o `BulletCache` da cena e bullets em clientes)
 - Ver [[sistemas/dano-localizado]]
 

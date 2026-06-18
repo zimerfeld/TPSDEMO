@@ -31,6 +31,14 @@
 Lado detectado por sufixo `.L/.R` (player) ou prefixo `L-/R-` (enemy). `wing` conta
 como BRAÇO (criaturas aladas: criatura_alada, robot_*_alado).
 
+**Overrides por modelo** (`group_of(..., head_bones, torso_bones, leg_bones)` + exports
+`head_bone_names`/`torso_bone_names`/`leg_bone_names` do `LimbColliders`): forçam bones que o
+classificador descartaria. red_robot usa: HEAD=`mouth_eyes`, TRONCO=`Bone.001`, e **PERNA=
+`L-RearLegGuard`/`R-RearLegGuard`** (2026-06-18) — as **placas das pernas**, antes excluídas pela
+palavra "guard", entram no collider da perna (lado pelo prefixo L-/R-). Os mesmos overrides são
+aplicados no preview da tela Models (`models.gd` `_MODEL_LEG_BONES`). Bones de controle como
+`L-LEGORIENT`/`L-LEGIK` continuam excluídos (não estão na lista).
+
 **Ajuste fino do tamanho** (2026-06-16) — para os colliders ficarem mais justos ao
 corpo: `CROSS_SHRINK = 0.82` (raio/largura/profundidade), `LENGTH_SHRINK = 0.95`
 (eixo longo) e `LIMB_RADIUS_RATIO = 0.32` (teto do raio da cápsula como fração do
@@ -83,9 +91,26 @@ para o tiro não nascer acertando o próprio braço/arma.
 
 ## Fluxo do dano (enemy → player)
 
-`red_robot.shoot()` (server): roll de precisão → `_damage_player()` lança um raio
-contra os colliders de membro do player (bit5, `collide_with_bodies`) → multiplicador do membro →
-`player.hit.rpc(weapon_damage * mult)`.
+`red_robot.shoot()` (server) **dispara uma bala de canhão** (não mais laser hitscan), via o
+componente `CannonShooter`, na direção do player (com dispersão se `aim_accuracy < 1`). A bala voa e,
+ao acertar um collider de MEMBRO do player (bit5), aplica `player.hit.rpc(weapon_damage * mult)` —
+mesmo caminho localizado do tiro do player (`bullet._apply_hit`).
+
+## Componentes de tiro reutilizáveis (2026-06-18)
+
+Para reutilizar o tiro entre modelos, a lógica foi isolada em `effects_shared/`:
+
+- **`CannonShooter`** (`cannon_shooter.gd`, `class_name`): `static fire(parent, origin, dir, damage,
+  shooter, tint, ball_color, ball_scale)` → instancia o `bullet.tscn`, posiciona/orienta, exclui o
+  corpo + colliders de membro do atirador e o lança. Cores opcionais (alpha 0 = visual padrão azul do
+  player). Usado pelo **player** (azul, padrão) e pelo **red_robot** (bola PRETA + efeito VERMELHO,
+  `ball_scale 2.5`).
+- **`LaserShooter`** (`laser_shooter.gd`, `class_name`): `static fire(muzzle, beam_mesh, blast_scene,
+  damage, hitbox_layer, exclude)` → laser hitscan (raycast + dano localizado + clip do feixe + blast).
+  Extraído do laser antigo do red_robot; **disponível para reúso** (red_robot agora usa canhão; nenhum
+  modelo usa o laser por enquanto).
+- `bullet.gd` ganhou `tint`/`ball_color`/`ball_scale` (sentinela alpha 0 = não mexe → player intacto),
+  aplicados em `_apply_visuals` (luz + CPUParticles do rastro + material da bola).
 
 ---
 

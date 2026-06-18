@@ -19,11 +19,15 @@ third-person shooter sandbox. At a high level it offers:
   settings screen, a developer screen, and online play.
 - **Playable characters** — selectable player variants that move, aim, jump and shoot,
   with first-person camera control and a local health HUD.
-- **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a laser, and
-  a flying bomber (Criatura Alada) that orbits the player and drops bombs.
+- **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
+  ball** (a recolored, red-glowing version of the player's shot), and a flying bomber
+  (Criatura Alada) that orbits the player and drops bombs.
 - **Localized damage** — per-limb native 3D colliders (head, torso, arms, legs) sized to
   each character's mesh, so hits to different body parts deal different damage (headshots
-  deal extra). Both bullets and the enemy laser respect them.
+  deal extra). Shots pass through the generic body collider to land on the limb colliders.
+- **Reusable shooting** — the cannon-bullet and hitscan-laser firing are isolated into
+  reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
+  can use; the player and Red Robot both fire via `CannonShooter`.
 - **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2), a full
   complex level (Level Base), plus online (host/connect) play.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
@@ -88,9 +92,11 @@ stays `Main`, a plain `Node`), the grid detects the active loaded screen and loo
 
 The developer screen's **System Health** row toggles a global monitoring overlay
 (`autoload/system_health.gd`, autoload **SystemHealth**) — a **draggable floating panel** (grab
-its title bar with the left mouse button to move it). It shows: **FPS**, the **real per-process
-CPU usage** (`CPU`), the game's static memory (`Mem. Jogo`), the video memory (`Mem. Vídeo`) and
-the system RAM used (`Mem. Sistema`, from `OS.get_memory_info()`).
+its title bar with the left mouse button to move it; it always stays within the screen, and its
+position is remembered between runs — a settings **Reset** sends it back to the top-right corner).
+It shows: **FPS**, the **real per-process CPU usage** (`CPU`), the game's static memory
+(`Mem. Jogo`), the video memory (`Mem. Vídeo`) and the system RAM used (`Mem. Sistema` = total −
+free physical RAM, e.g. 12.6 / 16.2 GB = 78%).
 
 CPU is the actual usage of the Godot process, matching what the OS Task Manager shows for it:
 Godot has no API for it, so a **background thread** samples it from the OS (`Get-Process … .CPU`

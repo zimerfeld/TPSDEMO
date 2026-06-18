@@ -13,17 +13,44 @@ var shooter: Node = null
 # Garante que o dano seja aplicado uma única vez (área ou fallback).
 var _registered: bool = false
 
+# Aparência configurável (CannonShooter passa estes ao disparar), para o MESMO bullet
+# servir vários modelos. Alpha <= 0 = sentinela "não mexer" (mantém o visual da cena, o
+# tiro azul do player). tint = cor do EFEITO (luz + rastro); ball_color = cor da BALA;
+# ball_scale = multiplicador de tamanho da bala (calibre).
+var tint: Color = Color(0, 0, 0, 0)
+var ball_color: Color = Color(0, 0, 0, 0)
+var ball_scale: float = 1.0
+
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var omni_light: OmniLight3D = $OmniLight3D
 
 
 func _ready() -> void:
+	# Recolore/redimensiona em TODOS os peers (o visual aparece em todo mundo).
+	_apply_visuals()
 	# Sem atirador = bullet inerte: o "BulletCache" pré-instanciado na cena do
 	# player (warm-up) e os bullets replicados em clientes (shooter não replica).
 	if shooter == null or not multiplayer.is_server():
 		set_physics_process(false)
 		collision_shape.disabled = true
+
+
+# Aplica tint/cor/escala configurados. Sentinela (alpha 0) mantém o visual autorado.
+func _apply_visuals() -> void:
+	if tint.a > 0.0:
+		omni_light.light_color = tint
+		for p in [$BulletBody/MainBody, $BulletBody/Trail]:
+			(p as CPUParticles3D).color = tint
+	if ball_color.a > 0.0:
+		var mi: MeshInstance3D = $MeshInstance3D
+		var mat := mi.material_override
+		if mat is StandardMaterial3D:
+			mat = mat.duplicate()
+			(mat as StandardMaterial3D).albedo_color = ball_color
+			mi.material_override = mat
+	if not is_equal_approx(ball_scale, 1.0):
+		$MeshInstance3D.scale *= ball_scale
 
 
 func _physics_process(delta: float) -> void:

@@ -16,7 +16,18 @@ amostrado a cada ~0,6 s:
   de forma confiável; ver decisão do usuário em 2026-06-18.)
 - **Mem. Jogo** — `Performance.MEMORY_STATIC`.
 - **Mem. Vídeo** — `Performance.RENDER_VIDEO_MEM_USED`.
-- **Mem. Sistema** — RAM física usada via `OS.get_memory_info()` (`physical - available`), em MB/GB e %.
+- **Mem. Sistema** — RAM física usada = `physical - FREE` de `OS.get_memory_info()`, em MB/GB e %
+  (ex.: 12,6 GB / 16,2 GB = 78%). ⚠️ **Não usar `available`**: no Windows é o espaço VIRTUAL/commit
+  do processo (dezenas de GB, maior que a RAM física) → dava valor negativo (o bug "-25600 0%").
+
+## Janela flutuante (posição)
+
+- **Sempre dentro da tela:** ao iniciar e ao arrastar, a posição é limitada por `_clamp_to_screen`
+  (e re-limitada a cada poll, p/ sobreviver a mudança de resolução).
+- **Persistência:** a posição é salva em `game/system_health_pos` ao soltar o arraste e restaurada
+  no boot (`_apply_saved_position`). `(-1,-1)` = não definida → canto **superior direito**.
+- **Reset das configurações:** `Settings.reset_to_defaults()` emite o sinal `settings_reset` e zera
+  `system_health_pos` p/ `(-1,-1)`; o painel volta ao canto superior direito (`_on_settings_reset`).
 
 ## Limite seguro + auto-pausa
 

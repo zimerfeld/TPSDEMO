@@ -1,5 +1,9 @@
 extends Node
 
+## Emitted by reset_to_defaults() so live UI (e.g. the System Health overlay) can react —
+## the System Health panel uses it to snap back to the top-right corner.
+signal settings_reset
+
 enum GIType {
 	SDFGI = 0,
 	VOXEL_GI = 1,
@@ -42,6 +46,8 @@ var DEFAULTS := {
 		# System Health monitor overlay (Developer screen) + its safety auto-pause.
 		system_health = false,
 		system_health_autopause = true,
+		# Persisted floating-panel position; (-1, -1) = unset → default top-right corner.
+		system_health_pos = Vector2(-1, -1),
 		# UI language: "pt" (default) or "en". Persisted; read by the Locale autoload.
 		language = "pt",
 	},
@@ -128,6 +134,7 @@ func reset_to_defaults() -> void:
 		for key in DEFAULTS[section]:
 			config_file.set_value(section, key, DEFAULTS[section][key])
 	save_settings()
+	settings_reset.emit()
 
 
 func _input(input_event: InputEvent) -> void:

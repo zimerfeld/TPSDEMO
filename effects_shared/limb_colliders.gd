@@ -25,6 +25,10 @@ const BODY_MULTIPLIER := 1.0
 ## cujo osso principal tem nome genérico que o classificador não reconhece
 ## (ex.: red_robot, cujo corpo é o osso "Bone.001").
 @export var torso_bone_names: Array[String] = []
+## Nomes de bones forçados para PERNA E/D (ignora exclusões; lado vem do nome L-/R-).
+## Para placas/peças da perna que o classificador descartaria (ex.: red_robot,
+## "L-RearLegGuard"/"R-RearLegGuard", excluídas pela palavra "guard").
+@export var leg_bone_names: Array[String] = []
 
 @export_group("Colisão")
 ## Layer dos colliders de membro (bit5=16 player, bit6=32 enemy). Os projéteis
@@ -58,7 +62,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 	# 1) Agrupa ossos por membro e escolhe o osso-raiz (mais raso na hierarquia).
 	var group_bones := {}
 	for b in skel.get_bone_count():
-		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names, torso_bone_names)
+		var g := BodyParts.group_of(skel.get_bone_name(b), head_bone_names, torso_bone_names, leg_bone_names)
 		if g == "":
 			continue
 		if not group_bones.has(g):
@@ -128,7 +132,7 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 				var skb := idx_to_bone[best_b]
 				if skb < 0:
 					continue
-				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names, torso_bone_names)
+				var g := BodyParts.group_of(skel.get_bone_name(skb), head_bone_names, torso_bone_names, leg_bone_names)
 				if g == "":
 					continue
 				var p: Vector3 = root_rest_inv[g] * (skin_xform[best_b] * verts[vi])

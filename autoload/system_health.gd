@@ -67,6 +67,9 @@ func _ready() -> void:
 	add_child(timer)
 	timer.timeout.connect(_poll)
 	Locale.language_changed.connect(_on_language_changed)
+	# On a settings "Reset", snap the panel back to the top-right corner.
+	if Settings.has_signal("settings_reset"):
+		Settings.settings_reset.connect(_on_settings_reset)
 	# Real per-process CPU% needs an OS query; sample it off the main thread.
 	if OS.get_name() == "Windows":
 		_hw_run = true
@@ -167,12 +170,50 @@ func _build_ui() -> void:
 	_resume_button.pressed.connect(_on_resume_pressed)
 	vbox.add_child(_resume_button)
 
-	# Park the window at the top-right once it has a measured size.
+	# Restore the saved position once the panel has a measured size (clamped to the
+	# screen); falls back to the top-right corner when there is none.
 	await get_tree().process_frame
 	if is_instance_valid(_panel):
-		var vp := get_viewport().get_visible_rect().size
-		_panel.position = Vector2(maxf(12.0, vp.x - _panel.size.x - 12.0), 12.0)
+		_apply_saved_position()
 	_poll()
+
+
+# Screen margin and config key for the floating panel's persisted position.
+const _MARGIN: float = 12.0
+const _POS_KEY: String = "system_health_pos"
+
+
+# Clamp a desired position so the whole panel stays within the viewport.
+func _clamp_to_screen(pos: Vector2) -> Vector2:
+	var vp := get_viewport().get_visible_rect().size
+	pos.x = clampf(pos.x, 0.0, maxf(0.0, vp.x - _panel.size.x))
+	pos.y = clampf(pos.y, 0.0, maxf(0.0, vp.y - _panel.size.y))
+	return pos
+
+
+func _move_to_top_right() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	_panel.position = Vector2(maxf(_MARGIN, vp.x - _panel.size.x - _MARGIN), _MARGIN)
+
+
+# Place the panel at its saved position (clamped on-screen), or top-right if unset.
+func _apply_saved_position() -> void:
+	var saved: Vector2 = Settings.config_file.get_value("game", _POS_KEY, Vector2(-1, -1))
+	if saved.x < 0.0 or saved.y < 0.0:
+		_move_to_top_right()
+	else:
+		_panel.position = _clamp_to_screen(saved)
+
+
+func _save_position() -> void:
+	Settings.config_file.set_value("game", _POS_KEY, _panel.position)
+	Settings.save_settings()
+
+
+func _on_settings_reset() -> void:
+	# reset_to_defaults already cleared the saved position; snap back to the corner.
+	if is_instance_valid(_panel):
+		_move_to_top_right()
 
 
 # Metric rows, top to bottom. label_key is the (translatable) caption shown on the left.
@@ -225,14 +266,12 @@ func _input(event: InputEvent) -> void:
 	if not _dragging:
 		return
 	if event is InputEventMouseMotion:
-		var vp := get_viewport().get_visible_rect().size
-		var pos := get_viewport().get_mouse_position() + _drag_offset
-		pos.x = clampf(pos.x, 0.0, maxf(0.0, vp.x - _panel.size.x))
-		pos.y = clampf(pos.y, 0.0, maxf(0.0, vp.y - _panel.size.y))
-		_panel.position = pos
+		_panel.position = _clamp_to_screen(get_viewport().get_mouse_position() + _drag_offset)
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		_dragging = false
+		# Persist the dropped position so the panel reopens where the user left it.
+		_save_position()
 
 
 # --- Polling ----------------------------------------------------------------
@@ -250,23 +289,30 @@ func _poll() -> void:
 	var game_mem: float = Performance.get_monitor(Performance.MEMORY_STATIC)
 	var video_mem: float = Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)
 
-	# Physical RAM (cross-platform). used% = (physical - available) / physical.
+	# Physical RAM in use, like Task Manager: used = total - FREE physical. (Note: the
+	# dict's "available" is the process' available VIRTUAL/commit space — tens of GB, larger
+	# than physical RAM — so it must NOT be used here; that bug showed a negative value.)
 	var mem_info: Dictionary = OS.get_memory_info()
 	var physical: float = float(mem_info.get("physical", 0))
-	var available: float = float(mem_info.get("available", 0))
+	var free: float = float(mem_info.get("free", -1))
+	var sys_ok := physical > 0.0 and free >= 0.0
+	var used := physical - free
 	var sys_pct := 0.0
-	if physical > 0.0:
-		sys_pct = clampf((physical - available) / physical * 100.0, 0.0, 100.0)
+	if sys_ok:
+		sys_pct = clampf(used / physical * 100.0, 0.0, 100.0)
 
 	var cpu_over := cpu_pct >= 0.0 and cpu_pct >= THRESHOLD
 	_set_row("fps", "%d" % fps, false)
 	_set_row("cpu", ("%d%%" % int(round(cpu_pct))) if cpu_pct >= 0.0 else Locale.tr_key("N/D"), cpu_over)
 	_set_row("game_mem", _format_bytes(game_mem), false)
 	_set_row("video_mem", _format_bytes(video_mem), false)
-	if physical > 0.0:
-		_set_row("sys_mem", "%s  (%d%%)" % [_format_bytes(physical - available), int(round(sys_pct))], sys_pct >= THRESHOLD)
+	if sys_ok:
+		_set_row("sys_mem", "%s / %s  (%d%%)" % [_format_bytes(used), _format_bytes(physical), int(round(sys_pct))], sys_pct >= THRESHOLD)
 	else:
 		_set_row("sys_mem", Locale.tr_key("N/D"), false)
+
+	# Keep the panel on-screen even if the window/resolution changed since the last drag.
+	_panel.position = _clamp_to_screen(_panel.position)
 
 	_update_alert(sys_pct, cpu_pct, cpu_over)
 

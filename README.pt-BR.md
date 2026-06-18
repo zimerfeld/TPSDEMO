@@ -19,11 +19,16 @@ em terceira pessoa. Em alto nível, oferece:
   tela de configurações, à tela de desenvolvedor e ao jogo online.
 - **Personagens jogáveis** — variações de player selecionáveis que se movem, miram, pulam e
   atiram, com câmera em primeira pessoa e um HUD de vida local.
-- **Inimigos** — um inimigo terrestre (Red Robot) que se aproxima, mira e dispara um laser, e um
-  bombardeiro voador (Criatura Alada) que orbita o player e solta bombas.
+- **Inimigos** — um inimigo terrestre (Red Robot) que se aproxima, mira e dispara uma **bala de
+  canhão** preta (uma versão recolorida, com brilho vermelho, do tiro do player), e um bombardeiro
+  voador (Criatura Alada) que orbita o player e solta bombas.
 - **Dano localizado** — colliders 3D nativos por membro (cabeça, tronco, braços, pernas)
   dimensionados pela malha de cada personagem, então acertos em partes diferentes causam dano
-  diferente (headshots causam dano extra). Tanto as balas quanto o laser do inimigo os respeitam.
+  diferente (headshots causam dano extra). Os tiros atravessam o collider de corpo genérico e
+  acertam os colliders de membro.
+- **Tiro reutilizável** — o disparo de bala de canhão e o de laser hitscan foram isolados em
+  componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
+  modelo pode usar; player e Red Robot disparam via `CannonShooter`.
 - **Várias fases** — uma arena simples (Level 1), um encontro com o bombardeiro (Level 2), uma
   fase completa e complexa (Level Base), além do jogo online (host/conectar).
 - **Biblioteca + visualizador de modelos 3D** — assets 3D reutilizáveis organizados por tipo em
@@ -87,9 +92,11 @@ vez de checar o tipo da raiz; ele some nas telas puramente 2D (menu/configuraç�
 
 A linha **System Health** da tela developer alterna um overlay de monitoramento global
 (`autoload/system_health.gd`, autoload **SystemHealth**) — um **painel flutuante arrastável** (segure
-o botão esquerdo do mouse sobre a barra de título para movê-lo). Ele mostra: **FPS**, o **uso real de
-CPU do processo** (`CPU`), a memória estática do jogo (`Mem. Jogo`), a memória de vídeo (`Mem. Vídeo`)
-e a RAM do sistema em uso (`Mem. Sistema`, via `OS.get_memory_info()`).
+o botão esquerdo do mouse sobre a barra de título para movê-lo; ele **sempre fica dentro da tela** e
+sua **posição é lembrada entre execuções** — o **Reset** das configurações o devolve ao canto superior
+direito). Ele mostra: **FPS**, o **uso real de CPU do processo** (`CPU`), a memória estática do jogo
+(`Mem. Jogo`), a memória de vídeo (`Mem. Vídeo`) e a RAM do sistema em uso (`Mem. Sistema` = total −
+RAM física livre; ex.: 12,6 / 16,2 GB = 78%).
 
 A CPU é o uso real do processo do Godot, batendo com o que o Gerenciador de Tarefas mostra: o Godot
 não tem API para isso, então uma **thread em segundo plano** amostra do SO (`Get-Process … .CPU` via
