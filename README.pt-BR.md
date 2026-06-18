@@ -37,15 +37,19 @@ em terceira pessoa. Em alto nível, oferece:
   toggle cobre — partículas, luzes, malhas de laser/clarão presas a ossos), **Áudio** (todo som que
   o modelo emite — movimento, motor, tiros, explosões, vozes) e colliders. Cada toggle é o
   interruptor mestre da sua categoria (nenhum som/animação toca enquanto o toggle estiver desligado,
-  independentemente do dropdown — inclusive som disparado por trilhas de animação) e os estados
-  dos toggles são persistidos entre visitas. Os dropdowns de "Animação" e "Efeitos Especiais"
-  aparecem só na visão montada "Modelo completo"; o de efeitos isola um único efeito quando
+  inclusive som disparado por trilhas de animação) e os estados dos toggles são persistidos entre
+  visitas. Uma animação só roda quando **o toggle está ligado E um clip está escolhido** no dropdown
+  "Animação" (não há mais auto-play de um clip padrão). Os dropdowns de "Animação" e "Efeitos
+  Especiais" aparecem só na visão montada "Modelo completo"; o de efeitos isola um único efeito quando
   escolhido. Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Parte) reseta
   todos os dropdowns abaixo dele para "Selecione…". Uma linha de status vermelha acompanha a
-  navegação e flutua logo **abaixo do combo a que se refere**. Arraste para girar o modelo à mão em
+  navegação e flutua logo **acima do combo a que se refere**; ao escolher a Parte ela não mostra mais
+  contagem, e só aparece — acima dos combos "Animação"/"Efeitos Especiais" — quando estes têm opções.
+  Arraste para girar o modelo à mão em
   até 180° nos dois eixos. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
   o modelo nem altera a câmera/rotação. Para Personagens e Armas, um rótulo (CABEÇA, TRONCO, BRAÇO…)
-  flutua sobre o collider de cada membro; personagens com skin são enquadrados/centralizados pelos
+  flutua sobre o collider de cada membro — exibido só quando os toggles **Debug 3D** e **Membros**
+  (tela developer) estão ambos ligados; personagens com skin são enquadrados/centralizados pelos
   colliders posados para girarem no lugar em vez de derivar.
 - **HUD cyberpunk & widgets 2D** — um conjunto de controles de UI reutilizáveis (HUD, minimapa,
   vitais, mira, menu de pausa, scanlines e mais).

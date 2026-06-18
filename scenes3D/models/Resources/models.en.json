@@ -23,6 +23,7 @@
 	"Selecione um modelo.": "Select a model.",
 	"Selecione uma parte.": "Select a part.",
 	"Nenhum modelo neste grupo.": "No models in this group.",
-	"Modelo completo — %d parte(s)": "Whole model — %d part(s)",
-	"Parte: %s": "Part: %s"
+	"Selecione uma animação.": "Select an animation.",
+	"Selecione um efeito.": "Select an effect.",
+	"Selecione uma animação e/ou um efeito.": "Select an animation and/or an effect."
 }

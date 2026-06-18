@@ -36,15 +36,19 @@ third-person shooter sandbox. At a high level it offers:
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
   **Audio** (every sound the model emits — movement, motor, shots, explosions, voices) and
   colliders. Each toggle is the master switch for its category (no sound/animation plays
-  while its toggle is off, regardless of the dropdown — including sound driven by animation
-  tracks) and the toggle states are persisted between visits. The "Animação" and "Efeitos
-  Especiais" dropdowns appear only for the assembled "Modelo completo" view; the effects one
-  isolates a single effect when picked. Picking a value in any selector (Categoria → Prefixo
-  → Modelo → Parte) resets every dropdown below it to "Selecione…". A red status line tracks
-  the drill-down and floats directly **below the combo it is about**. Drag to hand-rotate the
+  while its toggle is off — including sound driven by animation tracks) and the toggle states
+  are persisted between visits. An animation plays only when **the toggle is on AND a clip is
+  picked** in the "Animação" dropdown (there is no default-clip auto-play anymore). The
+  "Animação" and "Efeitos Especiais" dropdowns appear only for the assembled "Modelo completo"
+  view; the effects one isolates a single effect when picked. Picking a value in any selector
+  (Categoria → Prefixo → Modelo → Parte) resets every dropdown below it to "Selecione…". A red
+  status line tracks the drill-down and floats directly **above the combo it is about**; once a
+  Parte is picked it no longer shows a count, and only appears — above the "Animação"/"Efeitos
+  Especiais" combos — when those have options. Drag to hand-rotate the
   model up to 180° on both axes. Toggling any option acts on the live preview in place — it
   never reloads the model nor changes the camera/rotation. For Personagens and Armas, a
-  name label (CABEÇA, TRONCO, BRAÇO…) floats over each member's collider; skinned characters
+  name label (CABEÇA, TRONCO, BRAÇO…) floats over each member's collider — shown only when the
+  **Debug 3D** and **Membros** toggles (developer screen) are both on; skinned characters
   are framed/centered from their posed colliders so they spin in place instead of drifting.
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap, vitals,
   crosshair, pause menu, scanlines, and more).

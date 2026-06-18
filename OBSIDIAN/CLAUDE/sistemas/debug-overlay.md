@@ -30,6 +30,13 @@ Para cada membro (CABEÇA/TRONCO/BRAÇO…) classificado por `BodyParts`, um
 `Skeleton3D`), **Name** (nome do nó), **ID** (instance id) e **Membro** (parte do corpo).
 Cada linha liga/desliga pela sub-chave correspondente da coluna Debug 3D.
 
+**Isenção de rótulos de membro (2026-06-18):** `DebugOverlay.exempt_member_labels(node)`
+marca um subtree (grupo `_NO_MEMBER_LABELS_GROUP`) cujos rótulos de membro são desenhados
+por **outro** dono — o [[sistemas/biblioteca-de-modelos|browser de modelos]] desenha seus
+próprios labels (mais ricos, com overrides de cabeça/tronco) sobre o preview. `_add_3d_skeleton`
+pula esses esqueletos (via `_in_group_or_ancestor`), evitando rótulo **dobrado**; os gizmos
+de **esqueleto/mesh** do overlay continuam aplicando no subtree.
+
 ## Malha no Solo (grid)
 
 Grade wireframe 100 m × 100 m na origem, para escala/posição em telas 3D

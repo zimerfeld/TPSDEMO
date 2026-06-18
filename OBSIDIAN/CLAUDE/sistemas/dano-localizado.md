@@ -33,7 +33,9 @@ como BRAÇO (criaturas aladas: criatura_alada, robot_*_alado).
 
 **Overrides por modelo** (`group_of(..., head_bones, torso_bones, leg_bones)` + exports
 `head_bone_names`/`torso_bone_names`/`leg_bone_names` do `LimbColliders`): forçam bones que o
-classificador descartaria. red_robot usa: HEAD=`mouth_eyes`, TRONCO=`Bone.001`, e **PERNA=
+classificador descartaria. red_robot usa: HEAD=`mouth_eyes`+`L-EYE`/`R-EYE` (os olhos entram
+na CABEÇA p/ o headshot não virar uma esfera minúscula só do painel do rosto — 2026-06-18),
+TRONCO=`Bone.001`, e **PERNA=
 `L-RearLegGuard`/`R-RearLegGuard`** (2026-06-18) — as **placas das pernas**, antes excluídas pela
 palavra "guard", entram no collider da perna (lado pelo prefixo L-/R-). Os mesmos overrides são
 aplicados no preview da tela Models (`models.gd` `_MODEL_LEG_BONES`). Bones de controle como
@@ -137,7 +139,7 @@ O enemy aguarda aproximar (`shoot_countdown = 0`) enquanto o player está fora d
 ## Tuning no inspector (nó do personagem)
 
 Em `limb_colliders.gd` (nó `LimbColliders`): `enabled`, `padding`, `head_bone_names`
-(`["mouth_eyes"]` no enemy), `torso_bone_names` (força um osso de nome genérico para
+(`["mouth_eyes", "L-EYE", "R-EYE"]` no enemy), `torso_bone_names` (força um osso de nome genérico para
 TRONCO — `["Bone.001"]` no red_robot, cujo corpo não era reconhecido e ficava **sem
 collider de tronco**), `hitbox_layer` (16 player / 32 enemy). Os exports de cor/raio
 do antigo sistema de vidro foram removidos.

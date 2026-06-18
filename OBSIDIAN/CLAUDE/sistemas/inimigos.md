@@ -105,7 +105,7 @@ func hit() -> void:
 ## Colliders de membro (dano localizado)
 
 - `_setup_limb_colliders()` no `_ready` (se `not dead`) cria colliders 3D nativos (`StaticBody3D` + `BoxShape3D`) por membro
-- Usa `effects_shared/limb_colliders.gd` sobre `RedRobotModel/Armature/Skeleton3D` (`head_bone_names = ["mouth_eyes"]`)
+- Usa `effects_shared/limb_colliders.gd` sobre `RedRobotModel/Armature/Skeleton3D` (`head_bone_names = ["mouth_eyes", "L-EYE", "R-EYE"]` — os olhos entram na CABEÇA para o headshot não ficar minúsculo; 2026-06-18)
 - Layer 32 (bit6); o bullet do player colide fisicamente e aplica dano localizado
 - Ver [[arquivos-chave/limb-colliders-gd]]
 

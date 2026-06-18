@@ -106,7 +106,10 @@ func _setup_limb_colliders() -> void:
 	var lc = preload("res://effects_shared/limb_colliders.gd").new()
 	lc.name = "LimbColliders"
 	lc.hitbox_layer = 32        # bit6 = colliders de membro do enemy
-	lc.head_bone_names = (["mouth_eyes"] as Array[String])
+	# A CABEÇA cobre o painel do rosto ("mouth_eyes") + os olhos ("L-EYE"/"R-EYE"). Sem os
+	# olhos (excluídos pela palavra "eye") a cabeça ficaria minúscula (~42 vértices só do
+	# painel) — esta hitbox vale para o headshot em jogo e para o gizmo do model browser.
+	lc.head_bone_names = (["mouth_eyes", "L-EYE", "R-EYE"] as Array[String])
 	# O corpo do red_robot é o osso genérico "Bone.001", que o classificador não
 	# reconhece — sem isto ele ficaria sem collider de TRONCO (só a cabeça).
 	lc.torso_bone_names = (["Bone.001"] as Array[String])

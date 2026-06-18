@@ -46,9 +46,16 @@ cascata (antes ficavam "presos" visíveis ao trocar um selector acima).
 
 **StatusLabel (2026-06-18):** a linha de status (vermelha, +2pt) é reposicionada
 dinamicamente logo **acima** do combo a que a mensagem se refere (`_set_status(template,
-row, args)` + `_apply_status` movem o label com `move_child`); no "Modelo completo" fica
-acima dos combos Animação/Efeitos Especiais. Textos via `Locale.tr_key`, label no
-`Locale.SKIP_GROUP` (ver [[sistemas/localizacao]]).
+row, args)` + `_apply_status` movem o label com `move_child`). Textos via `Locale.tr_key`,
+label no `Locale.SKIP_GROUP` (ver [[sistemas/localizacao]]).
+
+**Após selecionar a Parte (2026-06-18):** o status **NÃO** mostra mais mensagem de
+quantidade ("Modelo completo — N parte(s)") nem rótulo de parte ("Parte: X"). Em vez disso,
+no **"Modelo completo"** o status só aparece **quando** os combos Animação e/ou Efeitos
+Especiais têm opções, posicionado **acima** do primeiro deles (`_update_whole_model_status`):
+"Selecione uma animação." (acima de `AnimationRow`), "Selecione um efeito." (acima de
+`EffectsRow`), ou "Selecione uma animação e/ou um efeito." quando ambos. Numa **parte
+isolada** (sem combos abaixo) o status fica **vazio** (`_clear_status`).
 
 ### Rotação do preview
 
@@ -74,10 +81,12 @@ categoria:
 > **câmera/rotação ficam intactas**. Cada handler altera o nó vivo
 > (`_preview_instance`) por um aplicador dedicado em vez de chamar um rebuild.
 
-- **Animação** — com o toggle desligado **nada anima**, mesmo com um clip escolhido
-  no dropdown "Animação"; `_on_animation_selected` retorna cedo. O playback é aplicado
-  **in-place** por `_apply_animation_state()` (toca/para nos `_preview_anim_players`):
-  ligado, toca o clip do dropdown (fallback para o autoplay capturado e depois o 1º clip).
+- **Animação** — uma animação só roda quando **ambos**: o toggle está ligado **E** um clip
+  está escolhido no dropdown "Animação" (2026-06-18). Com o toggle desligado **nada anima**
+  (`_on_animation_selected` retorna cedo); com o toggle ligado mas o combo em "Selecione..."
+  também **nada roda** — **não há mais auto-play de clip default/idle**. O playback é aplicado
+  **in-place** por `_apply_animation_state()` (`should_play = _play_animation and chosen != ""`;
+  toca o clip escolhido em quem o tiver, para todos os outros `_preview_anim_players`).
 - **Audio** — toca **todos** os emissores do modelo (movimentação andar/correr/saltar,
   motor, tiro, explosão, vozes…); desligado, silencia. Aplicado por `_apply_audio_state()`.
   (Não há mais toggle "Falas" separado.)
@@ -112,11 +121,13 @@ preview, para que ele não pose o esqueleto **em paralelo** com o clip tocado di
   dirigia → o clip toca **no lugar** (root motion extraído e descartado; drift = 0).
 - **Players de efeito/morte:** o red_robot tem 4 `AnimationPlayer` (locomoção + `ShootAnimation` +
   `Explosion`/kaboom + blast). O preview tocava o 1º clip de **cada** player → o kaboom
-  revelava os destroços de morte (cópias de partes) sobre o modelo. Correção: define-se o
-  **player principal** (`_main_anim_player` = o que a tree dirige, ou o mais rico sem tree) e,
-  sem clip escolhido ("Selecione..."), **só ele** toca um clip default (autoplay → "Idle*" →
-  1º); os demais ficam parados (`_apply_animation_state`). Com um clip explícito do dropdown,
-  toca em quem o tiver (ex.: escolher "kaboom" mostra a explosão de propósito).
+  revelava os destroços de morte (cópias de partes) sobre o modelo. Correção: sem clip escolhido
+  no dropdown **nada toca** (2026-06-18 — antes o player principal tocava um clip default/idle);
+  com um clip explícito do dropdown, `_apply_animation_state` o toca **só** em quem o tiver e para
+  todos os outros players (ex.: escolher "kaboom" mostra a explosão de propósito, sem o blast/shoot
+  junto). O **player principal** (`_main_anim_player` = o que a tree dirige, ou o mais rico sem tree)
+  segue sendo identificado em `_capture_av` só para achar o `_main_body_root` (corpo vivo a esconder
+  nos clips de morte).
 - **Clip de morte/explosão esconde o corpo vivo (2026-06-18):** o clip `kaboom` torna o nó `Death`
   (destroços = cópias de partes) **visível** mas NÃO esconde o corpo vivo (isso era feito pelo script,
   removido no preview) → corpo + destroços = "dois modelos". `_apply_animation_state` esconde o
@@ -135,6 +146,26 @@ Para **Personagens** e **Armas**, `_preview_whole_model` constrói os colliders 
 membro (via [[arquivos-chave/limb-colliders-gd|LimbColliders]]) e `_add_member_labels`
 flutua um `Label3D` com o nome do membro (CABEÇA, TRONCO, BRAÇO…) sobre cada collider.
 A fonte do rótulo é **36** (¼ menor que os 48 originais — 2026-06-17), com outline 9.
+
+**Rótulos seguem os toggles Debug 3D + Membros (2026-06-18):** os labels de membro do
+browser só aparecem quando **ambos** os toggles do [[sistemas/debug-overlay]] (tela
+developer) estão ligados — `_member_labels_enabled()` lê `game/debug_3d` **e**
+`game/show_members` do `Settings.config_file`. Com Debug 3D ligado mas Membros **desligado**
+(ou Debug 3D desligado), **nenhum** label é desenhado. Os **colliders** de membro continuam
+sendo construídos sempre (enquadramento posado + gizmo do toggle Colisores) — só os rótulos
+são condicionados. Como o `DebugOverlay` (autoload) **também** rotularia o esqueleto do
+preview, `_preview_whole_model` chama `DebugOverlay.exempt_member_labels(instance)` para o
+overlay **pular só os labels de membro** desse subtree (gizmos de esqueleto/mesh do overlay
+seguem valendo) — assim não há rótulo dobrado, e os do browser (com overrides de
+cabeça/tronco) são a única fonte.
+
+> [!note] Collider de CABEÇA do red_robot = rosto + olhos (2026-06-18)
+> O membro CABEÇA do red_robot é montado a partir de `mouth_eyes` **+ `L-EYE`/`R-EYE`**
+> (override em `_MODEL_HEAD_BONES` e em `red_robot.gd`). Os olhos caem na exclusão por "eye",
+> então sem forçá-los a cabeça pegava só o painel do rosto (~42 vértices) e virava uma esfera
+> minúscula escondida na caixa do TRONCO. Com os olhos, a esfera fica ~`r=0.34` (rosto inteiro).
+> Vale tanto para o gizmo do browser quanto para a **hitbox de headshot** em jogo (mesmo
+> `LimbColliders`) — o headshot ficou um alvo justo.
 
 **Centralização posada (2026-06-17):** o AABB de uma malha **skinada** vem da pose de
 **bind**, que no red_robot fica ~1,4 m fora da pose idle em Z. Usá-lo ancoraria o pivô

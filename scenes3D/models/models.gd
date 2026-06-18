@@ -122,10 +122,8 @@ var _preview_effect_nodes: Array = []
 # mesh). Toggles act on THIS node in place instead of rebuilding it, so flipping
 # any toggle never reloads the model nor disturbs the camera/rotation.
 var _preview_instance: Node = null
-# Captured at build so the in-place animation/audio appliers can restore state:
-# AnimationPlayer → its authored autoplay clip; audio emitter → its authored
-# volume_db (so a muted-by-toggle emitter can be un-muted without a rebuild).
-var _preview_anim_autoplay: Dictionary = {}
+# Captured at build so the in-place audio applier can restore state: each emitter's
+# authored volume_db, so a muted-by-toggle emitter can be un-muted without a rebuild.
 var _preview_audio_players: Array = []
 var _preview_audio_volumes: Dictionary = {}
 # Whether the per-member colliders were already built for the current preview, so
@@ -455,13 +453,38 @@ func _on_mesh_selected(index: int) -> void:
 		# The animation and special-effects dropdowns only apply to "Modelo completo".
 		_populate_animations()
 		_populate_effects()
-		# Those two dropdowns are now the active controls, so the status sits above them.
-		_set_status("Modelo completo — %d parte(s)", animation_row, [_mesh_catalog.size()])
+		# No quantity message: the status now only guides the animation/effects combos
+		# (when they have options), sitting just above whichever ones showed up.
+		_update_whole_model_status()
 	else:
+		# A single isolated part has no animation/effects combos below it, so it carries
+		# no status line at all.
 		_preview_mesh(index - 2)
 		_reset_animations()
 		_reset_effects()
-		_set_status("Parte: %s", mesh_row, [_mesh_catalog[index - 2]["label"]])
+		_clear_status()
+
+
+# Status line for the assembled "Modelo completo" view: it appears ONLY when at least one
+# of the two combos below it actually has options, and sits directly above the topmost one
+# that does, carrying that combo's "pick something" prompt (both → a combined prompt). When
+# the model exposes neither animations nor effects, no status shows.
+func _update_whole_model_status() -> void:
+	var has_anim := not cbo_animations.disabled and cbo_animations.item_count > 1
+	var has_effects := not cbo_effects.disabled and cbo_effects.item_count > 1
+	if has_anim and has_effects:
+		_set_status("Selecione uma animação e/ou um efeito.", animation_row)
+	elif has_anim:
+		_set_status("Selecione uma animação.", animation_row)
+	elif has_effects:
+		_set_status("Selecione um efeito.", effects_row)
+	else:
+		_clear_status()
+
+
+# Blank the status line (no template, no row): the label renders empty and stays put.
+func _clear_status() -> void:
+	_set_status("", null)
 
 
 # Fill the "Animação" dropdown with "Selecione..." plus every clip the previewed
@@ -795,7 +818,6 @@ func _clear_preview() -> void:
 	_preview_anim_players = []
 	_main_anim_player = null
 	_main_body_root = null
-	_preview_anim_autoplay = {}
 	_preview_audio_players = []
 	_preview_audio_volumes = {}
 	_member_colliders_built = false
@@ -849,6 +871,10 @@ func _preview_whole_model() -> void:
 	# drive directly (that double-drive is what made red_robot look like two
 	# overlapping models). Playback is then started below per the active toggles.
 	_capture_av(instance)
+	# The model browser draws its OWN richer member labels (head/torso overrides) over the
+	# preview, so tell the global Debug 3D overlay not to ALSO label this subtree's skeleton
+	# (its skeleton-line/mesh-box gizmos still apply). Avoids double member labels.
+	DebugOverlay.exempt_member_labels(instance)
 	model_holder.add_child(instance)
 	_preview_instance = instance
 	_apply_animation_state()
@@ -875,23 +901,26 @@ func _preview_whole_model() -> void:
 			_fit_to_view(instance as Node3D)
 	if _show_colliders:
 		_add_collider_gizmos(instance)
-	if show_members:
+	# Member name labels (CABEÇA/TRONCO/…) ride on the global Debug 3D system: shown only when
+	# BOTH "Debug 3D" and its "Membros" sub-toggle are on (developer screen), mirroring
+	# debug_overlay.gd. With Debug 3D on but Membros off — or Debug 3D off — no labels show.
+	if show_members and _member_labels_enabled():
 		_add_member_labels(instance)
 
 
 # Capture the preview's animation/audio state into fields and neutralise anything
 # that would start on its own, BEFORE the subtree enters the tree (autoplay fires on
-# tree entry). Records each AnimationPlayer's autoplay clip and each emitter's
+# tree entry). Clears every AnimationPlayer's autoplay and records each emitter's
 # authored volume so the in-place appliers can later (re)start or mute/un-mute them
 # without rebuilding. Also disables every AnimationTree so it never poses the
 # skeleton in parallel with the clip we drive directly.
 func _capture_av(instance: Node) -> void:
 	_preview_anim_players = []
-	_preview_anim_autoplay = {}
 	_main_anim_player = null
 	for node in instance.find_children("*", "AnimationPlayer", true, false):
 		var ap := node as AnimationPlayer
-		_preview_anim_autoplay[ap] = ap.autoplay
+		# Clear authored autoplay so no clip starts on tree entry — playback is driven
+		# explicitly by the Animação toggle + combo via _apply_animation_state.
 		ap.autoplay = ""
 		_preview_anim_players.append(ap)
 	for node in instance.find_children("*", "AnimationTree", true, false):
@@ -933,32 +962,21 @@ func _capture_av(instance: Node) -> void:
 # audio state afterwards so animation-driven sound respects the Audio/Falas toggles.
 func _apply_animation_state() -> void:
 	var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
+	# An animation plays ONLY when BOTH the Animação toggle is on AND a clip is explicitly
+	# chosen in the combo. With the toggle off, or while the combo still sits on
+	# "Selecione...", nothing plays — there is no default/idle auto-play.
+	var should_play := _play_animation and chosen != ""
 	# A death/explosion clip reveals the model's debris; hide the live body so the preview
 	# shows ONLY the explosion (otherwise the intact body and the debris overlap).
 	if is_instance_valid(_main_body_root):
-		_main_body_root.visible = not (_play_animation and chosen != "" and _is_death_clip(chosen))
+		_main_body_root.visible = not (should_play and _is_death_clip(chosen))
 	for ap: AnimationPlayer in _preview_anim_players:
 		if not is_instance_valid(ap):
 			continue
-		if not _play_animation:
-			ap.stop()
-			continue
-		if chosen != "":
-			# An explicit clip was picked: play it on whichever player owns it.
-			if ap.has_animation(chosen):
-				ap.play(chosen)
-			else:
-				ap.stop()
-			continue
-		# No explicit clip ("Selecione..."): only the MAIN player auto-plays a default/idle
-		# clip; effect/death players (kaboom/blast/shoot) stay stopped so they don't overlay
-		# extra debris meshes on the model.
-		if ap == _main_anim_player:
-			var clip := _default_anim_clip(ap)
-			if clip != "":
-				ap.play(clip)
-			else:
-				ap.stop()
+		# Play the chosen clip on whichever player owns it; stop every other player (and all
+		# of them when nothing should play).
+		if should_play and ap.has_animation(chosen):
+			ap.play(chosen)
 		else:
 			ap.stop()
 	_apply_audio_state()
@@ -969,19 +987,6 @@ func _apply_animation_state() -> void:
 func _is_death_clip(clip: String) -> bool:
 	var c := clip.to_lower()
 	return c.contains("kaboom") or c.contains("explo") or c.contains("death") or c.contains("die") or c.contains("destr")
-
-
-# Default clip for the main player when none is explicitly chosen: its authored autoplay,
-# else an "Idle"-named clip, else its first clip.
-func _default_anim_clip(ap: AnimationPlayer) -> String:
-	var autoplay_clip: String = _preview_anim_autoplay.get(ap, "")
-	if autoplay_clip != "" and ap.has_animation(autoplay_clip):
-		return autoplay_clip
-	for c in ap.get_animation_list():
-		if c.to_lower().begins_with("idle"):
-			return c
-	var list := ap.get_animation_list()
-	return list[0] if not list.is_empty() else ""
 
 
 # Apply the Audio toggle to the live preview's emitters in place: each emitter is muted
@@ -1094,6 +1099,15 @@ func _is_member_collider(shape_node: CollisionShape3D) -> bool:
 	return parent is StaticBody3D and parent.has_meta("member_label")
 
 
+# The member name labels obey the developer's Debug 3D + "Membros" toggles, exactly like
+# debug_overlay.gd: both must be on for the model browser to draw them. Read straight from
+# the saved config (these toggles live on the developer screen, so they don't change while
+# the browser is open — reading at preview-build time is enough).
+func _member_labels_enabled() -> bool:
+	return Settings.config_file.get_value("game", "debug_3d", false) \
+		and Settings.config_file.get_value("game", "show_members", false)
+
+
 # Detect-and-display: float a billboard label with each member's name (CABEÇA,
 # CANO, …) over its collider. The label is parented to the collider body — which is
 # itself anchored to the animated node (limb pivot / bone) — so it travels WITH the
@@ -1130,7 +1144,10 @@ func _add_member_labels(instance: Node) -> void:
 # Per-character: head bone(s) BodyParts can't infer from the name (it excludes
 # "eye"/"mouth"), so the model browser names them explicitly for the preview.
 const _MODEL_HEAD_BONES := {
-	"red_robot": ["mouth_eyes"],
+	# Face panel ("mouth_eyes") + eyes ("L-EYE"/"R-EYE"). The eyes are excluded by the
+	# "eye" keyword, so without forcing them the head would wrap only the ~42-vertex panel
+	# and read as a tiny sphere. Mirrors red_robot.gd's gameplay head hitbox.
+	"red_robot": ["mouth_eyes", "L-EYE", "R-EYE"],
 }
 
 # Per-character TORSO bone(s) the classifier can't infer from a generic name — same
