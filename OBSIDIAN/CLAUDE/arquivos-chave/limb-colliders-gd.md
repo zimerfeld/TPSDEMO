@@ -23,7 +23,7 @@
 4. Cria `BoneAttachment3D` (no osso-raiz) → `StaticBody3D` + `CollisionShape3D (BoxShape3D)` do tamanho do AABB
 5. Metas no `StaticBody3D`: `group`, `damage_multiplier`, `character` (dono)
 
-- **Robô sem cabeça:** o rig do RedRobot não tem osso de cabeça padrão; usa `head_bone_names = ["mouth_eyes"]` para forçar a CABEÇA. Player tem os 6 grupos; enemy também resolve 6 (com o forçado).
+- **Robô sem cabeça:** o rig do RedRobot não tem osso de cabeça padrão; usa `head_bone_names = ["mouth_eyes", "L-EYE", "R-EYE"]` para forçar a CABEÇA (rosto + olhos — os olhos, excluídos por "eye", entram p/ a esfera não ficar minúscula; 2026-06-18). Player tem os 6 grupos; enemy também resolve 6 (com o forçado).
 
 ---
 
@@ -41,7 +41,7 @@
 |---|---|---|
 | `enabled` | `true` | Liga/desliga a geração |
 | `padding` | `0.03` | Folga (m) somada a cada lado da caixa |
-| `head_bone_names` | `[] / ["mouth_eyes"]` | Bones forçados para CABEÇA |
+| `head_bone_names` | `[] / ["mouth_eyes", "L-EYE", "R-EYE"]` | Bones forçados para CABEÇA |
 | `hitbox_layer` | `16 / 32` | Layer dos colliders (player bit5, enemy bit6) |
 
 ---

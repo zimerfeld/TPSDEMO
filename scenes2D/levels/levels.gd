@@ -16,6 +16,29 @@ var loading_path: String = ""
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
+@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/LangBar/EnglishButton
+
+
+func _ready() -> void:
+	_update_language_buttons()
+
+
+# Grey out the button for the language already active (same pattern as the menu).
+func _update_language_buttons() -> void:
+	var lang := Locale.get_language()
+	portuguese_button.disabled = lang == "pt"
+	english_button.disabled = lang == "en"
+
+
+func _on_portuguese_pressed() -> void:
+	Locale.set_language("pt")
+	_update_language_buttons()
+
+
+func _on_english_pressed() -> void:
+	Locale.set_language("en")
+	_update_language_buttons()
 
 
 func _process(_delta: float) -> void:

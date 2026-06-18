@@ -13,6 +13,12 @@ const _TOOLTIP_GAP := 4.0
 # robot is purely decorative (no member tooltips wanted, independent of config).
 const _NO_OVERLAY_GROUP := &"no_debug_overlay"
 
+# Subtrees whose 3D MEMBER labels are owned elsewhere: the model browser draws its own,
+# richer member labels (with head/torso/leg overrides) over its preview, so the global
+# overlay must NOT also label that subtree's skeleton — otherwise members get double tags.
+# Only the member labels are skipped; the skeleton-line and mesh-box gizmos still apply.
+const _NO_MEMBER_LABELS_GROUP := &"no_debug_member_labels"
+
 const _PALETTE := [
 	Color(1.0, 0.25, 0.25),
 	Color(0.25, 0.85, 0.25),
@@ -572,12 +578,25 @@ func _next_color() -> Color:
 # True when `node` is inside a screen that opted out of all debug overlays (it or
 # any ancestor is in `_NO_OVERLAY_GROUP`).
 func _is_overlay_exempt(node: Node) -> bool:
+	return _in_group_or_ancestor(node, _NO_OVERLAY_GROUP)
+
+
+# True when `node` or any of its ancestors is in `group`.
+func _in_group_or_ancestor(node: Node, group: StringName) -> bool:
 	var n: Node = node
 	while n != null:
-		if n.is_in_group(_NO_OVERLAY_GROUP):
+		if n.is_in_group(group):
 			return true
 		n = n.get_parent()
 	return false
+
+
+# Public: mark a subtree whose 3D MEMBER labels are drawn elsewhere (the model browser
+# preview), so the global overlay skips ONLY its member labels for that subtree. The
+# skeleton-line / mesh-box gizmos (their own sub-toggles) still apply.
+func exempt_member_labels(node: Node) -> void:
+	if is_instance_valid(node):
+		node.add_to_group(_NO_MEMBER_LABELS_GROUP)
 
 
 # Rotula apenas os BONES que pertencem a um MEMBRO (CABEÇA/TRONCO/BRAÇO/PERNA);
@@ -597,6 +616,9 @@ func _bone_depth(skel: Skeleton3D, b: int) -> int:
 
 func _add_3d_skeleton(skel: Skeleton3D) -> void:
 	if skel.has_meta(_LABEL3D_META):
+		return
+	# Skip skeletons whose member labels are owned elsewhere (the model browser preview).
+	if _in_group_or_ancestor(skel, _NO_MEMBER_LABELS_GROUP):
 		return
 	# One label per MEMBER, not per bone: a limb spans several bones (shoulder,
 	# arm, hand) that all map to the same group, so anchor the single "Membro: …"

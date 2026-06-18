@@ -34,7 +34,7 @@ const EXCLUDE_KEYWORDS: Array[String] = [
 ## `head_bones` força certos nomes para CABEÇA e `torso_bones` para TRONCO
 ## (ambos ignoram as exclusões) — usados por personagens cujo osso principal tem
 ## nome genérico (ex.: red_robot, cujo corpo é o osso "Bone.001").
-static func group_of(bone_name: String, head_bones: Array = [], torso_bones: Array = []) -> String:
+static func group_of(bone_name: String, head_bones: Array = [], torso_bones: Array = [], leg_bones: Array = []) -> String:
 	var n := bone_name.to_lower()
 	for h in head_bones:
 		if n == String(h).to_lower():
@@ -42,6 +42,15 @@ static func group_of(bone_name: String, head_bones: Array = [], torso_bones: Arr
 	for t in torso_bones:
 		if n == String(t).to_lower():
 			return TORSO
+	# Forced LEG bones (ignore exclusions): for leg parts the classifier would otherwise
+	# drop, e.g. red_robot's "L-RearLegGuard"/"R-RearLegGuard" plates (excluded by "guard").
+	# Side is taken from the bone name (L-/R-).
+	for l in leg_bones:
+		if n == String(l).to_lower():
+			match side_of(bone_name):
+				"L": return LEG_L
+				"R": return LEG_R
+				_: return ""
 	for ex in EXCLUDE_KEYWORDS:
 		if n.contains(ex):
 			return ""

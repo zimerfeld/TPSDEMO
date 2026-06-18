@@ -18,7 +18,8 @@
 | [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, grupo Level Base |
 | [[sistemas/audio]] | Buses (Master/Outside/Reactor/Music/SFX), controles Música × Efeitos de Som nas settings |
 | [[sistemas/debug-overlay]] | DebugOverlay + tela developer em 2 colunas (Debug 2D amarelo / Debug 3D ciano), grid, rótulos 3D |
-| [[sistemas/localizacao]] | Idioma EN/PT: autoload Locale + dicionários pt.json/en.json na raiz, persistido, botões no menu |
+| [[sistemas/system-health]] | Monitor System Health (developer): mem/FPS/CPU-proc., alerta a 90% + auto-pausa de segurança |
+| [[sistemas/localizacao]] | Idioma EN/PT: autoload Locale + dicionários por cena em Resources/*.pt/en.json, persistido, botões em TODAS as telas |
 
 ---
 
@@ -60,7 +61,7 @@
 ## Notas Rápidas
 
 - Organização: **scenes2D/** (telas de UI: menu, settings, chooseplayer, developer, levels) e **scenes3D/** (players, enemies, door, level_1, level_base, models)
-- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **Locale** (`autoload/locale.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**
+- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **Locale** (`autoload/locale.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**, **SystemHealth** (`autoload/system_health.gd`)
 - Telas extras: **developer** (toggles de debug) → **models** (navegador/extrator de modelos 3D) → **Exported** (galeria de `library/extracted/`); **settings** com aba Debug
 - Motor: **Godot 4.x**
 - Modo de rede: **ENet / OfflineMultiplayerPeer** (server-authoritative)

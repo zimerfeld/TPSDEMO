@@ -153,13 +153,12 @@ func rotate_camera(move: Vector2) -> void:
 	camera_rot.rotation.x = clampf(camera_rot.rotation.x + move.y, CAMERA_X_ROT_MIN, CAMERA_X_ROT_MAX)
 
 
-func get_aim_rotation() -> float:
-	var camera_x_rot: float = clampf(camera_rot.rotation.x, CAMERA_X_ROT_MIN, CAMERA_X_ROT_MAX)
-	# Change aim according to camera rotation.
-	if camera_x_rot >= 0.0: # Aim up.
-		return -camera_x_rot / CAMERA_X_ROT_MAX
-	else: # Aim down.
-		return camera_x_rot / CAMERA_X_ROT_MIN
+# Pitch da câmera (rad) que alimenta a mira vertical PROCEDURAL (procedural_aim.gd).
+# A antiga get_aim_rotation alimentava o blend additive AIM-Up/AIM-Down do AnimationTree,
+# mas esse blend não abaixa o braço (só levanta/segura), então a metade de baixo ficava
+# invertida. Agora o torso é girado por código conforme este pitch (+ = cima, - = baixo).
+func get_aim_pitch() -> float:
+	return clampf(camera_rot.rotation.x, CAMERA_X_ROT_MIN, CAMERA_X_ROT_MAX)
 
 
 func get_camera_base_quaternion() -> Quaternion:
