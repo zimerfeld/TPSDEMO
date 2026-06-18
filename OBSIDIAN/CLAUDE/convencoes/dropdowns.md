@@ -16,6 +16,15 @@
    da seleção (preview, status, janela) deve ser **resetado/limpo**.
 3. **Tela inicia em branco.** Nada é previsualizado/aplicado até o usuário
    percorrer a cadeia de seleção. Não auto-selecionar o primeiro item real.
+4. **Persistência da seleção + restauração da cadeia.** Toda escolha dos
+   dropdowns é persistida (por um valor **estável** — chave/nome/sentinela, não
+   o índice — junto com os toggles). Ao reabrir a tela, a cadeia é replayada de
+   cima para baixo: `select()` não emite `item_selected`, então cada passo chama
+   também o handler explicitamente para popular o próximo combo. Regra de parada
+   por nível: valor **vazio** (o usuário parou ali) → deixa o combo habilitado no
+   placeholder, pronto para continuar (com tudo vazio = início em branco normal);
+   valor **inexistente hoje** (escolha salva sumiu da biblioteca, "não há mais
+   dados") → **desabilita esse combo e os de baixo**. Nunca auto-seleciona item.
 
 ## Casos especiais
 

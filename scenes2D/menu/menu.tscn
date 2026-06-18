@@ -139,7 +139,7 @@ offset_right = 0.0
 offset_bottom = 96.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 42
-text = "TPS DEMO"
+text = "ZIMARO"
 horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="UI"]

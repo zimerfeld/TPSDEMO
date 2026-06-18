@@ -174,6 +174,30 @@ animação, efeitos especiais, audio, colisores) são **persistidos** na seção
 handler) e relidos em `_ready` antes de conectar os sinais, então a tela reabre como
 foi deixada.
 
+### Persistência da seleção + restauração da cadeia (2026-06-18)
+
+Além dos toggles, **toda escolha dos dropdowns** (Categoria · Prefixo · Modelo · Parte ·
+Animação · Efeitos) é persistida na mesma seção `[models]` por um **valor estável** — não o
+índice — via `_save_selection(key, value)` em cada `_on_*_selected`: `sel_category` = chave da
+categoria, `sel_prefix` = token do prefixo, `sel_model` = nome do modelo, `sel_part` = rótulo da
+malha **ou** a sentinela `WHOLE_MODEL_VALUE` (`"__whole_model__"`) p/ "Modelo completo",
+`sel_animation`/`sel_effect` = texto do item. Por isso a restauração sobrevive a um re-scan da
+biblioteca em ordem diferente.
+
+`_restore_selection_chain()` (chamada no fim de `_ready` no lugar do antigo
+`select(0)`+`_on_category_selected(0)`) **replaya a cadeia de cima p/ baixo**: como `select()`
+**não** emite `item_selected`, cada passo chama **também** o handler explicitamente, populando o
+próximo combo como um clique real. Os `_find_*_index` resolvem o valor salvo p/ o índice atual de
+cada combo. Regra de parada por nível:
+
+- **valor vazio** (o usuário parou ali) → deixa o combo no placeholder **habilitado**, pronto p/
+  continuar. Com tudo vazio = **início em branco** normal (nada previsualizado, nenhum item
+  auto-selecionado — ver [[convencoes/dropdowns]]).
+- **valor inexistente hoje** (escolha salva sumiu da biblioteca, "não há mais dados") →
+  **desabilita esse combo**; como o handler dele não roda, todos os de baixo ficam desabilitados
+  também. Animação e Efeitos são **folhas paralelas** de "Modelo completo": cada uma é restaurada
+  independente (stale → desabilita só ela; vazia → fica no placeholder).
+
 ### Membros e centralização (Personagens/Armas)
 
 Para **Personagens** e **Armas**, `_preview_whole_model` constrói os colliders de

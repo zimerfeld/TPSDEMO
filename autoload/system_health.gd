@@ -19,6 +19,14 @@ extends Node
 # Percentage at which a monitored resource is considered unsafe (the brief: never let any
 # resource reach 90%). Alerting and the optional auto-pause trigger at this level.
 const THRESHOLD: float = 90.0
+# Critical level: above this, any single indicator is treated as a "spike". A run of more
+# than SPIKES_TO_SHOW consecutive one-second spikes force-reveals the panel and HARD-pauses
+# the game (so the machine can never run on to a freeze — the brief's overriding rule).
+const SPIKE_THRESHOLD: float = 95.0
+# Each sustained second over SPIKE_THRESHOLD counts as one spike and emits one alert beep.
+const SPIKE_DURATION: float = 1.0
+# Reveal + hard-pause once there have been MORE THAN this many consecutive one-second spikes.
+const SPIKES_TO_SHOW: int = 3
 # How often the panel refreshes its readout, in seconds.
 const POLL_INTERVAL: float = 0.6
 # CPU may legitimately spike above the threshold for a moment; only count it toward the
@@ -31,11 +39,22 @@ const CPU_SAMPLE_INTERVAL: float = 1.0
 var _canvas: CanvasLayer = null
 var _panel: PanelContainer = null
 var _title_label: Label = null
+var _close_button: Button = null
 var _rows: Dictionary = {}          # key -> Label (the value label of each metric row)
 var _alert_label: Label = null
 var _autopause_check: CheckButton = null
 var _paused_label: Label = null
 var _resume_button: Button = null
+
+# Alert beep, played once per one-second critical spike. A short sine tone generated at
+# startup (no asset to ship); routed through the SFX bus and PROCESS_MODE_ALWAYS so it is
+# audible even while the safety pause holds the tree.
+var _beep_player: AudioStreamPlayer = null
+
+# Critical-spike state: when the current continuous over-95% run began (< 0 = under), and how
+# many one-second spikes have been counted (and beeped) within it.
+var _spike_start: float = -1.0
+var _spikes_counted: int = 0
 
 # Auto-pause latch: once we auto-pause (or the user resumes), don't re-pause until usage
 # has dropped back under the threshold, so resuming isn't undone on the very next frame.
@@ -58,6 +77,7 @@ var _cpu_pct: float = -1.0           # shared, written by the worker; < 0 = N/D
 func _ready() -> void:
 	# Keep monitoring (and let the user resume) even while the tree is paused.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_make_beep_player()
 	call_deferred("_build_ui")
 	var timer := Timer.new()
 	timer.name = "PollTimer"
@@ -131,14 +151,33 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 4)
 	_panel.add_child(vbox)
 
-	# Title bar doubles as the drag handle for the floating window.
+	# Header bar: a panel holding ONE row — the title text (left) and a Windows-style red close
+	# button (right). ONLY the title text moves the window (its gui_input drives the drag); the
+	# close button is a separate control, so its area can never start a drag.
+	var header := PanelContainer.new()
+	var header_style := StyleBoxFlat.new()
+	header_style.bg_color = Color(0.07, 0.10, 0.16, 0.9)
+	header_style.set_corner_radius_all(4)
+	header_style.set_content_margin_all(4.0)
+	header.add_theme_stylebox_override("panel", header_style)
+	vbox.add_child(header)
+
+	var header_row := HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 8)
+	header.add_child(header_row)
+
+	# Title text — the ONLY drag handle for the floating window.
 	_title_label = _make_label("⠿  " + Locale.tr_key("Saúde do Sistema"), 18, Color(0.51, 0.92, 1.0))
-	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_title_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	_title_label.mouse_default_cursor_shape = Control.CURSOR_MOVE
 	_title_label.tooltip_text = Locale.tr_key("Arraste para mover")
 	_title_label.gui_input.connect(_on_title_gui_input)
-	vbox.add_child(_title_label)
+	header_row.add_child(_title_label)
+
+	# Red close button (top-right). Its area is NOT a drag handle.
+	_close_button = _make_close_button()
+	header_row.add_child(_close_button)
 
 	# One row per metric: a fixed-name label on the left, the live value on the right.
 	for entry in _METRIC_KEYS:
@@ -252,6 +291,76 @@ func _make_label(text: String, size: int, color: Color) -> Label:
 	return lbl
 
 
+# Windows-style red close button shown at the top-right of the title bar.
+func _make_close_button() -> Button:
+	var btn := Button.new()
+	btn.text = "✕"
+	btn.add_theme_font_size_override("font_size", 14)
+	btn.custom_minimum_size = Vector2(28, 24)
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	btn.tooltip_text = Locale.tr_key("Fechar")
+	# Its text ("✕") is fixed, so keep the auto-localizer off it.
+	btn.add_to_group(Locale.SKIP_GROUP)
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.78, 0.12, 0.12)
+	normal.set_corner_radius_all(3)
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(0.95, 0.20, 0.20)
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = Color(0.58, 0.07, 0.07)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_color_override("font_color", Color(1, 1, 1))
+	btn.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	btn.add_theme_color_override("font_pressed_color", Color(1, 1, 1))
+	btn.pressed.connect(_on_close_pressed)
+	return btn
+
+
+# Close (hide) the floating window — like a Windows window's red X. Monitoring KEEPS running
+# (the developer setting stays on), so the safety pause and the critical auto-show still guard
+# the machine: a critical spike re-reveals the panel. Toggling the Developer switch reopens it.
+func _on_close_pressed() -> void:
+	if is_instance_valid(_canvas):
+		_canvas.visible = false
+
+
+# Build the alert beep once: a short, click-free sine tone synthesized into a 16-bit WAV (no
+# audio asset needed). Routed to the SFX bus, and PROCESS_MODE_ALWAYS so it sounds even while
+# the safety pause holds the tree.
+func _make_beep_player() -> void:
+	_beep_player = AudioStreamPlayer.new()
+	_beep_player.name = "AlertBeep"
+	_beep_player.bus = "SFX"
+	_beep_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	var rate := 22050
+	var dur := 0.18
+	var freq := 920.0
+	var n := int(dur * rate)
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	for i in n:
+		var t := float(i) / float(rate)
+		# Short attack/decay envelope so the tone starts and ends without a click.
+		var env := clampf(minf(t / 0.01, (dur - t) / 0.03), 0.0, 1.0)
+		var s := sin(TAU * freq * t) * env * 0.6
+		data.encode_s16(i * 2, int(clampf(s, -1.0, 1.0) * 32767.0))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = rate
+	wav.stereo = false
+	wav.data = data
+	_beep_player.stream = wav
+	add_child(_beep_player)
+
+
+func _play_beep() -> void:
+	if is_instance_valid(_beep_player):
+		_beep_player.play()
+
+
 # --- Floating-window dragging (grab the title bar) --------------------------
 
 func _on_title_gui_input(event: InputEvent) -> void:
@@ -316,7 +425,15 @@ func _poll() -> void:
 	# Keep the panel on-screen even if the window/resolution changed since the last drag.
 	_panel.position = _clamp_to_screen(_panel.position)
 
-	_update_alert(sys_pct, cpu_pct, cpu_over)
+	# Highest usage across ALL percentage indicators (CPU + the three memories), for the
+	# critical-spike rule ("any indicator over 95%").
+	var max_pct := cpu_pct
+	max_pct = maxf(max_pct, _pct(game_mem, physical, sys_ok))
+	max_pct = maxf(max_pct, _pct(video_mem, physical, sys_ok))
+	if sys_ok:
+		max_pct = maxf(max_pct, sys_pct)
+
+	_update_alert(sys_pct, cpu_pct, cpu_over, max_pct)
 
 
 func _set_row(key: String, value: String, over: bool) -> void:
@@ -328,8 +445,10 @@ func _set_row(key: String, value: String, over: bool) -> void:
 
 
 # Decide the alert/pause state. RAM over the limit is critical immediately; CPU must stay
-# over the limit for SPIKE_GRACE seconds (short spikes are tolerated) before it counts.
-func _update_alert(sys_pct: float, _cpu_pct_now: float, cpu_over: bool) -> void:
+# over the limit for SPIKE_GRACE seconds (short spikes are tolerated) before it counts. On top
+# of that, the CRITICAL (>95%) spike rule beeps once per sustained second and, after more than
+# SPIKES_TO_SHOW spikes, force-reveals the panel and hard-pauses the game.
+func _update_alert(sys_pct: float, _cpu_pct_now: float, cpu_over: bool, max_pct: float) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	if cpu_over:
 		if _cpu_over_since < 0.0:
@@ -342,7 +461,29 @@ func _update_alert(sys_pct: float, _cpu_pct_now: float, cpu_over: bool) -> void:
 	var any_over := ram_over or cpu_over          # for the (immediate) red alert line
 	var pause_needed := ram_over or cpu_sustained # CPU only counts once sustained
 
-	if any_over:
+	# Critical spikes: while ANY indicator stays over SPIKE_THRESHOLD, count one spike per full
+	# second and beep on each. The first beep fires the instant it crosses 95% (spike 1), then
+	# one per second; dropping back under 95% resets the run.
+	var critical := max_pct >= SPIKE_THRESHOLD
+	if critical:
+		if _spike_start < 0.0:
+			_spike_start = now
+			_spikes_counted = 0
+		var due := int(floor((now - _spike_start) / SPIKE_DURATION)) + 1
+		while _spikes_counted < due:
+			_spikes_counted += 1
+			_play_beep()
+			# More than SPIKES_TO_SHOW consecutive spikes: surface the window and pause.
+			if _spikes_counted > SPIKES_TO_SHOW:
+				_engage_critical_safety()
+	else:
+		_spike_start = -1.0
+		_spikes_counted = 0
+
+	if critical:
+		_alert_label.text = Locale.tr_key("ALERTA CRÍTICO: uso acima de 95%!")
+		_alert_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2))
+	elif any_over:
 		_alert_label.text = Locale.tr_key("ALERTA: uso de recurso acima do limite seguro!")
 		_alert_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
 	else:
@@ -360,9 +501,24 @@ func _update_alert(sys_pct: float, _cpu_pct_now: float, cpu_over: bool) -> void:
 func _engage_pause() -> void:
 	_auto_paused = true
 	get_tree().paused = true
+	# Make sure the user actually sees the pause even if they had closed the window.
+	if _is_on() and is_instance_valid(_canvas):
+		_canvas.visible = true
 	_paused_label.text = Locale.tr_key("Processamento pausado para proteger o sistema.")
 	_paused_label.visible = true
 	_resume_button.visible = true
+
+
+# Hard safety for the critical (>95%, >3 one-second spikes) case: the machine must NEVER be
+# allowed to run on to a freeze. Reveal the panel (even if the user closed it) and pause the
+# game NO MATTER WHAT — ignoring both the "Pausar ao atingir o limite" checkbox and the resume
+# latch. Pausing drops the game's own load, so CPU spikes clear and the user can then resume;
+# a still-critical resource (e.g. RAM near full) simply stays paused, which is the safe outcome.
+func _engage_critical_safety() -> void:
+	if _is_on() and is_instance_valid(_canvas):
+		_canvas.visible = true
+	if not _auto_paused:
+		_engage_pause()
 
 
 func _on_resume_pressed() -> void:
@@ -475,11 +631,21 @@ func _mem_over(used_bytes: float, total_bytes: float, total_ok: bool) -> bool:
 	return used_bytes / total_bytes * 100.0 >= THRESHOLD
 
 
+# Percentual de uso (0..100) de um indicador de memória, ou -1 quando o total é desconhecido —
+# usado para achar o maior indicador na regra de pico crítico (>95%).
+func _pct(used_bytes: float, total_bytes: float, total_ok: bool) -> float:
+	if not total_ok or total_bytes <= 0.0:
+		return -1.0
+	return clampf(used_bytes / total_bytes * 100.0, 0.0, 100.0)
+
+
 func _on_language_changed(_lang: String) -> void:
 	if not is_instance_valid(_panel):
 		return
 	_title_label.text = "⠿  " + Locale.tr_key("Saúde do Sistema")
 	_title_label.tooltip_text = Locale.tr_key("Arraste para mover")
+	if is_instance_valid(_close_button):
+		_close_button.tooltip_text = Locale.tr_key("Fechar")
 	_autopause_check.text = Locale.tr_key("Pausar ao atingir o limite")
 	_resume_button.text = Locale.tr_key("Retomar")
 	# Re-caption each metric row's left label from its stored key.

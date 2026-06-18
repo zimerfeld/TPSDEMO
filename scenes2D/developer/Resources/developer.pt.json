@@ -23,8 +23,10 @@
 	"FPS": "FPS",
 	"N/D": "N/D",
 	"Arraste para mover": "Arraste para mover",
+	"Fechar": "Fechar",
 	"Recursos dentro do limite seguro.": "Recursos dentro do limite seguro.",
 	"ALERTA: uso de recurso acima do limite seguro!": "ALERTA: uso de recurso acima do limite seguro!",
+	"ALERTA CRÍTICO: uso acima de 95%!": "ALERTA CRÍTICO: uso acima de 95%!",
 	"Pausar ao atingir o limite": "Pausar ao atingir o limite",
 	"Processamento pausado para proteger o sistema.": "Processamento pausado para proteger o sistema.",
 	"Retomar": "Retomar"
