@@ -9,6 +9,7 @@
 
 - HUD compartilhado estilo **"boss bar"** no topo-centro da tela
 - Exibe **nome do inimigo** + **barra de vida** com texto `restante / total`
+- Exibe **distância** (m) e, quando o inimigo tem arma, o **alcance da arma** (m)
 - Mostra o inimigo atingido mais recentemente; **some sozinho** após 6 s
 - Esconde imediatamente quando o inimigo morre
 
@@ -39,9 +40,12 @@ static func get_shared(parent: Node):
 CanvasLayer (layer=9)
   └─ PanelContainer  (âncora: CENTER_TOP, grow horizontal BOTH, margin 16px)
        └─ VBoxContainer (centralizado)
-            ├─ Label  (_name_label)  nome do inimigo, fonte 16
-            └─ ProgressBar (_bar)    260×20
-                 └─ Label (_hp_label) overlay "restante / total" centralizado
+            ├─ HBoxContainer (linha do topo)
+            │    ├─ Label (_name_label)  nome do inimigo, fonte 16
+            │    └─ Label (_dist_label)  distância "12.3 m", fonte 14
+            ├─ ProgressBar (_bar)    260×20
+            │    └─ Label (_hp_label) overlay "restante / total" centralizado
+            └─ Label (_range_label)  "Alcance/Range: 30 m", fonte 13 (oculto sem arma)
 ```
 
 ---
@@ -49,13 +53,19 @@ CanvasLayer (layer=9)
 ## API Pública
 
 ```gdscript
-func show_enemy(enemy_name: String, current: int, maximum: int, distance := -1.0) -> void
+func show_enemy(enemy_name: String, current: int, maximum: int, distance := -1.0, weapon_range := -1.0) -> void
 func hide_now() -> void
 ```
 
 **Distância:** a linha do topo é um `HBoxContainer` com nome (esq.) + distância (dir., "12.3 m").
 `player_input._update_enemy_focus()` calcula `player.distance_to(enemy)` e passa a cada frame.
 `distance < 0` mantém a última distância conhecida (ex.: ao ser atingido sem mira).
+
+**Alcance da arma (`weapon_range`):** label dedicado abaixo da barra, exibido só quando o inimigo
+tem mecanismo de ataque/tiro (`weapon_range >= 0`); cada inimigo informa o seu (ex.: `red_robot`
+passa `effective_range`). Texto **"Alcance: N m"** (PT) ou **"Range: N m"** (EN), escolhido por
+`/root/Locale.get_language()`. `weapon_range < 0` mantém o último valor; ao **trocar de inimigo**
+(nome diferente) a distância e o alcance anteriores são descartados para não vazar valores.
 
 - `show_enemy` mostra o painel, reinicia o timer de auto-hide (`AUTO_HIDE_TIME = 6.0 s`)
 - `_process(delta)` decrementa o timer e esconde o painel ao zerar

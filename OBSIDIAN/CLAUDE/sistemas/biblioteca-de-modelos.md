@@ -8,17 +8,51 @@ modelos 3D do projeto. Alcançada por **developer → Modelos 3D**; volta com
 
 Tudo sob `res://library3D/<tipo>/<modelo>/`:
 
-- `characters/` — `player`, `red_robot`, `criatura_alada` e os **14 robôs**
-  `robot_01..07_*_{infantil,adulto}` (importados de
-  `C:\GODOT\MODELOS\robos_3d_godot_infantil_adulto` em 2026-06-16; prefixo "robot")
-- `props/` — `forklift`
-- `structures/` — `core`, `core_out_light`, `lights`, `props`, `structure`
+- `characters/` — `player`, `players`, `red_robot`, `criatura_alada`, `demonio_*`,
+  `mecha07_infantil`, `enemies/` e os **14 robôs** `robot_01..07_*_{infantil,adulto}`
+  (importados de `C:\GODOT\MODELOS\robos_3d_godot_infantil_adulto` em 2026-06-16; prefixo "robot")
+- `propulsores/` — `forklift` (era `props/` na versão antiga da nota)
+- `structures/` — `core`, `core_out_light`, `door`, `lights`, `props`, `structure`
+- `weapons/` — `bomb`, `pistola_infantil`
 - pastas de suporte (NÃO categorias): `geometry/` (materiais `.tres`), `textures/`, `extracted/` (saída)
 
-`_scan_library()` varre só as categorias fixas em `const CATEGORIES`
-(characters/props/structures). Por modelo prefere `.glb`/`.gltf` (malha crua, sem
-rodar script de gameplay) e cai para `.tscn`. Novo modelo em
-`library/<tipo>/<nome>/` com um `.glb` aparece sozinho — nada a editar em código.
+`_scan_library()` varre só as **4 categorias fixas** em `const CATEGORIES`
+(characters/propulsores/structures/weapons — pastas de suporte como geometry/textures
+são ignoradas de propósito). Novo modelo em `library3D/<tipo>/<nome>/` com um `.glb`
+aparece sozinho — nada a editar em código.
+
+### Tipos de arquivo importáveis (escaneados)
+
+O navegador reconhece **apenas 3 extensões** (case-insensitive), só dos arquivos
+**diretamente na pasta do modelo** (subpastas como `audio/`, `bullet/` são ignoradas):
+
+| Extensão | Papel |
+|---|---|
+| `.glb` / `.gltf` | malha crua importada (glTF 2.0) — **preferida** |
+| `.tscn` | cena Godot montada — **fallback** |
+
+> [!warning] Formatos como `.obj`, `.fbx`, `.dae` **não aparecem** no navegador.
+> Precisam virar `.glb`/`.gltf` (ou uma cena `.tscn`) antes. glTF (`.glb`/`.gltf`) é
+> o formato recomendado pelo Godot para modelo completo **com animação** (malha +
+> esqueleto + skinning + clips); `.blend`/`.fbx`/`.dae` também animam mas dependem de
+> Blender/FBX2glTF; `.obj` só importa malha estática.
+
+Cada modelo resolve **dois** caminhos, por duas funções distintas:
+
+- **`_find_model_file()`** → `path` (a **malha**, base do catálogo de peças). Prefere,
+  nesta ordem: `.glb`/`.gltf` cujo basename **bate com a pasta** (ex.: `red_robot.glb`
+  em `red_robot/`), depois qualquer `.glb`/`.gltf`, depois `.tscn` homônimo, depois
+  qualquer `.tscn`. A malha crua ganha por mostrar a geometria **sem rodar script de
+  gameplay**. O critério "nome = pasta" evita que uma cena irmã (ex.: `bomb.tscn` em
+  `criatura_alada/`, o projétil) seja confundida com o modelo.
+- **`_find_display_file()`** → `display_path` (a cena do **"Modelo completo"**). Prefere
+  o **`.tscn`** (carrega materiais, efeitos e a variante visível pretendida que o `.glb`
+  cru não tem), caindo para o que `_find_model_file` resolver (o `.glb`) quando não há cena.
+
+Depois de escolher um modelo, `_on_model_selected` faz `load()` dos dois caminhos e
+`_build_mesh_catalog` instancia a cena, varre todos os `MeshInstance3D` e os **deduplica
+pelo recurso `Mesh` compartilhado** (`get_instance_id`) — cada malha distinta lista uma
+vez, ordenada por nº de placements, com marca `[skin]` (skinning/animação) ou `[+col]`.
 
 ## Fluxo da tela
 

@@ -22,10 +22,18 @@ em terceira pessoa. Em alto nível, oferece:
 - **Inimigos** — um inimigo terrestre (Red Robot) que se aproxima, mira e dispara uma **bala de
   canhão** preta (uma versão recolorida, com brilho vermelho, do tiro do player), e um bombardeiro
   voador (Criatura Alada) que orbita o player e solta bombas.
+- **IA do Red Robot** — comportamentos e decisões em tempo de execução isolados num script de IA
+  dedicado (`library3D/characters/red_robot/IA/red_robot_ai.gd`): recarga **1,5× mais rápida** (no
+  1º e nos próximos tiros); **abre fogo** assim que o player entra no alcance da arma e está a mais
+  de 10 m; e, se o player chegar a **10 m ou menos**, o robô **recua correndo no sentido oposto**
+  enquanto continua olhando/mirando e atirando.
+- **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
+  inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
 - **Dano localizado** — colliders 3D nativos por membro (cabeça, tronco, braços, pernas)
   dimensionados pela malha de cada personagem, então acertos em partes diferentes causam dano
   diferente (headshots causam dano extra). Os tiros atravessam o collider de corpo genérico e
-  acertam os colliders de membro.
+  acertam os colliders de membro. Peças salientes ganham um collider PRÓPRIO em caixa (ex.: as
+  **placas traseiras das pernas** do Red Robot, que a cápsula da perna não cobriria).
 - **Tiro reutilizável** — o disparo de bala de canhão e o de laser hitscan foram isolados em
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
   modelo pode usar; player e Red Robot disparam via `CannonShooter`.
@@ -47,10 +55,11 @@ em terceira pessoa. Em alto nível, oferece:
   contagem, e só aparece — acima dos combos "Animação"/"Efeitos Especiais" — quando estes têm opções.
   Arraste para girar o modelo à mão em
   até 180° nos dois eixos. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
-  o modelo nem altera a câmera/rotação. Para Personagens e Armas, um rótulo (CABEÇA, TRONCO, BRAÇO…)
-  flutua sobre o collider de cada membro — exibido só quando os toggles **Debug 3D** e **Membros**
-  (tela developer) estão ambos ligados; personagens com skin são enquadrados/centralizados pelos
-  colliders posados para girarem no lugar em vez de derivar.
+  o modelo nem altera a câmera/rotação. Para Personagens e Armas, a **pilha de tooltips do Debug 3D**
+  (TYPE/Name/ID/Membro, em ciano) flutua sobre o collider de cada membro — os **mesmos tooltips** das
+  fases, controlados pelas mesmas sub-chaves da coluna **Debug 3D** (tela developer): cada linha
+  aparece conforme `Type`/`Name`/`Id`/`Membros`. Personagens com skin são enquadrados/centralizados
+  pelos colliders posados para girarem no lugar em vez de derivar.
 - **HUD cyberpunk & widgets 2D** — um conjunto de controles de UI reutilizáveis (HUD, minimapa,
   vitais, mira, menu de pausa, scanlines e mais).
 - **Ferramentas de debug** — veja [Tela developer & overlay de debug](#tela-developer--overlay-de-debug).
@@ -100,7 +109,8 @@ o botão esquerdo do mouse sobre a barra de título para movê-lo; ele **sempre 
 sua **posição é lembrada entre execuções** — o **Reset** das configurações o devolve ao canto superior
 direito). Ele mostra: **FPS**, o **uso real de CPU do processo** (`CPU`), a memória estática do jogo
 (`Mem. Jogo`), a memória de vídeo (`Mem. Vídeo`) e a RAM do sistema em uso (`Mem. Sistema` = total −
-RAM física livre; ex.: 12,6 / 16,2 GB = 78%).
+RAM física livre; ex.: 12,6 / 16,2 GB = 78%). As três linhas de memória seguem o mesmo padrão
+**"usado / total (%)"**, tendo a RAM física como total comum (ex.: `Mem. Jogo` = 0,4 / 16,2 GB = 2%).
 
 A CPU é o uso real do processo do Godot, batendo com o que o Gerenciador de Tarefas mostra: o Godot
 não tem API para isso, então uma **thread em segundo plano** amostra do SO (`Get-Process … .CPU` via

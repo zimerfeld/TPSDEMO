@@ -51,6 +51,11 @@ var aim_countdown: float = AIM_TIME
 var player: Node3D = null
 var orientation := Transform3D()
 
+# Controlador de IA (comportamentos/decisões), instanciado em _ready a partir de IA/.
+var ai: RedRobotAI = null
+# Recarga efetiva entre tiros, já acelerada pela IA (SHOOT_WAIT / fire_rate_multiplier).
+var shoot_reload: float = SHOOT_WAIT
+
 @onready var animation_tree: AnimationTree = $AnimationTree
 @onready var shoot_animation: AnimationPlayer = $ShootAnimation
 
@@ -75,6 +80,15 @@ func _ready() -> void:
 	orientation = global_transform
 	orientation.origin = Vector3()
 	$AnimationTree.active = true
+
+	# IA do red_robot: instancia o controlador de comportamento/decisões (pasta IA/) e
+	# aplica a recarga acelerada (1.5x mais rápida no 1º e nos próximos tiros).
+	ai = preload("res://library3D/characters/red_robot/IA/red_robot_ai.gd").new()
+	ai.name = "IA"
+	add_child(ai)
+	shoot_reload = ai.reload_time(SHOOT_WAIT)
+	shoot_countdown = shoot_reload
+
 	if test_shoot:
 		shoot_countdown = 0.0
 
@@ -113,9 +127,10 @@ func _setup_limb_colliders() -> void:
 	# O corpo do red_robot é o osso genérico "Bone.001", que o classificador não
 	# reconhece — sem isto ele ficaria sem collider de TRONCO (só a cabeça).
 	lc.torso_bone_names = (["Bone.001"] as Array[String])
-	# As placas das pernas ("...RearLegGuard") são excluídas pela palavra "guard";
-	# força-as para PERNA E/D para que os colliders cubram as placas das pernas.
-	lc.leg_bone_names = (["L-RearLegGuard", "R-RearLegGuard"] as Array[String])
+	# As placas traseiras das pernas ("...RearLegGuard") ficam SALIENTES atrás da perna; a
+	# cápsula da PERNA não as cobre. Dá a CADA placa um collider PRÓPRIO (caixa) ajustado a
+	# ela, para que as placas das pernas sejam atingíveis (e rotuladas) por conta própria.
+	lc.standalone_part_bones = (["L-RearLegGuard", "R-RearLegGuard"] as Array[String])
 	add_child(lc)
 	lc.build_for(skel)
 
@@ -123,7 +138,7 @@ func _setup_limb_colliders() -> void:
 func resume_approach() -> void:
 	state = State.APPROACH
 	aim_preparing = AIM_PREPARE_TIME
-	shoot_countdown = SHOOT_WAIT
+	shoot_countdown = shoot_reload
 
 
 @rpc("call_local")
@@ -167,7 +182,8 @@ func show_health_hud(distance: float = -1.0) -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	var hud = preload("res://library3D/characters/enemies/enemy_health_bar.gd").get_shared(get_tree().current_scene)
-	hud.show_enemy(enemy_name, maxi(health, 0), max_health, distance)
+	# red_robot possui arma de tiro: informa o alcance efetivo (m) para o HUD exibi-lo.
+	hud.show_enemy(enemy_name, maxi(health, 0), max_health, distance, effective_range)
 
 
 # Público: chamado na morte e quando a mira do player sai do inimigo.
@@ -255,6 +271,12 @@ func _physics_process(delta: float) -> void:
 
 	target_position = player.global_transform.origin
 
+	# Decisão da IA neste quadro a partir da distância ao player e do alcance da arma.
+	# FLEE: player perto demais (<= flee_distance) → corre no sentido oposto, olhando p/ ele.
+	# O tiro continua acontecendo via a lógica abaixo (player está dentro do alcance).
+	var dist_to_player: float = global_transform.origin.distance_to(player.global_transform.origin)
+	var fleeing: bool = ai.decide(dist_to_player, effective_range) == RedRobotAI.Action.FLEE
+
 	if state == State.APPROACH:
 		if aim_preparing > 0:
 			aim_preparing -= delta
@@ -284,7 +306,7 @@ func _physics_process(delta: float) -> void:
 						aim_preparing = 0.0
 					else:
 						# Player not in sight, do nothing.
-						shoot_countdown = SHOOT_WAIT
+						shoot_countdown = shoot_reload
 
 	elif state == State.AIM or state == State.SHOOTING:
 		if aim_preparing < AIM_PREPARE_TIME:
@@ -299,18 +321,24 @@ func _physics_process(delta: float) -> void:
 			var col: Dictionary = get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_origin, ray_to, 0xFFFFFFFF, [self]))
 			if not col.is_empty() and col.collider == player:
 				state = State.SHOOTING
-				shoot_countdown = SHOOT_WAIT
+				shoot_countdown = shoot_reload
 				play_shoot.rpc()
 			else:
 				resume_approach()
 
 	animate(delta)
-	# Apply root motion to orientation.
-	orientation *= Transform3D(animation_tree.get_root_motion_rotation(), animation_tree.get_root_motion_position())
+	if fleeing:
+		# Recuo: pernas correndo (walk) enquanto o corpo encara o player e desliza para
+		# longe. Sobrepõe o root motion deste quadro com a velocidade de fuga.
+		animation_tree["parameters/state/transition_request"] = "walk"
+		_flee_movement()
+	else:
+		# Apply root motion to orientation.
+		orientation *= Transform3D(animation_tree.get_root_motion_rotation(), animation_tree.get_root_motion_position())
+		var h_velocity: Vector3 = orientation.origin / delta
+		velocity.x = h_velocity.x
+		velocity.z = h_velocity.z
 
-	var h_velocity: Vector3 = orientation.origin / delta
-	velocity.x = h_velocity.x
-	velocity.z = h_velocity.z
 	velocity += get_gravity() * delta
 	set_velocity(velocity)
 	set_up_direction(Vector3.UP)
@@ -320,6 +348,23 @@ func _physics_process(delta: float) -> void:
 	orientation = orientation.orthonormalized() # orthonormalize orientation.
 
 	global_transform.basis = orientation.basis
+
+
+# Recuo (IA → Action.FLEE): orienta o corpo para ENCARAR o player (frente do robô é +Z) e
+# define a velocidade horizontal no sentido OPOSTO, fazendo-o correr para longe sem deixar
+# de olhar/mirar no player. O canhão segue mirando via o blend de "aim" em animate().
+func _flee_movement() -> void:
+	var to_player: Vector3 = player.global_transform.origin - global_transform.origin
+	to_player.y = 0.0
+	if to_player.length() < 0.001:
+		return
+	var fwd: Vector3 = to_player.normalized()             # frente (+Z) aponta para o player
+	var x_axis: Vector3 = Vector3.UP.cross(fwd).normalized()
+	var y_axis: Vector3 = fwd.cross(x_axis).normalized()
+	orientation.basis = Basis(x_axis, y_axis, fwd)
+	var away: Vector3 = -fwd                              # corre no sentido oposto ao player
+	velocity.x = away.x * ai.flee_speed
+	velocity.z = away.z * ai.flee_speed
 
 
 @rpc("call_local")
