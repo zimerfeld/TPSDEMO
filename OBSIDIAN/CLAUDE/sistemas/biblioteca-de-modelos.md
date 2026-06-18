@@ -44,6 +44,12 @@ baixo para "Selecione..." e reabilita só o filho imediato. As funções de rese
 `_reset_animations()`+`_reset_effects()`, então os dois combos de baixo entram na
 cascata (antes ficavam "presos" visíveis ao trocar um selector acima).
 
+**StatusLabel (2026-06-18):** a linha de status (vermelha, +2pt) é reposicionada
+dinamicamente logo **acima** do combo a que a mensagem se refere (`_set_status(template,
+row, args)` + `_apply_status` movem o label com `move_child`); no "Modelo completo" fica
+acima dos combos Animação/Efeitos Especiais. Textos via `Locale.tr_key`, label no
+`Locale.SKIP_GROUP` (ver [[sistemas/localizacao]]).
+
 ### Rotação do preview
 
 `_yaw`/`_pitch` separados → `model_holder.rotation = Vector3(_pitch, _yaw, 0)`
@@ -58,9 +64,10 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (2026-06-16): **Rotação · Animação · Audio · Falas · Colisores ·
-Efeitos especiais** (o antigo "Som" virou **Audio**). Cada toggle é o **interruptor
-mestre** da sua categoria:
+Toggles atuais (ordem em 2026-06-18): **Rotação · Animação · Efeitos especiais · Audio ·
+Colisores** (o antigo "Som" virou **Audio**; o toggle **Falas** foi REMOVIDO — o Audio agora
+cobre todos os emissores, inclusive vozes). Cada toggle é o **interruptor mestre** da sua
+categoria:
 
 > [!important] Toggles agem **in-place** (2026-06-17)
 > Nenhum toggle **reconstrói** o preview: o modelo **não é recarregado** e a
@@ -71,13 +78,15 @@ mestre** da sua categoria:
   no dropdown "Animação"; `_on_animation_selected` retorna cedo. O playback é aplicado
   **in-place** por `_apply_animation_state()` (toca/para nos `_preview_anim_players`):
   ligado, toca o clip do dropdown (fallback para o autoplay capturado e depois o 1º clip).
-- **Audio** — toca **todo emissor que NÃO é fala** (movimentação andar/correr/saltar,
-  motor, tiro, explosão…); desligado, silencia. Aplicado por `_apply_audio_state()`.
-- **Falas** — toca **só** os emissores de **fala/grito**, classificados pelo nome do
-  nó (`_is_speech_audio`: voz/voice/fala/grito/scream/shout/yell/…). Desligado, silencia.
+- **Audio** — toca **todos** os emissores do modelo (movimentação andar/correr/saltar,
+  motor, tiro, explosão, vozes…); desligado, silencia. Aplicado por `_apply_audio_state()`.
+  (Não há mais toggle "Falas" separado.)
 - **Colisores** — `_apply_colliders_visibility()` adiciona/remove os gizmos wireframe
   (`_add_collider_gizmos`, idempotente, nó `_ColliderGizmo`) **sem rebuild**; constrói os
-  colliders de membro sob demanda uma vez (`_ensure_member_colliders`).
+  colliders de membro sob demanda uma vez (`_ensure_member_colliders`). Para **Personagens/
+  Armas** desenha gizmo **só dos colliders de MEMBRO** (`_is_member_collider`, meta
+  `member_label`); pula o collider de corpo genérico do modelo (ex.: a cápsula de corpo do
+  red_robot) e as áreas de detecção/morte, que só eram ruído envolvendo tudo (2026-06-18).
 - **Efeitos especiais** — mostra/esconde **tudo o que sobra** ligado ao modelo e que
   nenhum outro toggle cobre: partículas, luzes e malhas presas a osso (muzzle/laser),
   coletadas por `_collect_effect_nodes`. O combo **"Efeitos Especiais"** isola **um**
@@ -86,17 +95,31 @@ mestre** da sua categoria:
 
 ⚠️ Vários modelos disparam som por **tracks de animação** (`type = "audio"`/`"method"`,
 não só autoplay). Por isso `_apply_audio_state()` **muta** (volume_db = -80) os emissores
-cujo toggle está desligado e restaura o **volume autorado** (capturado por `_capture_av`)
-quando religa — assim o áudio disparado pela própria animação também respeita Audio/Falas,
-sem precisar reconstruir o preview.
+quando o toggle Audio está desligado e restaura o **volume autorado** (capturado por
+`_capture_av`) quando religa — assim o áudio disparado pela própria animação também respeita
+o toggle Audio, sem precisar reconstruir o preview.
 
 🔁 `_capture_av()` também **desativa todo `AnimationTree`** (`active = false`) ao montar o
 preview, para que ele não pose o esqueleto **em paralelo** com o clip tocado direto no
-`AnimationPlayer` — era esse duplo-acionamento que fazia o red_robot parecer **dois modelos
-sobrepostos** ao ligar a animação.
+`AnimationPlayer`.
 
-(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 6 estados (rotação,
-animação, audio, falas, colisores, efeitos especiais) são **persistidos** na seção
+🎭 **Anti-"dois modelos" do red_robot (2026-06-18):** ao ligar a animação o red_robot aparecia
+**duplicado/deslocado**. Duas causas, ambas em `_capture_av`/`_apply_animation_state`:
+- **Root motion:** os clips carregam o root motion num osso (`Skeleton3D:MASTER`) que o
+  `AnimationTree` extraía e o script aplicava ao corpo. Tocando o clip **direto** no
+  `AnimationPlayer`, esse osso era APLICADO, transladando o esqueleto (~1,6 m em Z) → segundo
+  modelo atrás. Correção: `_capture_av` copia `tree.root_motion_track` p/ o player que a tree
+  dirigia → o clip toca **no lugar** (root motion extraído e descartado; drift = 0).
+- **Players de efeito/morte:** o red_robot tem 4 `AnimationPlayer` (locomoção + `ShootAnimation` +
+  `Explosion`/kaboom + blast). O preview tocava o 1º clip de **cada** player → o kaboom
+  revelava os destroços de morte (cópias de partes) sobre o modelo. Correção: define-se o
+  **player principal** (`_main_anim_player` = o que a tree dirige, ou o mais rico sem tree) e,
+  sem clip escolhido ("Selecione..."), **só ele** toca um clip default (autoplay → "Idle*" →
+  1º); os demais ficam parados (`_apply_animation_state`). Com um clip explícito do dropdown,
+  toca em quem o tiver (ex.: escolher "kaboom" mostra a explosão de propósito).
+
+(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 5 estados (rotação,
+animação, efeitos especiais, audio, colisores) são **persistidos** na seção
 `[models]` de `user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada
 handler) e relidos em `_ready` antes de conectar os sinais, então a tela reabre como
 foi deixada.

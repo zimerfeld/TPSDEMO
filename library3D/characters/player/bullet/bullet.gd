@@ -37,7 +37,17 @@ func _physics_process(delta: float) -> void:
 	var displacement: Vector3 = -delta * BULLET_VELOCITY * transform.basis.z
 	var col: KinematicCollision3D = move_and_collide(displacement)
 	if col:
-		_apply_hit(col.get_collider() as Node)
+		var collided := col.get_collider() as Node
+		# A character's generic BODY collider (e.g. the enemy's body capsule/sphere) wraps
+		# the whole figure, so it would be struck before the per-limb colliders that hug the
+		# mesh — dealing flat 1× damage and defeating localized damage (no headshots). When the
+		# hit body owns localized limb colliders, phase the bullet through it (collision
+		# exception) and keep flying, so the shot lands on the actual limb collider behind it.
+		# Bodies without limb colliders keep the normal hit-and-explode behavior.
+		if collided is CharacterBody3D and collided.has_node(^"LimbColliders"):
+			add_collision_exception_with(collided)
+			return
+		_apply_hit(collided)
 		hit = true
 		explode.rpc()
 		collision_shape.set_deferred(&"disabled", true)

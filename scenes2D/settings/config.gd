@@ -39,6 +39,9 @@ var DEFAULTS := {
 		show_skeleton3d = false,
 		show_mesh3d = false,
 		show_grid = false,
+		# System Health monitor overlay (Developer screen) + its safety auto-pause.
+		system_health = false,
+		system_health_autopause = true,
 		# UI language: "pt" (default) or "en". Persisted; read by the Locale autoload.
 		language = "pt",
 	},
@@ -50,7 +53,6 @@ var DEFAULTS := {
 		auto_rotate = false,
 		play_animation = false,
 		play_audio = false,
-		play_falas = false,
 		show_colliders = false,
 		show_effects = false,
 	},

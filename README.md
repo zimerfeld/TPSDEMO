@@ -35,18 +35,28 @@ vivo (sem botão Aplicar).
 ## Features · Funcionalidades
 
 🇬🇧 Highlights: localized damage (native per-limb 3D colliders, headshots deal extra); a Models
-viewer with per-category master toggles (rotation, audio, speech, colliders, special effects) that
+viewer with per-category master toggles (rotation, animation, special effects, audio, colliders) that
 persist between visits; a developer screen whose debug overlay is split into **Debug 2D** (light
 yellow) and **Debug 3D** (light cyan) columns — a master alone shows nothing, each dependent line
-must also be selected; a floor grid for 3D screens; and an EN/PT localization system driven by two
-JSON dictionaries in the project root.
+must also be selected; a **System Health** monitor on that screen — a draggable floating panel showing game/video/system
+memory, FPS and the real per-process CPU usage (sampled from the OS, Task-Manager-like) — that alerts
+and can auto-pause processing before a resource hits its safe limit (short CPU spikes are tolerated);
+a floor grid for 3D screens; and an EN/PT localization system where **every screen carries
+Português/English buttons** and each scene ships its own JSON dictionaries
+(`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load.
 
 🇧🇷 Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra); um
-visualizador Models com toggles mestres por categoria (rotação, áudio, falas, colliders, efeitos
-especiais) que persistem entre visitas; uma tela developer cujo overlay de debug é dividido nas
+visualizador Models com toggles mestres por categoria (rotação, animação, efeitos especiais, áudio,
+colliders) que persistem entre visitas; uma tela developer cujo overlay de debug é dividido nas
 colunas **Debug 2D** (amarelo claro) e **Debug 3D** (ciano claro) — o master sozinho não mostra
-nada, cada linha dependente também precisa ser selecionada; uma malha no solo para telas 3D; e um
-sistema de localização EN/PT guiado por dois dicionários JSON na raiz do projeto.
+nada, cada linha dependente também precisa ser selecionada; um monitor **System Health** nessa tela
+— um painel flutuante arrastável com memória do jogo/vídeo/sistema, FPS e o uso real de CPU do
+processo (amostrado do SO, como o Gerenciador de Tarefas) — que alerta e pode pausar o processamento
+automaticamente antes de um recurso atingir o limite seguro (picos curtos de CPU são tolerados); uma
+malha no solo
+para telas 3D; e um sistema de localização EN/PT em que **toda tela tem botões Português/English** e
+cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json`),
+mesclados no carregamento.
 
 ## Requirements & running · Requisitos e execução
 
@@ -62,14 +72,15 @@ LFS is not required.
 
 🇬🇧 `scenes2D/` (screens, UI, reusable widgets) · `scenes3D/` (levels + Models viewer) · `library3D/`
 (3D assets by type) · `effects_shared/` (cross-character helpers) · `autoload/` (global singletons:
-crash_handler, player_selection, debug_overlay, locale; Settings is `scenes2D/settings/config.gd`) ·
-`pt.json`/`en.json` (UI dictionaries) · `OBSIDIAN/` (documentation vault).
+crash_handler, player_selection, debug_overlay, locale, system_health; Settings is
+`scenes2D/settings/config.gd`) · per-scene `Resources/*.pt.json` + `*.en.json` (UI dictionaries) ·
+`OBSIDIAN/` (documentation vault).
 
 🇧🇷 `scenes2D/` (telas, UI, widgets reutilizáveis) · `scenes3D/` (fases + visualizador Models) ·
 `library3D/` (assets 3D por tipo) · `effects_shared/` (helpers entre personagens) · `autoload/`
-(singletons globais: crash_handler, player_selection, debug_overlay, locale; o Settings é
-`scenes2D/settings/config.gd`) · `pt.json`/`en.json` (dicionários da UI) · `OBSIDIAN/` (cofre de
-documentação).
+(singletons globais: crash_handler, player_selection, debug_overlay, locale, system_health; o
+Settings é `scenes2D/settings/config.gd`) · `Resources/*.pt.json` + `*.en.json` por cena (dicionários
+da UI) · `OBSIDIAN/` (cofre de documentação).
 
 ## Controls · Controles
 

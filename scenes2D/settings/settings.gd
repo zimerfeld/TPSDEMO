@@ -107,6 +107,10 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var sfx_disabled: Button = $UI/VBox/Tabs/Audio/SFXRow/SFXDisabled
 @onready var sfx_enabled: Button = $UI/VBox/Tabs/Audio/SFXRow/SFXEnabled
 
+@onready var tabs: TabContainer = $UI/VBox/Tabs
+@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/LangBar/EnglishButton
+
 @onready var _rows: Array = []
 
 # Index of the currently-confirmed video resolution, used to revert the dropdown
@@ -154,6 +158,39 @@ func _ready() -> void:
 		var group := _group_of(row)
 		if group != null:
 			group.pressed.connect(_on_setting_changed)
+
+	# Tab titles come from the child node names (not Button/Label text), so the automatic
+	# localizer can't reach them — translate them here and on every language change.
+	_localize_tabs()
+	Locale.language_changed.connect(_on_language_changed)
+	_update_language_buttons()
+
+
+# Translate each tab's title from its (English) node name via the active dictionary.
+func _localize_tabs() -> void:
+	for i in tabs.get_tab_count():
+		tabs.set_tab_title(i, Locale.tr_key(tabs.get_tab_control(i).name))
+
+
+func _on_language_changed(_lang: String) -> void:
+	_localize_tabs()
+	_update_language_buttons()
+
+
+func _update_language_buttons() -> void:
+	var lang := Locale.get_language()
+	portuguese_button.disabled = lang == "pt"
+	english_button.disabled = lang == "en"
+
+
+func _on_portuguese_pressed() -> void:
+	Locale.set_language("pt")
+	_update_language_buttons()
+
+
+func _on_english_pressed() -> void:
+	Locale.set_language("en")
+	_update_language_buttons()
 
 
 func _populate_video_resolutions() -> void:
@@ -445,10 +482,10 @@ func _on_video_resolution_selected(index: int) -> void:
 	# Ask for confirmation in a centered floating window before changing the
 	# resolution; the dropdown reverts to the previous choice if the user cancels.
 	var dlg := ConfirmationDialog.new()
-	dlg.title = "Resolução de vídeo"
-	dlg.dialog_text = "Confirma resolução de video escolhida ?"
-	dlg.get_ok_button().text = "Sim"
-	dlg.get_cancel_button().text = "Não"
+	dlg.title = Locale.tr_key("Resolução de vídeo")
+	dlg.dialog_text = Locale.tr_key("Confirma resolução de video escolhida ?")
+	dlg.get_ok_button().text = Locale.tr_key("Sim")
+	dlg.get_cancel_button().text = Locale.tr_key("Não")
 	dlg.confirmed.connect(func() -> void:
 		_apply_video_resolution(res_index)
 		_current_resolution_index = index
@@ -499,10 +536,10 @@ func _apply_video_resolution(index: int) -> void:
 # apply everything to the live window/audio immediately; on "Não", do nothing.
 func _on_reset_pressed() -> void:
 	var dlg := ConfirmationDialog.new()
-	dlg.title = "Restaurar padrões"
-	dlg.dialog_text = "Restaurar todas as configurações para o padrão?"
-	dlg.get_ok_button().text = "Sim"
-	dlg.get_cancel_button().text = "Não"
+	dlg.title = Locale.tr_key("Restaurar padrões")
+	dlg.dialog_text = Locale.tr_key("Restaurar todas as configurações para o padrão?")
+	dlg.get_ok_button().text = Locale.tr_key("Sim")
+	dlg.get_cancel_button().text = Locale.tr_key("Não")
 	dlg.confirmed.connect(func() -> void:
 		Settings.reset_to_defaults()
 		_load_current_settings()

@@ -54,7 +54,7 @@ layout_mode = 0
 offset_left = 40.0
 offset_top = 110.0
 offset_right = 540.0
-offset_bottom = 230.0
+offset_bottom = 300.0
 theme_override_constants/separation = 8
 
 [node name="FPSRow" type="HBoxContainer" parent="UI/General" unique_id=957747185]
@@ -76,6 +76,32 @@ toggle_mode = true
 text = "Disabled"
 
 [node name="Enabled" type="Button" parent="UI/General/FPSRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Enabled"
+
+[node name="SystemHealthRow" type="HBoxContainer" parent="UI/General"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="SystemHealthLabel" type="Label" parent="UI/General/SystemHealthRow"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "System Health:"
+
+[node name="Disabled" type="Button" parent="UI/General/SystemHealthRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/General/SystemHealthRow"]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
@@ -112,9 +138,9 @@ text = "Enabled"
 [node name="Columns" type="HBoxContainer" parent="UI"]
 layout_mode = 0
 offset_left = 40.0
-offset_top = 250.0
+offset_top = 320.0
 offset_right = 1060.0
-offset_bottom = 760.0
+offset_bottom = 830.0
 theme_override_constants/separation = 60
 
 [node name="Col2D" type="VBoxContainer" parent="UI/Columns"]
@@ -456,6 +482,37 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Controles 2D"
 
+[node name="LangBar" type="HBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -298.0
+offset_top = -68.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="PortugueseButton" type="Button" parent="UI/LangBar"]
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Português"
+
+[node name="EnglishButton" type="Button" parent="UI/LangBar"]
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "English"
+
 [connection signal="pressed" from="UI/Actions/Models3DButton" to="." method="_on_models_pressed"]
 [connection signal="pressed" from="UI/Actions/Controls2DButton" to="." method="_on_controls_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]

@@ -90,21 +90,24 @@ var _pitch: float = 0.0
 
 # Whole-model preview toggles. Colliders draws wireframe gizmos for the
 # (otherwise invisible) CollisionShape3D volumes; animation plays the model's
-# AnimationPlayer; audio plays its NON-speech sound emitters (movement, motor,
-# shots, explosions...) while falas plays only its speech/scream emitters (see
-# _is_speech_audio). Effects ("Efeitos especiais") shows everything else linked to
-# the model that no other toggle covers — particles, lights and bone-mounted
+# AnimationPlayer; audio plays ALL of its sound emitters (movement, motor, shots,
+# explosions, voices...). Effects ("Efeitos especiais") shows everything else linked
+# to the model that no other toggle covers — particles, lights and bone-mounted
 # laser/muzzle meshes (see _collect_effect_nodes). All start off so a freshly-picked
 # model previews static, silent and clean.
 var _show_colliders: bool = false
 var _play_animation: bool = false
 var _play_audio: bool = false
-var _play_falas: bool = false
 var _show_effects: bool = false
 
 # AnimationPlayers of the current whole-model preview, used by the "Animação"
 # dropdown to list and play the model's clips.
 var _preview_anim_players: Array = []
+# The model's MAIN AnimationPlayer (the one its AnimationTree drives, or the richest one
+# when there is no tree). When no specific clip is chosen, ONLY this player auto-plays a
+# default/idle clip; the other players (one-shot effect/death clips like kaboom/blast/shoot)
+# stay stopped so they don't overlay extra debris meshes on the model.
+var _main_anim_player: AnimationPlayer = null
 
 # Special-effect nodes of the current whole-model preview, used by the "Efeitos
 # Especiais" dropdown to list and isolate them. Each entry: {"label", "node"}.
@@ -131,9 +134,14 @@ var _member_colliders_built: bool = false
 # _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
 var _zoom: float = 0.0
 var _zoom_target: float = 0.0
+@onready var selectors_box: VBoxContainer = $UI/Selectors
+@onready var category_row: HBoxContainer = $UI/Selectors/CategoryRow
 @onready var cbo_category: OptionButton = $UI/Selectors/CategoryRow/cboCategory
+@onready var prefix_row: HBoxContainer = $UI/Selectors/PrefixRow
 @onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
+@onready var model_row: HBoxContainer = $UI/Selectors/ModelRow
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
+@onready var mesh_row: HBoxContainer = $UI/Selectors/MeshRow
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
 @onready var animation_row: HBoxContainer = $UI/Selectors/AnimationRow
 @onready var cbo_animations: OptionButton = $UI/Selectors/AnimationRow/cboAnimations
@@ -143,9 +151,17 @@ var _zoom_target: float = 0.0
 @onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
 @onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
 @onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
-@onready var falas_toggle: CheckButton = $UI/Toggles/FalasToggle
 @onready var colliders_toggle: CheckButton = $UI/Toggles/CollidersToggle
 @onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
+@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/LangBar/EnglishButton
+
+# Dynamic status line state: the (translatable) template, its format args, and the row
+# the message refers to (so the label can be re-placed below the matching combo and
+# re-translated on a language change). The status label opts out of the auto-localizer.
+var _status_template: String = ""
+var _status_args: Array = []
+var _status_row: Control = null
 
 
 func _ready() -> void:
@@ -154,9 +170,9 @@ func _ready() -> void:
 	_categories = _scan_library()
 
 	cbo_category.clear()
-	cbo_category.add_item(SELECT_LABEL)
+	cbo_category.add_item(Locale.tr_key(SELECT_LABEL))
 	for category in _categories:
-		cbo_category.add_item(category["label"])
+		cbo_category.add_item(Locale.tr_key(category["label"]))
 	cbo_category.item_selected.connect(_on_category_selected)
 	cbo_prefix.item_selected.connect(_on_prefix_selected)
 	cbo_models.item_selected.connect(_on_model_selected)
@@ -172,7 +188,6 @@ func _ready() -> void:
 	_auto_rotate = Settings.config_file.get_value("models", "auto_rotate", _auto_rotate)
 	_play_animation = Settings.config_file.get_value("models", "play_animation", _play_animation)
 	_play_audio = Settings.config_file.get_value("models", "play_audio", _play_audio)
-	_play_falas = Settings.config_file.get_value("models", "play_falas", _play_falas)
 	_show_colliders = Settings.config_file.get_value("models", "show_colliders", _show_colliders)
 	_show_effects = Settings.config_file.get_value("models", "show_effects", _show_effects)
 
@@ -182,17 +197,78 @@ func _ready() -> void:
 	animation_toggle.toggled.connect(_on_animation_toggled)
 	audio_toggle.button_pressed = _play_audio
 	audio_toggle.toggled.connect(_on_audio_toggled)
-	falas_toggle.button_pressed = _play_falas
-	falas_toggle.toggled.connect(_on_falas_toggled)
 	colliders_toggle.button_pressed = _show_colliders
 	colliders_toggle.toggled.connect(_on_colliders_toggled)
 	effects_toggle.button_pressed = _show_effects
 	effects_toggle.toggled.connect(_on_effects_toggled)
 
+	# The status line is code-driven (dynamic placement + text): opt it out of the
+	# auto-localizer and re-apply it on every language change.
+	status_label.add_to_group(Locale.SKIP_GROUP)
+	Locale.language_changed.connect(_on_language_changed)
+	_update_language_buttons()
+
 	# Start blank: every dropdown shows "Selecione..." and nothing is previewed
 	# until the user drills down Categoria -> Prefixo -> Modelo -> Parte.
 	cbo_category.select(0)
 	_on_category_selected(0)
+
+
+# Store a (translatable) status template, its format args and the combo row it refers to,
+# render it in the active language and move the red status label directly below that row.
+func _set_status(template: String, row: Control, args: Array = []) -> void:
+	_status_template = template
+	_status_args = args
+	_status_row = row
+	_apply_status()
+
+
+func _apply_status() -> void:
+	if _status_template == "":
+		status_label.text = ""
+		return
+	var text := Locale.tr_key(_status_template)
+	status_label.text = (text % _status_args) if not _status_args.is_empty() else text
+	# Reposition the label directly ABOVE the row whose combo the message is about.
+	# move_child places the node at the given FINAL index; when the label currently sits
+	# above the target row, removing it shifts the row up by one, so compensate.
+	if _status_row != null and is_instance_valid(_status_row):
+		var row_index := _status_row.get_index()
+		var target := maxi(0, row_index - 1) if status_label.get_index() < row_index else row_index
+		selectors_box.move_child(status_label, target)
+
+
+func _on_language_changed(_lang: String) -> void:
+	# Relabel the placeholders/category names already in the dropdowns (kept in place so
+	# the current selection survives), then re-apply the status line and the lang buttons.
+	if cbo_category.item_count > 0:
+		cbo_category.set_item_text(0, Locale.tr_key(SELECT_LABEL))
+	for i in range(_categories.size()):
+		if i + 1 < cbo_category.item_count:
+			cbo_category.set_item_text(i + 1, Locale.tr_key(_categories[i]["label"]))
+	for combo in [cbo_prefix, cbo_models, cbo_meshes, cbo_animations, cbo_effects]:
+		if combo.item_count > 0:
+			combo.set_item_text(0, Locale.tr_key(SELECT_LABEL))
+	if cbo_meshes.item_count > 1:
+		cbo_meshes.set_item_text(1, Locale.tr_key(WHOLE_MODEL_LABEL))
+	_apply_status()
+	_update_language_buttons()
+
+
+func _update_language_buttons() -> void:
+	var lang := Locale.get_language()
+	portuguese_button.disabled = lang == "pt"
+	english_button.disabled = lang == "en"
+
+
+func _on_portuguese_pressed() -> void:
+	Locale.set_language("pt")
+	_update_language_buttons()
+
+
+func _on_english_pressed() -> void:
+	Locale.set_language("en")
+	_update_language_buttons()
 
 
 func _process(delta: float) -> void:
@@ -218,12 +294,12 @@ func _on_category_selected(index: int) -> void:
 	if index <= 0:
 		_reset_prefixes()
 		_reset_models()
-		status_label.text = "Selecione uma categoria."
+		_set_status("Selecione uma categoria.", category_row)
 		return
 	_populate_prefixes(index - 1)
 	# Prefix is now enabled but still on its placeholder, so Modelo/Parte stay locked.
 	_reset_models()
-	status_label.text = "Selecione um prefixo."
+	_set_status("Selecione um prefixo.", prefix_row)
 
 
 # Build the prefix dropdown for a category: "Selecione..." (placeholder) plus each
@@ -241,7 +317,7 @@ func _populate_prefixes(category_index: int) -> void:
 	prefixes.sort()
 
 	cbo_prefix.clear()
-	cbo_prefix.add_item(SELECT_LABEL)
+	cbo_prefix.add_item(Locale.tr_key(SELECT_LABEL))
 	cbo_prefix.set_item_metadata(0, "")
 	for prefix in prefixes:
 		cbo_prefix.add_item(_prettify(prefix))
@@ -255,7 +331,7 @@ func _populate_prefixes(category_index: int) -> void:
 # (no category chosen, so there is nothing to filter yet).
 func _reset_prefixes() -> void:
 	cbo_prefix.clear()
-	cbo_prefix.add_item(SELECT_LABEL)
+	cbo_prefix.add_item(Locale.tr_key(SELECT_LABEL))
 	cbo_prefix.set_item_metadata(0, "")
 	cbo_prefix.select(0)
 	cbo_prefix.disabled = true
@@ -267,7 +343,7 @@ func _on_prefix_selected(index: int) -> void:
 	if _prefix_filter == "":
 		# Back to the placeholder: re-lock Modelo and Parte.
 		_reset_models()
-		status_label.text = "Selecione um prefixo."
+		_set_status("Selecione um prefixo.", prefix_row)
 	else:
 		_populate_models()
 
@@ -277,12 +353,12 @@ func _on_prefix_selected(index: int) -> void:
 # model is previewed until the user picks one — and the Part dropdown stays locked.
 func _populate_models() -> void:
 	cbo_models.clear()
-	cbo_models.add_item(SELECT_LABEL)
+	cbo_models.add_item(Locale.tr_key(SELECT_LABEL))
 	_filtered_models = []
 	var cat_index := cbo_category.selected - 1
 	if cat_index < 0:
 		_reset_models()
-		status_label.text = "Selecione uma categoria."
+		_set_status("Selecione uma categoria.", category_row)
 		return
 
 	var models: Array = _categories[cat_index]["models"]
@@ -296,16 +372,16 @@ func _populate_models() -> void:
 	cbo_models.disabled = false
 	_reset_meshes_and_preview()
 	if _filtered_models.is_empty():
-		status_label.text = "Nenhum modelo neste grupo."
+		_set_status("Nenhum modelo neste grupo.", model_row)
 	else:
-		status_label.text = "Selecione um modelo."
+		_set_status("Selecione um modelo.", model_row)
 
 
 # Reset the Model dropdown to just the "Selecione..." placeholder, DISABLE it, and
 # clear the parts dropdown and preview below it.
 func _reset_models() -> void:
 	cbo_models.clear()
-	cbo_models.add_item(SELECT_LABEL)
+	cbo_models.add_item(Locale.tr_key(SELECT_LABEL))
 	cbo_models.select(0)
 	cbo_models.disabled = true
 	_filtered_models = []
@@ -321,7 +397,7 @@ func _reset_meshes_and_preview() -> void:
 	_display_scene = null
 	_mesh_catalog = []
 	cbo_meshes.clear()
-	cbo_meshes.add_item(SELECT_LABEL)
+	cbo_meshes.add_item(Locale.tr_key(SELECT_LABEL))
 	cbo_meshes.select(0)
 	cbo_meshes.disabled = true
 	_reset_animations()
@@ -337,7 +413,7 @@ func _reset_meshes_and_preview() -> void:
 func _on_model_selected(index: int) -> void:
 	if index <= 0:
 		_reset_meshes_and_preview()
-		status_label.text = "Selecione um modelo."
+		_set_status("Selecione um modelo.", model_row)
 		return
 
 	var model: Dictionary = _filtered_models[index - 1]
@@ -347,8 +423,8 @@ func _on_model_selected(index: int) -> void:
 	_mesh_catalog = _build_mesh_catalog(_model_scene)
 
 	cbo_meshes.clear()
-	cbo_meshes.add_item(SELECT_LABEL)
-	cbo_meshes.add_item(WHOLE_MODEL_LABEL)
+	cbo_meshes.add_item(Locale.tr_key(SELECT_LABEL))
+	cbo_meshes.add_item(Locale.tr_key(WHOLE_MODEL_LABEL))
 	for entry in _mesh_catalog:
 		cbo_meshes.add_item(entry["label"])
 	cbo_meshes.select(0)
@@ -357,7 +433,7 @@ func _on_model_selected(index: int) -> void:
 	_reset_animations()
 	_reset_effects()
 	_clear_preview()
-	status_label.text = "Selecione uma parte."
+	_set_status("Selecione uma parte.", mesh_row)
 
 
 # Part dropdown index 0 is the "Selecione..." placeholder (nothing previewed),
@@ -368,18 +444,19 @@ func _on_mesh_selected(index: int) -> void:
 		_clear_preview()
 		_reset_animations()
 		_reset_effects()
-		status_label.text = "Selecione uma parte."
+		_set_status("Selecione uma parte.", mesh_row)
 	elif index == 1:
 		_preview_whole_model()
 		# The animation and special-effects dropdowns only apply to "Modelo completo".
 		_populate_animations()
 		_populate_effects()
-		status_label.text = "Modelo completo — %d parte(s)" % _mesh_catalog.size()
+		# Those two dropdowns are now the active controls, so the status sits above them.
+		_set_status("Modelo completo — %d parte(s)", animation_row, [_mesh_catalog.size()])
 	else:
 		_preview_mesh(index - 2)
 		_reset_animations()
 		_reset_effects()
-		status_label.text = "Parte: %s" % _mesh_catalog[index - 2]["label"]
+		_set_status("Parte: %s", mesh_row, [_mesh_catalog[index - 2]["label"]])
 
 
 # Fill the "Animação" dropdown with "Selecione..." plus every clip the previewed
@@ -393,7 +470,7 @@ func _populate_animations() -> void:
 	# re-runs the preview), so a chosen clip keeps playing.
 	var prev := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
 	cbo_animations.clear()
-	cbo_animations.add_item(SELECT_LABEL)
+	cbo_animations.add_item(Locale.tr_key(SELECT_LABEL))
 	var seen: Dictionary = {}
 	for ap: AnimationPlayer in _preview_anim_players:
 		for clip in ap.get_animation_list():
@@ -413,7 +490,7 @@ func _populate_animations() -> void:
 # row — the combo is only shown for the assembled "Modelo completo" view.
 func _reset_animations() -> void:
 	cbo_animations.clear()
-	cbo_animations.add_item(SELECT_LABEL)
+	cbo_animations.add_item(Locale.tr_key(SELECT_LABEL))
 	cbo_animations.select(0)
 	cbo_animations.disabled = true
 	animation_row.visible = false
@@ -438,7 +515,7 @@ func _populate_effects() -> void:
 	effects_row.visible = true
 	var prev := "" if cbo_effects.selected <= 0 else cbo_effects.get_item_text(cbo_effects.selected)
 	cbo_effects.clear()
-	cbo_effects.add_item(SELECT_LABEL)
+	cbo_effects.add_item(Locale.tr_key(SELECT_LABEL))
 	for entry in _preview_effect_nodes:
 		cbo_effects.add_item(entry["label"])
 	var restore := 0
@@ -455,7 +532,7 @@ func _populate_effects() -> void:
 # the whole row — the combo is only shown for the assembled "Modelo completo" view.
 func _reset_effects() -> void:
 	cbo_effects.clear()
-	cbo_effects.add_item(SELECT_LABEL)
+	cbo_effects.add_item(Locale.tr_key(SELECT_LABEL))
 	cbo_effects.select(0)
 	cbo_effects.disabled = true
 	effects_row.visible = false
@@ -496,12 +573,6 @@ func _on_animation_toggled(pressed: bool) -> void:
 func _on_audio_toggled(pressed: bool) -> void:
 	_play_audio = pressed
 	_save_toggle("play_audio", pressed)
-	_apply_audio_state()
-
-
-func _on_falas_toggled(pressed: bool) -> void:
-	_play_falas = pressed
-	_save_toggle("play_falas", pressed)
 	_apply_audio_state()
 
 
@@ -717,6 +788,7 @@ func _clear_preview() -> void:
 		child.queue_free()
 	_preview_instance = null
 	_preview_anim_players = []
+	_main_anim_player = null
 	_preview_anim_autoplay = {}
 	_preview_audio_players = []
 	_preview_audio_volumes = {}
@@ -810,13 +882,32 @@ func _preview_whole_model() -> void:
 func _capture_av(instance: Node) -> void:
 	_preview_anim_players = []
 	_preview_anim_autoplay = {}
+	_main_anim_player = null
 	for node in instance.find_children("*", "AnimationPlayer", true, false):
 		var ap := node as AnimationPlayer
 		_preview_anim_autoplay[ap] = ap.autoplay
 		ap.autoplay = ""
 		_preview_anim_players.append(ap)
 	for node in instance.find_children("*", "AnimationTree", true, false):
-		(node as AnimationTree).active = false
+		var tree := node as AnimationTree
+		# The clips carry their root motion on a bone (e.g. Skeleton3D:MASTER) that the
+		# tree extracted (and the gameplay script applied to the body). Driving a clip
+		# straight from the AnimationPlayer would instead APPLY that bone, translating the
+		# whole skeleton — which made red_robot drift ~1.6 m and look like a second model
+		# behind the first. Copy the tree's root_motion_track onto the player it drives so
+		# the clip plays IN PLACE (the root motion is extracted, and we simply discard it).
+		var ap := tree.get_node_or_null(tree.anim_player) as AnimationPlayer
+		if ap != null:
+			if not tree.root_motion_track.is_empty():
+				ap.root_motion_track = tree.root_motion_track
+			_main_anim_player = ap
+		tree.active = false
+	# With no AnimationTree, treat the richest player as the main one (the others are
+	# usually one-shot effect/death clips that must not auto-play over the model).
+	if _main_anim_player == null:
+		for ap: AnimationPlayer in _preview_anim_players:
+			if _main_anim_player == null or ap.get_animation_list().size() > _main_anim_player.get_animation_list().size():
+				_main_anim_player = ap
 
 	_preview_audio_players = []
 	_preview_audio_volumes = {}
@@ -839,25 +930,50 @@ func _apply_animation_state() -> void:
 		if not _play_animation:
 			ap.stop()
 			continue
-		var clip := chosen
-		if clip == "" or not ap.has_animation(clip):
-			clip = _preview_anim_autoplay.get(ap, "")
-			if clip == "" and not ap.get_animation_list().is_empty():
-				clip = ap.get_animation_list()[0]
-		if clip != "" and ap.has_animation(clip):
-			ap.play(clip)
+		if chosen != "":
+			# An explicit clip was picked: play it on whichever player owns it.
+			if ap.has_animation(chosen):
+				ap.play(chosen)
+			else:
+				ap.stop()
+			continue
+		# No explicit clip ("Selecione..."): only the MAIN player auto-plays a default/idle
+		# clip; effect/death players (kaboom/blast/shoot) stay stopped so they don't overlay
+		# extra debris meshes on the model.
+		if ap == _main_anim_player:
+			var clip := _default_anim_clip(ap)
+			if clip != "":
+				ap.play(clip)
+			else:
+				ap.stop()
+		else:
+			ap.stop()
 	_apply_audio_state()
 
 
-# Apply the Audio/Falas toggles to the live preview's emitters in place: each emitter
-# is muted (volume_db -80) when its toggle is off and restored to its authored volume
-# when on; standalone emitters whose toggle is on are (re)started, the rest stopped.
-# Muting the volume is what also gates sound triggered from animation tracks.
+# Default clip for the main player when none is explicitly chosen: its authored autoplay,
+# else an "Idle"-named clip, else its first clip.
+func _default_anim_clip(ap: AnimationPlayer) -> String:
+	var autoplay_clip: String = _preview_anim_autoplay.get(ap, "")
+	if autoplay_clip != "" and ap.has_animation(autoplay_clip):
+		return autoplay_clip
+	for c in ap.get_animation_list():
+		if c.to_lower().begins_with("idle"):
+			return c
+	var list := ap.get_animation_list()
+	return list[0] if not list.is_empty() else ""
+
+
+# Apply the Audio toggle to the live preview's emitters in place: each emitter is muted
+# (volume_db -80) when the toggle is off and restored to its authored volume when on;
+# standalone emitters are (re)started when on, the rest stopped. Muting the volume is what
+# also gates sound triggered from animation tracks. Covers every emitter — movement, motor,
+# shots, explosions and voices alike (there is no separate speech toggle anymore).
 func _apply_audio_state() -> void:
 	for node in _preview_audio_players:
 		if not is_instance_valid(node):
 			continue
-		var wanted := _play_falas if _is_speech_audio(node) else _play_audio
+		var wanted := _play_audio
 		var authored: float = _preview_audio_volumes.get(node, 0.0)
 		node.set("volume_db", authored if wanted else -80.0)
 		if node.get("stream") == null:
@@ -867,24 +983,6 @@ func _apply_audio_state() -> void:
 				node.play()
 		else:
 			node.stop()
-
-
-# Classify a model's audio emitter as speech (falas/gritos) vs every other sound
-# (movement, motor, shots, explosions...). The preview can't know an emitter's role
-# beyond its node name, so match common speech/voice tokens; everything else is
-# treated as general audio gated by the "Audio" toggle.
-const _SPEECH_AUDIO_TOKENS := [
-	"voice", "voz", "fala", "falas", "speech", "speak", "talk", "dialog",
-	"grito", "gritos", "scream", "shout", "yell", "vox",
-]
-
-
-func _is_speech_audio(node: Node) -> bool:
-	var name_lower := String(node.name).to_lower()
-	for token in _SPEECH_AUDIO_TOKENS:
-		if name_lower.contains(token):
-			return true
-	return false
 
 
 # Recursively detach every script in the instanced subtree before it enters the
@@ -943,7 +1041,13 @@ func _ensure_member_colliders() -> void:
 # collision volumes can be inspected. Each gizmo is parented under its shape so
 # it inherits the shape transform and the root's fit-to-view scale. Idempotent: a
 # shape that already carries its gizmo is skipped (the toggle may re-run this).
+#
+# For Personagens/Armas we build per-MEMBER colliders and those are what's interesting to
+# inspect; the model's own authored body collider (e.g. red_robot's big body sphere) and
+# its detection/death volumes would just be noise wrapping everything, so they are skipped
+# — only the per-member colliders get a gizmo. Other categories draw all their shapes.
 func _add_collider_gizmos(instance: Node) -> void:
+	var members_only := _current_category_key() in ["characters", "weapons"]
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -953,11 +1057,21 @@ func _add_collider_gizmos(instance: Node) -> void:
 		var shape_node := node as CollisionShape3D
 		if shape_node.shape == null or shape_node.has_node(NodePath(_GIZMO_NAME)):
 			continue
+		if members_only and not _is_member_collider(shape_node):
+			continue
 		var gizmo := MeshInstance3D.new()
 		gizmo.name = _GIZMO_NAME
 		gizmo.mesh = shape_node.shape.get_debug_mesh()
 		gizmo.material_override = mat
 		shape_node.add_child(gizmo)
+
+
+# True when a CollisionShape3D belongs to one of the per-member colliders we built (its
+# owning StaticBody3D carries the "member_label" meta), as opposed to the model's own
+# authored body/detection/death colliders.
+func _is_member_collider(shape_node: CollisionShape3D) -> bool:
+	var parent := shape_node.get_parent()
+	return parent is StaticBody3D and parent.has_meta("member_label")
 
 
 # Detect-and-display: float a billboard label with each member's name (CABEÇA,

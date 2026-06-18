@@ -60,9 +60,23 @@ bullet (server) colide fisicamente (move_and_collide) com um collider de membro 
       → lê metas damage_multiplier + character; ignora se character == shooter
       → enemy.hit.rpc(round(weapon_damage * multiplicador))   [server]
       → bullet explode
-Fallback: se o bullet acerta o CORPO (capsule) sem um membro → dano de TRONCO (1x)
+Fallback: se o bullet acerta um corpo com hit() sem metas de membro → dano de TRONCO (1x)
           no mesmo _apply_hit (idempotente com _registered)
 ```
+
+**Pass-through do corpo do personagem (2026-06-18):** o corpo genérico do personagem (cápsula/esfera
+do `CharacterBody3D`) envolve a figura inteira, então seria atingido ANTES dos colliders de membro
+(que abraçam a malha) — dano sempre 1×, sem headshot. No `bullet._physics_process`, se o
+`move_and_collide` acerta um `CharacterBody3D` que tem o nó `LimbColliders`, a bala faz
+`add_collision_exception_with(corpo)` e **continua voando**, atravessando o corpo até acertar o
+collider de MEMBRO atrás dele. Isso resolveu o red_robot, cujo corpo era uma `SphereShape3D` de raio
+~1,12 m que envolvia tudo e interceptava todo tiro. O corpo continua existindo para o inimigo andar no
+chão e ser mirado/detectado (raios de mira do player usam `mask 0b11`); só sai do caminho do TIRO.
+
+**Body collider = cápsula como o player (2026-06-18):** a esfera gigante de corpo do red_robot foi
+trocada por uma **`CapsuleShape3D` (raio 0,5 / altura 2,0, em y=1)** — a MESMA lógica do `CollisionShape3D`
+do player — então não há mais a esfera enorme. O nó continua `CollisionShape3D` (dependência de
+`red_robot.gd`).
 
 O atirador exclui os próprios colliders de membro do projétil (`player._exclude_own_limbs`)
 para o tiro não nascer acertando o próprio braço/arma.

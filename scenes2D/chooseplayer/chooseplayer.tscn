@@ -138,16 +138,45 @@ theme_override_constants/separation = 60
 alignment = 1
 
 [node name="BackButton" type="Button" parent="UI/Actions" unique_id=1719511959]
-custom_minimum_size = Vector2(300, 50)
+custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
-size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
 [node name="PlayButton" type="Button" parent="UI/Actions" unique_id=106792872]
-custom_minimum_size = Vector2(300, 50)
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Jogar"
+
+[node name="LangBar" type="HBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -298.0
+offset_top = -68.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="PortugueseButton" type="Button" parent="UI/LangBar"]
+custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Jogar"
+theme_override_font_sizes/font_size = 20
+text = "Português"
+
+[node name="EnglishButton" type="Button" parent="UI/LangBar"]
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "English"
 
 [node name="Loading" type="HBoxContainer" parent="UI" unique_id=1360637243]
 visible = false
@@ -177,4 +206,6 @@ one_shot = true
 [connection signal="pressed" from="UI/ArrowRight" to="." method="_on_right_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Actions/PlayButton" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]
