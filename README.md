@@ -38,24 +38,28 @@ vivo (sem botão Aplicar).
 ## Features · Funcionalidades
 
 🇬🇧 Highlights: localized damage (native per-limb 3D colliders, headshots deal extra); a Models
-viewer with per-category master toggles (rotation, animation, special effects, audio, colliders) that
-persist between visits; a developer screen whose debug overlay is split into **Debug 2D** (light
+viewer with per-category master toggles (rotation, animation, special effects, audio, colliders) and
+selector dropdowns — both persisted between visits, with the drill-down chain restored on reopen; a
+developer screen whose debug overlay is split into **Debug 2D** (light
 yellow) and **Debug 3D** (light cyan) columns — a master alone shows nothing, each dependent line
-must also be selected; a **System Health** monitor on that screen — a draggable floating panel showing game/video/system
-memory, FPS and the real per-process CPU usage (sampled from the OS, Task-Manager-like) — that alerts
-and can auto-pause processing before a resource hits its safe limit (short CPU spikes are tolerated);
+must also be selected; a **System Health** monitor on that screen — a draggable floating panel (with a
+Windows-style red close button) showing game/video/system memory, FPS and the real per-process CPU
+usage (sampled from the OS, Task-Manager-like) — that alerts, beeps on each critical (>95%) spike and
+force-pauses processing before a resource can freeze the machine (short CPU spikes are tolerated);
 a floor grid for 3D screens; and an EN/PT localization system where **every screen carries
 Português/English buttons** and each scene ships its own JSON dictionaries
 (`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load.
 
 🇧🇷 Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra); um
 visualizador Models com toggles mestres por categoria (rotação, animação, efeitos especiais, áudio,
-colliders) que persistem entre visitas; uma tela developer cujo overlay de debug é dividido nas
+colliders) e dropdowns de seleção — ambos persistidos entre visitas, com a cadeia de navegação
+restaurada ao reabrir; uma tela developer cujo overlay de debug é dividido nas
 colunas **Debug 2D** (amarelo claro) e **Debug 3D** (ciano claro) — o master sozinho não mostra
 nada, cada linha dependente também precisa ser selecionada; um monitor **System Health** nessa tela
-— um painel flutuante arrastável com memória do jogo/vídeo/sistema, FPS e o uso real de CPU do
-processo (amostrado do SO, como o Gerenciador de Tarefas) — que alerta e pode pausar o processamento
-automaticamente antes de um recurso atingir o limite seguro (picos curtos de CPU são tolerados); uma
+— um painel flutuante arrastável (com botão de fechar vermelho estilo Windows) com memória do
+jogo/vídeo/sistema, FPS e o uso real de CPU do processo (amostrado do SO, como o Gerenciador de
+Tarefas) — que alerta, emite um bip a cada pico crítico (>95%) e pausa o processamento à força antes
+que um recurso possa congelar a máquina (picos curtos de CPU são tolerados); uma
 malha no solo
 para telas 3D; e um sistema de localização EN/PT em que **toda tela tem botões Português/English** e
 cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json`),
