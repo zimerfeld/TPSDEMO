@@ -17,6 +17,8 @@
 | [[sistemas/dano-localizado]] | Dano por arma, hitboxes Area3D por membro, headshot |
 | [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, grupo Level Base |
 | [[sistemas/audio]] | Buses (Master/Outside/Reactor/Music/SFX), controles Música × Efeitos de Som nas settings |
+| [[sistemas/debug-overlay]] | DebugOverlay + tela developer em 2 colunas (Debug 2D amarelo / Debug 3D ciano), grid, rótulos 3D |
+| [[sistemas/localizacao]] | Idioma EN/PT: autoload Locale + dicionários pt.json/en.json na raiz, persistido, botões no menu |
 
 ---
 
@@ -58,7 +60,7 @@
 ## Notas Rápidas
 
 - Organização: **scenes2D/** (telas de UI: menu, settings, chooseplayer, developer, levels) e **scenes3D/** (players, enemies, door, level_1, level_base, models)
-- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**
+- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **Locale** (`autoload/locale.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**
 - Telas extras: **developer** (toggles de debug) → **models** (navegador/extrator de modelos 3D) → **Exported** (galeria de `library/extracted/`); **settings** com aba Debug
 - Motor: **Godot 4.x**
 - Modo de rede: **ENet / OfflineMultiplayerPeer** (server-authoritative)

@@ -1,0 +1,22 @@
+Para que servem e como funcionam os glass_colliders
+O que você chama de "glass_colliders" é o sistema de hitboxes localizadas com aparência de vidro, em effects_shared/glass_hitboxes.gd. Servem para dano localizado (headshot dá mais dano) com um visual translúcido azulado por membro.
+
+Para que serve:
+
+Cada personagem (Player e Red Robot) ganha uma caixa de colisão por membro grande — CABEÇA, TRONCO, BRAÇO E/D, PERNA E/D.
+Cada caixa é uma Area3D que detecta projéteis e aplica dano com multiplicador: cabeça = 1.5× (+50%), demais = 1×. Documentado em dano-localizado.md.
+Como a lógica atribui as caixas (em build_for(skel)):
+
+Classifica os ossos do Skeleton3D em membros via BodyParts.group_of() (body_parts.gd) — por palavras-chave no nome do osso (head/neck→CABEÇA, spine/chest/hips→TRONCO, arm/hand+lado→BRAÇO, etc.), com lista de exclusão para ossos mecânicos (IK, pistões, placas…).
+Escolhe o osso-raiz de cada membro (o mais raso na hierarquia).
+Mede os vértices skinados a cada membro: para cada vértice, pega o osso de maior peso, converte para o espaço local do osso-raiz usando a bind pose da skin (get_bind_pose, corrige esqueletos cuja bind difere da rest), e acumula um AABB por membro (+ um padding de folga).
+Cria a hitbox: um BoneAttachment3D no osso-raiz (para acompanhar a animação) → uma Area3D (layer/mask de colisão configuráveis) com um BoxShape3D do tamanho do AABB, marcada com meta group e damage_multiplier. Em cliente não-headless, adiciona também um BoxMesh com material de vidro e um Label3D com o nome do membro.
+No body_entered, se for projétil com register_hit (e não for auto-dano), aplica dano_da_arma × multiplicador.
+Onde são atribuídas: em _setup_glass_hitboxes() no _ready de player.gd e red_robot.gd, que instanciam glass_hitboxes.gd, definem layer/cor e chamam build_for(skel) sobre o Skeleton3D do modelo.
+
+Importante: não são colisores físicos de bloqueio — são Area3D de detecção (monitoring). O bullet mantém a física do mundo inalterada; as áreas só servem para registrar o acerto e calcular o dano por região.
+
+Mantém a lógica de posicionamento (AABB dos vértices skinados por membro: CABEÇA/TRONCO/BRAÇO E-D/PERNA E-D).
+Agora cria StaticBody3D + CollisionShape3D (BoxShape3D) nativos por membro, presos via BoneAttachment3D ao osso-raiz (acompanham a animação). Sem Area3D, sem visual de vidro, sem labels.
+Cada StaticBody3D leva collision_layer (16 player / 32 enemy) e metas group, damage_multiplier (cabeça 1.5), character (dono). Expõe get_limb_bodies().
+

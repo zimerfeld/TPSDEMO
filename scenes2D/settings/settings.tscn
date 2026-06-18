@@ -66,6 +66,7 @@ theme_override_font_sizes/font_size = 28
 text = "Display Mode:"
 
 [node name="DisplayModeWindowed" type="Button" parent="UI/VBox/Tabs/Display/DisplayModeRow" unique_id=1277494296]
+modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -73,6 +74,7 @@ toggle_mode = true
 text = "Window"
 
 [node name="DisplayModeFullscreen" type="Button" parent="UI/VBox/Tabs/Display/DisplayModeRow" unique_id=2109473313]
+modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -80,6 +82,7 @@ toggle_mode = true
 text = "Fullscreen"
 
 [node name="DisplayModeExclusiveFullscreen" type="Button" parent="UI/VBox/Tabs/Display/DisplayModeRow" unique_id=1521508192]
+modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -139,6 +142,7 @@ theme_override_font_sizes/font_size = 28
 text = "FPS Limit:"
 
 [node name="MaxFPS30" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=2144026009]
+modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -146,6 +150,7 @@ toggle_mode = true
 text = "30"
 
 [node name="MaxFPS40" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1588464051]
+modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -153,6 +158,7 @@ toggle_mode = true
 text = "40"
 
 [node name="MaxFPS60" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1358979402]
+modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -160,6 +166,7 @@ toggle_mode = true
 text = "60"
 
 [node name="MaxFPS72" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=3120625]
+modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -167,6 +174,7 @@ toggle_mode = true
 text = "72"
 
 [node name="MaxFPS90" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=799638044]
+modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -174,6 +182,7 @@ toggle_mode = true
 text = "90"
 
 [node name="MaxFPS120" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1298204000]
+modulate = Color(1, 0.627451, 0.25098, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -181,6 +190,7 @@ toggle_mode = true
 text = "120"
 
 [node name="MaxFPS144" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=76845268]
+modulate = Color(1, 0.376471, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -188,6 +198,7 @@ toggle_mode = true
 text = "144"
 
 [node name="MaxFPSUnlimited" type="Button" parent="UI/VBox/Tabs/Display/MaxFPSRow" unique_id=1424560293]
+modulate = Color(1, 0.376471, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -207,9 +218,10 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(350, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "Resolução Vídeo"
+text = "Resolução Vídeo:"
 
 [node name="VideoResolutionDropdown" type="OptionButton" parent="UI/VBox/Tabs/Resolution/VideoResolutionRow"]
+modulate = Color(0.439216, 0.788235, 1, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -652,12 +664,12 @@ text = "Enabled"
 [node name="Audio" type="VBoxContainer" parent="UI/VBox/Tabs" unique_id=1620936754]
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 8
 metadata/_tab_index = 5
 
 [node name="MusicRow" type="HBoxContainer" parent="UI/VBox/Tabs/Audio" unique_id=772287494]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 8
 
 [node name="MusicLabel" type="Label" parent="UI/VBox/Tabs/Audio/MusicRow" unique_id=1545441746]
 custom_minimum_size = Vector2(350, 0)
@@ -683,7 +695,7 @@ text = "Enabled"
 
 [node name="SFXRow" type="HBoxContainer" parent="UI/VBox/Tabs/Audio"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 8
 
 [node name="SFXLabel" type="Label" parent="UI/VBox/Tabs/Audio/SFXRow"]
 custom_minimum_size = Vector2(350, 0)
