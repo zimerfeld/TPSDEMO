@@ -901,10 +901,10 @@ func _preview_whole_model() -> void:
 			_fit_to_view(instance as Node3D)
 	if _show_colliders:
 		_add_collider_gizmos(instance)
-	# Member name labels (CABEÇA/TRONCO/…) ride on the global Debug 3D system: shown only when
-	# BOTH "Debug 3D" and its "Membros" sub-toggle are on (developer screen), mirroring
-	# debug_overlay.gd. With Debug 3D on but Membros off — or Debug 3D off — no labels show.
-	if show_members and _member_labels_enabled():
+	# Debug 3D tooltips (TYPE/Name/ID/Membro) over the members: shown when "Debug 3D" is on AND
+	# any of its sub-toggles (Tipo/Nome/ID/Membros) is on — mirroring debug_overlay.gd. Each
+	# line then follows its own sub-toggle. Needs the member colliders as the anchor.
+	if _member_colliders_built and _debug3d_tooltips_enabled():
 		_add_member_labels(instance)
 
 
@@ -1099,21 +1099,35 @@ func _is_member_collider(shape_node: CollisionShape3D) -> bool:
 	return parent is StaticBody3D and parent.has_meta("member_label")
 
 
-# The member name labels obey the developer's Debug 3D + "Membros" toggles, exactly like
-# debug_overlay.gd: both must be on for the model browser to draw them. Read straight from
-# the saved config (these toggles live on the developer screen, so they don't change while
-# the browser is open — reading at preview-build time is enough).
-func _member_labels_enabled() -> bool:
-	return Settings.config_file.get_value("game", "debug_3d", false) \
-		and Settings.config_file.get_value("game", "show_members", false)
+# The Debug 3D tooltips obey the developer's toggles exactly like debug_overlay.gd: "Debug 3D"
+# must be on, plus at least one sub-toggle (Tipo/Nome/ID/Membros). Read straight from the saved
+# config (these toggles live on the developer screen, so they don't change while the browser is
+# open — reading at preview-build time is enough).
+func _debug3d_tooltips_enabled() -> bool:
+	var cfg := Settings.config_file
+	if not cfg.get_value("game", "debug_3d", false):
+		return false
+	return cfg.get_value("game", "show_type_3d", false) \
+		or cfg.get_value("game", "show_name_3d", false) \
+		or cfg.get_value("game", "show_id_3d", false) \
+		or cfg.get_value("game", "show_members", false)
 
 
-# Detect-and-display: float a billboard label with each member's name (CABEÇA,
-# CANO, …) over its collider. The label is parented to the collider body — which is
-# itself anchored to the animated node (limb pivot / bone) — so it travels WITH the
-# member while the animation plays. `fixed_size` keeps it readable at any scale/zoom.
-# Used for the Personagens and Armas categories.
+# Draws the Debug 3D tooltip STACK (TYPE / Name / ID / Membro) over each member collider —
+# the SAME content, cyan color and per-sub-toggle gating as debug_overlay.gd's
+# _add_3d_skeleton. The preview is exempt from the global overlay (exempt_member_labels), so
+# the browser owns these tooltips here — where it has the per-character bone overrides
+# (head/torso/leg-guard plates) the global classifier lacks, so members are labeled right.
+# Each label is parented to the collider body (anchored to the animated bone/pivot), so it
+# travels WITH the member during animation. Each line follows its own sub-toggle.
 func _add_member_labels(instance: Node) -> void:
+	# TYPE/Name/ID describe the owning Skeleton3D (like the global overlay); fall back to the
+	# preview root for rigs without a skeleton (criatura).
+	var owner_node: Node = instance
+	var skels: Array = instance.find_children("*", "Skeleton3D", true, false)
+	if not skels.is_empty():
+		owner_node = skels[0]
+	var cfg := Settings.config_file
 	for node in instance.find_children("*", "StaticBody3D", true, false):
 		var body := node as StaticBody3D
 		if not body.has_meta("member_label"):
@@ -1126,19 +1140,27 @@ func _add_member_labels(instance: Node) -> void:
 			continue
 		# Member centre in the body's local space (the shape carries the offset).
 		var center: Vector3 = (shapes[0] as CollisionShape3D).position
-		var lbl := Label3D.new()
-		lbl.text = text
-		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		lbl.no_depth_test = true
-		lbl.fixed_size = true
-		lbl.pixel_size = 0.0006
-		# 1/4 smaller than the original 48 (kept the outline proportional).
-		lbl.font_size = 36
-		lbl.modulate = Color(1.0, 0.85, 0.2)
-		lbl.outline_size = 9
-		lbl.outline_modulate = Color(0, 0, 0, 0.85)
-		body.add_child(lbl)
-		lbl.position = center + Vector3(0.0, 0.06, 0.0)
+		# Same lines/order/offsets as the global overlay; each gated by its sub-toggle.
+		var lines := [
+			{"cfg": "show_type_3d", "text": "TYPE: %s" % owner_node.get_class(), "y": 0.18},
+			{"cfg": "show_name_3d", "text": "Name: %s" % owner_node.name, "y": 0.12},
+			{"cfg": "show_id_3d", "text": "ID: %d" % owner_node.get_instance_id(), "y": 0.06},
+			{"cfg": "show_members", "text": "Membro: %s" % text, "y": 0.0},
+		]
+		for line in lines:
+			var lbl := Label3D.new()
+			lbl.text = str(line["text"])
+			lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			lbl.no_depth_test = true
+			lbl.pixel_size = 0.003
+			lbl.font_size = 14
+			# Light cyan — the Debug 3D column color (matches debug_overlay.gd).
+			lbl.modulate = Color(0.6, 1.0, 1.0)
+			lbl.outline_size = 4
+			lbl.outline_modulate = Color(0, 0, 0, 0.8)
+			lbl.visible = cfg.get_value("game", str(line["cfg"]), false)
+			body.add_child(lbl)
+			lbl.position = center + Vector3(0.0, 0.12 + float(line["y"]), 0.0)
 
 
 # Per-character: head bone(s) BodyParts can't infer from the name (it excludes
@@ -1156,9 +1178,10 @@ const _MODEL_TORSO_BONES := {
 	"red_robot": ["Bone.001"],
 }
 
-# Per-character LEG bone(s) the classifier drops (e.g. excluded by "guard"), forced into
-# the leg colliders so the leg PLATES are covered (red_robot's "...RearLegGuard" plates).
-const _MODEL_LEG_BONES := {
+# Per-character STANDALONE part bone(s): protruding plates that get their OWN box collider
+# (the limb capsule wouldn't wrap them) instead of being merged into a member. Mirrors
+# red_robot.gd — its rear leg guard plates ("...RearLegGuard").
+const _MODEL_STANDALONE_BONES := {
 	"red_robot": ["L-RearLegGuard", "R-RearLegGuard"],
 }
 
@@ -1176,7 +1199,7 @@ func _add_member_colliders(instance: Node) -> void:
 		lc.padding = 0.04           # tight gap around the mesh (hugs the body)
 		lc.head_bone_names = _head_bones_for_current()
 		lc.torso_bone_names = _torso_bones_for_current()
-		lc.leg_bone_names = _leg_bones_for_current()
+		lc.standalone_part_bones = _standalone_bones_for_current()
 		instance.add_child(lc)
 		lc.build_for(skels[0] as Skeleton3D)
 		return
@@ -1191,8 +1214,8 @@ func _torso_bones_for_current() -> Array[String]:
 	return _model_bones_for_current(_MODEL_TORSO_BONES)
 
 
-func _leg_bones_for_current() -> Array[String]:
-	return _model_bones_for_current(_MODEL_LEG_BONES)
+func _standalone_bones_for_current() -> Array[String]:
+	return _model_bones_for_current(_MODEL_STANDALONE_BONES)
 
 
 func _model_bones_for_current(table: Dictionary) -> Array[String]:

@@ -10,7 +10,7 @@
 | Nota | Resumo |
 |---|---|
 | [[sistemas/player]] | Movimento, física, animação, câmera |
-| [[sistemas/inimigos]] | Red Robot — IA, estados, laser |
+| [[sistemas/inimigos]] | Red Robot — IA reativa (recarga 1,5× + recuo ≤10 m), estados, HUD com alcance |
 | [[sistemas/combate-tiro]] | Bullet, RPC hit, cooldown |
 | [[sistemas/multiplayer]] | Arquitetura server-authoritative |
 | [[sistemas/sistema-de-vida]] | HP, barra de vida, respawn |
@@ -43,6 +43,7 @@
 | `library3D/characters/enemies/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
 | `effects_shared/limb_colliders.gd` | [[arquivos-chave/limb-colliders-gd]] |
 | `library3D/characters/red_robot/red_robot.gd` | [[arquivos-chave/red-robot-gd]] |
+| `library3D/characters/red_robot/IA/red_robot_ai.gd` | [[arquivos-chave/red-robot-ai-gd]] |
 | `library3D/characters/player/bullet/bullet.gd` | [[arquivos-chave/bullet-gd]] |
 | `scenes2D/main/main.gd` | [[arquivos-chave/main-gd]] |
 

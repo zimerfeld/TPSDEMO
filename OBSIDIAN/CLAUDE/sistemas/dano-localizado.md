@@ -134,6 +134,10 @@ ele causava 50 de dano no início. Correção: **bullet sem `shooter` fica inert
 
 O enemy aguarda aproximar (`shoot_countdown = 0`) enquanto o player está fora do alcance.
 
+> **Raio de detecção = alcance:** a `PlayerDetectionArea` (`SphereShape3D`) tem **raio 30 m**,
+> igual a `effective_range`, para o robô **detectar e começar a atirar a 30 m** (antes era 20 m,
+> o que impedia abrir fogo no alcance total da arma).
+
 ---
 
 ## Tuning no inspector (nó do personagem)
@@ -141,8 +145,10 @@ O enemy aguarda aproximar (`shoot_countdown = 0`) enquanto o player está fora d
 Em `limb_colliders.gd` (nó `LimbColliders`): `enabled`, `padding`, `head_bone_names`
 (`["mouth_eyes", "L-EYE", "R-EYE"]` no enemy), `torso_bone_names` (força um osso de nome genérico para
 TRONCO — `["Bone.001"]` no red_robot, cujo corpo não era reconhecido e ficava **sem
-collider de tronco**), `hitbox_layer` (16 player / 32 enemy). Os exports de cor/raio
-do antigo sistema de vidro foram removidos.
+collider de tronco**), `standalone_part_bones` (peças salientes com collider PRÓPRIO em caixa —
+no red_robot as **placas das pernas** `["L-RearLegGuard", "R-RearLegGuard"]`, que a cápsula da
+perna não cobriria; viram `PLACA PERNA E/D`, multiplicador 1.0; 2026-06-18), `hitbox_layer`
+(16 player / 32 enemy). Os exports de cor/raio do antigo sistema de vidro foram removidos.
 
 > Verificado via MCP do Godot ([[godot-mcp]]): laser do enemy aplica 25 (arma),
 > lookup de hitbox funcional, cache não causa mais dano no início, sem erros.

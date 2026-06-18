@@ -304,8 +304,10 @@ func _poll() -> void:
 	var cpu_over := cpu_pct >= 0.0 and cpu_pct >= THRESHOLD
 	_set_row("fps", "%d" % fps, false)
 	_set_row("cpu", ("%d%%" % int(round(cpu_pct))) if cpu_pct >= 0.0 else Locale.tr_key("N/D"), cpu_over)
-	_set_row("game_mem", _format_bytes(game_mem), false)
-	_set_row("video_mem", _format_bytes(video_mem), false)
+	# Mem. Jogo / Mem. Vídeo seguem o mesmo padrão de Mem. Sistema: "usado / total (%)", com a
+	# RAM física como total comum (mesma referência usada por sys_mem), para comparar os pesos.
+	_set_row("game_mem", _format_mem_ratio(game_mem, physical, sys_ok), _mem_over(game_mem, physical, sys_ok))
+	_set_row("video_mem", _format_mem_ratio(video_mem, physical, sys_ok), _mem_over(video_mem, physical, sys_ok))
 	if sys_ok:
 		_set_row("sys_mem", "%s / %s  (%d%%)" % [_format_bytes(used), _format_bytes(physical), int(round(sys_pct))], sys_pct >= THRESHOLD)
 	else:
@@ -455,6 +457,22 @@ func _format_bytes(bytes: float) -> String:
 	if mb >= 1024.0:
 		return "%.2f GB" % (mb / 1024.0)
 	return "%.0f MB" % mb
+
+
+# Formata "usado / total (%)" no padrão de Mem. Sistema; cai para só o valor se o total for
+# desconhecido (RAM física indisponível).
+func _format_mem_ratio(used_bytes: float, total_bytes: float, total_ok: bool) -> String:
+	if not total_ok or total_bytes <= 0.0:
+		return _format_bytes(used_bytes)
+	var pct := clampf(used_bytes / total_bytes * 100.0, 0.0, 100.0)
+	return "%s / %s  (%d%%)" % [_format_bytes(used_bytes), _format_bytes(total_bytes), int(round(pct))]
+
+
+# True quando o uso atinge o limite seguro (apenas para colorir a linha; não dispara pausa).
+func _mem_over(used_bytes: float, total_bytes: float, total_ok: bool) -> bool:
+	if not total_ok or total_bytes <= 0.0:
+		return false
+	return used_bytes / total_bytes * 100.0 >= THRESHOLD
 
 
 func _on_language_changed(_lang: String) -> void:

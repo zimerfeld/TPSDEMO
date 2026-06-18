@@ -25,6 +25,8 @@
 
 - **Robô sem cabeça:** o rig do RedRobot não tem osso de cabeça padrão; usa `head_bone_names = ["mouth_eyes", "L-EYE", "R-EYE"]` para forçar a CABEÇA (rosto + olhos — os olhos, excluídos por "eye", entram p/ a esfera não ficar minúscula; 2026-06-18). Player tem os 6 grupos; enemy também resolve 6 (com o forçado).
 
+- **Peças standalone (`standalone_part_bones`, 2026-06-18):** ossos que recebem um collider PRÓPRIO (caixa) ajustado só aos seus vértices, em vez de serem absorvidos por um membro. Para peças SALIENTES que a cápsula do membro não cobriria — ex.: as **placas traseiras das pernas** do red_robot (`L-/R-RearLegGuard`), que ficam atrás da perna. Internamente viram um grupo único `PART_<osso>` (reaproveita todo o pipeline), com shape **caixa**, multiplicador `1.0` e rótulo `PLACA PERNA E/D` (lado via `BodyParts.side_of`). `_classify()` intercepta esses ossos ANTES do classificador normal, então não poluem o membro vizinho.
+
 ---
 
 ## Detecção (física, nativa)
@@ -42,6 +44,9 @@
 | `enabled` | `true` | Liga/desliga a geração |
 | `padding` | `0.03` | Folga (m) somada a cada lado da caixa |
 | `head_bone_names` | `[] / ["mouth_eyes", "L-EYE", "R-EYE"]` | Bones forçados para CABEÇA |
+| `torso_bone_names` | `[] / ["Bone.001"]` | Bones forçados para TRONCO (osso genérico do enemy) |
+| `leg_bone_names` | `[]` | Bones forçados para PERNA E/D |
+| `standalone_part_bones` | `[] / ["L-RearLegGuard", "R-RearLegGuard"]` | Bones com collider PRÓPRIO (caixa) — placas salientes |
 | `hitbox_layer` | `16 / 32` | Layer dos colliders (player bit5, enemy bit6) |
 
 ---

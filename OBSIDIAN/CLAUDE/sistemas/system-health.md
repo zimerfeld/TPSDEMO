@@ -14,11 +14,15 @@ amostrado a cada ~0,6 s:
   (locale-independente) e converte deltas sucessivos em % sobre os núcleos lógicos. **N/D** até o
   1º delta / fora do Windows. (GPU por processo e temperatura de CPU foram removidos — indisponíveis
   de forma confiável; ver decisão do usuário em 2026-06-18.)
-- **Mem. Jogo** — `Performance.MEMORY_STATIC`.
-- **Mem. Vídeo** — `Performance.RENDER_VIDEO_MEM_USED`.
+- **Mem. Jogo** — `Performance.MEMORY_STATIC`, no padrão **"usado / total (%)"** (mesmo de Mem.
+  Sistema), tendo a **RAM física** como total comum (`_format_mem_ratio`).
+- **Mem. Vídeo** — `Performance.RENDER_VIDEO_MEM_USED`, também **"usado / total (%)"** com a RAM
+  física como total comum, para comparar o peso de cada memória sob a mesma referência.
 - **Mem. Sistema** — RAM física usada = `physical - FREE` de `OS.get_memory_info()`, em MB/GB e %
   (ex.: 12,6 GB / 16,2 GB = 78%). ⚠️ **Não usar `available`**: no Windows é o espaço VIRTUAL/commit
   do processo (dezenas de GB, maior que a RAM física) → dava valor negativo (o bug "-25600 0%").
+- As três linhas de memória usam a RAM física como total; `_format_mem_ratio` cai para só o valor
+  (sem `/ total (%)`) quando a RAM física está indisponível.
 
 ## Janela flutuante (posição)
 

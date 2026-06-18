@@ -22,9 +22,18 @@ third-person shooter sandbox. At a high level it offers:
 - **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
   ball** (a recolored, red-glowing version of the player's shot), and a flying bomber
   (Criatura Alada) that orbits the player and drops bombs.
+- **Red Robot AI** — its runtime behaviors and decisions live in a dedicated AI script
+  (`library3D/characters/red_robot/IA/red_robot_ai.gd`): **1.5× faster reload** (first and
+  subsequent shots); it **opens fire** as soon as the player enters weapon range and is more than
+  10 m away; and if the player gets to **10 m or closer**, the robot **runs away in the opposite
+  direction** while still facing/aiming at and shooting the player.
+- **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
+  when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
 - **Localized damage** — per-limb native 3D colliders (head, torso, arms, legs) sized to
   each character's mesh, so hits to different body parts deal different damage (headshots
   deal extra). Shots pass through the generic body collider to land on the limb colliders.
+  Protruding parts get their OWN box collider (e.g. the Red Robot's **rear leg guard plates**,
+  which the leg capsule wouldn't wrap).
 - **Reusable shooting** — the cannon-bullet and hitscan-laser firing are isolated into
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
   can use; the player and Red Robot both fire via `CannonShooter`.
@@ -46,9 +55,10 @@ third-person shooter sandbox. At a high level it offers:
   Parte is picked it no longer shows a count, and only appears — above the "Animação"/"Efeitos
   Especiais" combos — when those have options. Drag to hand-rotate the
   model up to 180° on both axes. Toggling any option acts on the live preview in place — it
-  never reloads the model nor changes the camera/rotation. For Personagens and Armas, a
-  name label (CABEÇA, TRONCO, BRAÇO…) floats over each member's collider — shown only when the
-  **Debug 3D** and **Membros** toggles (developer screen) are both on; skinned characters
+  never reloads the model nor changes the camera/rotation. For Personagens and Armas, the
+  **Debug 3D tooltip stack** (TYPE/Name/ID/Membro, in cyan) floats over each member's collider —
+  the SAME tooltips as in the levels, driven by the same **Debug 3D** column sub-toggles
+  (developer screen): each line follows `Type`/`Name`/`Id`/`Membros`. Skinned characters
   are framed/centered from their posed colliders so they spin in place instead of drifting.
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap, vitals,
   crosshair, pause menu, scanlines, and more).
@@ -100,7 +110,8 @@ its title bar with the left mouse button to move it; it always stays within the 
 position is remembered between runs — a settings **Reset** sends it back to the top-right corner).
 It shows: **FPS**, the **real per-process CPU usage** (`CPU`), the game's static memory
 (`Mem. Jogo`), the video memory (`Mem. Vídeo`) and the system RAM used (`Mem. Sistema` = total −
-free physical RAM, e.g. 12.6 / 16.2 GB = 78%).
+free physical RAM, e.g. 12.6 / 16.2 GB = 78%). All three memory rows follow the same
+**"used / total (%)"** format, using physical RAM as the common total (e.g. `Mem. Jogo` = 0.4 / 16.2 GB = 2%).
 
 CPU is the actual usage of the Godot process, matching what the OS Task Manager shows for it:
 Godot has no API for it, so a **background thread** samples it from the OS (`Get-Process … .CPU`

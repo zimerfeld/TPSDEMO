@@ -16,8 +16,12 @@ APPROACH ──► AIM ──► SHOOTING
 | Estado | Comportamento |
 |---|---|
 | `APPROACH (0)` | Caminha em direção ao player, vira para encarar |
-| `AIM (1)` | Para, prepara o laser, conta `AIM_TIME = 1.0 s` |
-| `SHOOTING (2)` | Dispara raio laser contínuo; espera `SHOOT_WAIT = 6.0 s` |
+| `AIM (1)` | Para, prepara o tiro, conta `AIM_TIME = 1.0 s` |
+| `SHOOTING (2)` | Dispara bala de canhão; espera a recarga antes do próximo |
+
+> **Recuo (FLEE):** além dos 3 estados, uma decisão da [[arquivos-chave/red-robot-ai-gd|IA]] sobrepõe
+> o movimento quando o player chega a **≤ 10 m**: o robô **corre no sentido oposto encarando o
+> player** e continua atirando (não é um `State` da máquina, é um override de movimento por quadro).
 
 ---
 
@@ -26,11 +30,19 @@ APPROACH ──► AIM ──► SHOOTING
 | Constante | Valor |
 |---|---|
 | `PLAYER_AIM_TOLERANCE_DEGREES` | `15°` |
-| `SHOOT_WAIT` | `6.0 s` |
+| `SHOOT_WAIT` | `6.0 s` (recarga-base) |
+| `shoot_reload` | `SHOOT_WAIT / 1.5 ≈ 4.0 s` (recarga efetiva via IA — 1,5× mais rápida) |
 | `AIM_TIME` | `1.0 s` |
 | `AIM_PREPARE_TIME` | `0.5 s` |
 | `BLEND_AIM_SPEED` | `0.05` |
-| `HIT_DAMAGE` | `50` (dano por tiro recebido) |
+| `effective_range` | `30 m` (alcance da arma; exibido no HUD) |
+| `PlayerDetectionArea` | `SphereShape3D` raio `30 m` (= `effective_range`) |
+
+> A recarga efetiva (1º e próximos tiros) vem da [[arquivos-chave/red-robot-ai-gd|IA]]
+> (`fire_rate_multiplier = 1.5`), não de `SHOOT_WAIT` direto.
+>
+> O **raio de detecção (30 m)** foi igualado ao `effective_range` para o robô **detectar e abrir
+> fogo a 30 m** (antes 20 m impedia atirar no alcance total).
 
 ---
 
@@ -57,7 +69,8 @@ APPROACH ──► AIM ──► SHOOTING
   - **mira do player sai** → chama `hide_health_hud()` (some imediatamente)
 - `show_health_hud()` e `hide_health_hud()` são **públicos**; show guardado por `if dead: return`
 - Some: imediatamente ao tirar a mira ou na morte; 6 s de fallback se atingido sem mira
-- Mostra `enemy_name` + barra `restante / total`
+- Mostra `enemy_name` + barra `restante / total` + **distância (m)** + **alcance da arma (m)**
+  (`show_health_hud(distance)` repassa `effective_range`; o HUD só exibe o alcance quando informado)
 - Ver [[arquivos-chave/enemy-health-bar-gd]]
 
 ---

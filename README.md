@@ -21,14 +21,17 @@
 
 🇬🇧 Starting from the original Godot TPS demo, this project grows it into a small third-person
 shooter sandbox: a menu-driven flow (character selection, level picker, settings, developer screen,
-online play), playable characters that move/aim/jump/shoot, ground and flying enemies, per-limb
-localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD widgets,
-debug tooling, EN/PT localization and live (no-Apply) settings.
+online play), playable characters that move/aim/jump/shoot, ground and flying enemies (the Red
+Robot has a reactive AI that reloads faster, opens fire in range and flees when you close in),
+per-limb localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD
+widgets, debug tooling, EN/PT localization and live (no-Apply) settings.
 
 🇧🇷 Partindo da demo TPS original da Godot, este projeto a expande para um pequeno sandbox de tiro em
 terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, configurações, tela de
 desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atiram, inimigos
-terrestres e voadores, dano localizado por membro, várias fases, biblioteca de modelos 3D navegável,
+terrestres e voadores (o Red Robot tem uma IA reativa que recarrega mais rápido, abre fogo no
+alcance e recua quando você se aproxima), dano localizado por membro, várias fases, biblioteca de
+modelos 3D navegável,
 widgets de HUD cyberpunk reutilizáveis, ferramentas de debug, localização EN/PT e configurações ao
 vivo (sem botão Aplicar).
 

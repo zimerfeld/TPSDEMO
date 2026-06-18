@@ -10206,7 +10206,7 @@ radius = 0.5
 height = 2.0
 
 [sub_resource type="SphereShape3D" id="54"]
-radius = 20.0
+radius = 30.0
 
 [sub_resource type="Animation" id="55"]
 length = 4.0
