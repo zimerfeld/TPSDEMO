@@ -66,11 +66,26 @@ recurso `Mesh` via `get_instance_id`), rótulo `Nome (×N) [+col]/[skin]` ordena
 uso. O preview mostra a peça selecionada, centrada/escalada (`_fit_to_view`). Os
 dropdowns são `OptionButton` nativos (sem listas de botões).
 
-Os combos **"Animação"** (`AnimationRow`) e **"Efeitos Especiais"** (`EffectsRow`,
-abaixo de Animação) só aparecem quando a Parte é **"Modelo completo"** (2026-06-16):
+Os combos **"Animação"** (`AnimationRow`) e **"Efeitos Especiais"** (`EffectsRow`, abaixo de
+Animação) só aparecem quando a Parte é **"Modelo completo"**:
 `_populate_animations()`/`_populate_effects()` mostram as linhas e
-`_reset_animations()`/`_reset_effects()` as escondem (placeholder e partes isoladas).
-Ambos só se aplicam ao modelo montado.
+`_reset_animations()`/`_reset_effects()` as escondem (placeholder e partes isoladas). Ambos só
+se aplicam ao modelo montado.
+
+- **Efeitos Especiais (2026-06-18):** lista, após "Selecione...", a opção **"Todos"** (mostra
+  todos os efeitos) e exibe **efeitos de todos os tipos** que existirem — luzes/luminosidade
+  (e sombras), fumaça/partículas, decals, névoa (`FogVolume`), atratores/colisores de partícula
+  e malhas presas a osso (muzzle/laser). Coletados por `_collect_effect_nodes` via a lista
+  `_EFFECT_CLASSES` (`node.is_class(...)`, pega subclasses). "Todos" só é incluído **quando há**
+  efeitos; sem efeitos, o combo fica só no placeholder e desabilitado.
+
+> [!note] StatusLabel removido (2026-06-18)
+> A linha de status (a label vermelha que guiava "Selecione um/uma …" acima dos combos) foi
+> **removida** da tela — o nó `StatusLabel` saiu da cena e todo o código de status
+> (`_set_status`/`_apply_status`/`_clear_status`/`_update_whole_model_status`/
+> `_refresh_whole_model_status`, vars `_status_*` e onready `selectors_box`/`*_row` órfãos) e as
+> chaves de mensagem nos JSONs foram apagados. A navegação é guiada só pelo gating sequencial
+> dos dropdowns.
 
 **Cascata de reset (2026-06-16):** mudar qualquer selector reseta **todos** os de
 baixo para "Selecione..." e reabilita só o filho imediato. As funções de reset
@@ -78,18 +93,10 @@ baixo para "Selecione..." e reabilita só o filho imediato. As funções de rese
 `_reset_animations()`+`_reset_effects()`, então os dois combos de baixo entram na
 cascata (antes ficavam "presos" visíveis ao trocar um selector acima).
 
-**StatusLabel (2026-06-18):** a linha de status (vermelha, +2pt) é reposicionada
-dinamicamente logo **acima** do combo a que a mensagem se refere (`_set_status(template,
-row, args)` + `_apply_status` movem o label com `move_child`). Textos via `Locale.tr_key`,
-label no `Locale.SKIP_GROUP` (ver [[sistemas/localizacao]]).
-
-**Após selecionar a Parte (2026-06-18):** o status **NÃO** mostra mais mensagem de
-quantidade ("Modelo completo — N parte(s)") nem rótulo de parte ("Parte: X"). Em vez disso,
-no **"Modelo completo"** o status só aparece **quando** os combos Animação e/ou Efeitos
-Especiais têm opções, posicionado **acima** do primeiro deles (`_update_whole_model_status`):
-"Selecione uma animação." (acima de `AnimationRow`), "Selecione um efeito." (acima de
-`EffectsRow`), ou "Selecione uma animação e/ou um efeito." quando ambos. Numa **parte
-isolada** (sem combos abaixo) o status fica **vazio** (`_clear_status`).
+> [!info] Sem linha de status (2026-06-18)
+> A tela **não tem mais** a `StatusLabel` que mostrava prompts "Selecione um/uma …" (categoria/
+> prefixo/modelo/parte/animação/efeito) nem a antiga contagem de partes. A orientação fica só
+> pelo gating sequencial dos dropdowns (cada combo desabilitado até o de cima ter escolha real).
 
 ### Rotação do preview
 
@@ -131,10 +138,11 @@ categoria:
   `member_label`); pula o collider de corpo genérico do modelo (ex.: a cápsula de corpo do
   red_robot) e as áreas de detecção/morte, que só eram ruído envolvendo tudo (2026-06-18).
 - **Efeitos especiais** — mostra/esconde **tudo o que sobra** ligado ao modelo e que
-  nenhum outro toggle cobre: partículas, luzes e malhas presas a osso (muzzle/laser),
-  coletadas por `_collect_effect_nodes`. O combo **"Efeitos Especiais"** isola **um**
-  efeito (mostra só ele); "Selecione..." mostra **todos** (só com o toggle ligado). A
-  visibilidade é aplicada por `_apply_effects_visibility` sem reconstruir o preview.
+  nenhum outro toggle cobre: partículas, luzes, decals/névoa e malhas presas a osso (muzzle/
+  laser), coletadas por `_collect_effect_nodes` (lista `_EFFECT_CLASSES`). O combo **"Efeitos
+  Especiais"** isola **um** efeito (mostra só ele); **"Selecione..."** e **"Todos"** (item 1,
+  2026-06-18) mostram **todos** (só com o toggle ligado). A visibilidade é aplicada por
+  `_apply_effects_visibility` (`sel <= 1` = todos; `>1` = isolado) sem reconstruir o preview.
 
 ⚠️ Vários modelos disparam som por **tracks de animação** (`type = "audio"`/`"method"`,
 não só autoplay). Por isso `_apply_audio_state()` **muta** (volume_db = -80) os emissores
@@ -181,8 +189,10 @@ Animação · Efeitos) é persistida na mesma seção `[models]` por um **valor 
 índice — via `_save_selection(key, value)` em cada `_on_*_selected`: `sel_category` = chave da
 categoria, `sel_prefix` = token do prefixo, `sel_model` = nome do modelo, `sel_part` = rótulo da
 malha **ou** a sentinela `WHOLE_MODEL_VALUE` (`"__whole_model__"`) p/ "Modelo completo",
-`sel_animation`/`sel_effect` = texto do item. Por isso a restauração sobrevive a um re-scan da
-biblioteca em ordem diferente.
+`sel_animation` = texto do clip, `sel_effect` = sentinela `ALL_VALUE` (`"__all__"`) p/ "Todos"
+**ou** o texto do item (`_effect_value`; o inverso `_effect_index_for_value` resolve p/ índice).
+Usar a sentinela p/ "Todos" evita quebrar a restauração quando o idioma muda (o rótulo é
+traduzido). Por isso a restauração sobrevive a um re-scan da biblioteca em ordem diferente.
 
 `_restore_selection_chain()` (chamada no fim de `_ready` no lugar do antigo
 `select(0)`+`_on_category_selected(0)`) **replaya a cadeia de cima p/ baixo**: como `select()`

@@ -48,16 +48,16 @@ em terceira pessoa. Em alto nível, oferece:
   inclusive som disparado por trilhas de animação) e os estados dos toggles são persistidos entre
   visitas. Uma animação só roda quando **o toggle está ligado E um clip está escolhido** no dropdown
   "Animação" (não há mais auto-play de um clip padrão). Os dropdowns de "Animação" e "Efeitos
-  Especiais" aparecem só na visão montada "Modelo completo"; o de efeitos isola um único efeito quando
-  escolhido. Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Parte) reseta
+  Especiais" aparecem só na visão montada "Modelo completo". "Efeitos Especiais" lista, após
+  "Selecione…", a opção **"Todos"** e exibe efeitos de todos os tipos que existirem (luzes/
+  luminosidade, fumaça, partículas, decals, névoa…); escolher um item isola um único efeito.
+  Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Parte) reseta
   todos os dropdowns abaixo dele para "Selecione…". **Todas as escolhas dos seletores são
   persistidas** (junto com os toggles), e ao reabrir a tela a cadeia é restaurada exatamente como foi
   deixada — sem auto-selecionar nenhum item: o primeiro seletor sem escolha salva fica em "Selecione…"
   pronto para continuar; se uma escolha salva não existir mais na biblioteca, esse seletor (e os
-  abaixo) ficam desabilitados. Uma linha de status vermelha acompanha a
-  navegação e flutua logo **acima do combo a que se refere**; ao escolher a Parte ela não mostra mais
-  contagem, e só aparece — acima dos combos "Animação"/"Efeitos Especiais" — quando estes têm opções.
-  Arraste para girar o modelo à mão em
+  abaixo) ficam desabilitados. A navegação é guiada apenas pelo gating sequencial dos dropdowns
+  (sem linha de status). Arraste para girar o modelo à mão em
   até 180° nos dois eixos. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
   o modelo nem altera a câmera/rotação. Para Personagens e Armas, a **pilha de tooltips do Debug 3D**
   (TYPE/Name/ID/Membro, em ciano) flutua sobre o collider de cada membro — os **mesmos tooltips** das

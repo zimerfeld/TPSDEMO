@@ -36,12 +36,10 @@ Cada script chama `Locale.set_language(...)` e acinzenta o botão do idioma ativ
 
 ## Textos vindos de código (SKIP_GROUP)
 
-Textos que o localizador automático não alcança — linhas de status dinâmicas (models, controls),
-placeholders/itens de `OptionButton`, títulos das abas de settings, diálogos de confirmação, e o
-painel **System Health** — entram no grupo `Locale.SKIP_GROUP` e reaplicam `Locale.tr_key(...)`
-sozinhos no sinal `language_changed`. Em `models`, a `StatusLabel` (vermelha, +2pt) é reposicionada
-dinamicamente logo **acima** do combo a que a mensagem se refere (no modo "Modelo completo" fica
-acima dos dropdowns Animação/Efeitos Especiais).
+Textos que o localizador automático não alcança — placeholders/itens de `OptionButton`, títulos
+das abas de settings, diálogos de confirmação, e o painel **System Health** — entram no grupo
+`Locale.SKIP_GROUP` e reaplicam `Locale.tr_key(...)` sozinhos no sinal `language_changed`. (As telas
+`models` e `controls` **não têm mais** `StatusLabel` — removidas em 2026-06-18.)
 
 ## Regra — mudou texto, atualize as chaves
 

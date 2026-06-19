@@ -146,14 +146,6 @@ text = "Efeitos Especiais:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="StatusLabel" type="Label" parent="UI/Selectors"]
-custom_minimum_size = Vector2(486, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 18
-text = "-"
-autowrap_mode = 2
-
 [node name="Toggles" type="VBoxContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 1

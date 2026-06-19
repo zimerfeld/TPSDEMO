@@ -14,6 +14,13 @@ const SELECT_LABEL: String = "Selecione..."
 # the whole assembled model. Picking a real part below it isolates one distinct mesh.
 const WHOLE_MODEL_LABEL: String = "Modelo completo"
 
+# Option listed right below "Selecione..." in the Efeitos Especiais dropdown, meaning
+# "show every effect". Added only when the model actually exposes at least one effect.
+# ALL_VALUE is the stable sentinel persisted for it (its visible label is translated, so
+# restore keys off the sentinel, not the text).
+const ALL_EFFECTS_LABEL: String = "Todos"
+const ALL_VALUE: String = "__all__"
+
 # Stable identifier persisted for the "Modelo completo" part selection. Its visible label
 # is translated, so the restore code keys off this sentinel instead of the on-screen text.
 const WHOLE_MODEL_VALUE: String = "__whole_model__"
@@ -141,20 +148,14 @@ var _member_colliders_built: bool = false
 # _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
 var _zoom: float = 0.0
 var _zoom_target: float = 0.0
-@onready var selectors_box: VBoxContainer = $UI/Selectors
-@onready var category_row: HBoxContainer = $UI/Selectors/CategoryRow
 @onready var cbo_category: OptionButton = $UI/Selectors/CategoryRow/cboCategory
-@onready var prefix_row: HBoxContainer = $UI/Selectors/PrefixRow
 @onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
-@onready var model_row: HBoxContainer = $UI/Selectors/ModelRow
 @onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
-@onready var mesh_row: HBoxContainer = $UI/Selectors/MeshRow
 @onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
 @onready var animation_row: HBoxContainer = $UI/Selectors/AnimationRow
 @onready var cbo_animations: OptionButton = $UI/Selectors/AnimationRow/cboAnimations
 @onready var effects_row: HBoxContainer = $UI/Selectors/EffectsRow
 @onready var cbo_effects: OptionButton = $UI/Selectors/EffectsRow/cboEffects
-@onready var status_label: Label = $UI/Selectors/StatusLabel
 @onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
 @onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
 @onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
@@ -162,13 +163,6 @@ var _zoom_target: float = 0.0
 @onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
 @onready var english_button: Button = $UI/LangBar/EnglishButton
-
-# Dynamic status line state: the (translatable) template, its format args, and the row
-# the message refers to (so the label can be re-placed below the matching combo and
-# re-translated on a language change). The status label opts out of the auto-localizer.
-var _status_template: String = ""
-var _status_args: Array = []
-var _status_row: Control = null
 
 
 func _ready() -> void:
@@ -209,9 +203,6 @@ func _ready() -> void:
 	effects_toggle.button_pressed = _show_effects
 	effects_toggle.toggled.connect(_on_effects_toggled)
 
-	# The status line is code-driven (dynamic placement + text): opt it out of the
-	# auto-localizer and re-apply it on every language change.
-	status_label.add_to_group(Locale.SKIP_GROUP)
 	Locale.language_changed.connect(_on_language_changed)
 	_update_language_buttons()
 
@@ -222,33 +213,9 @@ func _ready() -> void:
 	_restore_selection_chain()
 
 
-# Store a (translatable) status template, its format args and the combo row it refers to,
-# render it in the active language and move the red status label directly below that row.
-func _set_status(template: String, row: Control, args: Array = []) -> void:
-	_status_template = template
-	_status_args = args
-	_status_row = row
-	_apply_status()
-
-
-func _apply_status() -> void:
-	if _status_template == "":
-		status_label.text = ""
-		return
-	var text := Locale.tr_key(_status_template)
-	status_label.text = (text % _status_args) if not _status_args.is_empty() else text
-	# Reposition the label directly ABOVE the row whose combo the message is about.
-	# move_child places the node at the given FINAL index; when the label currently sits
-	# above the target row, removing it shifts the row up by one, so compensate.
-	if _status_row != null and is_instance_valid(_status_row):
-		var row_index := _status_row.get_index()
-		var target := maxi(0, row_index - 1) if status_label.get_index() < row_index else row_index
-		selectors_box.move_child(status_label, target)
-
-
 func _on_language_changed(_lang: String) -> void:
 	# Relabel the placeholders/category names already in the dropdowns (kept in place so
-	# the current selection survives), then re-apply the status line and the lang buttons.
+	# the current selection survives), then re-apply the lang buttons.
 	if cbo_category.item_count > 0:
 		cbo_category.set_item_text(0, Locale.tr_key(SELECT_LABEL))
 	for i in range(_categories.size()):
@@ -259,7 +226,9 @@ func _on_language_changed(_lang: String) -> void:
 			combo.set_item_text(0, Locale.tr_key(SELECT_LABEL))
 	if cbo_meshes.item_count > 1:
 		cbo_meshes.set_item_text(1, Locale.tr_key(WHOLE_MODEL_LABEL))
-	_apply_status()
+	# The "Todos" entry (when present) sits at index 1 of the Efeitos dropdown.
+	if not _preview_effect_nodes.is_empty() and cbo_effects.item_count > 1:
+		cbo_effects.set_item_text(1, Locale.tr_key(ALL_EFFECTS_LABEL))
 	_update_language_buttons()
 
 
@@ -303,12 +272,10 @@ func _on_category_selected(index: int) -> void:
 	if index <= 0:
 		_reset_prefixes()
 		_reset_models()
-		_set_status("Selecione uma categoria.", category_row)
 		return
 	_populate_prefixes(index - 1)
 	# Prefix is now enabled but still on its placeholder, so Modelo/Parte stay locked.
 	_reset_models()
-	_set_status("Selecione um prefixo.", prefix_row)
 
 
 # Build the prefix dropdown for a category: "Selecione..." (placeholder) plus each
@@ -353,7 +320,6 @@ func _on_prefix_selected(index: int) -> void:
 	if _prefix_filter == "":
 		# Back to the placeholder: re-lock Modelo and Parte.
 		_reset_models()
-		_set_status("Selecione um prefixo.", prefix_row)
 	else:
 		_populate_models()
 
@@ -368,7 +334,6 @@ func _populate_models() -> void:
 	var cat_index := cbo_category.selected - 1
 	if cat_index < 0:
 		_reset_models()
-		_set_status("Selecione uma categoria.", category_row)
 		return
 
 	var models: Array = _categories[cat_index]["models"]
@@ -381,10 +346,6 @@ func _populate_models() -> void:
 	cbo_models.select(0)
 	cbo_models.disabled = false
 	_reset_meshes_and_preview()
-	if _filtered_models.is_empty():
-		_set_status("Nenhum modelo neste grupo.", model_row)
-	else:
-		_set_status("Selecione um modelo.", model_row)
 
 
 # Reset the Model dropdown to just the "Selecione..." placeholder, DISABLE it, and
@@ -424,7 +385,6 @@ func _on_model_selected(index: int) -> void:
 	if index <= 0:
 		_save_selection("sel_model", "")
 		_reset_meshes_and_preview()
-		_set_status("Selecione um modelo.", model_row)
 		return
 
 	var model: Dictionary = _filtered_models[index - 1]
@@ -445,7 +405,6 @@ func _on_model_selected(index: int) -> void:
 	_reset_animations()
 	_reset_effects()
 	_clear_preview()
-	_set_status("Selecione uma parte.", mesh_row)
 
 
 # Part dropdown index 0 is the "Selecione..." placeholder (nothing previewed),
@@ -457,44 +416,16 @@ func _on_mesh_selected(index: int) -> void:
 		_clear_preview()
 		_reset_animations()
 		_reset_effects()
-		_set_status("Selecione uma parte.", mesh_row)
 	elif index == 1:
 		_preview_whole_model()
 		# The animation and special-effects dropdowns only apply to "Modelo completo".
 		_populate_animations()
 		_populate_effects()
-		# No quantity message: the status now only guides the animation/effects combos
-		# (when they have options), sitting just above whichever ones showed up.
-		_update_whole_model_status()
 	else:
-		# A single isolated part has no animation/effects combos below it, so it carries
-		# no status line at all.
+		# A single isolated part has no animation/effects combos below it.
 		_preview_mesh(index - 2)
 		_reset_animations()
 		_reset_effects()
-		_clear_status()
-
-
-# Status line for the assembled "Modelo completo" view: it appears ONLY when at least one
-# of the two combos below it actually has options, and sits directly above the topmost one
-# that does, carrying that combo's "pick something" prompt (both → a combined prompt). When
-# the model exposes neither animations nor effects, no status shows.
-func _update_whole_model_status() -> void:
-	var has_anim := not cbo_animations.disabled and cbo_animations.item_count > 1
-	var has_effects := not cbo_effects.disabled and cbo_effects.item_count > 1
-	if has_anim and has_effects:
-		_set_status("Selecione uma animação e/ou um efeito.", animation_row)
-	elif has_anim:
-		_set_status("Selecione uma animação.", animation_row)
-	elif has_effects:
-		_set_status("Selecione um efeito.", effects_row)
-	else:
-		_clear_status()
-
-
-# Blank the status line (no template, no row): the label renders empty and stays put.
-func _clear_status() -> void:
-	_set_status("", null)
 
 
 # Fill the "Animação" dropdown with "Selecione..." plus every clip the previewed
@@ -552,17 +483,16 @@ func _on_animation_selected(index: int) -> void:
 # the animation dropdown. Preserves the current pick across preview rebuilds.
 func _populate_effects() -> void:
 	effects_row.visible = true
-	var prev := "" if cbo_effects.selected <= 0 else cbo_effects.get_item_text(cbo_effects.selected)
+	var prev_value := _effect_value(cbo_effects.selected)
 	cbo_effects.clear()
 	cbo_effects.add_item(Locale.tr_key(SELECT_LABEL))
-	for entry in _preview_effect_nodes:
-		cbo_effects.add_item(entry["label"])
-	var restore := 0
-	for i in range(1, cbo_effects.item_count):
-		if cbo_effects.get_item_text(i) == prev:
-			restore = i
-			break
-	cbo_effects.select(restore)
+	# Only offer "Todos" (and the per-effect entries) when the model actually exposes
+	# effects, so an effect-less model just shows the placeholder and stays disabled.
+	if not _preview_effect_nodes.is_empty():
+		cbo_effects.add_item(Locale.tr_key(ALL_EFFECTS_LABEL))
+		for entry in _preview_effect_nodes:
+			cbo_effects.add_item(entry["label"])
+	cbo_effects.select(maxi(_effect_index_for_value(prev_value), 0))
 	cbo_effects.disabled = cbo_effects.item_count <= 1
 	_apply_effects_visibility()
 
@@ -577,18 +507,41 @@ func _reset_effects() -> void:
 	effects_row.visible = false
 
 
-# Item 0 is "Selecione..." (show every effect, per the toggle); items 1.. are effect
-# names. Picking one isolates it (only that effect renders); see _apply_effects_visibility.
+# Item 0 is "Selecione...", item 1 is "Todos" (show every effect), items 2.. are effect
+# names. Picking a name isolates it (only that effect renders); see _apply_effects_visibility.
 func _on_effect_selected(index: int) -> void:
-	_save_selection("sel_effect", "" if index <= 0 else cbo_effects.get_item_text(index))
+	_save_selection("sel_effect", _effect_value(index))
 	_apply_effects_visibility()
 
 
+# Stable persisted value for an Efeitos index: "" (placeholder), the ALL_VALUE sentinel
+# ("Todos", index 1) or the effect label (indices 2..).
+func _effect_value(index: int) -> String:
+	if index <= 0:
+		return ""
+	if index == 1:
+		return ALL_VALUE
+	return cbo_effects.get_item_text(index)
+
+
+# Inverse of _effect_value: the Efeitos index for a saved value (0 when empty or stale).
+func _effect_index_for_value(value: String) -> int:
+	if value == "":
+		return 0
+	if value == ALL_VALUE:
+		return 1 if cbo_effects.item_count > 1 else 0
+	for i in range(2, cbo_effects.item_count):
+		if cbo_effects.get_item_text(i) == value:
+			return i
+	return 0
+
+
 # Show/hide the preview's special-effect nodes: nothing while the "Efeitos especiais"
-# toggle is off; with it on, every effect when the dropdown is on "Selecione...", or
-# only the chosen one when a specific effect is picked.
+# toggle is off; with it on, every effect on "Selecione..."/"Todos", or only the chosen
+# one when a specific effect is picked.
 func _apply_effects_visibility() -> void:
-	var chosen := "" if cbo_effects.selected <= 0 else cbo_effects.get_item_text(cbo_effects.selected)
+	var sel := cbo_effects.selected
+	var chosen := "" if sel <= 1 else cbo_effects.get_item_text(sel)
 	for entry in _preview_effect_nodes:
 		var node: Node3D = entry["node"]
 		if not is_instance_valid(node):
@@ -727,16 +680,16 @@ func _restore_selection_chain() -> void:
 	if qi != 1:
 		return
 
-	# Animação and Efeitos are parallel leaves of "Modelo completo": restore each on its
-	# own. A stale saved value disables that one combo; an empty one leaves it enabled on
-	# its placeholder (nothing further down depends on either).
+	# Animação and Efeitos are parallel leaves of "Modelo completo": restore each on its own.
+	# A stale saved value disables that one combo; an empty one leaves it enabled on its
+	# placeholder (nothing further down depends on either).
 	var ai := _find_combo_text_index(cbo_animations, v_anim)
 	if ai > 0:
 		cbo_animations.select(ai)
 		_on_animation_selected(ai)
 	elif v_anim != "":
 		cbo_animations.disabled = true
-	var ei := _find_combo_text_index(cbo_effects, v_eff)
+	var ei := _effect_index_for_value(v_eff)
 	if ei > 0:
 		cbo_effects.select(ei)
 		_on_effect_selected(ei)
@@ -1191,14 +1144,30 @@ func _strip_scripts(node: Node) -> void:
 		_strip_scripts(child)
 
 
-# Collect the model's gameplay-only flourishes — particle systems (smoke, thrust),
-# lights, and meshes pinned to a bone (muzzle/laser) — the "remaining" elements no
-# other toggle covers. Returned as [{"label", "node"}] for the "Efeitos Especiais"
-# dropdown; the caller decides their visibility via _apply_effects_visibility.
+# Effect node classes surfaced by the "Efeitos Especiais" dropdown — every kind of
+# special effect a model may carry: lights (luminosity/shadows — Light3D covers Omni/
+# Spot/Directional), particle systems (smoke, sparks, thrust — GPU/CPU), and the other
+# visual-effect volumes (decals, fog, particle attractors/colliders). is_class() matches
+# subclasses too, so listing the base class is enough.
+const _EFFECT_CLASSES: Array[String] = [
+	"GPUParticles3D", "CPUParticles3D", "Light3D",
+	"Decal", "FogVolume", "GPUParticlesAttractor3D", "GPUParticlesCollision3D",
+]
+
+
+# Collect the model's gameplay-only flourishes — particles (smoke/thrust), lights
+# (luminosity/shadows), decals/fog/other effect volumes, and meshes pinned to a bone
+# (muzzle/laser) — the "remaining" elements no other toggle covers. Returned as
+# [{"label", "node"}] for the "Efeitos Especiais" dropdown; the caller decides their
+# visibility via _apply_effects_visibility.
 func _collect_effect_nodes(instance: Node) -> Array:
 	var out: Array = []
 	for node in instance.find_children("*", "Node3D", true, false):
-		var is_effect := node is GPUParticles3D or node is CPUParticles3D or node is Light3D
+		var is_effect := false
+		for cls in _EFFECT_CLASSES:
+			if node.is_class(cls):
+				is_effect = true
+				break
 		if not is_effect and node is MeshInstance3D and _under_bone_attachment(node, instance):
 			is_effect = true
 		if is_effect:

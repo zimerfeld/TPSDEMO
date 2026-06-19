@@ -6,6 +6,7 @@
 	"Parte:": "Part:",
 	"Animação:": "Animation:",
 	"Efeitos Especiais:": "Special Effects:",
+	"Todos": "All",
 	"Rotação": "Rotation",
 	"Animação": "Animation",
 	"Audio": "Audio",
@@ -17,13 +18,5 @@
 	"Personagens": "Characters",
 	"Propulsores": "Thrusters",
 	"Estruturas": "Structures",
-	"Armas": "Weapons",
-	"Selecione uma categoria.": "Select a category.",
-	"Selecione um prefixo.": "Select a prefix.",
-	"Selecione um modelo.": "Select a model.",
-	"Selecione uma parte.": "Select a part.",
-	"Nenhum modelo neste grupo.": "No models in this group.",
-	"Selecione uma animação.": "Select an animation.",
-	"Selecione um efeito.": "Select an effect.",
-	"Selecione uma animação e/ou um efeito.": "Select an animation and/or an effect."
+	"Armas": "Weapons"
 }

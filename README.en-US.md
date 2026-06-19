@@ -49,15 +49,16 @@ third-person shooter sandbox. At a high level it offers:
   are persisted between visits. An animation plays only when **the toggle is on AND a clip is
   picked** in the "Animação" dropdown (there is no default-clip auto-play anymore). The
   "Animação" and "Efeitos Especiais" dropdowns appear only for the assembled "Modelo completo"
-  view; the effects one isolates a single effect when picked. Picking a value in any selector
-  (Categoria → Prefixo → Modelo → Parte) resets every dropdown below it to "Selecione…". **Every
+  view. "Efeitos Especiais" lists, right after "Selecione…", a **"Todos"** option and shows every
+  kind of effect the model has (lights/luminosity, smoke, particles, decals, fog…); picking one
+  isolates a single effect. Picking a
+  value in any selector (Categoria → Prefixo → Modelo → Parte) resets every dropdown below it to
+  "Selecione…". **Every
   selector choice is persisted** (alongside the toggles), and reopening the screen restores the
   chain exactly as it was left — without auto-selecting any item: the first selector with no saved
   choice sits on "Selecione…" ready to continue, and if a saved choice no longer exists in the
-  library that selector (and the ones below it) are disabled. A red
-  status line tracks the drill-down and floats directly **above the combo it is about**; once a
-  Parte is picked it no longer shows a count, and only appears — above the "Animação"/"Efeitos
-  Especiais" combos — when those have options. Drag to hand-rotate the
+  library that selector (and the ones below it) are disabled. Navigation is guided purely by the
+  sequential dropdown gating (no status line). Drag to hand-rotate the
   model up to 180° on both axes. Toggling any option acts on the live preview in place — it
   never reloads the model nor changes the camera/rotation. For Personagens and Armas, the
   **Debug 3D tooltip stack** (TYPE/Name/ID/Membro, in cyan) floats over each member's collider —
