@@ -20,6 +20,7 @@
 | [[sistemas/debug-overlay]] | DebugOverlay + tela developer em 2 colunas (Debug 2D amarelo / Debug 3D ciano), grid, rótulos 3D |
 | [[sistemas/system-health]] | Monitor System Health (developer): mem/FPS/CPU-proc., alerta a 90% + auto-pausa de segurança |
 | [[sistemas/localizacao]] | Idioma EN/PT: autoload Locale + dicionários por cena em Resources/*.pt/en.json, persistido, botões em TODAS as telas |
+| [[sistemas/recursos-nativos-godot]] | Quais nós/recursos NATIVOS o jogo usa (StaticBody3D, CollisionShape3D, MeshInstance3D…), por subsistema; helpers RefCounted sem nó |
 
 ---
 
@@ -42,6 +43,7 @@
 | `library3D/characters/players/player/health_bar.gd` | [[arquivos-chave/health-bar-gd]] |
 | `library3D/characters/enemies/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
 | `effects_shared/limb_colliders.gd` | [[arquivos-chave/limb-colliders-gd]] |
+| `effects_shared/body_parts.gd` (+ planos corporais) | [[arquivos-chave/body-parts-gd]] |
 | `library3D/characters/red_robot/red_robot.gd` | [[arquivos-chave/red-robot-gd]] |
 | `library3D/characters/red_robot/IA/red_robot_ai.gd` | [[arquivos-chave/red-robot-ai-gd]] |
 | `library3D/characters/player/bullet/bullet.gd` | [[arquivos-chave/bullet-gd]] |

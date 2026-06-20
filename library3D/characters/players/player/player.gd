@@ -110,6 +110,8 @@ func _setup_limb_colliders() -> void:
 		return
 	var lc = preload("res://effects_shared/limb_colliders.gd").new()
 	lc.name = "LimbColliders"
+	lc.body_type = "biped"      # plano corporal → classificador de membros
+	lc.model_key = "player"     # busca os multiplicadores de dano por membro em LimbConfig
 	lc.hitbox_layer = 16        # bit5 = colliders de membro do player
 	add_child(lc)
 	lc.build_for(skel)

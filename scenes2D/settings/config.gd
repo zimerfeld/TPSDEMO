@@ -60,6 +60,10 @@ var DEFAULTS := {
 		play_animation = false,
 		play_audio = false,
 		show_colliders = false,
+		show_member_labels = false,
+		show_type = false,
+		show_name = false,
+		show_id = false,
 		show_effects = false,
 	},
 	video = {

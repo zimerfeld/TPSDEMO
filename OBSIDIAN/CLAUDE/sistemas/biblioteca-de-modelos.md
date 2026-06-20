@@ -112,10 +112,17 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (ordem em 2026-06-18): **Rotação · Animação · Efeitos especiais · Audio ·
-Colisores** (o antigo "Som" virou **Audio**; o toggle **Falas** foi REMOVIDO — o Audio agora
-cobre todos os emissores, inclusive vozes). Cada toggle é o **interruptor mestre** da sua
-categoria:
+Toggles atuais (ordem em 2026-06-21): **Rotação · Animação · Efeitos especiais · Audio ·
+Colisores · Rótulos · [Tipo · Nome · ID] · Dano por membro** (o antigo "Som" virou **Audio**; o
+toggle **Falas** foi REMOVIDO — o Audio agora cobre todos os emissores, inclusive vozes). Cada
+toggle é o **interruptor mestre** da sua categoria:
+
+> [!important] Cena Models 100% desacoplada do Debug 3D (2026-06-21)
+> O nó raiz da cena está no grupo **`no_debug_overlay`**, então o `DebugOverlay` global pula a
+> cena Models inteira (2D **e** 3D) — as definições de Debug só valem nos **levels do jogo**. Os
+> rótulos de membro do preview (TYPE/Name/ID/Membro) agora seguem **toggles dedicados da própria
+> cena** (Rótulos + os checkboxes Tipo/Nome/ID), não mais os sub-toggles globais. Foram-se o
+> `_debug3d_tooltips_enabled()` e toda leitura de `game/*` em `models.gd`.
 
 > [!important] Toggles agem **in-place** (2026-06-17)
 > Nenhum toggle **reconstrói** o preview: o modelo **não é recarregado** e a
@@ -143,6 +150,33 @@ categoria:
   Especiais"** isola **um** efeito (mostra só ele); **"Selecione..."** e **"Todos"** (item 1,
   2026-06-18) mostram **todos** (só com o toggle ligado). A visibilidade é aplicada por
   `_apply_effects_visibility` (`sel <= 1` = todos; `>1` = isolado) sem reconstruir o preview.
+- **Rótulos · Tipo · Nome · ID** (2026-06-21) — a pilha de tooltips de membro (TYPE/Name/ID/Membro)
+  agora é **toda local** à cena Models, sem nada do Debug 3D global. **Rótulos** (CheckButton) liga
+  a linha "Membro: …"; **Tipo/Nome/ID** são 3 `CheckBox` compactos (nó `LabelLinesRow`) que ligam as
+  linhas que descrevem o `Skeleton3D`. `_apply_member_labels_visibility` **recria a pilha in-place**
+  (limpa os `Label3D` com prefixo `_MdlLbl_` e re-adiciona com a visibilidade por linha de
+  `_add_member_labels`), sem rebuild do modelo. `_any_member_label()` (qualquer das 4 ligada) decide
+  construir colliders/labels. Persistidos em `[models]` (`show_member_labels`/`show_type`/`show_name`/
+  `show_id`). Pensado para **inspecionar quais membros** o classificador reconhece (e pedir um membro novo).
+- **Dano por membro** (2026-06-20) — abre o painel `DamagePanel` com uma linha por membro
+  (rótulo + `SpinBox` em **bônus %**), pré-preenchida com o valor salvo em
+  [[sistemas/dano-localizado|LimbConfig]]; mudar grava em `res://data/limb_config.json` via
+  `LimbConfig.set_multiplier`. Só aparece para **personagem em "Modelo completo"**
+  (`_preview_is_whole_character`); `_refresh_damage_panel` repopula ao trocar de modelo e some no
+  resto. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta
+  (`_current_model_key`), igual ao `model_key` do gameplay. Os MEMBROS listados vêm do plano
+  corporal do modelo: como o preview remove scripts (e não tem o `@export body_type`), a tela
+  espelha o tipo na const `_MODEL_BODY_TYPE := {"red_robot":"biped","player":"biped"}` e resolve o
+  classificador por `_body_type_for_current()`/`_current_classifier()` (`BodyPlans.for_type`).
+  - **Subseção "Sub-membros" (2026-06-20):** lista cada sub-membro atual (`PART_*`) como uma linha
+    com rótulo + `SpinBox` de bônus % + botão **× (remover)**, e uma linha de **adicionar**: um
+    `OptionButton` (`_aux_bone_candidates`) com os ossos AUXILIARES do esqueleto do preview
+    — aqueles cujo `group_of` do classificador dá "" — + botão "Adicionar". `_on_sub_member_added`/
+    `_on_sub_member_removed` chamam `LimbConfig.add_sub_member`/`remove_sub_member` e **reconstroem**
+    os colliders do preview (`_rebuild_member_colliders` → `_clear_member_colliders` +
+    `_ensure_member_colliders`), repondo gizmos/rótulos. Os membros principais continuam editáveis
+    como antes; só os `PART_*` ganham esta subseção. Ver [[sistemas/dano-localizado]]. A const
+    `_MODEL_STANDALONE_BONES` foi **removida** (os sub-membros vêm de `LimbConfig`/plano agora).
 
 ⚠️ Vários modelos disparam som por **tracks de animação** (`type = "audio"`/`"method"`,
 não só autoplay). Por isso `_apply_audio_state()` **muta** (volume_db = -80) os emissores
@@ -176,11 +210,12 @@ preview, para que ele não pose o esqueleto **em paralelo** com o clip tocado di
   `_main_body_root` (raiz do corpo, ex.: `RedRobotModel`) quando o clip escolhido é de morte
   (`_is_death_clip`: kaboom/explo/death/die/destr), deixando só a explosão.
 
-(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 5 estados (rotação,
-animação, efeitos especiais, audio, colisores) são **persistidos** na seção
-`[models]` de `user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada
-handler) e relidos em `_ready` antes de conectar os sinais, então a tela reabre como
-foi deixada.
+(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os estados de **rotação,
+animação, efeitos especiais, audio, colisores, rótulos e Tipo/Nome/ID** são **persistidos** na
+seção `[models]` de `user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada
+handler; `show_member_labels` desde 2026-06-20, `show_type`/`show_name`/`show_id` desde 2026-06-21)
+e relidos em `_ready` antes de conectar os sinais, então a tela reabre como foi deixada. O toggle
+**Dano por membro** é a exceção — **não** é persistido (abre sempre fechado).
 
 ### Persistência da seleção + restauração da cadeia (2026-06-18)
 
@@ -215,16 +250,14 @@ membro (via [[arquivos-chave/limb-colliders-gd|LimbColliders]]) e `_add_member_l
 flutua um `Label3D` com o nome do membro (CABEÇA, TRONCO, BRAÇO…) sobre cada collider.
 A fonte do rótulo é **36** (¼ menor que os 48 originais — 2026-06-17), com outline 9.
 
-**Rótulos seguem os toggles Debug 3D + Membros (2026-06-18):** os labels de membro do
-browser só aparecem quando **ambos** os toggles do [[sistemas/debug-overlay]] (tela
-developer) estão ligados — `_member_labels_enabled()` lê `game/debug_3d` **e**
-`game/show_members` do `Settings.config_file`. Com Debug 3D ligado mas Membros **desligado**
-(ou Debug 3D desligado), **nenhum** label é desenhado. Os **colliders** de membro continuam
-sendo construídos sempre (enquadramento posado + gizmo do toggle Colisores) — só os rótulos
-são condicionados. Como o `DebugOverlay` (autoload) **também** rotularia o esqueleto do
-preview, `_preview_whole_model` chama `DebugOverlay.exempt_member_labels(instance)` para o
-overlay **pular só os labels de membro** desse subtree (gizmos de esqueleto/mesh do overlay
-seguem valendo) — assim não há rótulo dobrado, e os do browser (com overrides de
+**Rótulos: 100% locais à cena (2026-06-21):** cada linha do stack TYPE/Name/ID/Membro segue o
+**seu** toggle da cena Models (Rótulos + checkboxes Tipo/Nome/ID), sem **nenhuma** leitura do
+Debug 3D global. `_add_member_labels` nomeia cada linha com o prefixo `_MdlLbl_` e
+`_apply_member_labels_visibility` **recria o stack in-place** (limpa os `_MdlLbl_*` e re-adiciona
+com a visibilidade por linha). Como o nó raiz da cena está no grupo **`no_debug_overlay`**, o
+`DebugOverlay` (autoload) já pula a cena inteira — então não há rótulo dobrado nem gizmos globais
+no preview. (A chamada `DebugOverlay.exempt_member_labels(instance)` em `_preview_whole_model`
+permanece como defesa redundante.) Os rótulos do browser usam os overrides de
 cabeça/tronco) são a única fonte.
 
 > [!note] Collider de CABEÇA do red_robot = rosto + olhos (2026-06-18)

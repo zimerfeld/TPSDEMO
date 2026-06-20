@@ -29,11 +29,17 @@ third-person shooter sandbox. At a high level it offers:
   direction** while still facing/aiming at and shooting the player.
 - **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
   when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
-- **Localized damage** — per-limb native 3D colliders (head, torso, arms, legs) sized to
-  each character's mesh, so hits to different body parts deal different damage (headshots
-  deal extra). Shots pass through the generic body collider to land on the limb colliders.
-  Protruding parts get their OWN box collider (e.g. the Red Robot's **rear leg guard plates**,
-  which the leg capsule wouldn't wrap).
+- **Localized damage** — per-limb native 3D colliders sized to each character's mesh, so hits to
+  different body parts deal different damage (headshots deal extra). The members come from the
+  model's **body plan**, chosen by a `body_type` (**biped** = head/torso/2 arms/2 legs — the
+  default; **quadruped** = head/torso/4 legs; **crawler** = head/torso only), classified by the
+  `BodyParts` hierarchy via the `BodyPlans` factory. Shots pass through the generic body collider
+  to land on the limb colliders. **Sub-members** — protruding parts that get their OWN box collider
+  (e.g. the Red Robot's **rear leg guard plates**, which the leg capsule wouldn't wrap) — are now
+  **editable in the Models screen** (add/remove + a bonus-% each), not hardcoded. The per-limb
+  multiplier is **per-model and editable in the Models screen** (a "Dano por membro" panel with a
+  bonus-% input per member), saved to `data/limb_config.json` and read at runtime via `LimbConfig`;
+  the default multiplier comes from the body plan (head +50%, rest ×1).
 - **Reusable shooting** — the cannon-bullet and hitscan-laser firing are isolated into
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
   can use; the player and Red Robot both fire via `CannonShooter`.
@@ -43,10 +49,14 @@ third-person shooter sandbox. At a high level it offers:
   browsable in-game through the Models screen (category → model → part) with toggles, in
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
-  **Audio** (every sound the model emits — movement, motor, shots, explosions, voices) and
-  colliders. Each toggle is the master switch for its category (no sound/animation plays
-  while its toggle is off — including sound driven by animation tracks) and the toggle states
-  are persisted between visits. An animation plays only when **the toggle is on AND a clip is
+  **Audio** (every sound the model emits — movement, motor, shots, explosions, voices),
+  colliders, **member labels** (a browser-owned toggle for the "Membro: …" tags over each
+  collider, independent of the Debug 3D screen) and **per-limb damage** (a panel to edit each
+  member's damage bonus % for characters, plus a **Sub-members** subsection to add/remove
+  protruding `PART_*` colliders and tune each one's bonus %). Each toggle is the master switch for its category (no
+  sound/animation plays while its toggle is off — including sound driven by animation tracks) and
+  the toggle states are persisted between visits (the damage panel aside — it opens closed). An
+  animation plays only when **the toggle is on AND a clip is
   picked** in the "Animação" dropdown (there is no default-clip auto-play anymore). The
   "Animação" and "Efeitos Especiais" dropdowns appear only for the assembled "Modelo completo"
   view. "Efeitos Especiais" lists, right after "Selecione…", a **"Todos"** option and shows every
@@ -60,10 +70,11 @@ third-person shooter sandbox. At a high level it offers:
   library that selector (and the ones below it) are disabled. Navigation is guided purely by the
   sequential dropdown gating (no status line). Drag to hand-rotate the
   model up to 180° on both axes. Toggling any option acts on the live preview in place — it
-  never reloads the model nor changes the camera/rotation. For Personagens and Armas, the
-  **Debug 3D tooltip stack** (TYPE/Name/ID/Membro, in cyan) floats over each member's collider —
-  the SAME tooltips as in the levels, driven by the same **Debug 3D** column sub-toggles
-  (developer screen): each line follows `Type`/`Name`/`Id`/`Membros`. Skinned characters
+  never reloads the model nor changes the camera/rotation. For Personagens and Armas, a
+  **member tooltip stack** (TYPE/Name/ID/Membro, in cyan) floats over each member's collider,
+  driven by the Models screen's **own** dedicated toggles (Rótulos + Tipo/Nome/ID checkboxes) —
+  the Models scene is fully decoupled from the global **Debug 3D** overlay (its root is in the
+  `no_debug_overlay` group), so Debug 2D/3D only affect actual game levels. Skinned characters
   are framed/centered from their posed colliders so they spin in place instead of drifting.
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap, vitals,
   crosshair, pause menu, scanlines, and more).
@@ -244,7 +255,10 @@ asset library under `library3D/`:
   `weapons`, plus `geometry` and `textures` support folders. New model folders dropped in here
   show up automatically in the Models viewer.
 - `effects_shared/` — cross-character helpers: `limb_colliders.gd` (per-limb native colliders for
-  localized damage), `body_parts.gd` (bone → limb classification), and shared blast/shadow assets.
+  localized damage), `limb_config.gd` (`LimbConfig` — per-model damage multipliers + sub-members
+  store, `data/limb_config.json`), the **body-plan hierarchy** `body_parts.gd` (`BodyParts` base +
+  `body_parts_biped/quadruped/crawler.gd` subclasses, bone → member classification) and
+  `body_plans.gd` (`BodyPlans` factory), and shared blast/shadow assets.
 - `autoload/` — global singletons: `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`,
   `locale.gd`, `system_health.gd`. `Settings` lives in `scenes2D/settings/config.gd`.
 - `<scene>/Resources/*.pt.json` + `*.en.json` — per-scene UI language dictionaries, scanned and
@@ -306,6 +320,33 @@ ZIMARO/
 ├─ screenshots/          # captured preview images
 └─ project.godot · default_bus_layout.tres · file_format.sh   # project config · audio buses · formatter
 ```
+
+## Native Godot building blocks
+
+Everything in the game is built from **native Godot nodes and resources** — there is no custom
+C++/GDExtension node. The only project-specific abstractions are pure-logic `RefCounted` helpers with
+no node of their own (`BodyParts` and its body-plan subclasses + the `BodyPlans` factory,
+`WeaponParts`, `LimbConfig`, `LaserShooter`, `CannonShooter`), which just orchestrate native nodes.
+By subsystem:
+
+- **Physics & collision:** `StaticBody3D`, `CharacterBody3D`, `RigidBody3D`, `Area3D`,
+  `CollisionShape3D` (and `BoxShape3D`/`CapsuleShape3D`/`SphereShape3D`/`CylinderShape3D`), `RayCast3D`.
+- **Meshes & geometry:** `MeshInstance3D`, `ArrayMesh`, and primitives (`BoxMesh`, `CylinderMesh`,
+  `SphereMesh`, `PrismMesh`…).
+- **Skeleton & animation:** `Skeleton3D`, `BoneAttachment3D`, `Skin`, `AnimationPlayer`,
+  `AnimationTree`, `SkeletonModifier3D`.
+- **Camera, light & environment:** `Camera3D`, `SpringArm3D`, `Marker3D`, `DirectionalLight3D`/
+  `OmniLight3D`/`SpotLight3D`, `WorldEnvironment`, `Sky`.
+- **Particles & materials:** `CPUParticles3D`, `GPUParticles3D`, `StandardMaterial3D`, `ShaderMaterial`.
+- **Audio:** `AudioStreamPlayer3D`, `AudioStreamPlayer`, `AudioStream`/`AudioStreamWAV`,
+  `AudioStreamRandomizer`.
+- **Networking:** `MultiplayerSynchronizer`, `MultiplayerSpawner`, `SceneReplicationConfig`.
+- **2D UI (`Control` tree):** `Button`, `Label`, containers, `OptionButton`, `ProgressBar`,
+  `CanvasLayer`, `Theme`.
+
+The per-limb hitbox system is the canonical example: `limb_colliders.gd` is a plain `Node3D` that
+**assembles** native `StaticBody3D` + `CollisionShape3D` + `BoneAttachment3D`. The Obsidian note
+[`recursos-nativos-godot`](OBSIDIAN/CLAUDE/sistemas/recursos-nativos-godot.md) has the full inventory.
 
 ## Controls
 

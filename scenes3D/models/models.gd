@@ -110,6 +110,17 @@ var _show_colliders: bool = false
 var _play_animation: bool = false
 var _play_audio: bool = false
 var _show_effects: bool = false
+# Rótulos "Membro: CABEÇA" sobre cada collider — toggle PRÓPRIO do browser, totalmente
+# independente da tela de Debug 3D (que agora só afeta os levels do jogo).
+var _show_member_labels: bool = false
+# Linhas extras do tooltip de membro (TYPE/Name/ID do Skeleton3D), cada uma com seu
+# checkbox dedicado na cena Models — não dependem mais do Debug 3D global.
+var _show_type: bool = false
+var _show_name: bool = false
+var _show_id: bool = false
+# Editor de dano por membro (painel com um input de bônus % por membro). Só faz sentido
+# para personagens em "Modelo completo"; não é persistido (abre fechado a cada visita).
+var _show_damage_panel: bool = false
 
 # AnimationPlayers of the current whole-model preview, used by the "Animação"
 # dropdown to list and play the model's clips.
@@ -160,7 +171,14 @@ var _zoom_target: float = 0.0
 @onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
 @onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
 @onready var colliders_toggle: CheckButton = $UI/Toggles/CollidersToggle
+@onready var labels_toggle: CheckButton = $UI/Toggles/LabelsToggle
+@onready var type_check: CheckBox = $UI/Toggles/LabelLinesRow/TypeCheck
+@onready var name_check: CheckBox = $UI/Toggles/LabelLinesRow/NameCheck
+@onready var id_check: CheckBox = $UI/Toggles/LabelLinesRow/IdCheck
+@onready var damage_toggle: CheckButton = $UI/Toggles/DamageToggle
 @onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
+@onready var damage_panel: PanelContainer = $UI/DamagePanel
+@onready var damage_rows: VBoxContainer = $UI/DamagePanel/Margin/Scroll/VBox/Rows
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
 @onready var english_button: Button = $UI/LangBar/EnglishButton
 
@@ -190,6 +208,10 @@ func _ready() -> void:
 	_play_animation = Settings.config_file.get_value("models", "play_animation", _play_animation)
 	_play_audio = Settings.config_file.get_value("models", "play_audio", _play_audio)
 	_show_colliders = Settings.config_file.get_value("models", "show_colliders", _show_colliders)
+	_show_member_labels = Settings.config_file.get_value("models", "show_member_labels", _show_member_labels)
+	_show_type = Settings.config_file.get_value("models", "show_type", _show_type)
+	_show_name = Settings.config_file.get_value("models", "show_name", _show_name)
+	_show_id = Settings.config_file.get_value("models", "show_id", _show_id)
 	_show_effects = Settings.config_file.get_value("models", "show_effects", _show_effects)
 
 	rotate_toggle.button_pressed = _auto_rotate
@@ -200,6 +222,16 @@ func _ready() -> void:
 	audio_toggle.toggled.connect(_on_audio_toggled)
 	colliders_toggle.button_pressed = _show_colliders
 	colliders_toggle.toggled.connect(_on_colliders_toggled)
+	labels_toggle.button_pressed = _show_member_labels
+	labels_toggle.toggled.connect(_on_labels_toggled)
+	type_check.button_pressed = _show_type
+	type_check.toggled.connect(_on_type_toggled)
+	name_check.button_pressed = _show_name
+	name_check.toggled.connect(_on_name_toggled)
+	id_check.button_pressed = _show_id
+	id_check.toggled.connect(_on_id_toggled)
+	damage_toggle.button_pressed = _show_damage_panel
+	damage_toggle.toggled.connect(_on_damage_toggled)
 	effects_toggle.button_pressed = _show_effects
 	effects_toggle.toggled.connect(_on_effects_toggled)
 
@@ -573,6 +605,47 @@ func _on_colliders_toggled(pressed: bool) -> void:
 	_show_colliders = pressed
 	_save_toggle("show_colliders", pressed)
 	_apply_colliders_visibility()
+
+
+# Toggle PRÓPRIO dos rótulos de membro do browser: liga/desliga os Label3D "Membro: …"
+# sobre os colliders, sem depender da tela de Debug 3D.
+func _on_labels_toggled(pressed: bool) -> void:
+	_show_member_labels = pressed
+	_save_toggle("show_member_labels", pressed)
+	_apply_member_labels_visibility()
+
+
+# Checkboxes dedicados das linhas extras do tooltip (Skeleton3D): Tipo/Nome/ID. Cada um
+# liga/desliga sua linha, independente do Debug 3D global (que só vale nos levels).
+func _on_type_toggled(pressed: bool) -> void:
+	_show_type = pressed
+	_save_toggle("show_type", pressed)
+	_apply_member_labels_visibility()
+
+
+func _on_name_toggled(pressed: bool) -> void:
+	_show_name = pressed
+	_save_toggle("show_name", pressed)
+	_apply_member_labels_visibility()
+
+
+func _on_id_toggled(pressed: bool) -> void:
+	_show_id = pressed
+	_save_toggle("show_id", pressed)
+	_apply_member_labels_visibility()
+
+
+# True quando QUALQUER linha de rótulo de membro está ligada (Membro/Tipo/Nome/ID) — decide
+# construir colliders/labels do preview, já sem ler nada do Debug 3D global.
+func _any_member_label() -> bool:
+	return _show_member_labels or _show_type or _show_name or _show_id
+
+
+# Abre/fecha o painel de edição de dano por membro (só popula para personagem em
+# "Modelo completo"; _refresh_damage_panel decide a visibilidade real).
+func _on_damage_toggled(pressed: bool) -> void:
+	_show_damage_panel = pressed
+	_refresh_damage_panel()
 
 
 # The special-effect nodes already live in the preview (collected on build), so toggling
@@ -951,6 +1024,10 @@ func _clear_preview() -> void:
 	_yaw = 0.0
 	_pitch = 0.0
 	model_holder.rotation = Vector3.ZERO
+	# Rede de segurança do editor de dano: qualquer teardown de preview (trocar/desmarcar
+	# modelo, ir para mesh isolada) oculta o painel; o build do "Modelo completo" o reexibe.
+	if _show_damage_panel and is_instance_valid(damage_panel):
+		_refresh_damage_panel()
 
 
 # Show a single instance of the selected distinct mesh, centered and fit to view.
@@ -1010,7 +1087,7 @@ func _preview_whole_model() -> void:
 	# collider gizmos when the toggle is on.
 	var show_members := _current_category_key() in ["characters", "weapons"]
 	_member_colliders_built = false
-	if _show_colliders or show_members:
+	if _show_colliders or _any_member_label() or show_members:
 		# Build the per-member colliders (best-fit sphere/box/capsule) — the preview
 		# strips the gameplay script that normally builds them, so we do it here.
 		_add_member_colliders(instance)
@@ -1027,11 +1104,13 @@ func _preview_whole_model() -> void:
 			_fit_to_view(instance as Node3D)
 	if _show_colliders:
 		_add_collider_gizmos(instance)
-	# Debug 3D tooltips (TYPE/Name/ID/Membro) over the members: shown when "Debug 3D" is on AND
-	# any of its sub-toggles (Tipo/Nome/ID/Membros) is on — mirroring debug_overlay.gd. Each
-	# line then follows its own sub-toggle. Needs the member colliders as the anchor.
-	if _member_colliders_built and _debug3d_tooltips_enabled():
+	# Rótulos de membro (TYPE/Name/ID/Membro): cada linha segue seu PRÓPRIO toggle da cena
+	# Models (Rótulos/Tipo/Nome/ID), totalmente desacoplado do Debug 3D global.
+	if _member_colliders_built and _any_member_label():
 		_add_member_labels(instance)
+	# Editor de dano por membro: repopula se o painel estiver aberto (só personagem completo).
+	if _show_damage_panel:
+		_refresh_damage_panel()
 
 
 # Capture the preview's animation/audio state into fields and neutralise anything
@@ -1179,6 +1258,10 @@ func _collect_effect_nodes(instance: Node) -> Array:
 # them once and strip them back out in place without touching anything else.
 const _GIZMO_NAME := "_ColliderGizmo"
 
+# Prefixo dos Label3D de tooltip de membro (Tipo/Nome/ID/Membro), para os toggles da cena
+# Models acharem e recriarem as linhas in-place sem tocar no resto.
+const _LABEL_PREFIX := "_MdlLbl_"
+
 
 # Apply the Colliders toggle to the live preview in place: build the member colliders
 # on first use, then add or remove the wireframe gizmos — no rebuild, so the camera
@@ -1202,6 +1285,226 @@ func _ensure_member_colliders() -> void:
 		return
 	_add_member_colliders(_preview_instance)
 	_member_colliders_built = true
+
+
+# Aplica os toggles de rótulo (Rótulos/Tipo/Nome/ID) no preview ao vivo, in-place: remove a
+# pilha de labels atual e a recria com a visibilidade certa por linha. Sem rebuild do modelo
+# → câmera/rotação intactas. Nada é lido do Debug 3D global.
+func _apply_member_labels_visibility() -> void:
+	if _preview_instance == null:
+		return
+	for lbl in _preview_instance.find_children(_LABEL_PREFIX + "*", "Label3D", true, false):
+		(lbl as Label3D).free()
+	if not _any_member_label():
+		return
+	_ensure_member_colliders()
+	_add_member_labels(_preview_instance)
+
+
+# --- Editor de dano por membro ----------------------------------------------
+
+# Chave do modelo atual = nome da pasta que contém o .tscn (ex.: "red_robot", "player").
+# É a MESMA chave que o gameplay define em LimbColliders.model_key, então o que o editor
+# grava em LimbConfig é exatamente o que player.gd/red_robot.gd leem em partida.
+func _current_model_key() -> String:
+	if _current_model_path == "":
+		return ""
+	return _current_model_path.get_base_dir().get_file()
+
+
+# Plano corporal do modelo atual (espelha o @export body_type do gameplay, que o preview
+# não enxerga porque os scripts são removidos). Default bípede.
+func _body_type_for_current() -> String:
+	return _MODEL_BODY_TYPE.get(_current_model_key(), "biped")
+
+
+# Instância do classificador do modelo atual (para dano default e labels).
+func _current_classifier() -> BodyParts:
+	return BodyPlans.for_type(_body_type_for_current())
+
+
+# True quando o preview é um PERSONAGEM em "Modelo completo" — a única situação em que o
+# editor de dano por membro faz sentido (precisa do dono e dos membros completos).
+func _preview_is_whole_character() -> bool:
+	return _current_category_key() == "characters" \
+		and _part_value(cbo_meshes.selected) == WHOLE_MODEL_VALUE
+
+
+# (Re)constrói o painel: uma linha por membro (rótulo + SpinBox de bônus %), lendo o valor
+# salvo em LimbConfig. Oculta o painel quando o toggle está off ou o preview não é um
+# personagem completo. Idempotente — limpa as linhas antigas antes de repopular.
+func _refresh_damage_panel() -> void:
+	for child in damage_rows.get_children():
+		child.queue_free()
+	if not _show_damage_panel or not _preview_is_whole_character() or _preview_instance == null:
+		damage_panel.visible = false
+		return
+	_ensure_member_colliders()
+	var model_key := _current_model_key()
+	# Ordena por rótulo para uma lista estável (CABEÇA, TRONCO, BRAÇO…). Sub-membros (PART_*)
+	# vão para o fim, na subseção própria.
+	var members: Array = []
+	for node in _preview_instance.find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if not body.has_meta("group") or not body.has_meta("member_label"):
+			continue
+		var grp := str(body.get_meta("group"))
+		if grp.begins_with("PART_"):
+			continue   # sub-membros têm a subseção dedicada abaixo
+		members.append({"group": grp, "label": str(body.get_meta("member_label"))})
+	members.sort_custom(func(a, b): return a["label"] < b["label"])
+	for m in members:
+		damage_rows.add_child(_make_damage_row(model_key, m["group"], m["label"]))
+	_add_sub_member_section(model_key)
+	damage_panel.visible = true
+
+
+# Uma linha do editor: rótulo do membro + SpinBox em bônus % (passo 5, faixa -100..+500),
+# pré-preenchido com (multiplicador salvo - 1) * 100. Mudar o valor grava em LimbConfig.
+# `remove_bone` != "" adiciona um botão × que remove o sub-membro (para a subseção PART_).
+func _make_damage_row(model_key: String, group: String, label: String, remove_bone: String = "") -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var name_lbl := Label.new()
+	name_lbl.text = label
+	name_lbl.custom_minimum_size = Vector2(110, 0)
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_lbl)
+	var spin := SpinBox.new()
+	spin.min_value = -100.0
+	spin.max_value = 500.0
+	spin.step = 5.0
+	spin.suffix = "%"
+	spin.value = (LimbConfig.get_multiplier(model_key, group, _current_classifier()) - 1.0) * 100.0
+	spin.value_changed.connect(_on_member_damage_changed.bind(model_key, group))
+	row.add_child(spin)
+	if remove_bone != "":
+		var del := Button.new()
+		del.text = "×"
+		del.tooltip_text = "Remover sub-membro"
+		del.pressed.connect(_on_sub_member_removed.bind(model_key, remove_bone))
+		row.add_child(del)
+	return row
+
+
+# Grava o novo multiplicador (1 + bônus%/100) em LimbConfig e atualiza a meta do collider
+# de preview vivo, para que o valor mostrado e o salvo fiquem coerentes na mesma sessão.
+func _on_member_damage_changed(pct: float, model_key: String, group: String) -> void:
+	var mult := 1.0 + pct / 100.0
+	LimbConfig.set_multiplier(model_key, group, mult)
+	if _preview_instance == null:
+		return
+	for node in _preview_instance.find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if body.has_meta("group") and str(body.get_meta("group")) == group:
+			body.set_meta("damage_multiplier", mult)
+
+
+# Subseção "Sub-membros": cada sub-membro atual (PART_*) como linha de dano com botão ×,
+# mais uma linha para PROMOVER um osso auxiliar (excluído pelo classificador) a sub-membro.
+func _add_sub_member_section(model_key: String) -> void:
+	var sep := HSeparator.new()
+	damage_rows.add_child(sep)
+	var title := Label.new()
+	title.text = "Sub-membros"
+	damage_rows.add_child(title)
+	# Linhas dos sub-membros existentes (label + % + ×). Achadas pelos colliders PART_*.
+	for node in _preview_instance.find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if not body.has_meta("group"):
+			continue
+		var grp := str(body.get_meta("group"))
+		if not grp.begins_with("PART_"):
+			continue
+		var bone := grp.substr(len("PART_"))
+		var label := str(body.get_meta("member_label")) if body.has_meta("member_label") else bone
+		damage_rows.add_child(_make_damage_row(model_key, grp, label, bone))
+	# Linha "adicionar": dropdown dos ossos auxiliares (group_of == "") + botão Adicionar.
+	var add_row := HBoxContainer.new()
+	add_row.add_theme_constant_override("separation", 10)
+	var picker := OptionButton.new()
+	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var candidates := _aux_bone_candidates()
+	if candidates.is_empty():
+		picker.add_item("(sem ossos auxiliares)")
+		picker.disabled = true
+	else:
+		for b in candidates:
+			picker.add_item(b)
+	add_row.add_child(picker)
+	var add_btn := Button.new()
+	add_btn.text = "Adicionar"
+	add_btn.disabled = candidates.is_empty()
+	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker))
+	add_row.add_child(add_btn)
+	damage_rows.add_child(add_row)
+
+
+# Ossos do esqueleto do preview que o classificador descarta (group_of == "") e ainda NÃO
+# são sub-membros — candidatos a promoção. Vazio se o preview não tem Skeleton3D.
+func _aux_bone_candidates() -> Array[String]:
+	var out: Array[String] = []
+	if _preview_instance == null:
+		return out
+	var skels: Array = _preview_instance.find_children("*", "Skeleton3D", true, false)
+	if skels.is_empty():
+		return out
+	var skel := skels[0] as Skeleton3D
+	var classifier := _current_classifier()
+	var existing := LimbConfig.sub_members(_current_model_key())
+	for b in skel.get_bone_count():
+		var bn := skel.get_bone_name(b)
+		if classifier.group_of(bn) == "" and not existing.has(bn):
+			out.append(bn)
+	return out
+
+
+# Promove o osso escolhido a sub-membro, reconstrói os colliders do preview e repopula.
+func _on_sub_member_added(model_key: String, picker: OptionButton) -> void:
+	if picker.disabled or picker.selected < 0:
+		return
+	LimbConfig.add_sub_member(model_key, picker.get_item_text(picker.selected))
+	_rebuild_member_colliders()
+
+
+# Remove o sub-membro, reconstrói os colliders do preview e repopula.
+func _on_sub_member_removed(model_key: String, bone: String) -> void:
+	LimbConfig.remove_sub_member(model_key, bone)
+	_rebuild_member_colliders()
+
+
+# Refaz os colliders de membro do preview (após mudar a lista de sub-membros), repondo
+# gizmos/rótulos conforme os toggles, e repopula o painel.
+func _rebuild_member_colliders() -> void:
+	if _preview_instance == null:
+		return
+	_clear_member_colliders()
+	_ensure_member_colliders()
+	if _show_colliders:
+		_add_collider_gizmos(_preview_instance)
+	if _member_colliders_built and _any_member_label():
+		_add_member_labels(_preview_instance)
+	_refresh_damage_panel()
+
+
+# Remove os colliders de membro atuais do preview: o nó LimbColliders (caminho com
+# esqueleto) e os wrappers que carregam cada corpo — BoneAttachment3D "Hitbox_*" (esqueleto)
+# ou o próprio StaticBody3D (caminho sem esqueleto). free() imediato (a lista é um snapshot),
+# para o rebuild seguinte não enxergar duplicatas.
+func _clear_member_colliders() -> void:
+	if _preview_instance == null:
+		return
+	var to_free: Array[Node] = []
+	for lc in _preview_instance.find_children("*", "LimbColliders", true, false):
+		to_free.append(lc)
+	for body in _preview_instance.find_children("*", "StaticBody3D", true, false):
+		if (body as Node).has_meta("member_label"):
+			var p := body.get_parent()
+			to_free.append(p if p is BoneAttachment3D else body)
+	for n in to_free:
+		if is_instance_valid(n):
+			n.free()
+	_member_colliders_built = false
 
 
 # Draw a wireframe gizmo for every CollisionShape3D so the otherwise-invisible
@@ -1241,27 +1544,12 @@ func _is_member_collider(shape_node: CollisionShape3D) -> bool:
 	return parent is StaticBody3D and parent.has_meta("member_label")
 
 
-# The Debug 3D tooltips obey the developer's toggles exactly like debug_overlay.gd: "Debug 3D"
-# must be on, plus at least one sub-toggle (Tipo/Nome/ID/Membros). Read straight from the saved
-# config (these toggles live on the developer screen, so they don't change while the browser is
-# open — reading at preview-build time is enough).
-func _debug3d_tooltips_enabled() -> bool:
-	var cfg := Settings.config_file
-	if not cfg.get_value("game", "debug_3d", false):
-		return false
-	return cfg.get_value("game", "show_type_3d", false) \
-		or cfg.get_value("game", "show_name_3d", false) \
-		or cfg.get_value("game", "show_id_3d", false) \
-		or cfg.get_value("game", "show_members", false)
-
-
-# Draws the Debug 3D tooltip STACK (TYPE / Name / ID / Membro) over each member collider —
-# the SAME content, cyan color and per-sub-toggle gating as debug_overlay.gd's
-# _add_3d_skeleton. The preview is exempt from the global overlay (exempt_member_labels), so
-# the browser owns these tooltips here — where it has the per-character bone overrides
-# (head/torso/leg-guard plates) the global classifier lacks, so members are labeled right.
-# Each label is parented to the collider body (anchored to the animated bone/pivot), so it
-# travels WITH the member during animation. Each line follows its own sub-toggle.
+# Draws the member tooltip STACK (TYPE / Name / ID / Membro) over each member collider, com o
+# mesmo conteúdo/cor (ciano) do debug_overlay.gd, mas cada linha gated pelo SEU toggle da cena
+# Models (Rótulos/Tipo/Nome/ID) — não há mais leitura do Debug 3D global. O preview é exempt do
+# overlay global (exempt_member_labels), então o browser é dono desses tooltips aqui — onde tem
+# os overrides por personagem (cabeça/tronco) que o classificador global não tem. Cada label é
+# filho do corpo do collider (ancorado ao osso/pivô animado), então acompanha o membro.
 func _add_member_labels(instance: Node) -> void:
 	# TYPE/Name/ID describe the owning Skeleton3D (like the global overlay); fall back to the
 	# preview root for rigs without a skeleton (criatura).
@@ -1269,7 +1557,6 @@ func _add_member_labels(instance: Node) -> void:
 	var skels: Array = instance.find_children("*", "Skeleton3D", true, false)
 	if not skels.is_empty():
 		owner_node = skels[0]
-	var cfg := Settings.config_file
 	for node in instance.find_children("*", "StaticBody3D", true, false):
 		var body := node as StaticBody3D
 		if not body.has_meta("member_label"):
@@ -1282,15 +1569,16 @@ func _add_member_labels(instance: Node) -> void:
 			continue
 		# Member centre in the body's local space (the shape carries the offset).
 		var center: Vector3 = (shapes[0] as CollisionShape3D).position
-		# Same lines/order/offsets as the global overlay; each gated by its sub-toggle.
+		# Cada linha: nome (p/ recriar in-place), visibilidade pelo toggle local, e offset Y.
 		var lines := [
-			{"cfg": "show_type_3d", "text": "TYPE: %s" % owner_node.get_class(), "y": 0.18},
-			{"cfg": "show_name_3d", "text": "Name: %s" % owner_node.name, "y": 0.12},
-			{"cfg": "show_id_3d", "text": "ID: %d" % owner_node.get_instance_id(), "y": 0.06},
-			{"cfg": "show_members", "text": "Membro: %s" % text, "y": 0.0},
+			{"id": "Type", "on": _show_type, "text": "TYPE: %s" % owner_node.get_class(), "y": 0.18},
+			{"id": "Name", "on": _show_name, "text": "Name: %s" % owner_node.name, "y": 0.12},
+			{"id": "Id", "on": _show_id, "text": "ID: %d" % owner_node.get_instance_id(), "y": 0.06},
+			{"id": "Member", "on": _show_member_labels, "text": "Membro: %s" % text, "y": 0.0},
 		]
 		for line in lines:
 			var lbl := Label3D.new()
+			lbl.name = _LABEL_PREFIX + str(line["id"])
 			lbl.text = str(line["text"])
 			lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 			lbl.no_depth_test = true
@@ -1300,7 +1588,7 @@ func _add_member_labels(instance: Node) -> void:
 			lbl.modulate = Color(0.6, 1.0, 1.0)
 			lbl.outline_size = 4
 			lbl.outline_modulate = Color(0, 0, 0, 0.8)
-			lbl.visible = cfg.get_value("game", str(line["cfg"]), false)
+			lbl.visible = bool(line["on"])
 			body.add_child(lbl)
 			lbl.position = center + Vector3(0.0, 0.12 + float(line["y"]), 0.0)
 
@@ -1320,12 +1608,16 @@ const _MODEL_TORSO_BONES := {
 	"red_robot": ["Bone.001"],
 }
 
-# Per-character STANDALONE part bone(s): protruding plates that get their OWN box collider
-# (the limb capsule wouldn't wrap them) instead of being merged into a member. Mirrors
-# red_robot.gd — its rear leg guard plates ("...RearLegGuard").
-const _MODEL_STANDALONE_BONES := {
-	"red_robot": ["L-RearLegGuard", "R-RearLegGuard"],
+# Per-character body PLAN (mirrors the @export body_type the gameplay sets, which the
+# stripped preview can't read). Drives the member classifier. Default "biped".
+const _MODEL_BODY_TYPE := {
+	"red_robot": "biped",
+	"player": "biped",
 }
+
+# Sub-membros (placas salientes etc.) NÃO ficam mais numa tabela aqui: vêm de LimbConfig
+# (res://data/limb_config.json, por model_key), editáveis na tela — o preview os recebe ao
+# setar lc.model_key. Ver _add_member_colliders.
 
 
 # Build best-fit colliders that wrap each body MEMBER (sphere head, box torso,
@@ -1337,11 +1629,12 @@ func _add_member_colliders(instance: Node) -> void:
 	var skels: Array = instance.find_children("*", "Skeleton3D", true, false)
 	if not skels.is_empty():
 		var lc := LimbColliders.new()
+		lc.body_type = _body_type_for_current()   # plano corporal → classificador
+		lc.model_key = _current_model_key()        # sub-membros + dano de LimbConfig
 		lc.hitbox_layer = 64        # own layer — does not touch damage layers (16/32)
 		lc.padding = 0.04           # tight gap around the mesh (hugs the body)
 		lc.head_bone_names = _head_bones_for_current()
 		lc.torso_bone_names = _torso_bones_for_current()
-		lc.standalone_part_bones = _standalone_bones_for_current()
 		instance.add_child(lc)
 		lc.build_for(skels[0] as Skeleton3D)
 		return
@@ -1354,10 +1647,6 @@ func _head_bones_for_current() -> Array[String]:
 
 func _torso_bones_for_current() -> Array[String]:
 	return _model_bones_for_current(_MODEL_TORSO_BONES)
-
-
-func _standalone_bones_for_current() -> Array[String]:
-	return _model_bones_for_current(_MODEL_STANDALONE_BONES)
 
 
 func _model_bones_for_current(table: Dictionary) -> Array[String]:
@@ -1387,16 +1676,19 @@ func _current_category_key() -> String:
 # (and its tooltip) MOVES WITH THE ANIMATION instead of staying behind.
 func _add_mesh_member_colliders(instance: Node) -> void:
 	var is_weapon := _current_category_key() == "weapons"
+	# Personagens usam o classificador do plano (instância — BodyParts não é polimórfico
+	# via estático); armas seguem o WeaponParts estático.
+	var classifier := _current_classifier()
 	var members: Dictionary = {}   # group -> {"label": String, "nodes": Array}
 	for node in instance.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.mesh == null or not mi.is_visible_in_tree():
 			continue
-		var g := WeaponParts.group_of(mi.name) if is_weapon else BodyParts.group_of(mi.name)
+		var g := WeaponParts.group_of(mi.name) if is_weapon else classifier.group_of(mi.name)
 		if g == "":
 			continue
 		if not members.has(g):
-			var lab: String = WeaponParts.label_of(g) if is_weapon else BodyParts.label_of(g)
+			var lab: String = WeaponParts.label_of(g) if is_weapon else classifier.label_of(g)
 			members[g] = {"label": lab, "nodes": []}
 		members[g]["nodes"].append(mi)
 
@@ -1421,6 +1713,9 @@ func _add_mesh_member_colliders(instance: Node) -> void:
 		body.name = "Collider_%s" % g
 		body.collision_layer = 64
 		body.collision_mask = 0
+		# "group" espelha o que LimbColliders carimba no caminho com esqueleto, para o
+		# editor de dano por membro também listar rigs sem Skeleton3D (criatura).
+		body.set_meta("group", g)
 		body.set_meta("member_label", members[g]["label"])
 		if is_weapon:
 			# Barrel → capsule along its length; receiver/grip/stock/mag → box.

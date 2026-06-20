@@ -29,11 +29,18 @@ em terceira pessoa. Em alto nível, oferece:
   enquanto continua olhando/mirando e atirando.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
-- **Dano localizado** — colliders 3D nativos por membro (cabeça, tronco, braços, pernas)
-  dimensionados pela malha de cada personagem, então acertos em partes diferentes causam dano
-  diferente (headshots causam dano extra). Os tiros atravessam o collider de corpo genérico e
-  acertam os colliders de membro. Peças salientes ganham um collider PRÓPRIO em caixa (ex.: as
-  **placas traseiras das pernas** do Red Robot, que a cápsula da perna não cobriria).
+- **Dano localizado** — colliders 3D nativos por membro dimensionados pela malha de cada
+  personagem, então acertos em partes diferentes causam dano diferente (headshots causam dano
+  extra). Os membros vêm do **plano corporal** do modelo, escolhido por um `body_type`
+  (**bípede** = cabeça/tronco/2 braços/2 pernas — o padrão; **quadrúpede** = cabeça/tronco/4
+  pernas; **rastejante** = só cabeça/tronco), classificados pela hierarquia `BodyParts` via a
+  factory `BodyPlans`. Os tiros atravessam o collider de corpo genérico e acertam os colliders de
+  membro. **Sub-membros** — peças salientes que ganham um collider PRÓPRIO em caixa (ex.: as
+  **placas traseiras das pernas** do Red Robot, que a cápsula da perna não cobriria) — agora são
+  **editáveis na tela Models** (adicionar/remover + um bônus % cada), não mais hardcoded. O
+  multiplicador por membro é **por modelo e editável na tela Models** (painel "Dano por membro"
+  com um campo de bônus % por membro), salvo em `data/limb_config.json` e lido em runtime via
+  `LimbConfig`; o multiplicador default vem do plano corporal (cabeça +50%, resto ×1).
 - **Tiro reutilizável** — o disparo de bala de canhão e o de laser hitscan foram isolados em
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
   modelo pode usar; player e Red Robot disparam via `CannonShooter`.
@@ -43,10 +50,14 @@ em terceira pessoa. Em alto nível, oferece:
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
   toggle cobre — partículas, luzes, malhas de laser/clarão presas a ossos), **Áudio** (todo som que
-  o modelo emite — movimento, motor, tiros, explosões, vozes) e colliders. Cada toggle é o
-  interruptor mestre da sua categoria (nenhum som/animação toca enquanto o toggle estiver desligado,
-  inclusive som disparado por trilhas de animação) e os estados dos toggles são persistidos entre
-  visitas. Uma animação só roda quando **o toggle está ligado E um clip está escolhido** no dropdown
+  o modelo emite — movimento, motor, tiros, explosões, vozes), colliders, **rótulos de membro**
+  (toggle próprio do browser para as tags "Membro: …" sobre cada collider, independente da tela
+  Debug 3D) e **dano por membro** (painel para editar o bônus % de dano de cada membro, para
+  personagens, com uma subseção **Sub-membros** para adicionar/remover colliders salientes
+  `PART_*` e ajustar o bônus % de cada um). Cada toggle é o interruptor mestre da sua categoria (nenhum som/animação toca
+  enquanto o toggle estiver desligado, inclusive som disparado por trilhas de animação) e os estados
+  dos toggles são persistidos entre visitas (exceto o painel de dano, que abre fechado). Uma
+  animação só roda quando **o toggle está ligado E um clip está escolhido** no dropdown
   "Animação" (não há mais auto-play de um clip padrão). Os dropdowns de "Animação" e "Efeitos
   Especiais" aparecem só na visão montada "Modelo completo". "Efeitos Especiais" lista, após
   "Selecione…", a opção **"Todos"** e exibe efeitos de todos os tipos que existirem (luzes/
@@ -59,10 +70,11 @@ em terceira pessoa. Em alto nível, oferece:
   abaixo) ficam desabilitados. A navegação é guiada apenas pelo gating sequencial dos dropdowns
   (sem linha de status). Arraste para girar o modelo à mão em
   até 180° nos dois eixos. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
-  o modelo nem altera a câmera/rotação. Para Personagens e Armas, a **pilha de tooltips do Debug 3D**
-  (TYPE/Name/ID/Membro, em ciano) flutua sobre o collider de cada membro — os **mesmos tooltips** das
-  fases, controlados pelas mesmas sub-chaves da coluna **Debug 3D** (tela developer): cada linha
-  aparece conforme `Type`/`Name`/`Id`/`Membros`. Personagens com skin são enquadrados/centralizados
+  o modelo nem altera a câmera/rotação. Para Personagens e Armas, uma **pilha de tooltips de membro**
+  (TYPE/Name/ID/Membro, em ciano) flutua sobre o collider de cada membro, controlada pelos toggles
+  **próprios** da tela Models (Rótulos + checkboxes Tipo/Nome/ID) — a cena Models está **totalmente
+  desacoplada** do overlay de **Debug 3D** global (seu nó raiz está no grupo `no_debug_overlay`),
+  então Debug 2D/3D só afetam os **levels do jogo**. Personagens com skin são enquadrados/centralizados
   pelos colliders posados para girarem no lugar em vez de derivar.
 - **HUD cyberpunk & widgets 2D** — um conjunto de controles de UI reutilizáveis (HUD, minimapa,
   vitais, mira, menu de pausa, scanlines e mais).
@@ -240,8 +252,11 @@ reutilizáveis em `library3D/`:
   `structures`, `weapons`, mais as pastas de apoio `geometry` e `textures`. Novas pastas de modelos
   colocadas aqui aparecem automaticamente no visualizador Models.
 - `effects_shared/` — helpers compartilhados entre personagens: `limb_colliders.gd` (colliders
-  nativos por membro para dano localizado), `body_parts.gd` (classificação osso → membro) e assets
-  de blast/sombra compartilhados.
+  nativos por membro para dano localizado), `limb_config.gd` (`LimbConfig` — store dos
+  multiplicadores de dano por modelo + sub-membros, `data/limb_config.json`), a **hierarquia de
+  planos corporais** `body_parts.gd` (base `BodyParts` + subclasses
+  `body_parts_biped/quadruped/crawler.gd`, classificação osso → membro) e `body_plans.gd` (factory
+  `BodyPlans`), e assets de blast/sombra compartilhados.
 - `autoload/` — singletons globais: `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`,
   `locale.gd`, `system_health.gd`. O `Settings` fica em `scenes2D/settings/config.gd`.
 - `<cena>/Resources/*.pt.json` + `*.en.json` — dicionários de idioma da UI por cena, varridos e
@@ -303,6 +318,32 @@ ZIMARO/
 ├─ screenshots/          # imagens de preview capturadas
 └─ project.godot · default_bus_layout.tres · file_format.sh   # config do projeto · buses de áudio · formatador
 ```
+
+## Blocos nativos do Godot
+
+Tudo no jogo é construído com **nós e recursos NATIVOS do Godot** — não há nó custom em
+C++/GDExtension. As únicas abstrações próprias são helpers `RefCounted` de lógica pura, **sem nó**
+(`BodyParts` e suas subclasses de plano corporal + a factory `BodyPlans`, `WeaponParts`,
+`LimbConfig`, `LaserShooter`, `CannonShooter`), que apenas orquestram nós nativos. Por subsistema:
+
+- **Física & colisão:** `StaticBody3D`, `CharacterBody3D`, `RigidBody3D`, `Area3D`,
+  `CollisionShape3D` (e `BoxShape3D`/`CapsuleShape3D`/`SphereShape3D`/`CylinderShape3D`), `RayCast3D`.
+- **Malhas & geometria:** `MeshInstance3D`, `ArrayMesh` e primitivas (`BoxMesh`, `CylinderMesh`,
+  `SphereMesh`, `PrismMesh`…).
+- **Esqueleto & animação:** `Skeleton3D`, `BoneAttachment3D`, `Skin`, `AnimationPlayer`,
+  `AnimationTree`, `SkeletonModifier3D`.
+- **Câmera, luz & ambiente:** `Camera3D`, `SpringArm3D`, `Marker3D`, `DirectionalLight3D`/
+  `OmniLight3D`/`SpotLight3D`, `WorldEnvironment`, `Sky`.
+- **Partículas & materiais:** `CPUParticles3D`, `GPUParticles3D`, `StandardMaterial3D`, `ShaderMaterial`.
+- **Áudio:** `AudioStreamPlayer3D`, `AudioStreamPlayer`, `AudioStream`/`AudioStreamWAV`,
+  `AudioStreamRandomizer`.
+- **Rede:** `MultiplayerSynchronizer`, `MultiplayerSpawner`, `SceneReplicationConfig`.
+- **UI 2D (árvore `Control`):** `Button`, `Label`, containers, `OptionButton`, `ProgressBar`,
+  `CanvasLayer`, `Theme`.
+
+O sistema de hitboxes por membro é o exemplo canônico: `limb_colliders.gd` é um `Node3D` comum que
+**monta** `StaticBody3D` + `CollisionShape3D` + `BoneAttachment3D` nativos. A nota do Obsidian
+[`recursos-nativos-godot`](OBSIDIAN/CLAUDE/sistemas/recursos-nativos-godot.md) traz o inventário completo.
 
 ## Controles
 

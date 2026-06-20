@@ -119,6 +119,8 @@ func _setup_limb_colliders() -> void:
 		return
 	var lc = preload("res://effects_shared/limb_colliders.gd").new()
 	lc.name = "LimbColliders"
+	lc.body_type = "biped"      # plano corporal → classificador de membros
+	lc.model_key = "red_robot"  # busca os multiplicadores de dano e os sub-membros em LimbConfig
 	lc.hitbox_layer = 32        # bit6 = colliders de membro do enemy
 	# A CABEÇA cobre o painel do rosto ("mouth_eyes") + os olhos ("L-EYE"/"R-EYE"). Sem os
 	# olhos (excluídos pela palavra "eye") a cabeça ficaria minúscula (~42 vértices só do
@@ -127,10 +129,8 @@ func _setup_limb_colliders() -> void:
 	# O corpo do red_robot é o osso genérico "Bone.001", que o classificador não
 	# reconhece — sem isto ele ficaria sem collider de TRONCO (só a cabeça).
 	lc.torso_bone_names = (["Bone.001"] as Array[String])
-	# As placas traseiras das pernas ("...RearLegGuard") ficam SALIENTES atrás da perna; a
-	# cápsula da PERNA não as cobre. Dá a CADA placa um collider PRÓPRIO (caixa) ajustado a
-	# ela, para que as placas das pernas sejam atingíveis (e rotuladas) por conta própria.
-	lc.standalone_part_bones = (["L-RearLegGuard", "R-RearLegGuard"] as Array[String])
+	# Os sub-membros (placas traseiras das pernas "L-/R-RearLegGuard") agora vêm de
+	# LimbConfig (res://data/limb_config.json) — editáveis na tela Models. Ver build_for.
 	add_child(lc)
 	lc.build_for(skel)
 

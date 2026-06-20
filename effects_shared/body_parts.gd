@@ -1,27 +1,28 @@
 class_name BodyParts
 extends RefCounted
-## Classificação de ossos em MEMBROS (CABEÇA, TRONCO, BRAÇO E/D, PERNA E/D).
-## Compartilhado pelos colliders de membro (limb_colliders.gd) e pelo overlay de
-## debug 3D (debug_overlay.gd), para que ambos usem o MESMO mapeamento.
+## BASE dos PLANOS CORPORAIS. Classifica ossos em MEMBROS; cada plano (bípede,
+## quadrúpede, rastejante) é uma SUBCLASSE que acrescenta os membros que o diferenciam.
+## A base define o que é universal — CABEÇA e TRONCO — e o pipeline comum (exclusões,
+## bones forçados, defaults de dano). As subclasses sobrescrevem os métodos virtuais
+## (`group_of`, `members`, `label_of`, `default_sub_members`) e caem na base via `super`.
+##
+## Use SEMPRE uma INSTÂNCIA (via [[BodyPlans]].for_type / .default) — os métodos são
+## virtuais e `BodyParts.group_of(...)` estático NÃO é polimórfico. Compartilhado pelos
+## colliders de membro (limb_colliders.gd) e pelo overlay de debug 3D (debug_overlay.gd).
 
 const HEAD := "HEAD"
 const TORSO := "TORSO"
-const ARM_L := "ARM_L"
-const ARM_R := "ARM_R"
-const LEG_L := "LEG_L"
-const LEG_R := "LEG_R"
 
-const LABELS := {
+## Rótulos dos membros universais. Cada subclasse tem seu próprio `_labels()` que é
+## mesclado com este (ver `label_of`).
+const BASE_LABELS := {
 	"HEAD": "CABEÇA",
 	"TORSO": "TRONCO",
-	"ARM_L": "BRAÇO E",
-	"ARM_R": "BRAÇO D",
-	"LEG_L": "PERNA E",
-	"LEG_R": "PERNA D",
 }
 
-## Ossos auxiliares/mecânicos que NÃO devem virar membro (IK, controladores,
-## placas, pistões, etc.).
+## Ossos auxiliares/mecânicos que NÃO viram membro principal (IK, controladores,
+## placas, pistões, etc.). Podem, porém, ser PROMOVIDOS a sub-membro por modelo
+## (ver standalone_part_bones em limb_colliders.gd e a tela Models).
 const EXCLUDE_KEYWORDS: Array[String] = [
 	"ik", "scaler", "piston", "pad", "cover", "guard", "cable", "flap",
 	"dongle", "sight", "mod", "slider", "rotator", "orient", "control",
@@ -30,56 +31,7 @@ const EXCLUDE_KEYWORDS: Array[String] = [
 ]
 
 
-## Retorna o grupo de membro de um osso, ou "" se não pertencer a nenhum.
-## `head_bones` força certos nomes para CABEÇA e `torso_bones` para TRONCO
-## (ambos ignoram as exclusões) — usados por personagens cujo osso principal tem
-## nome genérico (ex.: red_robot, cujo corpo é o osso "Bone.001").
-static func group_of(bone_name: String, head_bones: Array = [], torso_bones: Array = [], leg_bones: Array = []) -> String:
-	var n := bone_name.to_lower()
-	for h in head_bones:
-		if n == String(h).to_lower():
-			return HEAD
-	for t in torso_bones:
-		if n == String(t).to_lower():
-			return TORSO
-	# Forced LEG bones (ignore exclusions): for leg parts the classifier would otherwise
-	# drop, e.g. red_robot's "L-RearLegGuard"/"R-RearLegGuard" plates (excluded by "guard").
-	# Side is taken from the bone name (L-/R-).
-	for l in leg_bones:
-		if n == String(l).to_lower():
-			match side_of(bone_name):
-				"L": return LEG_L
-				"R": return LEG_R
-				_: return ""
-	for ex in EXCLUDE_KEYWORDS:
-		if n.contains(ex):
-			return ""
-
-	if n.contains("head") or n.contains("neck"):
-		return HEAD
-	if n.contains("hips") or n.contains("pelvis") or n.contains("spine") \
-			or n.contains("chest") or n.contains("torso") or n.contains("body"):
-		return TORSO
-
-	var side := side_of(bone_name)
-	# "wing" conta como BRAÇO: nas criaturas aladas (criatura_alada, robot_*_alado)
-	# as asas são os apêndices superiores e devem receber collider de membro.
-	if n.contains("shoulder") or n.contains("arm") or n.contains("hand") or n.contains("wing"):
-		if side == "":
-			return ""
-		return ARM_L if side == "L" else ARM_R
-	if n.contains("thigh") or n.contains("shin") or n.contains("calf") \
-			or n.contains("knee") or n.contains("foot") or n.contains("leg"):
-		if side == "":
-			return ""
-		return LEG_L if side == "L" else LEG_R
-	return ""
-
-
-## Nome legível do membro (CABEÇA, BRAÇO D, …) ou "" se desconhecido.
-static func label_of(group: String) -> String:
-	return LABELS.get(group, "")
-
+# ── Estáticos universais (independem do plano) ────────────────────────────────
 
 ## Detecta o lado (L/R) pelo padrão do nome do osso/malha; "" se indefinido.
 ## Aceita prefixo "L-/R-", sufixos ".l/_l/ l" e o sufixo em MAIÚSCULA "…L/…R"
@@ -92,4 +44,83 @@ static func side_of(raw_name: String) -> String:
 	if n.begins_with("r-") or n.ends_with(".r") or n.contains(".r.") \
 			or n.ends_with("_r") or n.ends_with(" r") or raw_name.ends_with("R"):
 		return "R"
+	# Palavra "left/right" (e PT esquerd/direit) em qualquer posição — para nomes como
+	# "front_left_thigh"/"RearRightShin" dos quadrúpedes. Fallback após os sufixos acima.
+	if n.contains("left") or n.contains("esquerd"):
+		return "L"
+	if n.contains("right") or n.contains("direit"):
+		return "R"
 	return ""
+
+
+## Detecta dianteira/traseira (F/R) num nome de osso de quadrúpede; "" se indefinido.
+## Usado por BodyPartsQuadruped para separar as 4 pernas. Aceita PT e EN.
+static func front_rear_of(raw_name: String) -> String:
+	var n := raw_name.to_lower()
+	if n.contains("front") or n.contains("fore") or n.contains("dianteir") or n.contains("frente"):
+		return "F"
+	if n.contains("rear") or n.contains("hind") or n.contains("back") or n.contains("traseir") \
+			or n.contains("tras"):
+		return "R"
+	return ""
+
+
+# ── Virtuais (a base trata só CABEÇA/TRONCO; subclasses estendem) ─────────────
+
+## Grupos principais que este plano define (para a tela listar/rotular). Base: cabeça+tronco.
+func members() -> Array[String]:
+	return [HEAD, TORSO]
+
+
+## Rótulos deste plano (subclasse + base). Sobrescreva `_labels()` na subclasse.
+func _labels() -> Dictionary:
+	return BASE_LABELS
+
+
+## Sub-membros padrão do plano (ossos salientes com collider próprio). Base: nenhum.
+func default_sub_members() -> Array[String]:
+	return []
+
+
+## Multiplicador de dano padrão de um grupo: cabeça +50%, resto 1.0. Pode ser
+## sobrescrito por plano (ex.: um corpo sem cabeça).
+func default_multiplier(group: String) -> float:
+	return 1.5 if group == HEAD else 1.0
+
+
+## Nome legível do membro (CABEÇA, TRONCO, …) ou "" se desconhecido neste plano.
+func label_of(group: String) -> String:
+	return _labels().get(group, "")
+
+
+## Retorna o grupo de membro de um osso, ou "" se não pertencer a nenhum.
+## `head_bones` força certos nomes para CABEÇA e `torso_bones` para TRONCO (ambos
+## ignoram as exclusões) — para personagens cujo osso principal tem nome genérico
+## (ex.: red_robot, cujo corpo é o osso "Bone.001"). `leg_bones` é usado pelas
+## subclasses com pernas (ignorado aqui na base).
+func group_of(bone_name: String, head_bones: Array = [], torso_bones: Array = [], _leg_bones: Array = []) -> String:
+	var n := bone_name.to_lower()
+	for h in head_bones:
+		if n == String(h).to_lower():
+			return HEAD
+	for t in torso_bones:
+		if n == String(t).to_lower():
+			return TORSO
+	if _is_excluded(n):
+		return ""
+	if n.contains("head") or n.contains("neck"):
+		return HEAD
+	if n.contains("hips") or n.contains("pelvis") or n.contains("spine") \
+			or n.contains("chest") or n.contains("torso") or n.contains("body"):
+		return TORSO
+	return ""
+
+
+# ── Auxiliares para as subclasses ─────────────────────────────────────────────
+
+## True se o nome (já em minúsculas) contém uma palavra de exclusão.
+func _is_excluded(lower_name: String) -> bool:
+	for ex in EXCLUDE_KEYWORDS:
+		if lower_name.contains(ex):
+			return true
+	return false

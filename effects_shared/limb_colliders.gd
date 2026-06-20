@@ -9,19 +9,28 @@ extends Node3D
 ## então acompanha a pose/animação. Cada StaticBody3D carrega o multiplicador de
 ## DANO LOCALIZADO (cabeça = +50%) e uma referência ao personagem dono, em metas.
 ## Os projéteis colidem fisicamente com esses corpos (move_and_collide) e o laser
-## do inimigo os atinge por raycast contra CORPOS — não há mais Area3D nem visual.
+## do inimigo os atinge por raycast contra CORPOS. São StaticBody3D PASSIVOS
+## (collision_mask=0): só geometria de colisão, sem Area3D de detecção e sem
+## malha visual.
+##
+## Os MEMBROS de cada modelo vêm do seu PLANO CORPORAL (body_type): bípede tem
+## CABEÇA/TRONCO/BRAÇO/PERNA, quadrúpede tem 4 PERNAS, rastejante só CABEÇA/TRONCO
+## (ver [[BodyPlans]]/[[BodyParts]]). O multiplicador de DANO de cada membro vem de
+## LimbConfig (lido por model_key), com fallback para o default do plano.
 
-const HEAD_MULTIPLIER := 1.5
-const BODY_MULTIPLIER := 1.0
-
-# Prefixo de "grupo" interno para uma peça com collider próprio (standalone_part_bones).
+# Prefixo de "grupo" interno para uma peça com collider próprio (sub-membro).
 # Cada peça vira um grupo único "PART_<osso>", reaproveitando todo o pipeline de membros.
 # Sem ":" no prefixo: nomes de nó do Godot não aceitam ":".
 const _PART_PREFIX := "PART_"
 
 @export var enabled: bool = true
+## Plano corporal do modelo — escolhe o classificador de membros (ver BodyPlans).
+@export_enum("biped", "quadruped", "crawler") var body_type: String = "biped"
 ## Margem (m) somada a cada lado da caixa, para folga sobre a superfície.
 @export var padding: float = 0.03
+## Chave do modelo (nome da pasta, ex.: "red_robot"/"player") para buscar os
+## multiplicadores de dano e os sub-membros em LimbConfig. Vazio → usa os defaults do plano.
+@export var model_key: String = ""
 
 @export_group("Mapeamento de Bones")
 ## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
@@ -48,16 +57,31 @@ const _PART_PREFIX := "PART_"
 var _character: Node = null
 ## Todos os StaticBody3D criados (para o atirador excluir os próprios da colisão).
 var _bodies: Array[StaticBody3D] = []
+## Classificador do plano corporal (resolvido em build_for por body_type).
+var _classifier: BodyParts = null
+## Sub-membros efetivos = export ∪ LimbConfig(model_key) ∪ default do plano (em minúsculas).
+var _sub_member_set: Dictionary = {}
 
 
 func build_for(skel: Skeleton3D) -> void:
 	if not enabled or skel == null:
 		return
 	_character = get_parent()
+	_classifier = BodyPlans.for_type(body_type)
+	_resolve_sub_members()
 	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
 	var members := _collect_member_boxes(skel)
 	for group in members:
 		_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"])
+
+
+# Junta os sub-membros das 3 fontes (export do nó, config por modelo, default do plano)
+# num set em minúsculas para o _classify reconhecê-los independentemente de origem.
+func _resolve_sub_members() -> void:
+	_sub_member_set = {}
+	for src in [standalone_part_bones, LimbConfig.sub_members(model_key), _classifier.default_sub_members()]:
+		for b in src:
+			_sub_member_set[String(b).to_lower()] = true
 
 
 ## Lista os StaticBody3D dos membros (usada para excluir os próprios colliders da
@@ -72,10 +96,9 @@ func get_limb_bodies() -> Array[StaticBody3D]:
 # osso está em standalone_part_bones (peça com collider próprio). Intercepta ANTES do
 # classificador normal, então a peça nunca é absorvida pelo membro vizinho.
 func _classify(bone_name: String) -> String:
-	for p in standalone_part_bones:
-		if bone_name.to_lower() == String(p).to_lower():
-			return _PART_PREFIX + bone_name
-	return BodyParts.group_of(bone_name, head_bone_names, torso_bone_names, leg_bone_names)
+	if _sub_member_set.has(bone_name.to_lower()):
+		return _PART_PREFIX + bone_name
+	return _classifier.group_of(bone_name, head_bone_names, torso_bone_names, leg_bone_names)
 
 
 # Rótulo legível de uma peça standalone (a partir do nome do osso). Placas de perna viram
@@ -217,9 +240,9 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	body.name = "Collider_%s" % group
 	body.collision_layer = hitbox_layer
 	body.collision_mask = 0   # passivo: é atingido, não detecta nada
-	var mult: float = HEAD_MULTIPLIER if group == BodyParts.HEAD else BODY_MULTIPLIER
-	# Peças standalone (PART_*) usam o rótulo derivado do osso; membros normais, o de BodyParts.
-	var label: String = _part_label(skel.get_bone_name(bone_idx)) if group.begins_with(_PART_PREFIX) else BodyParts.label_of(group)
+	var mult: float = LimbConfig.get_multiplier(model_key, group, _classifier)
+	# Peças standalone (PART_*) usam o rótulo derivado do osso; membros normais, o do plano.
+	var label: String = _part_label(skel.get_bone_name(bone_idx)) if group.begins_with(_PART_PREFIX) else _classifier.label_of(group)
 	body.set_meta("group", group)
 	body.set_meta("damage_multiplier", mult)
 	body.set_meta("member_label", label)

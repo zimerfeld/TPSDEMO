@@ -21,12 +21,20 @@
 
 `effects_shared/limb_colliders.gd` classifica ossos em grupos e cria **um `StaticBody3D` por membro** (ajustado aos vértices skinados, AABB no espaço do osso-raiz), com metas `group` + `damage_multiplier`. A forma é escolhida por `make_member_shape()`:
 
-| Grupo | Forma | Multiplicador |
+A tabela abaixo é a do plano **bípede** (o default — ver **Hierarquia de planos corporais**
+abaixo); os multiplicadores são os **defaults do PLANO** (`BodyParts.default_multiplier`).
+
+| Grupo | Forma | Multiplicador (default do plano) |
 |---|---|---|
 | **CABEÇA** (head/neck) | `SphereShape3D` | `1.5` (+50%) |
 | **TRONCO** (hips/spine/chest/body) | `BoxShape3D` | `1.0` |
 | **BRAÇO D/E** (shoulder/arm/forearm/hand/**wing** + lado) | `CapsuleShape3D` (eixo longo) | `1.0` |
 | **PERNA D/E** (thigh/shin/knee/foot/leg + lado) | `CapsuleShape3D` (eixo longo) | `1.0` |
+
+> Os multiplicadores acima são **defaults do plano corporal** (cabeça +50%, resto 1.0). Desde
+> 2026-06-20 cada modelo pode ter um multiplicador PRÓPRIO por membro, editável na tela Models e
+> persistido em `res://data/limb_config.json` (ver **Multiplicadores editáveis por modelo** abaixo).
+> Os MEMBROS em si dependem do `body_type` do modelo (bípede/quadrúpede/rastejante).
 
 Lado detectado por sufixo `.L/.R` (player) ou prefixo `L-/R-` (enemy). `wing` conta
 como BRAÇO (criaturas aladas: criatura_alada, robot_*_alado).
@@ -46,6 +54,101 @@ corpo: `CROSS_SHRINK = 0.82` (raio/largura/profundidade), `LENGTH_SHRINK = 0.95`
 (eixo longo) e `LIMB_RADIUS_RATIO = 0.32` (teto do raio da cápsula como fração do
 comprimento, garantindo que um membro de AABB quase cúbico — ex.: o braço direito do
 player, que segura a arma — ainda leia como **cápsula** e não como bola).
+
+---
+
+## Hierarquia de planos corporais (2026-06-20)
+
+Os MEMBROS de cada modelo vêm do seu **PLANO CORPORAL**. `effects_shared/body_parts.gd`
+(`class_name BodyParts`) deixou de ser uma classe só-estática e virou uma **BASE instanciável
+com métodos VIRTUAIS** — porque `BodyParts.group_of(...)` **estático NÃO é polimórfico** no
+GDScript. **Use sempre uma INSTÂNCIA** (via `BodyPlans.for_type`/`.default`). Ver
+[[arquivos-chave/body-parts-gd]] para a nota dedicada.
+
+- **`BodyParts` (base)** — constantes universais `HEAD`/`TORSO` + `BASE_LABELS` (CABEÇA/TRONCO) +
+  `EXCLUDE_KEYWORDS`. **Estáticos universais** (independem do plano): `side_of(name)` (L/R; detecta
+  prefixo/sufixo `L-/R-`, `.l/_l`, `…L/…R` e as palavras `left`/`right`/`esquerd`/`direit`) e
+  `front_rear_of(name)` (F/R: front/fore/dianteira vs rear/hind/back/traseira). **Virtuais de
+  instância**: `members()`, `group_of(bone, head_bones, torso_bones, leg_bones)`, `label_of(group)`,
+  `default_multiplier(group)` (cabeça 1.5, resto 1.0) e `default_sub_members()`.
+- **`BodyPartsBiped`** (`extends BodyParts`) — acrescenta `ARM_L/ARM_R/LEG_L/LEG_R` (BRAÇO E/D,
+  PERNA E/D). É o **DEFAULT**. `wing` conta como BRAÇO (criaturas aladas).
+- **`BodyPartsQuadruped`** — acrescenta `LEG_FL/LEG_FR/LEG_RL/LEG_RR` (PERNA DIANT E/D, PERNA TRAS
+  E/D), **sem braços**; usa `front_rear_of` + `side_of` p/ separar as 4 pernas.
+- **`BodyPartsCrawler`** (cobra/lesma/verme) — **só herda**: apenas CABEÇA/TRONCO (corpo alongado =
+  TRONCO). Ponto de extensão futuro.
+- **`BodyPlans` (factory)** — `effects_shared/body_plans.gd`. `BodyPlans.for_type(body_type) ->
+  BodyParts` (match: `quadruped`/`crawler`/`_ => biped`) e `BodyPlans.default()` (bípede). `const
+  TYPES = ["biped","quadruped","crawler"]`. **Isolada** das classes p/ evitar ciclo
+  base↔subclasse (a base não referencia as subclasses).
+
+**`body_type`** — `LimbColliders` ganhou `@export_enum("biped","quadruped","crawler") var
+body_type`, que escolhe o classificador via `BodyPlans.for_type` em `build_for`. `player.gd` e
+`red_robot.gd` setam `lc.body_type = "biped"`. A tela Models espelha isso na const
+`_MODEL_BODY_TYPE := {"red_robot":"biped","player":"biped"}` (o preview remove scripts, então o
+@export não está disponível) + helpers `_body_type_for_current()`/`_current_classifier()`.
+
+O **overlay de Debug 3D** (`debug_overlay.gd._add_3d_skeleton`) agora usa `var classifier :=
+BodyPlans.default()` (instância bípede) em vez dos estáticos antigos, pois roda sobre esqueletos
+quaisquer de fase.
+
+---
+
+## Multiplicadores editáveis por modelo (2026-06-20)
+
+`effects_shared/limb_config.gd` (`class_name LimbConfig`, `RefCounted` com API estática) — antigo
+`LimbDamage` (renomeado/substituído; `limb_damage.gd` + `data/limb_damage.json` foram **removidos**)
+— guarda, **por modelo**, o multiplicador de cada membro/sub-membro **e** a lista de sub-membros, em
+**`res://data/limb_config.json`**. O schema agora é **ANINHADO**:
+
+```json
+{
+  "red_robot": {
+    "damage": { "HEAD": 2.0, "PART_L-RearLegGuard": 1.0 },
+    "sub_members": ["L-RearLegGuard", "R-RearLegGuard"]
+  }
+}
+```
+
+- Chave = **`model_key`** = nome da pasta do modelo (`"red_robot"`, `"player"`), o MESMO valor que
+  `player.gd`/`red_robot.gd` passam em `LimbColliders.model_key`. `GROUP` = chave do plano
+  (`HEAD`/`TORSO`/`ARM_L`/…/`LEG_FL`/…) ou `PART_<osso>` p/ sub-membro. Valor = **multiplicador**
+  (`1.0` = normal, `1.5` = +50%).
+- API estática: `get_multiplier(model_key, group, classifier)`, `set_multiplier(model_key, group,
+  mult)`, `sub_members(model_key)`, `add_sub_member(model_key, bone)`, `remove_sub_member(model_key,
+  bone)` (esta também apaga o `PART_<bone>` do `damage`) e `load_table`.
+- O **default NÃO está mais em LimbConfig** — vem do **PLANO**: `get_multiplier` cai em
+  `classifier.default_multiplier(group)` quando não há entrada salva. O arquivo só guarda ajustes
+  do usuário, então sem JSON o comportamento é o default do plano (zero regressão).
+- **Editor:** a tela Models tem o toggle **"Dano por membro"** que abre um painel com um `SpinBox`
+  em **bônus %** por membro (cabeça `+50%` ⇒ multiplicador `1.5`); mudar grava via
+  `LimbConfig.set_multiplier`. Só aparece para **personagem em "Modelo completo"**. Ver
+  [[sistemas/biblioteca-de-modelos]]. `res://` é gravável só rodando pelo editor; o jogo só lê.
+
+---
+
+## Sub-membros configuráveis (2026-06-20)
+
+**Sub-membros** = ossos auxiliares salientes PROMOVIDOS a collider PRÓPRIO em caixa (grupo único
+`PART_<osso>`, p/ peças que a cápsula do membro não cobriria — ex.: as **placas das pernas** do
+red_robot). Em `LimbColliders.build_for`, os sub-membros efetivos vêm da UNIÃO de **TRÊS fontes**:
+
+1. o `@export standalone_part_bones` do nó,
+2. `LimbConfig.sub_members(model_key)` (os editados na tela),
+3. `classifier.default_sub_members()` (os do plano corporal).
+
+O `red_robot.gd` **não hardcoda mais** `standalone_part_bones`: as placas (`L-RearLegGuard`/
+`R-RearLegGuard`) foram **migradas p/ `data/limb_config.json`** (seed) e são editáveis na tela. A
+tela Models removeu a const `_MODEL_STANDALONE_BONES`.
+
+**Editor (subseção "Sub-membros"):** dentro do painel "Dano por membro", lista cada sub-membro
+atual (`PART_*`) como uma linha com rótulo + `SpinBox` de bônus % + botão **× (remover)**, e uma
+linha de **adicionar** (um `OptionButton` com os ossos AUXILIARES do esqueleto do preview — os
+cujo `group_of` dá "" — + botão "Adicionar"). Adicionar/remover chama `LimbConfig.add_sub_member`/
+`remove_sub_member` e **reconstrói** os colliders do preview (`_rebuild_member_colliders` →
+`_clear_member_colliders` + `_ensure_member_colliders`), repondo gizmos/rótulos. Os membros
+principais continuam editáveis como antes; só os `PART_*` ganharam a subseção. A leitura em jogo
+(`bullet.gd`/`laser_shooter.gd` lendo a meta `damage_multiplier`) é **inalterada**.
 
 ---
 
@@ -142,13 +245,15 @@ O enemy aguarda aproximar (`shoot_countdown = 0`) enquanto o player está fora d
 
 ## Tuning no inspector (nó do personagem)
 
-Em `limb_colliders.gd` (nó `LimbColliders`): `enabled`, `padding`, `head_bone_names`
-(`["mouth_eyes", "L-EYE", "R-EYE"]` no enemy), `torso_bone_names` (força um osso de nome genérico para
-TRONCO — `["Bone.001"]` no red_robot, cujo corpo não era reconhecido e ficava **sem
-collider de tronco**), `standalone_part_bones` (peças salientes com collider PRÓPRIO em caixa —
-no red_robot as **placas das pernas** `["L-RearLegGuard", "R-RearLegGuard"]`, que a cápsula da
-perna não cobriria; viram `PLACA PERNA E/D`, multiplicador 1.0; 2026-06-18), `hitbox_layer`
-(16 player / 32 enemy). Os exports de cor/raio do antigo sistema de vidro foram removidos.
+Em `limb_colliders.gd` (nó `LimbColliders`): `enabled`, `padding`, **`body_type`**
+(`@export_enum("biped","quadruped","crawler")`, default `biped` — escolhe o plano corporal via
+`BodyPlans.for_type`; 2026-06-20), `head_bone_names` (`["mouth_eyes", "L-EYE", "R-EYE"]` no enemy),
+`torso_bone_names` (força um osso de nome genérico para TRONCO — `["Bone.001"]` no red_robot, cujo
+corpo não era reconhecido e ficava **sem collider de tronco**), `standalone_part_bones` (sub-membros
+fixos no nó — UNIDOS aos de `LimbConfig` e do plano; o red_robot **não usa mais** este export, as
+placas das pernas migraram p/ `limb_config.json`), `hitbox_layer` (16 player / 32 enemy) e
+**`model_key`** (`"player"`/`"red_robot"` — chave dos multiplicadores/sub-membros em `LimbConfig`;
+2026-06-20). Os exports de cor/raio do antigo sistema de vidro foram removidos.
 
 > Verificado via MCP do Godot ([[godot-mcp]]): laser do enemy aplica 25 (arma),
 > lookup de hitbox funcional, cache não causa mais dano no início, sem erros.
@@ -160,6 +265,7 @@ perna não cobriria; viram `PLACA PERNA E/D`, multiplicador 1.0; 2026-06-18), `h
 - [[sistemas/combate-tiro]]
 - [[sistemas/sistema-de-vida]]
 - [[arquivos-chave/limb-colliders-gd]]
+- [[arquivos-chave/body-parts-gd]]
 - [[arquivos-chave/bullet-gd]]
 - [[arquivos-chave/red-robot-gd]]
 - [[arquivos-chave/enemy-health-bar-gd]]
