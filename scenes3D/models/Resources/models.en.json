@@ -6,6 +6,8 @@
 	"Parte:": "Part:",
 	"Animação:": "Animation:",
 	"Efeitos Especiais:": "Special Effects:",
+	"Membro:": "Member:",
+	"Sub-membro:": "Sub-member:",
 	"Todos": "All",
 	"Rotação": "Rotation",
 	"Animação": "Animation",
@@ -18,5 +20,12 @@
 	"Personagens": "Characters",
 	"Propulsores": "Thrusters",
 	"Estruturas": "Structures",
-	"Armas": "Weapons"
+	"Armas": "Weapons",
+	"Dano por membro": "Per-limb damage",
+	"Dano por membro (bônus %)": "Per-limb damage (bonus %)",
+	"Adicionar sub-membro": "Add sub-member",
+	"Adicionar": "Add",
+	"Remover sub-membro": "Remove sub-member",
+	"Outros sub-membros": "Other sub-members",
+	"(sem ossos auxiliares)": "(no auxiliary bones)"
 }

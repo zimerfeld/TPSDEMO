@@ -146,6 +146,34 @@ text = "Efeitos Especiais:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
+[node name="MemberRow" type="HBoxContainer" parent="UI/Selectors"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Selectors/MemberRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Membro:"
+
+[node name="cboMembers" type="OptionButton" parent="UI/Selectors/MemberRow"]
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
+[node name="SubMemberRow" type="HBoxContainer" parent="UI/Selectors"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Selectors/SubMemberRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Sub-membro:"
+
+[node name="cboSubMembers" type="OptionButton" parent="UI/Selectors/SubMemberRow"]
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
 [node name="Toggles" type="VBoxContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 1
@@ -188,21 +216,24 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "Rótulos"
 
-[node name="LabelLinesRow" type="HBoxContainer" parent="UI/Toggles"]
+[node name="LabelLinesRow" type="VBoxContainer" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
-theme_override_constants/separation = 12
+theme_override_constants/separation = 6
 
-[node name="TypeCheck" type="CheckBox" parent="UI/Toggles/LabelLinesRow"]
+[node name="TypeCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
 layout_mode = 2
+size_flags_horizontal = 8
 text = "Tipo"
 
-[node name="NameCheck" type="CheckBox" parent="UI/Toggles/LabelLinesRow"]
+[node name="NameCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
 layout_mode = 2
+size_flags_horizontal = 8
 text = "Nome"
 
-[node name="IdCheck" type="CheckBox" parent="UI/Toggles/LabelLinesRow"]
+[node name="IdCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
 layout_mode = 2
+size_flags_horizontal = 8
 text = "ID"
 
 [node name="DamageToggle" type="CheckButton" parent="UI/Toggles"]
@@ -218,10 +249,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -215.0
-offset_top = -250.0
-offset_right = 215.0
-offset_bottom = 250.0
+offset_left = -340.0
+offset_top = -360.0
+offset_right = 340.0
+offset_bottom = 360.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -234,6 +265,7 @@ theme_override_constants/margin_bottom = 12
 
 [node name="Scroll" type="ScrollContainer" parent="UI/DamagePanel/Margin"]
 layout_mode = 2
+horizontal_scroll_mode = 0
 
 [node name="VBox" type="VBoxContainer" parent="UI/DamagePanel/Margin/Scroll"]
 layout_mode = 2
@@ -299,6 +331,25 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "English"
+
+[node name="SceneNameLabel" type="Label" parent="UI"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -100.0
+offset_right = 320.0
+offset_bottom = -50.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.65)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 13
+text = "Models"
+vertical_alignment = 1
 
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]

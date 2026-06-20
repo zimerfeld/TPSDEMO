@@ -82,6 +82,16 @@ func default_sub_members() -> Array[String]:
 	return []
 
 
+## Membro-DONO provável de uma peça/sub-membro (placa, ombreira, cover…) a partir do
+## NOME + lado, IGNORANDO as exclusões. Existe porque uma placa costuma ficar pendurada
+## noutro osso (ex.: a ombreira "shoulderpad.L" do player é filha do "chest", não do braço),
+## então subir na hierarquia a colocaria no TRONCO. O nome dela, porém, já diz a que membro
+## pertence ("shoulder" → BRAÇO). A tela Models usa isto como 1ª tentativa de dono e cai na
+## hierarquia só quando o nome não decide. Base: cabeça/tronco não têm peças laterais → "".
+func owner_hint(_bone_name: String) -> String:
+	return ""
+
+
 ## Multiplicador de dano padrão de um grupo: cabeça +50%, resto 1.0. Pode ser
 ## sobrescrito por plano (ex.: um corpo sem cabeça).
 func default_multiplier(group: String) -> float:

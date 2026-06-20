@@ -31,6 +31,10 @@ const _PART_PREFIX := "PART_"
 ## Chave do modelo (nome da pasta, ex.: "red_robot"/"player") para buscar os
 ## multiplicadores de dano e os sub-membros em LimbConfig. Vazio → usa os defaults do plano.
 @export var model_key: String = ""
+## Forma do collider da CABEÇA: "sphere" (padrão) ou "capsule". A cápsula é alinhada ao
+## eixo mais longo da cabeça (mesma orientação do osso) e mantém o raio cheio para abraçar
+## a cabeça — usada pelo player. Demais membros não são afetados.
+@export_enum("sphere", "capsule") var head_shape: String = "sphere"
 
 @export_group("Mapeamento de Bones")
 ## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
@@ -101,14 +105,40 @@ func _classify(bone_name: String) -> String:
 	return _classifier.group_of(bone_name, head_bone_names, torso_bone_names, leg_bone_names)
 
 
-# Rótulo legível de uma peça standalone (a partir do nome do osso). Placas de perna viram
-# "PLACA PERNA E/D"; demais peças usam o próprio nome do osso.
-func _part_label(bone_name: String) -> String:
-	var ln := bone_name.to_lower()
-	if ln.contains("leg") and ln.contains("guard"):
-		match BodyParts.side_of(bone_name):
-			"L": return "PLACA PERNA E"
-			"R": return "PLACA PERNA D"
+# Membro-DONO de um sub-membro (peça/placa), resolvido em camadas — compartilhado pelo rótulo
+# (_part_label) e pelo agrupamento da tela Models (_sub_member_owner_map), para os dois
+# concordarem. Ordem: (1) NOME da própria peça (owner_hint); (2) sobe na hierarquia de ossos e, em
+# CADA ancestral, tenta owner_hint (pega placas penduradas num osso AUX/IK cujo nome diz o membro,
+# ex.: "L-Shield" → pai "L-ARMIK" → BRAÇO E) e depois group_of (com os overrides head/torso/leg).
+# "" quando nada decide.
+static func resolve_sub_member_owner(skel: Skeleton3D, bone_name: String, classifier: BodyParts,
+		head: Array = [], torso: Array = [], leg: Array = []) -> String:
+	var oh := classifier.owner_hint(bone_name)
+	if oh != "":
+		return oh
+	var b := skel.find_bone(bone_name)
+	while b != -1:
+		var nm := skel.get_bone_name(b)
+		var h := classifier.owner_hint(nm)
+		if h != "":
+			return h
+		var g := classifier.group_of(nm, head, torso, leg)
+		if g != "":
+			return g
+		b = skel.get_bone_parent(b)
+	return ""
+
+
+# Rótulo legível de uma peça standalone. Quando dá pra resolver a que membro a peça pertence
+# (ombreira→BRAÇO, escudo do braço→BRAÇO, placa de perna→PERNA; via resolve_sub_member_owner,
+# plano-aware + hierarquia), vira "PLACA <MEMBRO>" (ex.: "PLACA BRAÇO E", "PLACA PERNA D"). Sem
+# dono claro, usa o próprio nome do osso.
+func _part_label(skel: Skeleton3D, bone_name: String) -> String:
+	var owner_group := resolve_sub_member_owner(skel, bone_name, _classifier, head_bone_names, torso_bone_names, leg_bone_names)
+	if owner_group != "":
+		var lab := _classifier.label_of(owner_group)
+		if lab != "":
+			return "PLACA " + lab
 	return bone_name
 
 
@@ -242,13 +272,13 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	body.collision_mask = 0   # passivo: é atingido, não detecta nada
 	var mult: float = LimbConfig.get_multiplier(model_key, group, _classifier)
 	# Peças standalone (PART_*) usam o rótulo derivado do osso; membros normais, o do plano.
-	var label: String = _part_label(skel.get_bone_name(bone_idx)) if group.begins_with(_PART_PREFIX) else _classifier.label_of(group)
+	var label: String = _part_label(skel, skel.get_bone_name(bone_idx)) if group.begins_with(_PART_PREFIX) else _classifier.label_of(group)
 	body.set_meta("group", group)
 	body.set_meta("damage_multiplier", mult)
 	body.set_meta("member_label", label)
 	body.set_meta("character", _character)
 
-	body.add_child(make_member_shape(group, box_aabb))
+	body.add_child(make_member_shape(group, box_aabb, head_shape))
 
 	att.add_child(body)
 	_bodies.append(body)
@@ -258,20 +288,25 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 # tends to float a little loose around the limb, so we pull the cross-section
 # (radius / box width+depth) in and trim the length slightly — the colliders sit
 # closer to the character without leaving the mesh poking out.
-const CROSS_SHRINK := 0.82   # width/depth and radius multiplier
+const CROSS_SHRINK := 0.72   # width/depth and radius multiplier (limbs only; head keeps full radius)
 const LENGTH_SHRINK := 0.95  # along a limb's long axis
 const LIMB_RADIUS_RATIO := 0.32  # max capsule radius as a fraction of its length
 
 
-# Pick the geometry that best wraps a member from its (padded) AABB: a SPHERE for
-# the head, a BOX for the torso, and a CAPSULE aligned to the long axis for the
-# elongated limbs (arms/legs). Returns a positioned/oriented CollisionShape3D.
-# Static so the model browser can reuse it for non-skeleton rigs (criatura).
-static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D:
-	var kind := "capsule"
+# Pick the geometry that best wraps a member from its (padded) AABB: the HEAD is a
+# SPHERE by default but a CAPSULE when `head_kind` asks for it (player), the TORSO a
+# BOX, and the elongated limbs (arms/legs) a CAPSULE aligned to the long axis.
+# Returns a positioned/oriented CollisionShape3D. Static so the model browser can reuse
+# it for non-skeleton rigs (criatura).
+static func make_member_shape(group: String, box_aabb: AABB, head_kind: String = "sphere") -> CollisionShape3D:
 	if group == BodyParts.HEAD:
-		kind = "sphere"
-	elif group == BodyParts.TORSO or group.begins_with(_PART_PREFIX):
+		# Head capsule keeps its FULL radius (cap_radius=false) so it hugs the roughly
+		# round head along its long axis, instead of pinching to a thin limb capsule.
+		if head_kind == "capsule":
+			return make_shape("capsule", box_aabb, false)
+		return make_shape(head_kind, box_aabb)
+	var kind := "capsule"
+	if group == BodyParts.TORSO or group.begins_with(_PART_PREFIX):
 		# Peças salientes (placas) são chatas/retangulares → caixa, não cápsula.
 		kind = "box"
 	return make_shape(kind, box_aabb)
@@ -279,8 +314,10 @@ static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D
 
 # Build a positioned/oriented CollisionShape3D of an explicit `kind`
 # ("sphere"/"box"/"capsule") fitted to the AABB. Lets non-character rigs (weapons)
-# choose the shape per part (e.g. a CAPSULE barrel, BOX receiver/grip).
-static func make_shape(kind: String, box_aabb: AABB) -> CollisionShape3D:
+# choose the shape per part (e.g. a CAPSULE barrel, BOX receiver/grip). `cap_radius`
+# clamps a capsule's radius to a fraction of its length (keeps slim limbs slim); pass
+# false for round parts like the head so the capsule keeps its full hugging radius.
+static func make_shape(kind: String, box_aabb: AABB, cap_radius: bool = true) -> CollisionShape3D:
 	var size := box_aabb.size
 	var center := box_aabb.position + size * 0.5
 	var shape := CollisionShape3D.new()
@@ -308,11 +345,16 @@ static func make_shape(kind: String, box_aabb: AABB) -> CollisionShape3D:
 	var others := [size.x, size.y, size.z]
 	others.remove_at(long_axis)
 	var length := size[long_axis] * LENGTH_SHRINK
-	var radius := 0.5 * maxf(others[0], others[1]) * CROSS_SHRINK
-	# Keep limbs visibly elongated: cap the radius to a fraction of the length so a
-	# compact, near-cubic AABB (e.g. the player's gun-holding right arm, whose pose
-	# fattens its bounds) still reads as a proper capsule instead of a ball.
-	radius = minf(radius, length * LIMB_RADIUS_RATIO)
+	var radius := 0.5 * maxf(others[0], others[1])
+	# Limbs (cap_radius=true): pull the cross-section in (CROSS_SHRINK) so they hug the
+	# part, and keep them visibly elongated by capping the radius to a fraction of the
+	# length — a compact, near-cubic AABB (e.g. the player's gun-holding right arm, whose
+	# pose fattens its bounds) still reads as a proper capsule instead of a ball.
+	# Round parts (head, cap_radius=false) skip BOTH: full radius so the capsule covers
+	# the whole mesh.
+	if cap_radius:
+		radius *= CROSS_SHRINK
+		radius = minf(radius, length * LIMB_RADIUS_RATIO)
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = radius
 	# CapsuleShape3D.height is the full length including the two hemisphere caps.

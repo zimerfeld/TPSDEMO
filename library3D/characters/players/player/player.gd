@@ -112,6 +112,7 @@ func _setup_limb_colliders() -> void:
 	lc.name = "LimbColliders"
 	lc.body_type = "biped"      # plano corporal → classificador de membros
 	lc.model_key = "player"     # busca os multiplicadores de dano por membro em LimbConfig
+	lc.head_shape = "capsule"   # cabeça do player = cápsula (mesma orientação), não esfera
 	lc.hitbox_layer = 16        # bit5 = colliders de membro do player
 	add_child(lc)
 	lc.build_for(skel)

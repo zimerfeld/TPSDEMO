@@ -6,6 +6,8 @@
 	"Parte:": "Parte:",
 	"Animação:": "Animação:",
 	"Efeitos Especiais:": "Efeitos Especiais:",
+	"Membro:": "Membro:",
+	"Sub-membro:": "Sub-membro:",
 	"Todos": "Todos",
 	"Rotação": "Rotação",
 	"Animação": "Animação",
@@ -18,5 +20,12 @@
 	"Personagens": "Personagens",
 	"Propulsores": "Propulsores",
 	"Estruturas": "Estruturas",
-	"Armas": "Armas"
+	"Armas": "Armas",
+	"Dano por membro": "Dano por membro",
+	"Dano por membro (bônus %)": "Dano por membro (bônus %)",
+	"Adicionar sub-membro": "Adicionar sub-membro",
+	"Adicionar": "Adicionar",
+	"Remover sub-membro": "Remover sub-membro",
+	"Outros sub-membros": "Outros sub-membros",
+	"(sem ossos auxiliares)": "(sem ossos auxiliares)"
 }

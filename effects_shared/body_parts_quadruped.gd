@@ -42,6 +42,17 @@ func group_of(bone_name: String, head_bones: Array = [], torso_bones: Array = []
 	return ""
 
 
+# Dono de uma peça pelo nome (ver BodyParts.owner_hint): mesmas palavras-chave de perna do
+# group_of, ignorando exclusões, para placas/covers das 4 patas (precisam de dianteira/traseira
+# + lado no nome). "" quando o nome não decide a perna.
+func owner_hint(bone_name: String) -> String:
+	var n := bone_name.to_lower()
+	if n.contains("thigh") or n.contains("shin") or n.contains("calf") \
+			or n.contains("knee") or n.contains("foot") or n.contains("paw") or n.contains("leg"):
+		return _leg_group(bone_name)
+	return ""
+
+
 # Mapeia um osso de perna para LEG_F?/R? combinando dianteira/traseira + lado.
 # "" se faltar algum dos dois (sem como decidir a perna).
 func _leg_group(bone_name: String) -> String:

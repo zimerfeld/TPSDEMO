@@ -18,9 +18,10 @@
 | [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, grupo Level Base |
 | [[sistemas/audio]] | Buses (Master/Outside/Reactor/Music/SFX), controles Música × Efeitos de Som nas settings |
 | [[sistemas/debug-overlay]] | DebugOverlay + tela developer em 2 colunas (Debug 2D amarelo / Debug 3D ciano), grid, rótulos 3D |
-| [[sistemas/system-health]] | Monitor System Health (developer): mem/FPS/CPU-proc., alerta a 90% + auto-pausa de segurança |
+| [[sistemas/performance-hud]] | Indicadores de performance: PerformanceHUD (barra FPS/NET/RAM/CPU/GPU, developer) + StabilityGuard (proteção crash/freeze sempre-ligada) |
 | [[sistemas/localizacao]] | Idioma EN/PT: autoload Locale + dicionários por cena em Resources/*.pt/en.json, persistido, botões em TODAS as telas |
 | [[sistemas/recursos-nativos-godot]] | Quais nós/recursos NATIVOS o jogo usa (StaticBody3D, CollisionShape3D, MeshInstance3D…), por subsistema; helpers RefCounted sem nó |
+| [[sistemas/build-windows]] | Build Windows: `build_windows.ps1` → `.exe` (PCK embutido) + atalho no Desktop com ícone; rodar ao fim de cada tarefa |
 
 ---
 
@@ -64,7 +65,7 @@
 ## Notas Rápidas
 
 - Organização: **scenes2D/** (telas de UI: menu, settings, chooseplayer, developer, levels) e **scenes3D/** (players, enemies, door, level_1, level_base, models)
-- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **Locale** (`autoload/locale.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**, **SystemHealth** (`autoload/system_health.gd`)
+- Autoloads: **Settings** (`scenes2D/settings/config.gd`), **Locale** (`autoload/locale.gd`), **CrashHandler**, **PlayerSelection**, **DebugOverlay**, **StabilityGuard** (`autoload/stability_guard.gd`), **PerformanceHUD** (`autoload/performance_hud.gd`)
 - Telas extras: **developer** (toggles de debug) → **models** (navegador/extrator de modelos 3D) → **Exported** (galeria de `library/extracted/`); **settings** com aba Debug
 - Motor: **Godot 4.x**
 - Modo de rede: **ENet / OfflineMultiplayerPeer** (server-authoritative)

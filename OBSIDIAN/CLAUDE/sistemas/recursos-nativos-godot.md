@@ -110,7 +110,7 @@ Recorte mais direto: scripts do jogo que **herdam** um nó nativo.
 | `CPUParticles3D` | `part_disappear.gd` |
 | `CanvasLayer` | `health_bar.gd`, `enemy_health_bar.gd` |
 | `Node3D` | `level_*.gd`, `blast.gd`, `limb_colliders.gd`, `flying_forklift.gd` |
-| `Node` | autoloads (`locale`, `debug_overlay`, `system_health`, `crash_handler`, `player_selection`) + cenas 2D de menu/settings |
+| `Node` | autoloads (`locale`, `debug_overlay`, `stability_guard`, `performance_hud`, `crash_handler`, `player_selection`) + cenas 2D de menu/settings |
 | `RefCounted` | lógica pura **sem nó**: `body_parts.gd` (+ `body_parts_biped/quadruped/crawler.gd`, `body_plans.gd`), `weapon_parts.gd`, `limb_config.gd`, `laser_shooter.gd`, `cannon_shooter.gd` |
 | Subclasses de `Control` | widgets de HUD em `scenes2D/controls2D/` |
 

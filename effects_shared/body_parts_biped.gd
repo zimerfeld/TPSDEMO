@@ -49,3 +49,20 @@ func group_of(bone_name: String, head_bones: Array = [], torso_bones: Array = []
 			or n.contains("knee") or n.contains("foot") or n.contains("leg"):
 		return "" if side == "" else (LEG_L if side == "L" else LEG_R)
 	return ""
+
+
+# Dono de uma peça pelo nome+lado, ignorando exclusões (ver BodyParts.owner_hint). Usa as
+# MESMAS palavras-chave de braço/perna do group_of, mas sem o filtro de exclusão — assim
+# "shoulderpad.L"/"kneepad.R"/"footcover.L" (placas que o group_of derrubaria por "pad"/
+# "cover") já dizem o membro a que pertencem. Sem lado claro, devolve "".
+func owner_hint(bone_name: String) -> String:
+	var n := bone_name.to_lower()
+	var side := BodyParts.side_of(bone_name)
+	if side == "":
+		return ""
+	if n.contains("shoulder") or n.contains("arm") or n.contains("hand") or n.contains("wing"):
+		return ARM_L if side == "L" else ARM_R
+	if n.contains("thigh") or n.contains("shin") or n.contains("calf") \
+			or n.contains("knee") or n.contains("foot") or n.contains("leg"):
+		return LEG_L if side == "L" else LEG_R
+	return ""
