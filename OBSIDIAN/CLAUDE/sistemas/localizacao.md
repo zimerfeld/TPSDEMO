@@ -37,8 +37,10 @@ Cada script chama `Locale.set_language(...)` e acinzenta o botão do idioma ativ
 ## Textos vindos de código (SKIP_GROUP)
 
 Textos que o localizador automático não alcança — placeholders/itens de `OptionButton`, títulos
-das abas de settings, diálogos de confirmação, e o painel **System Health** — entram no grupo
-`Locale.SKIP_GROUP` e reaplicam `Locale.tr_key(...)` sozinhos no sinal `language_changed`. (As telas
+das abas de settings, diálogos de confirmação, e o **PerformanceHUD**/overlay do **StabilityGuard** —
+entram no grupo `Locale.SKIP_GROUP` e reaplicam `Locale.tr_key(...)` sozinhos no sinal
+`language_changed`. As chaves do HUD/Guard ficam em `scenes2D/overlays/Resources/overlays.{pt,en}.json`.
+(As telas
 `models` e `controls` **não têm mais** `StatusLabel` — removidas em 2026-06-18.)
 
 ## Regra — mudou texto, atualize as chaves
@@ -48,5 +50,5 @@ das abas de settings, diálogos de confirmação, e o painel **System Health** �
 Locale indexa pelo texto-fonte, mudar a cena sem atualizar a chave quebra a tradução. PT recebe a
 tradução em português; EN, em inglês. Validar os dois JSON ao final.
 
-Relacionado: [[fluxos/fluxo-de-cenas]], [[sistemas/debug-overlay]], [[sistemas/system-health]],
+Relacionado: [[fluxos/fluxo-de-cenas]], [[sistemas/debug-overlay]], [[sistemas/performance-hud]],
 [[arquivos-chave/main-gd]].

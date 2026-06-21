@@ -623,10 +623,14 @@ func _add_3d_skeleton(skel: Skeleton3D) -> void:
 	# One label per MEMBER, not per bone: a limb spans several bones (shoulder,
 	# arm, hand) that all map to the same group, so anchor the single "Membro: …"
 	# tag to the shallowest bone of each group to avoid a cluttered pile of labels.
+	# Classificador por instância (BodyParts não é polimórfico via estático). O overlay
+	# roda sobre esqueletos quaisquer de fase e não sabe o body_type, então usa o plano
+	# default (bípede) — rótulos são só debug.
+	var classifier := BodyPlans.default()
 	var rep_bone := {}      # group → bone index (shallowest)
 	var rep_depth := {}
 	for i in skel.get_bone_count():
-		var g := BodyParts.group_of(skel.get_bone_name(i))
+		var g := classifier.group_of(skel.get_bone_name(i))
 		if g == "":
 			continue
 		var d := _bone_depth(skel, i)
@@ -636,7 +640,7 @@ func _add_3d_skeleton(skel: Skeleton3D) -> void:
 
 	for g in rep_bone:
 		var i: int = rep_bone[g]
-		var member := BodyParts.label_of(g)
+		var member := classifier.label_of(g)
 
 		var att := BoneAttachment3D.new()
 		att.name = "DebugBoneLabel_%d" % i

@@ -9,7 +9,9 @@
 - Gerar **colliders 3D nativos** (`StaticBody3D` + `CollisionShape3D`) por **grupo de membro** de um `Skeleton3D`
 - Cada membro → `BoneAttachment3D → StaticBody3D (BoxShape3D)`, preso ao **osso-raiz** (acompanha pose/animação)
 - Os projéteis colidem **fisicamente** com esses corpos e o laser do enemy os atinge por **raycast contra corpos** → **dano localizado** ao personagem dono
-- Cabeça = +50% de dano (multiplicador `1.5`); demais grupos = dano da arma (`1.0`)
+- Os **MEMBROS** vêm do **plano corporal** do modelo, escolhido pelo `@export body_type` via a factory **`BodyPlans.for_type`** (instância de [[arquivos-chave/body-parts-gd|BodyParts]] — `_classifier`, resolvido em `build_for`). Bípede (default), quadrúpede ou rastejante.
+- Multiplicador de dano por membro vem de **`LimbConfig`** (lido por `model_key`), com fallback ao default do **plano** (`_classifier.default_multiplier`): cabeça = +50% (`1.5`), demais = `1.0` (2026-06-20). Editável na tela Models (ver [[sistemas/dano-localizado]])
+- **Sub-membros** (ossos salientes com collider PRÓPRIO `PART_<osso>`) = UNIÃO de 3 fontes em `_resolve_sub_members`: o `@export standalone_part_bones` + `LimbConfig.sub_members(model_key)` + `_classifier.default_sub_members()`
 - **Sem Area3D, sem visual de vidro, sem labels** (substituiu o antigo sistema de "hitboxes de vidro")
 - Ver [[sistemas/dano-localizado]]
 
@@ -17,15 +19,15 @@
 
 ## Como funciona (posicionamento por vértices skinados)
 
-1. Classifica os ossos em grupos (CABEÇA/TRONCO/BRAÇO E-D/PERNA E-D) via `BodyParts.group_of` (`effects_shared/body_parts.gd`)
+1. Classifica os ossos em grupos via `_classifier.group_of` — uma **INSTÂNCIA** do plano corporal (`BodyPlans.for_type(body_type)`), pois `BodyParts.group_of` estático NÃO é polimórfico. Bípede dá CABEÇA/TRONCO/BRAÇO E-D/PERNA E-D; quadrúpede dá 4 pernas; rastejante só CABEÇA/TRONCO (ver [[arquivos-chave/body-parts-gd]])
 2. Escolhe o **osso-raiz** de cada grupo (o mais raso na hierarquia)
 3. Para cada **vértice skinado** da malha, pega o osso de maior peso e o converte ao espaço local do osso-raiz usando a **bind pose** da skin (`get_bind_pose`) → acumula um **AABB por membro** (+ `padding` de folga)
 4. Cria `BoneAttachment3D` (no osso-raiz) → `StaticBody3D` + `CollisionShape3D (BoxShape3D)` do tamanho do AABB
-5. Metas no `StaticBody3D`: `group`, `damage_multiplier`, `character` (dono)
+5. Metas no `StaticBody3D`: `group`, `damage_multiplier` (de `LimbConfig.get_multiplier(model_key, group, _classifier)`), `character` (dono)
 
 - **Robô sem cabeça:** o rig do RedRobot não tem osso de cabeça padrão; usa `head_bone_names = ["mouth_eyes", "L-EYE", "R-EYE"]` para forçar a CABEÇA (rosto + olhos — os olhos, excluídos por "eye", entram p/ a esfera não ficar minúscula; 2026-06-18). Player tem os 6 grupos; enemy também resolve 6 (com o forçado).
 
-- **Peças standalone (`standalone_part_bones`, 2026-06-18):** ossos que recebem um collider PRÓPRIO (caixa) ajustado só aos seus vértices, em vez de serem absorvidos por um membro. Para peças SALIENTES que a cápsula do membro não cobriria — ex.: as **placas traseiras das pernas** do red_robot (`L-/R-RearLegGuard`), que ficam atrás da perna. Internamente viram um grupo único `PART_<osso>` (reaproveita todo o pipeline), com shape **caixa**, multiplicador `1.0` e rótulo `PLACA PERNA E/D` (lado via `BodyParts.side_of`). `_classify()` intercepta esses ossos ANTES do classificador normal, então não poluem o membro vizinho.
+- **Sub-membros (peças salientes):** ossos que recebem um collider PRÓPRIO (caixa) ajustado só aos seus vértices, em vez de serem absorvidos por um membro. Para peças SALIENTES que a cápsula do membro não cobriria — ex.: as **placas traseiras das pernas** do red_robot (`L-/R-RearLegGuard`). Internamente viram um grupo único `PART_<osso>` (reaproveita todo o pipeline), com shape **caixa**. O conjunto efetivo (`_sub_member_set`) é a UNIÃO de 3 fontes (`_resolve_sub_members`): `standalone_part_bones` (export) + `LimbConfig.sub_members(model_key)` + `_classifier.default_sub_members()`. `_classify()` intercepta esses ossos ANTES do classificador normal, então não poluem o membro vizinho. O red_robot **não usa mais** o export — as placas migraram p/ `limb_config.json` e são editáveis na tela (ver [[sistemas/dano-localizado]]).
 
 ---
 
@@ -42,12 +44,14 @@
 | Export | Player / Enemy | Descrição |
 |---|---|---|
 | `enabled` | `true` | Liga/desliga a geração |
+| `body_type` | `"biped"` | Plano corporal (`@export_enum` biped/quadruped/crawler) → classificador via `BodyPlans.for_type` (ver [[arquivos-chave/body-parts-gd]]) |
 | `padding` | `0.03` | Folga (m) somada a cada lado da caixa |
 | `head_bone_names` | `[] / ["mouth_eyes", "L-EYE", "R-EYE"]` | Bones forçados para CABEÇA |
 | `torso_bone_names` | `[] / ["Bone.001"]` | Bones forçados para TRONCO (osso genérico do enemy) |
 | `leg_bone_names` | `[]` | Bones forçados para PERNA E/D |
-| `standalone_part_bones` | `[] / ["L-RearLegGuard", "R-RearLegGuard"]` | Bones com collider PRÓPRIO (caixa) — placas salientes |
+| `standalone_part_bones` | `[] / []` | Sub-membros FIXOS no nó (collider PRÓPRIO) — UNIDOS aos de `LimbConfig` + do plano. O red_robot **não usa mais** (placas migraram p/ `limb_config.json`) |
 | `hitbox_layer` | `16 / 32` | Layer dos colliders (player bit5, enemy bit6) |
+| `model_key` | `"player" / "red_robot"` | Chave (nome da pasta) p/ buscar multiplicadores + sub-membros em [[sistemas/dano-localizado\|LimbConfig]]; vazio = defaults do plano |
 
 ---
 
@@ -58,9 +62,11 @@
 var skel = <model>.get_node_or_null(^".../Skeleton3D") as Skeleton3D
 var lc = preload("res://effects_shared/limb_colliders.gd").new()
 lc.name = "LimbColliders"
+lc.body_type = "biped"   # plano corporal → classificador (BodyPlans.for_type)
+lc.model_key = "player"   # "red_robot" no enemy — chave dos multiplicadores/sub-membros em LimbConfig
 lc.hitbox_layer = 16   # 32 no enemy
 add_child(lc)
-lc.build_for(skel)
+lc.build_for(skel)   # resolve _classifier (body_type) + _sub_member_set (3 fontes)
 ```
 Construídos em todos os peers (só o servidor simula os tiros). `get_limb_bodies()` lista os `StaticBody3D` criados (usado para excluir os próprios da colisão do projétil disparado).
 
@@ -75,6 +81,8 @@ Construídos em todos os peers (só o servidor simula os tiros). `get_limb_bodie
 
 ## Relacionado
 
+- [[sistemas/dano-localizado]]
+- [[arquivos-chave/body-parts-gd]]
 - [[sistemas/player]]
 - [[sistemas/inimigos]]
 - [[arquivos-chave/player-gd]]

@@ -37,33 +37,44 @@ vivo (sem botão Aplicar).
 
 ## Features · Funcionalidades
 
-🇬🇧 Highlights: localized damage (native per-limb 3D colliders, headshots deal extra); a Models
-viewer with per-category master toggles (rotation, animation, special effects, audio, colliders) and
-selector dropdowns — both persisted between visits, with the drill-down chain restored on reopen; a
+🇬🇧 Highlights: localized damage (native per-limb 3D colliders, headshots deal extra) with a
+per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to
+`data/limb_config.json`) where the body type (biped/quadruped/crawler) defines the members and
+protruding sub-members (plates, guards) are editable too; a Models viewer with per-category master toggles (rotation, animation,
+special effects, audio, colliders, member labels) and selector dropdowns — both persisted between
+visits, with the drill-down chain restored on reopen; a
 developer screen whose debug overlay is split into **Debug 2D** (light
 yellow) and **Debug 3D** (light cyan) columns — a master alone shows nothing, each dependent line
-must also be selected; a **System Health** monitor on that screen — a draggable floating panel (with a
-Windows-style red close button) showing game/video/system memory, FPS and the real per-process CPU
-usage (sampled from the OS, Task-Manager-like) — that alerts, beeps on each critical (>95%) spike and
-force-pauses processing before a resource can freeze the machine (short CPU spikes are tolerated);
+must also be selected; performance indicators built on Godot's `Performance` singleton — a toggleable
+**Performance HUD** top bar (FPS/NET/RAM/CPU/GPU + a basic/advanced view) plus an always-on
+**StabilityGuard** that throttles physics and force-pauses with a full-screen overlay before RAM/VRAM/
+collision-pairs/node-count/FPS can freeze or crash the machine;
 a floor grid for 3D screens; and an EN/PT localization system where **every screen carries
 Português/English buttons** and each scene ships its own JSON dictionaries
 (`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load.
 
-🇧🇷 Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra); um
-visualizador Models com toggles mestres por categoria (rotação, animação, efeitos especiais, áudio,
-colliders) e dropdowns de seleção — ambos persistidos entre visitas, com a cadeia de navegação
-restaurada ao reabrir; uma tela developer cujo overlay de debug é dividido nas
+🇧🇷 Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
+multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em
+`data/limb_config.json`), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
+os sub-membros salientes (placas, guardas) também são editáveis; um visualizador Models com toggles mestres por categoria (rotação, animação,
+efeitos especiais, áudio, colliders, rótulos de membro) e dropdowns de seleção — ambos persistidos
+entre visitas, com a cadeia de navegação restaurada ao reabrir; uma tela developer cujo overlay de
+debug é dividido nas
 colunas **Debug 2D** (amarelo claro) e **Debug 3D** (ciano claro) — o master sozinho não mostra
-nada, cada linha dependente também precisa ser selecionada; um monitor **System Health** nessa tela
-— um painel flutuante arrastável (com botão de fechar vermelho estilo Windows) com memória do
-jogo/vídeo/sistema, FPS e o uso real de CPU do processo (amostrado do SO, como o Gerenciador de
-Tarefas) — que alerta, emite um bip a cada pico crítico (>95%) e pausa o processamento à força antes
-que um recurso possa congelar a máquina (picos curtos de CPU são tolerados); uma
+nada, cada linha dependente também precisa ser selecionada; indicadores de performance sobre o
+singleton `Performance` do Godot — uma barra **Performance HUD** opcional (FPS/NET/RAM/CPU/GPU + visão
+básica/avançada) mais um **StabilityGuard** sempre-ligado, que reduz a física e pausa à força com um
+overlay de tela cheia antes que RAM/VRAM/collision pairs/contagem de nós/FPS congelem ou travem a
+máquina; uma
 malha no solo
 para telas 3D; e um sistema de localização EN/PT em que **toda tela tem botões Português/English** e
 cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json`),
 mesclados no carregamento.
+
+> 🇧🇷 **Sobre as hitboxes por membro:** você não reinventou a física do Godot; você automatizou a
+> autoria de hitboxes que, manualmente, seriam inviáveis de manter em escala.
+> 🇬🇧 **On the per-limb hitboxes:** you didn't reinvent Godot's physics; you automated the authoring
+> of hitboxes that would be unfeasible to maintain at scale by hand.
 
 ## Requirements & running · Requisitos e execução
 
@@ -79,15 +90,19 @@ LFS is not required.
 
 🇬🇧 `scenes2D/` (screens, UI, reusable widgets) · `scenes3D/` (levels + Models viewer) · `library3D/`
 (3D assets by type) · `effects_shared/` (cross-character helpers) · `autoload/` (global singletons:
-crash_handler, player_selection, debug_overlay, locale, system_health; Settings is
+crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud; Settings is
 `scenes2D/settings/config.gd`) · per-scene `Resources/*.pt.json` + `*.en.json` (UI dictionaries) ·
 `OBSIDIAN/` (documentation vault).
 
 🇧🇷 `scenes2D/` (telas, UI, widgets reutilizáveis) · `scenes3D/` (fases + visualizador Models) ·
 `library3D/` (assets 3D por tipo) · `effects_shared/` (helpers entre personagens) · `autoload/`
-(singletons globais: crash_handler, player_selection, debug_overlay, locale, system_health; o
+(singletons globais: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud; o
 Settings é `scenes2D/settings/config.gd`) · `Resources/*.pt.json` + `*.en.json` por cena (dicionários
 da UI) · `OBSIDIAN/` (cofre de documentação).
+
+🇬🇧 **Windows build:** `pwsh -File build_windows.ps1` → `build/windows/ZIMARO.exe` (embedded PCK) + a
+desktop shortcut with the app icon. · 🇧🇷 **Build Windows:** `pwsh -File build_windows.ps1` → o `.exe`
+com PCK embutido + atalho no Desktop com o ícone.
 
 ## Controls · Controles
 

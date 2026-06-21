@@ -1,0 +1,60 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1238"/>
+      <stop offset="0.55" stop-color="#0e1230"/>
+      <stop offset="1" stop-color="#05060f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.6">
+      <stop offset="0" stop-color="#18a0ff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#18a0ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="faceTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#27e7ff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#13b6d8" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="faceLeft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b6cff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#162a78" stop-opacity="0.55"/>
+    </linearGradient>
+    <linearGradient id="faceRight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a2bff" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#2a1668" stop-opacity="0.6"/>
+    </linearGradient>
+    <filter id="neon" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- App-icon background -->
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#bg)"/>
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="url(#glow)"/>
+  <rect x="9.5" y="9.5" width="237" height="237" rx="50.5" fill="none" stroke="#27e7ff" stroke-opacity="0.25" stroke-width="3"/>
+
+  <!-- Isometric cube: a 3D-creator emblem -->
+  <g filter="url(#neon)">
+    <!-- faces -->
+    <polygon points="128,58 192,95 128,132 64,95" fill="url(#faceTop)"/>
+    <polygon points="64,95 128,132 128,200 64,163" fill="url(#faceLeft)"/>
+    <polygon points="128,132 192,95 192,163 128,200" fill="url(#faceRight)"/>
+
+    <!-- editing grid on the top face (construction / level editor feel) -->
+    <g stroke="#9af6ff" stroke-opacity="0.5" stroke-width="1.6">
+      <line x1="96" y1="76.5" x2="160" y2="113.5"/>
+      <line x1="160" y1="76.5" x2="96" y2="113.5"/>
+    </g>
+
+    <!-- glowing wireframe edges -->
+    <g fill="none" stroke="#39f0ff" stroke-width="3.4" stroke-linejoin="round">
+      <polygon points="128,58 192,95 128,132 64,95"/>
+      <path d="M64,95 V163 L128,200 V132 M128,200 V200 L192,163 V95"/>
+      <line x1="128" y1="132" x2="128" y2="200"/>
+    </g>
+
+    <!-- ZIMARO brand "Z" drawn on the editing grid (top face) -->
+    <path d="M110,84 L150,90 L112,108 L150,114"
+          fill="none" stroke="#ff3df0" stroke-width="6"
+          stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+</svg>
