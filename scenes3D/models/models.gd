@@ -98,6 +98,11 @@ var _auto_rotate: bool = false
 var _dragging: bool = false
 var _yaw: float = 0.0
 var _pitch: float = 0.0
+# Yaw frontal BASE do modelo atual (antes do drag do usuário). Padrão DEFAULT_FRONT_YAW
+# (180°, convenção front=-Z). Alguns modelos (player, red_robot) têm a FRENTE em +Z e
+# apareceriam de costas com o flip de 180°; eles sobrescrevem via _MODEL_FRONT_YAW para
+# já iniciar de frente, sem o usuário precisar rotacionar. Setado em _on_model_selected.
+var _front_yaw_base: float = DEFAULT_FRONT_YAW
 
 # Whole-model preview toggles. Colliders draws wireframe gizmos for the
 # (otherwise invisible) CollisionShape3D volumes; animation plays the model's
@@ -164,6 +169,14 @@ var _member_colliders_built: bool = false
 # tamanho aproximado do bloco em metros, usados para projetar seu retângulo de tela.
 var _member_label_pivots: Array = []
 
+# Campos de dano FLUTUANTES sobre o modelo (checkbox "Definir" + bônus %), um por membro/
+# sub-membro, ao lado do rótulo. Cada entrada: {"shape": CollisionShape3D (âncora animada),
+# "ctrl": Control (o cartão), "chk": CheckBox, "spin": SpinBox, "group": String, "owner": String}.
+# Reposicionados por frame em _layout_damage_fields (projeção 3D→tela). _damage_field_layer é o
+# Control full-rect (mouse IGNORE) que os hospeda, sobre a UI.
+var _damage_field_anchors: Array = []
+var _damage_field_layer: Control = null
+
 @onready var model_holder: Node3D = $ModelHolder
 @onready var camera: Camera3D = $Camera3D
 
@@ -207,8 +220,11 @@ var _zoom_target: float = 0.0
 func _ready() -> void:
 	_zoom = camera.position.z
 	_zoom_target = _zoom
-	# Nome da cena (nó raiz) no watermark inferior esquerdo, como nas demais telas.
+	# Watermark do nome da cena (nó raiz), agora ANCORADO DENTRO do painel de dano (canto
+	# inferior esquerdo interno). Começa oculto e segue a visibilidade do painel — ver
+	# _refresh_damage_panel —, então não flutua no centro da tela com o painel fechado.
 	scene_name_label.text = name
+	scene_name_label.visible = false
 	_categories = _scan_library()
 
 	cbo_category.clear()
@@ -315,8 +331,9 @@ func _process(delta: float) -> void:
 	if _auto_rotate and not _dragging:
 		_yaw += delta * AUTO_ROTATE_SPEED
 	# Rebuild rotation from yaw/pitch with roll fixed at 0 (orthogonal axes only).
-	# The default 180° yaw turns the model's front toward the camera.
-	model_holder.rotation = Vector3(_pitch, DEFAULT_FRONT_YAW + _yaw, 0.0)
+	# _front_yaw_base turns the model's front toward the camera (180° por padrão; 0° para
+	# modelos cuja frente já é +Z, como player/red_robot — ver _MODEL_FRONT_YAW).
+	model_holder.rotation = Vector3(_pitch, _front_yaw_base + _yaw, 0.0)
 	# Glide the camera toward the wheel-set zoom distance instead of snapping.
 	if not is_equal_approx(_zoom, _zoom_target):
 		_zoom = lerpf(_zoom, _zoom_target, minf(ZOOM_SMOOTH * delta, 1.0))
@@ -325,6 +342,10 @@ func _process(delta: float) -> void:
 	# sobreponham na tela (o modelo gira, então a checagem é por frame). Sem pilhas, é no-op.
 	if not _member_label_pivots.is_empty():
 		_layout_member_labels()
+	# Reposiciona os campos de dano flutuantes ao lado de cada membro/sub-membro (segue a pose
+	# e a rotação do modelo). Sem campos, é no-op.
+	if not _damage_field_anchors.is_empty():
+		_layout_damage_fields()
 
 
 # Sequential gating: each dropdown below Categoria stays DISABLED until the one
@@ -429,6 +450,7 @@ func _reset_models() -> void:
 # below Part (Animação, Efeitos, Membro, Sub-membro) so changing any upper dropdown
 # cascades a "Selecione..." reset all the way down.
 func _reset_meshes_and_preview() -> void:
+	_front_yaw_base = DEFAULT_FRONT_YAW
 	_model_scene = null
 	_display_scene = null
 	_mesh_catalog = []
@@ -456,6 +478,9 @@ func _on_model_selected(index: int) -> void:
 	var model: Dictionary = _filtered_models[index - 1]
 	_save_selection("sel_model", model["name"])
 	_current_model_path = model["path"]
+	# Orientação inicial deste modelo: a maioria usa o flip de 180°; player/red_robot já
+	# nascem de frente (ver _MODEL_FRONT_YAW). Lido aqui pois _current_model_key() já resolve.
+	_front_yaw_base = _MODEL_FRONT_YAW.get(_current_model_key(), DEFAULT_FRONT_YAW)
 	_model_scene = load(model["path"])
 	_display_scene = load(model.get("display_path", model["path"]))
 	_mesh_catalog = _build_mesh_catalog(_model_scene)
@@ -1331,6 +1356,7 @@ func _clear_preview() -> void:
 	_member_colliders_built = false
 	_preview_effect_nodes = []
 	_member_label_pivots = []
+	_clear_damage_fields()
 	_yaw = 0.0
 	_pitch = 0.0
 	model_holder.rotation = Vector3.ZERO
@@ -1659,44 +1685,46 @@ func _preview_is_whole_character() -> bool:
 		and _part_value(cbo_meshes.selected) == WHOLE_MODEL_VALUE
 
 
-# (Re)constrói o painel: uma linha por membro (rótulo + SpinBox de bônus %), lendo o valor
-# salvo em LimbConfig. Oculta o painel quando o toggle está off ou o preview não é um
-# personagem completo. Idempotente — limpa as linhas antigas antes de repopular.
+# (Re)constrói o editor de dano. Os CAMPOS de dano (checkbox "Definir" + bônus %) FLUTUAM
+# sobre o modelo, ao lado de cada membro/sub-membro (ver _build_damage_fields). O painel
+# (agora docado à direita) cobre só o AGRUPAMENTO: o membro-DONO de cada sub-membro e a
+# promoção de novos sub-membros. Oculta tudo fora de "personagem em Modelo completo".
+# Idempotente — limpa linhas e campos antigos antes de repopular.
 func _refresh_damage_panel() -> void:
 	for child in damage_rows.get_children():
 		child.queue_free()
 	if not _show_damage_panel or not _preview_is_whole_character() or _preview_instance == null:
 		damage_panel.visible = false
+		scene_name_label.visible = false   # watermark vive DENTRO do painel
+		_clear_damage_fields()
 		return
 	_ensure_member_colliders()
 	var model_key := _current_model_key()
-	# Membros do plano (todos), na MESMA ordem/fonte do combo Membro. Cada membro vira uma linha
-	# e, INDENTADOS logo abaixo dele, seus sub-membros (PART_*) — agrupados pelo mesmo owner_hint
-	# usado nos combos, para painel e dropdowns concordarem sobre quem é dono de cada placa.
-	var members := _plan_member_entries()
-	var member_groups := {}
-	for m in members:
-		member_groups[m["group"]] = true
+	# Campos de dano flutuantes (um por membro e por sub-membro), ao lado do rótulo no modelo.
+	_build_damage_fields(model_key)
+	var title := Label.new()
+	title.text = "Sub-membros e grupo"   # Label: auto-localizado pelo Locale via a chave no JSON
+	damage_rows.add_child(title)
+	var hint := Label.new()
+	hint.text = "(o dano fica sobre o modelo)"
+	hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
+	damage_rows.add_child(hint)
+	# Lista dos sub-membros (PART_*) existentes, cada um com o seletor de DONO (agrupamento só
+	# lógico — herança de dano) e um × para remover. Reassociar o dono pede confirmação.
 	var subs_by_owner := _sub_members_by_owner()
-	for m in members:
-		damage_rows.add_child(_make_damage_row(model_key, m["group"], m["label"]))
-		for s in subs_by_owner.get(str(m["group"]), []):
-			damage_rows.add_child(_make_damage_row(model_key, s["group"], s["label"], s["bone"], true))
-	# Sub-membros cujo dono não está na lista (owner_hint "" ou grupo ausente): seção "Outros".
-	var orphans: Array = []
+	var any_sub := false
 	for owner_group in subs_by_owner:
-		if not member_groups.has(owner_group):
-			for s in subs_by_owner[owner_group]:
-				orphans.append(s)
-	if not orphans.is_empty():
-		damage_rows.add_child(HSeparator.new())
-		var lbl := Label.new()
-		lbl.text = "Outros sub-membros"   # Label: auto-localizado pelo Locale via a chave no JSON
-		damage_rows.add_child(lbl)
-		for s in orphans:
-			damage_rows.add_child(_make_damage_row(model_key, s["group"], s["label"], s["bone"], true))
+		for s in subs_by_owner[owner_group]:
+			any_sub = true
+			damage_rows.add_child(_make_sub_member_row(model_key, str(s["group"]), str(s["bone"]), str(s["label"])))
+	if not any_sub:
+		var none_lbl := Label.new()
+		none_lbl.text = "(nenhum sub-membro)"
+		none_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
+		damage_rows.add_child(none_lbl)
 	_add_sub_member_add_row(model_key)
 	damage_panel.visible = true
+	scene_name_label.visible = true
 
 
 # Mapa owner_group → [{group, label, bone}] dos sub-membros (PART_*) do preview, agrupados pelo
@@ -1722,64 +1750,245 @@ func _sub_members_by_owner() -> Dictionary:
 	return out
 
 
-# Uma linha do editor: rótulo do membro + SpinBox em bônus % (passo 5, faixa -100..+500),
-# pré-preenchido com (multiplicador salvo - 1) * 100. Mudar o valor grava em LimbConfig.
-# `remove_bone` != "" adiciona um botão × que remove o sub-membro (linhas PART_). `indent` recua
-# a linha (margem + prefixo ↳) para os sub-membros aninhados sob o membro dono.
-func _make_damage_row(model_key: String, group: String, label: String, remove_bone: String = "", indent: bool = false) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	var name_lbl := Label.new()
-	name_lbl.text = ("↳ " + label) if indent else label
-	name_lbl.custom_minimum_size = Vector2(110, 0)
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(name_lbl)
+# ── Campos de dano FLUTUANTES (sobre o modelo) ────────────────────────────────
+
+# Garante o Control full-rect que hospeda os cartões de dano, sobre a UI (mouse IGNORE no
+# layer; só os controles internos capturam clique). Filho do mesmo pai do painel ($UI).
+func _ensure_damage_field_layer() -> void:
+	if is_instance_valid(_damage_field_layer):
+		return
+	_damage_field_layer = Control.new()
+	_damage_field_layer.name = "DamageFieldLayer"
+	_damage_field_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_damage_field_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	damage_panel.get_parent().add_child(_damage_field_layer)
+
+
+# Remove todos os cartões de dano flutuantes e zera as âncoras.
+func _clear_damage_fields() -> void:
+	for e in _damage_field_anchors:
+		var ctrl = e.get("ctrl")
+		if is_instance_valid(ctrl):
+			ctrl.queue_free()
+	_damage_field_anchors = []
+
+
+# Cria um cartão flutuante por membro/sub-membro com collider (meta member_label). A âncora 3D
+# é o centro do CollisionShape3D do membro, projetado por frame em _layout_damage_fields.
+func _build_damage_fields(model_key: String) -> void:
+	_clear_damage_fields()
+	if _preview_instance == null:
+		return
+	_ensure_damage_field_layer()
+	var owners_auto := _sub_member_owner_map()
+	for node in _preview_instance.find_children("*", "StaticBody3D", true, false):
+		var body := node as StaticBody3D
+		if not body.has_meta("group") or not body.has_meta("member_label"):
+			continue
+		var group := str(body.get_meta("group"))
+		var shapes: Array = body.find_children("*", "CollisionShape3D", true, false)
+		if shapes.is_empty():
+			continue
+		var owner_group := _resolve_owner_for(model_key, group, owners_auto)
+		var fld := _make_damage_field(model_key, group, owner_group)
+		_damage_field_layer.add_child(fld["ctrl"])
+		_damage_field_anchors.append({
+			"shape": shapes[0], "ctrl": fld["ctrl"], "chk": fld["chk"], "spin": fld["spin"],
+			"group": group, "owner": owner_group,
+		})
+
+
+# Dono efetivo de um grupo p/ herança: membros não têm dono (""); sub-membros (PART_*) usam o
+# dono EXPLÍCITO salvo e, na falta, a resolução automática (owners_auto = _sub_member_owner_map).
+func _resolve_owner_for(model_key: String, group: String, owners_auto: Dictionary) -> String:
+	if not group.begins_with("PART_"):
+		return ""
+	var owner_group := LimbConfig.sub_member_owner(model_key, group.substr(len("PART_")))
+	if owner_group == "":
+		owner_group = str(owners_auto.get(group, ""))
+	return owner_group
+
+
+# Um cartão: [☑ Definir] [SpinBox bônus %]. Desmarcado = SEM valor próprio (herda o do dono/
+# padrão; SpinBox desabilitado mostrando o valor EFETIVO). Marcado = valor explícito editável.
+# "Nenhum valor é obrigatório." Retorna {ctrl, chk, spin}.
+func _make_damage_field(model_key: String, group: String, owner_group: String) -> Dictionary:
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0.55)
+	sb.set_border_width_all(1)
+	sb.border_color = Color(1, 1, 1, 0.25)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = 4
+	sb.content_margin_right = 4
+	sb.content_margin_top = 2
+	sb.content_margin_bottom = 2
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 4)
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var chk := CheckBox.new()
+	chk.tooltip_text = Locale.tr_key("Definir dano (desmarcado = herda)")
+	chk.button_pressed = LimbConfig.has_multiplier(model_key, group)
 	var spin := SpinBox.new()
 	spin.min_value = -100.0
 	spin.max_value = 500.0
 	spin.step = 5.0
 	spin.suffix = "%"
-	spin.value = (LimbConfig.get_multiplier(model_key, group, _current_classifier()) - 1.0) * 100.0
-	spin.value_changed.connect(_on_member_damage_changed.bind(model_key, group))
-	row.add_child(spin)
-	if remove_bone != "":
-		var del := Button.new()
-		del.text = "×"
-		del.tooltip_text = Locale.tr_key("Remover sub-membro")
-		del.pressed.connect(_on_sub_member_removed.bind(model_key, remove_bone))
-		row.add_child(del)
-	if not indent:
-		return row
-	# Recuo dos sub-membros aninhados.
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 24)
-	margin.add_child(row)
-	return margin
+	spin.custom_minimum_size = Vector2(98, 0)
+	spin.editable = chk.button_pressed
+	spin.value = (LimbConfig.effective_multiplier(model_key, group, _current_classifier(), owner_group) - 1.0) * 100.0
+	chk.toggled.connect(func(on: bool):
+		spin.editable = on
+		if on:
+			LimbConfig.set_multiplier(model_key, group, 1.0 + spin.value / 100.0)
+		else:
+			LimbConfig.clear_multiplier(model_key, group)
+			spin.value = (LimbConfig.effective_multiplier(model_key, group, _current_classifier(), owner_group) - 1.0) * 100.0
+		_restamp_damage_metas()
+		_refresh_inherited_displays()
+	)
+	spin.value_changed.connect(func(v: float):
+		if not chk.button_pressed:
+			return
+		LimbConfig.set_multiplier(model_key, group, 1.0 + v / 100.0)
+		_restamp_damage_metas()
+		_refresh_inherited_displays()
+	)
+	hb.add_child(chk)
+	hb.add_child(spin)
+	panel.add_child(hb)
+	return {"ctrl": panel, "chk": chk, "spin": spin}
 
 
-# Grava o novo multiplicador (1 + bônus%/100) em LimbConfig e atualiza a meta do collider
-# de preview vivo, para que o valor mostrado e o salvo fiquem coerentes na mesma sessão.
-func _on_member_damage_changed(pct: float, model_key: String, group: String) -> void:
-	var mult := 1.0 + pct / 100.0
-	LimbConfig.set_multiplier(model_key, group, mult)
+# Reposiciona cada cartão na projeção de tela do centro do seu collider (segue pose/rotação).
+# Esconde os que ficam atrás da câmera.
+func _layout_damage_fields() -> void:
+	if camera == null:
+		return
+	for e in _damage_field_anchors:
+		var shape: Node3D = e["shape"]
+		var ctrl: Control = e["ctrl"]
+		if not is_instance_valid(shape) or not is_instance_valid(ctrl):
+			continue
+		var wp: Vector3 = shape.global_position
+		if camera.is_position_behind(wp):
+			ctrl.visible = false
+			continue
+		ctrl.visible = true
+		var sp := camera.unproject_position(wp)
+		ctrl.position = sp + Vector2(14.0, -ctrl.size.y * 0.5)
+
+
+# Reflete o dano EFETIVO nos cartões que HERDAM (checkbox off): quando o valor de um dono muda,
+# os sub-membros sem valor próprio reexibem o número herdado, sem rebuild (não rouba foco).
+func _refresh_inherited_displays() -> void:
+	var model_key := _current_model_key()
+	var classifier := _current_classifier()
+	for e in _damage_field_anchors:
+		var chk: CheckBox = e["chk"]
+		var spin: SpinBox = e["spin"]
+		if is_instance_valid(chk) and is_instance_valid(spin) and not chk.button_pressed:
+			spin.value = (LimbConfig.effective_multiplier(model_key, str(e["group"]), classifier, str(e["owner"])) - 1.0) * 100.0
+
+
+# Recarimba a meta "damage_multiplier" (lida pelo gameplay/gizmos) de TODOS os colliders do
+# preview com o valor EFETIVO (com herança), para o preview vivo bater com o salvo.
+func _restamp_damage_metas() -> void:
 	if _preview_instance == null:
 		return
+	var model_key := _current_model_key()
+	var classifier := _current_classifier()
+	var owners_auto := _sub_member_owner_map()
 	for node in _preview_instance.find_children("*", "StaticBody3D", true, false):
 		var body := node as StaticBody3D
-		if body.has_meta("group") and str(body.get_meta("group")) == group:
-			body.set_meta("damage_multiplier", mult)
+		if not body.has_meta("group"):
+			continue
+		var group := str(body.get_meta("group"))
+		var owner_group := _resolve_owner_for(model_key, group, owners_auto)
+		body.set_meta("damage_multiplier", LimbConfig.effective_multiplier(model_key, group, classifier, owner_group))
+
+
+# ── Painel de agrupamento (dono dos sub-membros) ──────────────────────────────
+
+# Opções de DONO para um sub-membro: os membros do plano + "(Outros / sem dono)" (group "").
+func _owner_choices() -> Array:
+	var out: Array = []
+	var c := _current_classifier()
+	for g in c.members():
+		out.append({"group": g, "label": c.label_of(g)})
+	out.append({"group": "", "label": "(Outros / sem dono)"})
+	return out
+
+
+# Linha de um sub-membro existente: rótulo + seletor de DONO (com confirmação ao mudar) + ×.
+func _make_sub_member_row(model_key: String, group: String, bone: String, label: String) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var name_lbl := Label.new()
+	name_lbl.text = label
+	name_lbl.custom_minimum_size = Vector2(120, 0)
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_lbl)
+	var owner_btn := OptionButton.new()
+	owner_btn.tooltip_text = Locale.tr_key("Membro-dono (agrupa o dano; não mexe na malha)")
+	var choices := _owner_choices()
+	var cur_owner := LimbConfig.sub_member_owner(model_key, bone)
+	if cur_owner == "":
+		cur_owner = str(_sub_member_owner_map().get(group, ""))
+	var sel_idx := 0
+	for i in choices.size():
+		owner_btn.add_item(str(choices[i]["label"]))
+		owner_btn.set_item_metadata(i, str(choices[i]["group"]))
+		if str(choices[i]["group"]) == cur_owner:
+			sel_idx = i
+	owner_btn.select(sel_idx)
+	owner_btn.set_meta("prev_idx", sel_idx)
+	owner_btn.item_selected.connect(func(idx: int): _on_owner_selected(model_key, bone, owner_btn, idx))
+	row.add_child(owner_btn)
+	var del := Button.new()
+	del.text = "×"
+	del.tooltip_text = Locale.tr_key("Remover sub-membro")
+	del.pressed.connect(_on_sub_member_removed.bind(model_key, bone))
+	row.add_child(del)
+	return row
+
+
+# Reassocia o dono de um sub-membro: pede CONFIRMAÇÃO (é só agrupamento lógico, não toca a
+# malha). Confirmado → grava e reconstrói; cancelado → reverte o dropdown.
+func _on_owner_selected(model_key: String, bone: String, owner_btn: OptionButton, idx: int) -> void:
+	var new_group := str(owner_btn.get_item_metadata(idx))
+	var prev_idx := int(owner_btn.get_meta("prev_idx"))
+	if idx == prev_idx:
+		return
+	var dlg := ConfirmationDialog.new()
+	dlg.title = Locale.tr_key("Reassociar sub-membro")
+	dlg.dialog_text = "Mudar o dono de \"%s\" para \"%s\"?\nSó muda o agrupamento/dano (herança) — não altera a malha." % [bone, owner_btn.get_item_text(idx)]
+	add_child(dlg)
+	dlg.confirmed.connect(func():
+		LimbConfig.set_sub_member_owner(model_key, bone, new_group)
+		owner_btn.set_meta("prev_idx", idx)
+		dlg.queue_free()
+		_rebuild_member_colliders()
+	)
+	dlg.canceled.connect(func():
+		owner_btn.select(prev_idx)
+		dlg.queue_free()
+	)
+	dlg.popup_centered()
 
 
 # Linha "Adicionar sub-membro": separador + título + dropdown dos ossos auxiliares (group_of == "")
-# + botão Adicionar. As linhas dos sub-membros EXISTENTES agora são aninhadas sob cada membro em
-# _refresh_damage_panel; aqui fica só a promoção de um novo osso a sub-membro.
+# + dropdown do membro-DONO explícito (item 3: onde o osso será "pendurado" logicamente) + botão
+# Adicionar. Os sub-membros existentes têm sua própria linha (com dono editável) em _refresh_damage_panel.
 func _add_sub_member_add_row(model_key: String) -> void:
 	damage_rows.add_child(HSeparator.new())
 	var title := Label.new()
 	title.text = "Adicionar sub-membro"   # Label: auto-localizado pelo Locale via a chave no JSON
 	damage_rows.add_child(title)
 	var add_row := HBoxContainer.new()
-	add_row.add_theme_constant_override("separation", 10)
+	add_row.add_theme_constant_override("separation", 8)
 	var picker := OptionButton.new()
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var candidates := _aux_bone_candidates()
@@ -1790,10 +1999,20 @@ func _add_sub_member_add_row(model_key: String) -> void:
 		for b in candidates:
 			picker.add_item(b)
 	add_row.add_child(picker)
+	# Dono explícito do novo sub-membro (default: "(Outros / sem dono)" — o último). O usuário
+	# escolhe onde ele entra ANTES de adicionar.
+	var owner_btn := OptionButton.new()
+	owner_btn.tooltip_text = Locale.tr_key("Membro-dono (agrupa o dano; não mexe na malha)")
+	for ch in _owner_choices():
+		var i := owner_btn.item_count
+		owner_btn.add_item(str(ch["label"]))
+		owner_btn.set_item_metadata(i, str(ch["group"]))
+	owner_btn.disabled = candidates.is_empty()
+	add_row.add_child(owner_btn)
 	var add_btn := Button.new()
 	add_btn.text = "Adicionar"   # Button: auto-localizado pelo Locale via a chave no JSON
 	add_btn.disabled = candidates.is_empty()
-	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker))
+	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker, owner_btn))
 	add_row.add_child(add_btn)
 	damage_rows.add_child(add_row)
 
@@ -1817,11 +2036,15 @@ func _aux_bone_candidates() -> Array[String]:
 	return out
 
 
-# Promove o osso escolhido a sub-membro, reconstrói os colliders do preview e repopula.
-func _on_sub_member_added(model_key: String, picker: OptionButton) -> void:
+# Promove o osso escolhido a sub-membro, com o membro-DONO escolhido no dropdown (item 3:
+# o usuário determina explicitamente onde ele entra). Reconstrói os colliders e repopula.
+func _on_sub_member_added(model_key: String, picker: OptionButton, owner_btn: OptionButton = null) -> void:
 	if picker.disabled or picker.selected < 0:
 		return
-	LimbConfig.add_sub_member(model_key, picker.get_item_text(picker.selected))
+	var owner_group := ""
+	if owner_btn != null and owner_btn.selected >= 0:
+		owner_group = str(owner_btn.get_item_metadata(owner_btn.selected))
+	LimbConfig.add_sub_member(model_key, picker.get_item_text(picker.selected), owner_group)
 	_rebuild_member_colliders()
 
 
@@ -2100,6 +2323,14 @@ const _MODEL_BODY_TYPE := {
 # Default "sphere"; the player uses a "capsule" (same orientation as the head bone).
 const _MODEL_HEAD_SHAPE := {
 	"player": "capsule",
+}
+
+# Yaw frontal BASE por modelo (rad). Default é DEFAULT_FRONT_YAW (PI = 180°, para a convenção
+# front=-Z). O player e o red_robot foram exportados com a FRENTE em +Z (a mesma direção da
+# câmera), então o flip de 180° os mostraria de COSTAS — 0.0 os deixa de frente ao abrir.
+const _MODEL_FRONT_YAW := {
+	"player": 0.0,
+	"red_robot": 0.0,
 }
 
 # Sub-membros (placas salientes etc.) NÃO ficam mais numa tabela aqui: vêm de LimbConfig

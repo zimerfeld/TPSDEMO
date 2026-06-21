@@ -39,10 +39,13 @@ third-person shooter sandbox. At a high level it offers:
   limb capsule wouldn't wrap) — are now **editable in the Models screen** (add/remove + a bonus-%
   each), not hardcoded; each part is grouped and labeled under the limb it belongs to by name
   (e.g. "PLACA BRAÇO E", "PLACA PERNA D"), even when it's attached to another bone in the skeleton.
-  The per-limb
-  multiplier is **per-model and editable in the Models screen** (a "Dano por membro" panel with a
-  bonus-% input per member), saved to `data/limb_config.json` and read at runtime via `LimbConfig`;
-  the default multiplier comes from the body plan (head +50%, rest ×1).
+  The per-limb multiplier is **per-model and editable in the Models screen**: each member/sub-member
+  gets a **FLOATING bonus-% field next to its label, over the 3D model** (a "Set" checkbox + value;
+  **no value is required** — without its own value a sub-member **inherits the owner member's**, then
+  the plan default). Each sub-member's **owner** is chosen **explicitly** (logical grouping only — it
+  never changes the mesh; reassigning asks for confirmation) in a right-docked panel. Everything is
+  saved to `data/limb_config.json` and read at runtime via `LimbConfig`; the default multiplier comes
+  from the body plan (head +50%, rest ×1).
 - **Reusable shooting** — the cannon-bullet and hitscan-laser firing are isolated into
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
   can use; the player and Red Robot both fire via `CannonShooter`.
@@ -54,9 +57,9 @@ third-person shooter sandbox. At a high level it offers:
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
   **Audio** (every sound the model emits — movement, motor, shots, explosions, voices),
   colliders, **member labels** (a browser-owned toggle for the "Membro: …" tags over each
-  collider, independent of the Debug 3D screen) and **per-limb damage** (a panel to edit each
-  member's damage bonus % for characters, plus a **Sub-members** subsection to add/remove
-  protruding `PART_*` colliders and tune each one's bonus %). Each toggle is the master switch for its category (no
+  collider, independent of the Debug 3D screen) and **per-limb damage** (bonus-% fields **floating
+  next to each member/sub-member over the model**, for characters, plus a right-docked panel to
+  add/remove protruding `PART_*` colliders and set each one's **owner member**). Each toggle is the master switch for its category (no
   sound/animation plays while its toggle is off — including sound driven by animation tracks) and
   the toggle states are persisted between visits (the damage panel aside — it opens closed). An
   animation plays only when **the toggle is on AND a clip is
@@ -81,9 +84,11 @@ third-person shooter sandbox. At a high level it offers:
   Driven by the Models screen's **own** dedicated toggles (Rótulos + Tipo/Nome/ID toggles) —
   the Models scene is fully decoupled from the global **Debug 3D** overlay (its root is in the
   `no_debug_overlay` group), so Debug 2D/3D only affect actual game levels. Being exempt from the
-  global overlay, the screen shows its **own scene-name label** in the bottom-left corner (like the
-  other screens, but always visible, independent of any Debug toggle). Skinned characters
-  are framed/centered from their posed colliders so they spin in place instead of drifting.
+  global overlay, the screen shows its **own scene-name label** — anchored **inside the damage panel**
+  (right-docked, its inner bottom-left corner), shown together with the panel. Skinned characters
+  are framed/centered from their posed colliders so they spin in place instead of drifting, and
+  models open **facing the camera** (player and red_robot, exported with their front on +Z, start
+  showing their face with no need to rotate).
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap, vitals,
   crosshair, pause menu, scanlines, and more).
 - **Debug tooling** — see [Developer screen & debug overlay](#developer-screen--debug-overlay).
@@ -101,7 +106,9 @@ light colors so you can tell them apart:
 
 - **Debug 2D** (light-yellow labels/tooltips) — master `debug_2d` plus the dependent line
   switches `Type` / `Name` / `Id`. Controls the 2D overlay (a colored border + a
-  TYPE/Name/ID tooltip) on every `Control`.
+  TYPE/Name/ID tooltip) on every `Control`, in **every scene with no exception** — including Models
+  and the Damage editor (which opt out of the **3D** overlay via `no_debug_overlay`) — and also over
+  the bottom-left **scene-name label**.
 - **Debug 3D** (light-cyan labels/labels) — master `debug_3d` plus the dependent switches
   `Type` / `Name` / `Id` (describing the owning `Skeleton3D`), `Members`, `Skeleton` and
   `Mesh`. Renders per-member `Label3D` tags that follow the live pose.
@@ -245,6 +252,14 @@ file) with the Godot 4.6.2 headless CLI, and (re)creates a **ZIMARO** shortcut o
 `build/icon.ico` (rasterized once from `icon.svg`). Requires Godot 4.6.2 + its export templates
 installed; the `.ico` is generated only on the first run (needs Python 3 with Pillow) and reused
 afterwards. The `build/` folder and `export_presets.cfg` are git-ignored.
+
+Before exporting, the script **automatically closes** any running `ZIMARO.exe` instance (and clears a
+stray `.tmp`), avoiding the *"Failed to rename temporary file"* error when the game is open — this only
+happens on an actual rebuild (unchanged turns are skipped).
+
+The **boot splash** opens on a **black screen with no Godot logo** (`application/boot_splash/show_image=false`
++ `bg_color=black` + `minimum_display_time=0` in `project.godot`), so the window just appears dark until
+the menu loads — no engine watermark.
 
 ## Project structure
 

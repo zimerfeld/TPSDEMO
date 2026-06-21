@@ -117,7 +117,8 @@ quaisquer de fase.
 {
   "red_robot": {
     "damage": { "HEAD": 2.0, "PART_L-RearLegGuard": 1.0 },
-    "sub_members": ["L-RearLegGuard", "R-RearLegGuard"]
+    "sub_members": ["L-RearLegGuard", "R-RearLegGuard"],
+    "sub_member_owners": { "L-RearLegGuard": "LEG_L", "R-RearLegGuard": "LEG_R" }
   }
 }
 ```
@@ -125,13 +126,19 @@ quaisquer de fase.
 - Chave = **`model_key`** = nome da pasta do modelo (`"red_robot"`, `"player"`), o MESMO valor que
   `player.gd`/`red_robot.gd` passam em `LimbColliders.model_key`. `GROUP` = chave do plano
   (`HEAD`/`TORSO`/`ARM_L`/…/`LEG_FL`/…) ou `PART_<osso>` p/ sub-membro. Valor = **multiplicador**
-  (`1.0` = normal, `1.5` = +50%).
-- API estática: `get_multiplier(model_key, group, classifier)`, `set_multiplier(model_key, group,
-  mult)`, `sub_members(model_key)`, `add_sub_member(model_key, bone)`, `remove_sub_member(model_key,
-  bone)` (esta também apaga o `PART_<bone>` do `damage`) e `load_table`.
-- O **default NÃO está mais em LimbConfig** — vem do **PLANO**: `get_multiplier` cai em
-  `classifier.default_multiplier(group)` quando não há entrada salva. O arquivo só guarda ajustes
-  do usuário, então sem JSON o comportamento é o default do plano (zero regressão).
+  (`1.0` = normal, `1.5` = +50%). `sub_member_owners` (2026-06-21) = membro-**DONO** EXPLÍCITO de
+  cada sub-membro (agrupamento só lógico p/ herança; vazio = resolução automática).
+- API estática (2026-06-21): `effective_multiplier(model_key, group, classifier, owner_group="")`
+  (COM herança), `get_multiplier(...)` (wrapper sem owner), `has_multiplier`/`clear_multiplier`
+  (estado do checkbox "Definir"), `set_multiplier`, `sub_members`, `sub_member_owner(s)`,
+  `set_sub_member_owner`, `add_sub_member(model_key, bone, owner="")`, `remove_sub_member` (apaga
+  também o `PART_<bone>` do `damage` e o dono) e `load_table`.
+- **Herança / "nenhum valor é obrigatório" (2026-06-21):** `effective_multiplier` — valor EXPLÍCITO
+  do próprio grupo tem precedência; um `PART_*` SEM valor próprio **herda o do membro-DONO**
+  (explícito do dono, senão default do plano do dono); sem nada, cai no `default_multiplier` do
+  próprio grupo. `LimbColliders` carimba a meta `damage_multiplier` já RESOLVIDA (dono = explícito
+  de `LimbConfig`, senão `resolve_sub_member_owner`). O arquivo só guarda ajustes do usuário (sem
+  JSON = default do plano, zero regressão).
 - **Editor:** a tela Models tem o toggle **"Dano por membro"** que abre um painel flutuante
   (`DamagePanel`, centralizado, **720 px de altura** — aumentado de 500 em 2026-06-20 para caber
   mais membros/sub-membros sem rolar) com um `SpinBox` em **bônus %** por membro (cabeça `+50%` ⇒

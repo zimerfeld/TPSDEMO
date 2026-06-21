@@ -40,8 +40,12 @@ em terceira pessoa. Em alto nível, oferece:
   do membro não cobriria) — agora são **editáveis na tela Models** (adicionar/remover + um bônus %
   cada), não mais hardcoded; cada peça é agrupada e rotulada sob o membro a que pertence pelo nome
   (ex.: "PLACA BRAÇO E", "PLACA PERNA D"), mesmo quando está presa a outro osso no esqueleto. O
-  multiplicador por membro é **por modelo e editável na tela Models** (painel "Dano por membro"
-  com um campo de bônus % por membro), salvo em `data/limb_config.json` e lido em runtime via
+  multiplicador por membro é **por modelo e editável na tela Models**: cada membro/sub-membro
+  ganha um **campo de bônus % FLUTUANTE ao lado do seu rótulo, sobre o modelo 3D** (checkbox
+  "Definir" + valor; **nenhum valor é obrigatório** — sem valor próprio, um sub-membro **herda o
+  do membro-dono**, depois o default do plano). O **dono** de cada sub-membro é escolhido
+  **explicitamente** (agrupamento só lógico — não altera a malha; reassociar pede confirmação) num
+  painel docado à direita. Tudo é salvo em `data/limb_config.json` e lido em runtime via
   `LimbConfig`; o multiplicador default vem do plano corporal (cabeça +50%, resto ×1).
 - **Tiro reutilizável** — o disparo de bala de canhão e o de laser hitscan foram isolados em
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
@@ -54,9 +58,9 @@ em terceira pessoa. Em alto nível, oferece:
   toggle cobre — partículas, luzes, malhas de laser/clarão presas a ossos), **Áudio** (todo som que
   o modelo emite — movimento, motor, tiros, explosões, vozes), colliders, **rótulos de membro**
   (toggle próprio do browser para as tags "Membro: …" sobre cada collider, independente da tela
-  Debug 3D) e **dano por membro** (painel para editar o bônus % de dano de cada membro, para
-  personagens, com uma subseção **Sub-membros** para adicionar/remover colliders salientes
-  `PART_*` e ajustar o bônus % de cada um). Cada toggle é o interruptor mestre da sua categoria (nenhum som/animação toca
+  Debug 3D) e **dano por membro** (campos de bônus % **flutuando ao lado de cada membro/
+  sub-membro sobre o modelo**, para personagens, mais um painel à direita para adicionar/remover
+  colliders salientes `PART_*` e definir o **membro-dono** de cada um). Cada toggle é o interruptor mestre da sua categoria (nenhum som/animação toca
   enquanto o toggle estiver desligado, inclusive som disparado por trilhas de animação) e os estados
   dos toggles são persistidos entre visitas (exceto o painel de dano, que abre fechado). Uma
   animação só roda quando **o toggle está ligado E um clip está escolhido** no dropdown
@@ -80,9 +84,11 @@ em terceira pessoa. Em alto nível, oferece:
   **próprios** da tela Models (Rótulos + toggles Tipo/Nome/ID) — a cena Models está **totalmente
   desacoplada** do overlay de **Debug 3D** global (seu nó raiz está no grupo `no_debug_overlay`),
   então Debug 2D/3D só afetam os **levels do jogo**. Por estar isenta do overlay global, a tela
-  exibe seu **próprio rótulo do nome da cena** no canto inferior esquerdo (igual ao das demais
-  telas, mas sempre visível, sem depender de toggle de Debug). Personagens com skin são
-  enquadrados/centralizados pelos colliders posados para girarem no lugar em vez de derivar.
+  exibe seu **próprio rótulo do nome da cena** — ancorado **dentro do painel de dano** (docado à
+  direita, canto inferior esquerdo interno), aparecendo junto com o painel. Personagens com skin são
+  enquadrados/centralizados pelos colliders posados para girarem no lugar em vez de derivar, e os
+  modelos abrem **de frente para a câmera** (player e red_robot, exportados com a frente em +Z, já
+  iniciam mostrando o rosto, sem precisar rotacionar).
 - **HUD cyberpunk & widgets 2D** — um conjunto de controles de UI reutilizáveis (HUD, minimapa,
   vitais, mira, menu de pausa, scanlines e mais).
 - **Ferramentas de debug** — veja [Tela developer & overlay de debug](#tela-developer--overlay-de-debug).
@@ -100,7 +106,9 @@ distintas para você diferenciá-los:
 
 - **Debug 2D** (rótulos/tooltips amarelo claro) — master `debug_2d` mais os interruptores
   dependentes `Type` / `Name` / `Id`. Controla o overlay 2D (uma borda colorida + um tooltip
-  TYPE/Name/ID) em cada `Control`.
+  TYPE/Name/ID) em cada `Control`. Os tooltips 2D aparecem em **todas as telas, sem exceção** —
+  inclusive Models e o editor de Dano (que saem do overlay **3D** via `no_debug_overlay`) — e
+  também sobre o **rótulo do nome da cena** no canto inferior esquerdo.
 - **Debug 3D** (rótulos ciano claro) — master `debug_3d` mais os dependentes `Type` / `Name` /
   `Id` (descrevendo o nó `Skeleton3D`), `Members`, `Skeleton` e `Mesh`. Renderiza rótulos
   `Label3D` por membro que seguem a pose viva.
@@ -243,6 +251,14 @@ autocontido de ~589 MB) pela CLI headless do Godot 4.6.2 e (re)cria um atalho **
 Desktop usando `build/icon.ico` (rasterizado uma vez a partir do `icon.svg`). Requer Godot 4.6.2 +
 os export templates instalados; o `.ico` é gerado só na 1ª execução (precisa de Python 3 com
 Pillow) e reusado depois. A pasta `build/` e o `export_presets.cfg` são ignorados pelo git.
+
+Antes de exportar, o script **encerra automaticamente** qualquer instância aberta do `ZIMARO.exe`
+(e limpa um `.tmp` órfão), evitando o erro *"Failed to rename temporary file"* quando o jogo está
+rodando — isso só acontece quando há de fato um rebuild (turnos sem mudança são pulados).
+
+O **boot splash** abre numa tela **preta sem o logo do Godot** (`application/boot_splash/show_image=false`
++ `bg_color=preto` + `minimum_display_time=0` no `project.godot`), então a janela só aparece escura
+até o menu carregar — sem a marca-d'água da engine.
 
 ## Estrutura do projeto
 

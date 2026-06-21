@@ -108,9 +108,14 @@ cascata (antes ficavam "presos" visíveis ao trocar um selector acima).
 
 ### Rotação do preview
 
-`_yaw`/`_pitch` separados → `model_holder.rotation = Vector3(_pitch, _yaw, 0)`
-(roll sempre 0, só eixos ortogonais). Ao arrastar, **ambos** os eixos vão até
-**±180°** (2026-06-16): `_yaw` (esquerda/direita) gira o modelo até as costas e
+`_yaw`/`_pitch` separados → `model_holder.rotation = Vector3(_pitch, _front_yaw_base + _yaw, 0)`
+(roll sempre 0, só eixos ortogonais). `_front_yaw_base` é a **orientação frontal BASE** do modelo
+antes do drag (default `DEFAULT_FRONT_YAW = PI`, o flip de 180° da convenção front=-Z). **Por
+modelo (2026-06-21):** `_MODEL_FRONT_YAW` sobrescreve essa base — `player` e `red_robot` foram
+exportados com a **frente em +Z** (mesma direção da câmera), então o flip de 180° os mostrava de
+**costas**; com `0.0` eles **abrem de frente**, sem o usuário precisar rotacionar. Setado em
+`_on_model_selected` (e resetado em `_reset_meshes_and_preview`). Ao arrastar, **ambos** os eixos
+vão até **±180°** (2026-06-16): `_yaw` (esquerda/direita) gira o modelo até as costas e
 `_pitch` (cima/baixo) tomba o modelo de ponta-cabeça. O modelo é **nivelado** antes
 do giro: `_preview_whole_model()` zera a rotação embutida da raiz do `.glb`
 (desconsidera inclinações angulares). Arrastar com o botão esquerdo sobre a área 3D
@@ -132,12 +137,14 @@ toggle é o **interruptor mestre** da sua categoria:
 > cena** (Rótulos + os checkboxes Tipo/Nome/ID), não mais os sub-toggles globais. Foram-se o
 > `_debug3d_tooltips_enabled()` e toda leitura de `game/*` em `models.gd`.
 >
-> **Rótulo do nome da cena próprio (2026-06-20):** como a cena é isenta do overlay global, ela
-> traz seu **próprio** `SceneNameLabel` no canto inferior esquerdo (nó embutido no `.tscn`,
-> estilo/posição iguais ao watermark de `debug_overlay.gd` — alpha 0.65, sombra, faixa do
-> "Voltar"), preenchido em `_ready` com `name` (o nó raiz). Fica **sempre visível**, sem
-> depender de toggle de Debug — diferente das demais telas, onde o watermark vem do overlay
-> global. Ver [[sistemas/debug-overlay]].
+> **Rótulo do nome da cena próprio (2026-06-20, reposicionado 2026-06-21):** como a cena é isenta
+> do overlay global, ela traz seu **próprio** `SceneNameLabel` (nó embutido no `.tscn`, estilo do
+> watermark de `debug_overlay.gd` — alpha 0.65, sombra), preenchido em `_ready` com `name` (o nó
+> raiz). Fica **ancorado DENTRO do `DamagePanel`** (docado à DIREITA desde 2026-06-21; canto
+> inferior esquerdo interno, âncoras à direita acompanhando o painel) e **segue a visibilidade do
+> painel** — `_refresh_damage_panel()` faz `scene_name_label.visible = damage_panel.visible` nas
+> saídas, e `_ready` o inicia oculto. Nota: o watermark GLOBAL de `debug_overlay.gd` também mostra
+> "Models" no canto da tela (e agora ganha **tooltip de Debug 2D**). Ver [[sistemas/debug-overlay]].
 
 > [!important] Toggles agem **in-place** (2026-06-17)
 > Nenhum toggle **reconstrói** o preview: o modelo **não é recarregado** e a
@@ -189,12 +196,25 @@ toggle é o **interruptor mestre** da sua categoria:
     de pixels para metros (fator px/m da câmera na profundidade da âncora, robusto ao zoom/escala do
     fit-to-view) e aplicado movendo o pivô no espaço-mundo (para baixo = `-câmera.up`). Indexado em
     `_member_label_pivots`; sem pilhas, é no-op.
-- **Dano por membro** (2026-06-20) — abre o painel `DamagePanel` (largo o bastante p/ mostrar
-  todos os controles de cada linha; o `ScrollContainer` tem `horizontal_scroll_mode = 0`, ou seja
-  **só rolagem vertical** — 2026-06-21) com uma linha por membro
-  (rótulo + `SpinBox` em **bônus %**), pré-preenchida com o valor salvo em
-  [[sistemas/dano-localizado|LimbConfig]]; mudar grava em `res://data/limb_config.json` via
-  `LimbConfig.set_multiplier`. Só aparece para **personagem em "Modelo completo"**
+- **Dano por membro** — **REORGANIZADO 2026-06-21:** os **campos de dano FLUTUAM sobre o modelo
+  3D**, ao lado de cada membro/sub-membro, e o `DamagePanel` (antes centrado 920×900) foi **docado à
+  direita** (~420×720) cobrindo só o **agrupamento**.
+  - **Campos flutuantes:** `_build_damage_fields` cria um cartão `[☑ Definir][SpinBox %]` por
+    collider de membro (meta `member_label`), hospedado num `Control` full-rect `DamageFieldLayer`
+    (mouse IGNORE) sobre a UI; `_layout_damage_fields` (por frame, no `_process`) projeta o centro do
+    `CollisionShape3D` com `camera.unproject_position` e posiciona o cartão ao lado. Checkbox **off =
+    SEM valor próprio** (herda; SpinBox desabilitado mostrando o EFETIVO via
+    `LimbConfig.effective_multiplier`); **on = valor explícito** (`set_multiplier`). **Nenhum valor é
+    obrigatório.** Mudanças recarimbam a meta de todos os colliders (`_restamp_damage_metas`) e
+    reexibem os herdados (`_refresh_inherited_displays`) sem rebuild (não rouba foco).
+  - **Painel à direita = só agrupamento:** lista cada `PART_*` com um `OptionButton` de **dono**
+    (membros do plano + "(Outros/sem dono)") e ×; mudar o dono pede **confirmação** (`ConfirmationDialog`
+    em `_on_owner_selected`) — é só agrupamento lógico (herança de dano), **nunca toca a malha**. A
+    linha "Adicionar sub-membro" tem o osso + o **dono explícito** + Adicionar (`_on_sub_member_added`
+    passa o dono a `LimbConfig.add_sub_member`). Ver [[sistemas/dano-localizado]].
+  - O resto abaixo descreve o comportamento ANTERIOR (linha por membro com SpinBox no painel) —
+    mantido como histórico; hoje o valor flutua e o painel cobre só o dono.
+  Só aparece para **personagem em "Modelo completo"**
   (`_preview_is_whole_character`); `_refresh_damage_panel` repopula ao trocar de modelo e some no
   resto. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta
   (`_current_model_key`), igual ao `model_key` do gameplay. Os MEMBROS listados vêm do plano

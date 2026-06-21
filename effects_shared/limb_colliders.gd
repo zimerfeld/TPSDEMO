@@ -134,7 +134,10 @@ static func resolve_sub_member_owner(skel: Skeleton3D, bone_name: String, classi
 # plano-aware + hierarquia), vira "PLACA <MEMBRO>" (ex.: "PLACA BRAÇO E", "PLACA PERNA D"). Sem
 # dono claro, usa o próprio nome do osso.
 func _part_label(skel: Skeleton3D, bone_name: String) -> String:
-	var owner_group := resolve_sub_member_owner(skel, bone_name, _classifier, head_bone_names, torso_bone_names, leg_bone_names)
+	# Dono EXPLÍCITO escolhido na tela tem precedência; senão, resolução automática.
+	var owner_group := LimbConfig.sub_member_owner(model_key, bone_name)
+	if owner_group == "":
+		owner_group = resolve_sub_member_owner(skel, bone_name, _classifier, head_bone_names, torso_bone_names, leg_bone_names)
 	if owner_group != "":
 		var lab := _classifier.label_of(owner_group)
 		if lab != "":
@@ -270,7 +273,15 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	body.name = "Collider_%s" % group
 	body.collision_layer = hitbox_layer
 	body.collision_mask = 0   # passivo: é atingido, não detecta nada
-	var mult: float = LimbConfig.get_multiplier(model_key, group, _classifier)
+	# Dano EFETIVO: um sub-membro (PART_*) sem valor próprio herda o do membro-DONO. O dono vem
+	# da escolha EXPLÍCITA salva (LimbConfig); na falta, da resolução automática por nome/hierarquia.
+	var owner_group := ""
+	if group.begins_with(_PART_PREFIX):
+		var bn := skel.get_bone_name(bone_idx)
+		owner_group = LimbConfig.sub_member_owner(model_key, bn)
+		if owner_group == "":
+			owner_group = resolve_sub_member_owner(skel, bn, _classifier, head_bone_names, torso_bone_names, leg_bone_names)
+	var mult: float = LimbConfig.effective_multiplier(model_key, group, _classifier, owner_group)
 	# Peças standalone (PART_*) usam o rótulo derivado do osso; membros normais, o do plano.
 	var label: String = _part_label(skel, skel.get_bone_name(bone_idx)) if group.begins_with(_PART_PREFIX) else _classifier.label_of(group)
 	body.set_meta("group", group)
