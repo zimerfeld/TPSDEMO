@@ -110,28 +110,41 @@ quaisquer de fase.
 
 `effects_shared/limb_config.gd` (`class_name LimbConfig`, `RefCounted` com API estática) — antigo
 `LimbDamage` (renomeado/substituído; `limb_damage.gd` + `data/limb_damage.json` foram **removidos**)
-— guarda, **por modelo**, o multiplicador de cada membro/sub-membro **e** a lista de sub-membros, em
-**`res://data/limb_config.json`**. O schema agora é **ANINHADO**:
+— guarda o multiplicador de cada membro/sub-membro, a lista de sub-membros **e** a relação de dono
+de cada um. **UM ARQUIVO POR PERSONAGEM (2026-06-21):** `res://data/limb_config/<model_key>.json`
+(antes era um único `res://data/limb_config.json` com `{model_key: {...}}`). **Migração transparente:**
+`_load_entry` lê o arquivo por modelo e, se ainda não existir, cai no arquivo combinado ANTIGO; o
+primeiro SAVE de um modelo grava o arquivo próprio dele (sem perder os dados). Schema de cada arquivo:
 
 ```json
 {
-  "red_robot": {
-    "damage": { "HEAD": 2.0, "PART_L-RearLegGuard": 1.0 },
-    "sub_members": ["L-RearLegGuard", "R-RearLegGuard"]
-  }
+  "damage": { "HEAD": 2.0, "PART_L-RearLegGuard": 1.0 },
+  "sub_members": ["L-RearLegGuard", "R-RearLegGuard"],
+  "sub_member_owners": { "L-RearLegGuard": "LEG_L", "R-RearLegGuard": "LEG_R" },
+  "collider_offsets": { "HEAD": [0.0, 0.1, 0.0] }
 }
 ```
 
-- Chave = **`model_key`** = nome da pasta do modelo (`"red_robot"`, `"player"`), o MESMO valor que
-  `player.gd`/`red_robot.gd` passam em `LimbColliders.model_key`. `GROUP` = chave do plano
-  (`HEAD`/`TORSO`/`ARM_L`/…/`LEG_FL`/…) ou `PART_<osso>` p/ sub-membro. Valor = **multiplicador**
-  (`1.0` = normal, `1.5` = +50%).
-- API estática: `get_multiplier(model_key, group, classifier)`, `set_multiplier(model_key, group,
-  mult)`, `sub_members(model_key)`, `add_sub_member(model_key, bone)`, `remove_sub_member(model_key,
-  bone)` (esta também apaga o `PART_<bone>` do `damage`) e `load_table`.
-- O **default NÃO está mais em LimbConfig** — vem do **PLANO**: `get_multiplier` cai em
-  `classifier.default_multiplier(group)` quando não há entrada salva. O arquivo só guarda ajustes
-  do usuário, então sem JSON o comportamento é o default do plano (zero regressão).
+- **`model_key`** = nome da pasta do modelo (`"red_robot"`, `"player"`), o MESMO valor que
+  `player.gd`/`red_robot.gd` passam em `LimbColliders.model_key`; agora é o **nome do arquivo**.
+  `GROUP` = chave do plano (`HEAD`/`TORSO`/`ARM_L`/…/`LEG_FL`/…) ou `PART_<osso>` p/ sub-membro.
+  Valor = **multiplicador** (`1.0` = normal, `1.5` = +50%). `sub_member_owners` = membro-**DONO**
+  EXPLÍCITO de cada sub-membro (agrupamento só lógico p/ herança; vazio = resolução automática).
+  `collider_offsets` (2026-06-22) = **afastamento** `[x,y,z]` (metros, espaço local do collider)
+  aplicado à `position` do `StaticBody3D` de cada membro/sub-membro, editável na tela Models (ver
+  [[sistemas/biblioteca-de-modelos]]); ausente/zero = sem afastamento.
+- API estática (2026-06-21): `effective_multiplier(model_key, group, classifier, owner_group="")`
+  (COM herança), `get_multiplier(...)` (wrapper sem owner), `has_multiplier`/`clear_multiplier`
+  (estado do checkbox "Definir"), `set_multiplier`, `sub_members`, `sub_member_owner(s)`,
+  `set_sub_member_owner`, `add_sub_member(model_key, bone, owner="")`, `remove_sub_member` (apaga
+  também o `PART_<bone>` do `damage`, o dono e o `collider_offsets`), `collider_offset`/
+  `set_collider_offset` (2026-06-22) e `load_table`.
+- **Herança / "nenhum valor é obrigatório" (2026-06-21):** `effective_multiplier` — valor EXPLÍCITO
+  do próprio grupo tem precedência; um `PART_*` SEM valor próprio **herda o do membro-DONO**
+  (explícito do dono, senão default do plano do dono); sem nada, cai no `default_multiplier` do
+  próprio grupo. `LimbColliders` carimba a meta `damage_multiplier` já RESOLVIDA (dono = explícito
+  de `LimbConfig`, senão `resolve_sub_member_owner`). O arquivo só guarda ajustes do usuário (sem
+  JSON = default do plano, zero regressão).
 - **Editor:** a tela Models tem o toggle **"Dano por membro"** que abre um painel flutuante
   (`DamagePanel`, centralizado, **720 px de altura** — aumentado de 500 em 2026-06-20 para caber
   mais membros/sub-membros sem rolar) com um `SpinBox` em **bônus %** por membro (cabeça `+50%` ⇒
@@ -170,18 +183,26 @@ que pega placas penduradas num osso AUX/IK cujo NOME diz o membro:
 
 O **rótulo** vira **"PLACA \<MEMBRO\>"** (ex.: "PLACA BRAÇO E", "PLACA PERNA D"); sem dono, usa o
 nome do osso. Seeds em `data/limb_config.json`: player = `shoulderpad-adjust.L/.R`; red_robot =
-`L-/R-RearLegGuard` + `L-/R-Shield`. ⚠️ O osso precisa de **vértices skinados** próprios —
-`shoulderpad.L/.R` (sem `-adjust`) têm 0 vértices e NÃO geram collider; quem deforma é
-`shoulderpad-adjust.L/.R`. Ossos que já são MEMBRO (`L-Shoulder`/`R-Shoulder` → BRAÇO) não entram
-na lista "Adicionar sub-membro" (que só oferece auxiliares, `group_of == ""`).
+`L-/R-RearLegGuard` + `L-/R-Shield`. ⚠️ O osso idealmente tem **vértices skinados** próprios —
+`shoulderpad.L/.R` (sem `-adjust`) têm 0 vértices e a região é deformada por `shoulderpad-adjust.L/.R`.
+**Fallback para ossos sem vértices (2026-06-22):** um sub-membro promovido cujo osso NÃO tem vértices
+dominantes (ex.: `Mouth`, ossos estruturais/vazios) **não somava mais um collider** e sumia da
+árvore/dropdown da tela Models; agora `_collect_member_boxes` (passo 4, helper `_fallback_part_size`)
+gera uma **pequena caixa centrada na origem (rest) do osso** (~20% do maior membro medido, escala-aware),
+para o sub-membro **aparecer e poder receber dano**. (O realce laranja e o rótulo "Osso", que usam
+`bone_vertex_box`, continuam exigindo vértices.) Ossos que já são MEMBRO (`L-Shoulder`/`R-Shoulder` →
+BRAÇO) não entram na lista "Adicionar sub-membro" (que só oferece auxiliares, `group_of == ""`).
 
 **Editor (painel "Dano por membro"):** lista **todos os membros do plano** (`_plan_member_entries`,
 mesma fonte do combo "Membro" desde 2026-06-21) e, **aninhado (↳, margem 24px) sob cada membro**,
 seus sub-membros (`PART_*`) — agrupados pelo MESMO `_sub_member_owner_map`/`owner_hint` dos combos
 (helper `_sub_members_by_owner`), para painel e dropdown concordarem; sub-membro sem dono na lista
-vai para a seção **"Outros sub-membros"**. Cada linha tem `SpinBox` de bônus % e, nos sub-membros,
-botão **× (remover)**. No fim, a linha de **adicionar** (`_add_sub_member_add_row`): um `OptionButton`
-com os ossos AUXILIARES do esqueleto do preview (os cujo `group_of` dá "") + botão "Adicionar".
+vai para a seção **"Outros sub-membros"**. O painel é uma **árvore (Tree)**; cada folha de sub-membro
+tem um **botão de lixeira à direita do nome** para removê-la ali mesmo — com **diálogo de confirmação**
+("Deseja realmente remover associação do sub-membro: <nome> ?") (2026-06-22; substituiu o antigo botão
+grande "Remover sub-membro" do rodapé — ver [[sistemas/biblioteca-de-modelos]]). No fim, a linha
+de **adicionar**: um `OptionButton` com os ossos AUXILIARES do esqueleto do preview (os cujo `group_of`
+dá "") + botão "Adicionar".
 Adicionar/remover chama `LimbConfig.add_sub_member`/`remove_sub_member` e **reconstrói** os colliders
 do preview (`_rebuild_member_colliders`), repondo gizmos/rótulos. A leitura em jogo (`bullet.gd`/
 `laser_shooter.gd` lendo a meta `damage_multiplier`) é **inalterada**.

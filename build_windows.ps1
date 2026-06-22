@@ -48,6 +48,25 @@ function Get-NewestSourceTime {
 	return $newest
 }
 
+# Encerra qualquer instância JÁ RODANDO do .exe que vamos sobrescrever (a janela aberta trava o
+# arquivo e o export falha com "Failed to rename temporary file ... ZIMARO.tmp"). Casa pelo CAMINHO
+# do executável (não só pelo nome), então não toca em processos não relacionados. Também remove um
+# .tmp órfão de um export anterior interrompido, que dá o mesmo erro de rename.
+function Stop-RunningZimaro {
+	param([string]$exe)
+	$killed = $false
+	Get-Process -ErrorAction SilentlyContinue | Where-Object {
+		try { $_.Path -eq $exe } catch { $false }
+	} | ForEach-Object {
+		Write-Host "Encerrando instância em execução do ZIMARO (PID $($_.Id))..."
+		try { Stop-Process -Id $_.Id -Force -ErrorAction Stop; $killed = $true } catch {}
+	}
+	# Dá um tempo para o Windows liberar o lock do arquivo antes de exportar.
+	if ($killed) { Start-Sleep -Milliseconds 800 }
+	$tmp = [System.IO.Path]::ChangeExtension($exe, ".tmp")
+	if (Test-Path $tmp) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+}
+
 # Localiza o executável do Godot 4.6.2 (caminho padrão; cai para busca se mudar).
 $godot = "C:\GODOT\Godot_v4.6.2-stable_win64.exe\Godot_v4.6.2-stable_win64.exe"
 if (-not (Test-Path $godot)) {
@@ -89,7 +108,9 @@ func _init() -> void:
 	py -3 -c "from PIL import Image; Image.open(r'$png').convert('RGBA').save(r'$ico', format='ICO', sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])"
 }
 
-# 2) Exporta o .exe (release, PCK embutido).
+# 2) Exporta o .exe (release, PCK embutido). Antes, encerra a instância aberta (se houver) para
+# não travar o arquivo de saída.
+Stop-RunningZimaro $exeOut
 Write-Host "Exportando $exeOut ..."
 & $godot --headless --path $proj --export-release "Windows Desktop" $exeOut
 if (-not (Test-Path $exeOut)) { throw "Export falhou: $exeOut não foi criado." }

@@ -3,6 +3,8 @@
 	"O jogo foi pausado automaticamente para proteger o sistema.\nAguarde a recuperação de recursos ou pressione ESC para continuar.": "The game was paused automatically to protect the system.\nWait for resources to recover or press ESC to continue.",
 	"Continuar mesmo assim  [ESC]": "Continue anyway  [ESC]",
 	"RAM crítica: %.0f MB (limite: %.0f MB)": "Critical RAM: %.0f MB (limit: %.0f MB)",
+	"RAM do sistema crítica: %.0f MB livres (limite: %.0f MB)": "Critical system RAM: %.0f MB free (limit: %.0f MB)",
+	"RAM do sistema baixa: %.0f MB livres": "Low system RAM: %.0f MB free",
 	"VRAM crítica: %.0f MB (limite: %.0f MB)": "Critical VRAM: %.0f MB (limit: %.0f MB)",
 	"Collision Pairs crítico: %.0f (limite: %.0f)": "Critical Collision Pairs: %.0f (limit: %.0f)",
 	"Node count crítico: %.0f (limite: %.0f)": "Critical node count: %.0f (limit: %.0f)",
@@ -29,6 +31,6 @@
 	"Triângulos": "Triangles",
 	"VRAM": "VRAM",
 	"Tex. Mem.": "Tex. Mem.",
-	"RAM Estática": "Static RAM",
+	"RAM Sistema": "System RAM",
 	"Resources": "Resources"
 }

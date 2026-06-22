@@ -25,6 +25,26 @@ const ALL_VALUE: String = "__all__"
 # is translated, so the restore code keys off this sentinel instead of the on-screen text.
 const WHOLE_MODEL_VALUE: String = "__whole_model__"
 
+# Option listed right below "Selecione..." in the Membro dropdown: "Todos os membros" — exibe
+# TODOS os membros (sem isolamento) e ainda lista TODOS os sub-membros para escolher qualquer um
+# individualmente. ALL_MEMBERS_VALUE é o sentinela estável (o rótulo visível é traduzido).
+const ALL_MEMBERS_LABEL: String = "Todos os membros"
+const ALL_MEMBERS_VALUE: String = "__all_members__"
+
+# Item no topo do filtro "Esqueleto" (modo "Todos os membros"): realça os respectivos modelos
+# 3D de TODOS os ossos avulsos de uma vez. Sentinela estável; rótulo traduzido.
+const ALL_AUX_LABEL: String = "Todo o esqueleto"
+const ALL_AUX_VALUE: String = "__all_aux__"
+
+# Prefixo dos nós de REALCE (caixa translúcida sobre a região de um osso avulso) e a cor do realce.
+const _AUX_HL_PREFIX := "_AuxHL_"
+const _AUX_HL_COLOR := Color(1.0, 0.6, 0.1, 0.35)   # laranja translúcido (distinto do verde dos colliders)
+
+# Prefixo dos BoneAttachment3D que carregam o Label3D com o NOME do osso avulso (toggle "Osso"),
+# e a cor do texto (laranja, casando com o realce). Independente do realce: pode haver nome sem caixa.
+const _AUX_LBL_PREFIX := "_AuxLbl_"
+const _AUX_LBL_COLOR := Color(1.0, 0.6, 0.1)
+
 # Root of the 3D model library. Models live in res://library3D/<tipo>/<modelo>/
 # (e.g. characters/red_robot, props/forklift, structures/core). The selection
 # dropdowns below are built by scanning this folder, so dropping a new model
@@ -98,6 +118,11 @@ var _auto_rotate: bool = false
 var _dragging: bool = false
 var _yaw: float = 0.0
 var _pitch: float = 0.0
+# Yaw frontal BASE do modelo atual (antes do drag do usuário). Padrão DEFAULT_FRONT_YAW
+# (180°, convenção front=-Z). Alguns modelos (player, red_robot) têm a FRENTE em +Z e
+# apareceriam de costas com o flip de 180°; eles sobrescrevem via _MODEL_FRONT_YAW para
+# já iniciar de frente, sem o usuário precisar rotacionar. Setado em _on_model_selected.
+var _front_yaw_base: float = DEFAULT_FRONT_YAW
 
 # Whole-model preview toggles. Colliders draws wireframe gizmos for the
 # (otherwise invisible) CollisionShape3D volumes; animation plays the model's
@@ -118,6 +143,14 @@ var _show_member_labels: bool = false
 var _show_type: bool = false
 var _show_name: bool = false
 var _show_id: bool = false
+# Toggle "Osso" (abaixo de ID): mostra, como Label3D 3D flutuante, o NOME do osso avulso
+# escolhido no dropdown "Ossos avulsos" (modo "Todos os membros"). Independente do realce
+# laranja (toggle "Realçar avulso"); pode-se ver só o nome, só a caixa, ou ambos. Persistido.
+var _show_osso: bool = false
+# Toggle "Realçar avulso": quando ligado E o filtro "Ossos avulsos" tem um item escolhido, desenha
+# uma caixa translúcida sobre a região daquele osso (ou de todos, em "Todos os ossos avulsos"),
+# sem esconder o modelo. "Selecione..." / toggle off = modelo inteiro, sem realce. Persistido.
+var _show_aux_highlight: bool = false
 # Editor de dano por membro (painel com um input de bônus % por membro). Só faz sentido
 # para personagens em "Modelo completo"; não é persistido (abre fechado a cada visita).
 var _show_damage_panel: bool = false
@@ -164,6 +197,27 @@ var _member_colliders_built: bool = false
 # tamanho aproximado do bloco em metros, usados para projetar seu retângulo de tela.
 var _member_label_pivots: Array = []
 
+# Registro dos itens da ÁRVORE de dano, um por membro/sub-membro. Cada entrada:
+# {"item": TreeItem, "group": String, "owner": String}. Usado por _refresh_tree_inherited para
+# reexibir, ao vivo, o valor herdado (range col 2) dos itens sem valor próprio quando o dono muda.
+var _damage_field_anchors: Array = []
+# Ícone de lixeira (gerado em código) usado no botão de remover de CADA folha de sub-membro na
+# árvore de dano (à direita do nome). Construído uma vez em _setup_damage_tree.
+var _trash_icon: Texture2D = null
+# id do botão de lixeira nas células da árvore (Tree.button_clicked devolve este id).
+const _TRASH_BTN_ID := 0
+
+# Arraste da janela flutuante de dano (clique e arraste na barra de título).
+var _damage_panel_dragging: bool = false
+var _damage_panel_drag_offset: Vector2 = Vector2.ZERO
+
+# Edição ao vivo do afastamento (offset) do collider do grupo focado. _offset_group é o grupo
+# carregado nos SpinBox; _offset_saved é o valor salvo no momento da carga; _offset_dirty marca que
+# o usuário mexeu (dispara a confirmação "Deseja salvar..." na próxima troca de seleção).
+var _offset_group: String = ""
+var _offset_saved: Vector3 = Vector3.ZERO
+var _offset_dirty: bool = false
+
 @onready var model_holder: Node3D = $ModelHolder
 @onready var camera: Camera3D = $Camera3D
 
@@ -183,6 +237,15 @@ var _zoom_target: float = 0.0
 @onready var cbo_members: OptionButton = $UI/Selectors/MemberRow/cboMembers
 @onready var sub_member_row: HBoxContainer = $UI/Selectors/SubMemberRow
 @onready var cbo_sub_members: OptionButton = $UI/Selectors/SubMemberRow/cboSubMembers
+# Rótulo da row de sub-membro: gerenciado em código (alterna "Sub-membro:" ↔ "Ossos avulsos:"),
+# por isso entra no SKIP_GROUP do Locale para o auto-tradutor não sobrescrevê-lo.
+@onready var sub_member_label: Label = $UI/Selectors/SubMemberRow/Label
+# Row de afastamento (offset) do collider do membro/sub-membro focado — só visível com o toggle
+# Colisores ligado E um grupo isolado. 3 SpinBox (X/Y/Z) editam ao vivo a posição do StaticBody3D.
+@onready var collider_offset_row: HBoxContainer = $UI/Selectors/ColliderOffsetRow
+@onready var offset_x: SpinBox = $UI/Selectors/ColliderOffsetRow/OffsetX
+@onready var offset_y: SpinBox = $UI/Selectors/ColliderOffsetRow/OffsetY
+@onready var offset_z: SpinBox = $UI/Selectors/ColliderOffsetRow/OffsetZ
 @onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
 @onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
 @onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
@@ -191,10 +254,19 @@ var _zoom_target: float = 0.0
 @onready var type_check: CheckButton = $UI/Toggles/LabelLinesRow/TypeCheck
 @onready var name_check: CheckButton = $UI/Toggles/LabelLinesRow/NameCheck
 @onready var id_check: CheckButton = $UI/Toggles/LabelLinesRow/IdCheck
+@onready var osso_check: CheckButton = $UI/Toggles/LabelLinesRow/OssoCheck
 @onready var damage_toggle: CheckButton = $UI/Toggles/DamageToggle
+@onready var aux_highlight_toggle: CheckButton = $UI/Toggles/AuxHighlightToggle
 @onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
 @onready var damage_panel: PanelContainer = $UI/DamagePanel
-@onready var damage_rows: VBoxContainer = $UI/DamagePanel/Margin/Scroll/VBox/Rows
+# Editor de dano em ÁRVORE (Tree): galhos = membros, folhas = sub-membros sob seu dono. Colunas:
+# Nome | Definir (check) | Bônus % (range) | Dono (dropdown, só sub-membros). Footer abaixo da
+# árvore = linha "Adicionar sub-membro" + botão "Remover sub-membro".
+@onready var damage_tree: Tree = $UI/DamagePanel/Main/Margin/Content/DamageTree
+@onready var damage_footer: VBoxContainer = $UI/DamagePanel/Main/Margin/Content/Footer
+# Barra de título (área de arraste) e botão fechar (×, estilo Windows) da janela flutuante de dano.
+@onready var damage_titlebar: PanelContainer = $UI/DamagePanel/Main/TitleBar
+@onready var damage_close_button: Button = $UI/DamagePanel/Main/TitleBar/TitleRow/CloseButton
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
 @onready var english_button: Button = $UI/LangBar/EnglishButton
 # Watermark do nome da cena no canto inferior esquerdo (mesma faixa do botão "Voltar"),
@@ -207,8 +279,11 @@ var _zoom_target: float = 0.0
 func _ready() -> void:
 	_zoom = camera.position.z
 	_zoom_target = _zoom
-	# Nome da cena (nó raiz) no watermark inferior esquerdo, como nas demais telas.
+	# Watermark LOCAL do nome da cena: mantido OCULTO (o nome "Models" não deve aparecer na janela
+	# de dano). O nome da cena já é mostrado pelo watermark GLOBAL de debug_overlay.gd no canto da
+	# tela. Nó preservado só para não quebrar referências.
 	scene_name_label.text = name
+	scene_name_label.visible = false
 	_categories = _scan_library()
 
 	cbo_category.clear()
@@ -223,6 +298,9 @@ func _ready() -> void:
 	cbo_effects.item_selected.connect(_on_effect_selected)
 	cbo_members.item_selected.connect(_on_member_selected)
 	cbo_sub_members.item_selected.connect(_on_sub_member_selected)
+	offset_x.value_changed.connect(_on_collider_offset_changed)
+	offset_y.value_changed.connect(_on_collider_offset_changed)
+	offset_z.value_changed.connect(_on_collider_offset_changed)
 	_reset_animations()
 	_reset_effects()
 	_reset_members()
@@ -238,6 +316,8 @@ func _ready() -> void:
 	_show_type = Settings.config_file.get_value("models", "show_type", _show_type)
 	_show_name = Settings.config_file.get_value("models", "show_name", _show_name)
 	_show_id = Settings.config_file.get_value("models", "show_id", _show_id)
+	_show_osso = Settings.config_file.get_value("models", "show_osso", _show_osso)
+	_show_aux_highlight = Settings.config_file.get_value("models", "show_aux_highlight", _show_aux_highlight)
 	_show_effects = Settings.config_file.get_value("models", "show_effects", _show_effects)
 
 	rotate_toggle.button_pressed = _auto_rotate
@@ -256,10 +336,19 @@ func _ready() -> void:
 	name_check.toggled.connect(_on_name_toggled)
 	id_check.button_pressed = _show_id
 	id_check.toggled.connect(_on_id_toggled)
+	osso_check.button_pressed = _show_osso
+	osso_check.toggled.connect(_on_osso_toggled)
 	damage_toggle.button_pressed = _show_damage_panel
 	damage_toggle.toggled.connect(_on_damage_toggled)
+	aux_highlight_toggle.button_pressed = _show_aux_highlight
+	aux_highlight_toggle.toggled.connect(_on_aux_highlight_toggled)
 	effects_toggle.button_pressed = _show_effects
 	effects_toggle.toggled.connect(_on_effects_toggled)
+	# O rótulo da row de sub-membro é dirigido por código (alterna com o filtro "Ossos avulsos"),
+	# então sai do auto-tradutor do Locale; _populate_sub_members/_on_language_changed o atualizam.
+	sub_member_label.add_to_group(Locale.SKIP_GROUP)
+	_setup_damage_window()
+	_setup_damage_tree()
 
 	# Pinta o texto de cada toggle de linha com a mesma cor do rótulo 3D que ele controla.
 	_apply_label_line_colors()
@@ -290,6 +379,14 @@ func _on_language_changed(_lang: String) -> void:
 	# The "Todos" entry (when present) sits at index 1 of the Efeitos dropdown.
 	if not _preview_effect_nodes.is_empty() and cbo_effects.item_count > 1:
 		cbo_effects.set_item_text(1, Locale.tr_key(ALL_EFFECTS_LABEL))
+	# "Todos os membros" fica no índice 1 do dropdown Membro (quando populado).
+	if cbo_members.item_count > 1:
+		cbo_members.set_item_text(1, Locale.tr_key(ALL_MEMBERS_LABEL))
+	# Rótulo da row de sub-membro (SKIP_GROUP, dirigido por código): re-traduz conforme o modo.
+	if member_row.visible and cbo_members.selected == 1:
+		sub_member_label.text = Locale.tr_key("Esqueleto:")
+	else:
+		sub_member_label.text = Locale.tr_key("Sub-membro:")
 	_update_language_buttons()
 
 
@@ -315,8 +412,9 @@ func _process(delta: float) -> void:
 	if _auto_rotate and not _dragging:
 		_yaw += delta * AUTO_ROTATE_SPEED
 	# Rebuild rotation from yaw/pitch with roll fixed at 0 (orthogonal axes only).
-	# The default 180° yaw turns the model's front toward the camera.
-	model_holder.rotation = Vector3(_pitch, DEFAULT_FRONT_YAW + _yaw, 0.0)
+	# _front_yaw_base turns the model's front toward the camera (180° por padrão; 0° para
+	# modelos cuja frente já é +Z, como player/red_robot — ver _MODEL_FRONT_YAW).
+	model_holder.rotation = Vector3(_pitch, _front_yaw_base + _yaw, 0.0)
 	# Glide the camera toward the wheel-set zoom distance instead of snapping.
 	if not is_equal_approx(_zoom, _zoom_target):
 		_zoom = lerpf(_zoom, _zoom_target, minf(ZOOM_SMOOTH * delta, 1.0))
@@ -325,6 +423,11 @@ func _process(delta: float) -> void:
 	# sobreponham na tela (o modelo gira, então a checagem é por frame). Sem pilhas, é no-op.
 	if not _member_label_pivots.is_empty():
 		_layout_member_labels()
+	# Rede de segurança do arraste da janela: se o botão foi solto fora da barra (ex.: a janela
+	# bateu no limite da viewport e o cursor escapou), encerra o arraste e salva a posição.
+	if _damage_panel_dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_damage_panel_dragging = false
+		_save_damage_panel_pos()
 
 
 # Sequential gating: each dropdown below Categoria stays DISABLED until the one
@@ -333,6 +436,7 @@ func _process(delta: float) -> void:
 # "Selecione..." placeholder (real categories start at index 1). Selecting it blanks
 # and disables the whole chain below and clears the preview.
 func _on_category_selected(index: int) -> void:
+	_prompt_save_offset_if_dirty()
 	_save_selection("sel_category", _category_value(index))
 	if index <= 0:
 		_reset_prefixes()
@@ -380,6 +484,7 @@ func _reset_prefixes() -> void:
 
 
 func _on_prefix_selected(index: int) -> void:
+	_prompt_save_offset_if_dirty()
 	_prefix_filter = cbo_prefix.get_item_metadata(index)
 	_save_selection("sel_prefix", _prefix_filter)
 	if _prefix_filter == "":
@@ -429,6 +534,7 @@ func _reset_models() -> void:
 # below Part (Animação, Efeitos, Membro, Sub-membro) so changing any upper dropdown
 # cascades a "Selecione..." reset all the way down.
 func _reset_meshes_and_preview() -> void:
+	_front_yaw_base = DEFAULT_FRONT_YAW
 	_model_scene = null
 	_display_scene = null
 	_mesh_catalog = []
@@ -448,6 +554,7 @@ func _reset_meshes_and_preview() -> void:
 # mesh) but leaves the placeholder selected, so nothing previews until a part is
 # picked. Selecting the placeholder blanks the part dropdown and the preview.
 func _on_model_selected(index: int) -> void:
+	_prompt_save_offset_if_dirty()
 	if index <= 0:
 		_save_selection("sel_model", "")
 		_reset_meshes_and_preview()
@@ -456,6 +563,9 @@ func _on_model_selected(index: int) -> void:
 	var model: Dictionary = _filtered_models[index - 1]
 	_save_selection("sel_model", model["name"])
 	_current_model_path = model["path"]
+	# Orientação inicial deste modelo: a maioria usa o flip de 180°; player/red_robot já
+	# nascem de frente (ver _MODEL_FRONT_YAW). Lido aqui pois _current_model_key() já resolve.
+	_front_yaw_base = _MODEL_FRONT_YAW.get(_current_model_key(), DEFAULT_FRONT_YAW)
 	_model_scene = load(model["path"])
 	_display_scene = load(model.get("display_path", model["path"]))
 	_mesh_catalog = _build_mesh_catalog(_model_scene)
@@ -479,6 +589,7 @@ func _on_model_selected(index: int) -> void:
 # index 1 is the assembled "Modelo completo", and indices 2.. map to the distinct
 # meshes in _mesh_catalog (shifted by the two leading entries).
 func _on_mesh_selected(index: int) -> void:
+	_prompt_save_offset_if_dirty()
 	_save_selection("sel_part", _part_value(index))
 	if index <= 0:
 		_clear_preview()
@@ -677,13 +788,16 @@ func _populate_members() -> void:
 	var prev := _member_value(cbo_members.selected)
 	_member_entries = _plan_member_entries()
 	cbo_members.clear()
-	cbo_members.add_item(Locale.tr_key(SELECT_LABEL))
+	cbo_members.add_item(Locale.tr_key(SELECT_LABEL))          # índice 0: placeholder
+	cbo_members.add_item(Locale.tr_key(ALL_MEMBERS_LABEL))     # índice 1: "Todos os membros"
 	for e in _member_entries:
-		cbo_members.add_item(str(e["label"]))
+		cbo_members.add_item(str(e["label"]))                 # índices 2+: membros do plano
 	cbo_members.select(maxi(_member_index_for_value(prev), 0))
 	cbo_members.disabled = _member_entries.is_empty()
 	_populate_sub_members()
 	_refresh_member_overlays()
+	_refresh_aux_highlight()
+	_refresh_aux_labels()
 
 
 # Reseta o dropdown "Membro" ao placeholder, desabilita e esconde a row (e a de sub-membro).
@@ -697,8 +811,11 @@ func _reset_members() -> void:
 	_reset_sub_members()
 
 
-# Preenche o dropdown "Sub-membro" com os PART_* do membro escolhido (ou esconde a row se não
-# houver membro específico escolhido ou ele não tiver sub-membros). Depende de cbo_members.
+# Preenche a row de baixo de cbo_members. Com um MEMBRO específico (índices 2+): o dropdown
+# "Sub-membro" lista os PART_* daquele membro. Com "Todos os membros" (índice 1): vira o filtro
+# "Ossos avulsos" — lista os OSSOS AVULSOS (os mesmos do dropdown "Adicionar sub-membro" da janela
+# de dano: ossos que o classificador descarta e ainda NÃO são sub-membros), só para inspeção
+# (selecionar não isola nada, pois não têm collider). Esconde a row no placeholder/sem itens.
 func _populate_sub_members() -> void:
 	var prev := _sub_member_value(cbo_sub_members.selected)
 	_sub_member_entries = []
@@ -706,22 +823,35 @@ func _populate_sub_members() -> void:
 	cbo_sub_members.add_item(Locale.tr_key(SELECT_LABEL))
 	var msel := cbo_members.selected
 	if not member_row.visible or msel <= 0:
+		sub_member_label.text = Locale.tr_key("Sub-membro:")
 		cbo_sub_members.select(0)
 		cbo_sub_members.disabled = true
 		sub_member_row.visible = false
 		return
-	var mgroup := str(_member_entries[msel - 1]["group"])
-	var owners := _sub_member_owner_map()
-	for body in _member_bodies():
-		var g := str((body as StaticBody3D).get_meta("group"))
-		if not g.begins_with("PART_"):
-			continue
-		if str(owners.get(g, "")) != mgroup:
-			continue
-		var lab := str((body as StaticBody3D).get_meta("member_label")) \
-			if (body as StaticBody3D).has_meta("member_label") else g.substr(len("PART_"))
-		_sub_member_entries.append({"group": g, "label": lab})
-	_sub_member_entries.sort_custom(func(a, b): return a["label"] < b["label"])
+	if msel == 1:
+		# Filtro "Ossos avulsos": os candidatos a sub-membro (group_of == "" e ainda não promovidos).
+		# Com candidatos, oferece "Todos os ossos avulsos" no topo (realça todos de uma vez).
+		sub_member_label.text = Locale.tr_key("Esqueleto:")
+		var aux := _aux_bone_candidates()
+		if not aux.is_empty():
+			_sub_member_entries.append({"group": ALL_AUX_VALUE, "label": Locale.tr_key(ALL_AUX_LABEL)})
+		for bn in aux:
+			_sub_member_entries.append({"group": bn, "label": bn})
+	else:
+		# Membro específico: só os sub-membros (PART_*) DAQUELE membro.
+		sub_member_label.text = Locale.tr_key("Sub-membro:")
+		var mgroup := str(_member_entries[msel - 2]["group"])
+		var owners := _sub_member_owner_map()
+		for body in _member_bodies():
+			var g := str((body as StaticBody3D).get_meta("group"))
+			if not g.begins_with("PART_"):
+				continue
+			if str(owners.get(g, "")) != mgroup:
+				continue
+			var lab := str((body as StaticBody3D).get_meta("member_label")) \
+				if (body as StaticBody3D).has_meta("member_label") else g.substr(len("PART_"))
+			_sub_member_entries.append({"group": g, "label": lab})
+		_sub_member_entries.sort_custom(func(a, b): return a["label"] < b["label"])
 	if _sub_member_entries.is_empty():
 		cbo_sub_members.select(0)
 		cbo_sub_members.disabled = true
@@ -745,31 +875,45 @@ func _reset_sub_members() -> void:
 
 # Escolher um membro: persiste, repopula os sub-membros daquele membro e reaplica o isolamento.
 func _on_member_selected(index: int) -> void:
+	_prompt_save_offset_if_dirty()
 	_save_selection("sel_member", _member_value(index))
 	_populate_sub_members()
 	_refresh_member_overlays()
+	_refresh_aux_highlight()
+	_refresh_aux_labels()
 
 
-# Escolher um sub-membro: persiste e reaplica o isolamento (membro + aquele sub-membro).
+# Escolher um sub-membro (ou um osso avulso no modo "Todos os membros"): persiste e reaplica o
+# isolamento e o realce.
 func _on_sub_member_selected(index: int) -> void:
+	_prompt_save_offset_if_dirty()
 	_save_selection("sel_submember", _sub_member_value(index))
 	_refresh_member_overlays()
+	_refresh_aux_highlight()
+	_refresh_aux_labels()
 
 
-# Valor estável persistido de um índice de "Membro": "" (placeholder) ou o group do membro.
+# Valor estável persistido de um índice de "Membro": "" (placeholder), ALL_MEMBERS_VALUE (índice 1
+# = "Todos os membros") ou o group do membro (índices 2+, deslocados pelo item "Todos").
 func _member_value(index: int) -> String:
-	if index <= 0 or index - 1 >= _member_entries.size():
+	if index <= 0:
 		return ""
-	return str(_member_entries[index - 1]["group"])
+	if index == 1:
+		return ALL_MEMBERS_VALUE
+	if index - 2 >= _member_entries.size():
+		return ""
+	return str(_member_entries[index - 2]["group"])
 
 
-# Inverso de _member_value: o índice do combo para um group salvo (0 quando vazio/inexistente).
+# Inverso de _member_value: o índice do combo para um valor salvo (0 quando vazio/inexistente).
 func _member_index_for_value(value: String) -> int:
 	if value == "":
 		return 0
+	if value == ALL_MEMBERS_VALUE:
+		return 1
 	for i in _member_entries.size():
 		if str(_member_entries[i]["group"]) == value:
-			return i + 1
+			return i + 2
 	return 0
 
 
@@ -825,22 +969,32 @@ func _current_focus_groups():
 	if not member_row.visible:
 		return null
 	var msel := cbo_members.selected
-	if msel <= 0 or msel - 1 >= _member_entries.size():
+	if msel <= 0:
+		return null
+	# "Todos os membros" (índice 1): a row de baixo vira o filtro "Ossos avulsos" (só inspeção) —
+	# nunca isola, sempre mostra TUDO. Checado ANTES do isolamento por sub-membro.
+	if msel == 1:
 		return null
 	var ssel := cbo_sub_members.selected
+	# Membro específico com sub-membro escolhido → isola SÓ aquele sub-membro.
 	if sub_member_row.visible and ssel >= 1 and ssel - 1 < _sub_member_entries.size():
 		return {str(_sub_member_entries[ssel - 1]["group"]): true}
-	return {str(_member_entries[msel - 1]["group"]): true}
+	if msel - 2 >= _member_entries.size():
+		return null
+	return {str(_member_entries[msel - 2]["group"]): true}
 
 
 # Reaplica os overlays de membro (gizmos de collider + pilhas de label) respeitando o foco
-# dos dropdowns. SEM foco: estado normal dos toggles (Colisores/Rótulos). COM foco: garante
-# que os gizmos existam (mesmo com Colisores off — o dropdown é seu próprio "inspecionar") e
-# esconde tudo que não está no foco. O ramo de foco NUNCA remove gizmos (só adiciona/esconde),
-# evitando corrida com o queue_free do _apply_colliders_visibility.
+# dos dropdowns. SEM foco: estado normal dos toggles (Colisores/Rótulos). COM foco: isola só o
+# membro/sub-membro escolhido. **Os colisores/limbcolliders SÓ aparecem com o toggle Colisores
+# LIGADO** — mesmo isolando via dropdown (o toggle é o interruptor mestre); com ele desligado,
+# nenhum gizmo é exibido. O isolamento dos RÓTULOS independe do toggle Colisores (segue os
+# toggles de Rótulos). O ramo de foco não remove gizmos (só adiciona/esconde), evitando corrida
+# com o queue_free do _apply_colliders_visibility (que limpa os gizmos quando o toggle está off).
 func _refresh_member_overlays() -> void:
 	if _preview_instance == null:
 		return
+	_refresh_collider_offset_inputs()
 	var focus = _current_focus_groups()
 	if focus == null:
 		_apply_colliders_visibility()
@@ -848,15 +1002,86 @@ func _refresh_member_overlays() -> void:
 		return
 	_ensure_member_colliders()
 	_apply_member_labels_visibility()        # (re)cria as pilhas conforme os toggles
-	_add_collider_gizmos(_preview_instance)  # idempotente: garante gizmo no membro em foco
+	if _show_colliders:
+		_add_collider_gizmos(_preview_instance)  # idempotente: garante gizmo no membro em foco
 	for body in _member_bodies():
-		var vis: bool = focus.has(str((body as StaticBody3D).get_meta("group")))
+		var in_focus: bool = focus.has(str((body as StaticBody3D).get_meta("group")))
+		# Gizmo do collider visível só com o toggle Colisores LIGADO E o membro em foco.
 		for giz in body.find_children(_GIZMO_NAME, "MeshInstance3D", true, false):
-			(giz as MeshInstance3D).visible = vis
-		# Esconde a pilha inteira de quem está fora de foco (o pivô agrupa as 4 linhas);
-		# em foco, o pivô fica visível e cada linha mantém o próprio toggle.
+			(giz as MeshInstance3D).visible = _show_colliders and in_focus
+		# Pilha de rótulos: isolamento independe de Colisores (o pivô agrupa as 4 linhas;
+		# em foco fica visível e cada linha mantém o próprio toggle).
 		for piv in body.find_children(_LABEL_PREFIX + "Pivot", "Node3D", true, false):
-			(piv as Node3D).visible = vis
+			(piv as Node3D).visible = in_focus
+
+
+# ── Afastamento (offset) do collider do membro/sub-membro focado ──────────────
+
+# Mostra/esconde e (re)carrega a row de afastamento conforme o foco e o toggle Colisores. Só aparece
+# com Colisores LIGADO E exatamente UM grupo focado (membro ou sub-membro). Ao mudar de grupo, carrega
+# o valor salvo nos SpinBox (sem disparar sinais) e zera o "dirty"; mesmo grupo → não mexe (preserva
+# uma edição em andamento). Com Colisores desligado a row some, mas o grupo/dirty são preservados.
+func _refresh_collider_offset_inputs() -> void:
+	var focus = _current_focus_groups()
+	var group := ""
+	if focus != null and focus.size() == 1:
+		group = str(focus.keys()[0])
+	collider_offset_row.visible = _show_colliders and group != ""
+	if not _show_colliders:
+		return
+	if group == "":
+		_offset_group = ""
+		return
+	if group != _offset_group:
+		_offset_group = group
+		_offset_dirty = false
+		_offset_saved = LimbConfig.collider_offset(_current_model_key(), group)
+		offset_x.set_value_no_signal(_offset_saved.x)
+		offset_y.set_value_no_signal(_offset_saved.y)
+		offset_z.set_value_no_signal(_offset_saved.z)
+
+
+# Mudou um SpinBox: marca "dirty" e aplica o afastamento AO VIVO no corpo do grupo focado.
+func _on_collider_offset_changed(_v: float) -> void:
+	if _offset_group == "":
+		return
+	_offset_dirty = true
+	_apply_offset_to_group(_offset_group, Vector3(offset_x.value, offset_y.value, offset_z.value))
+
+
+# Aplica um afastamento à posição do StaticBody3D de um grupo no preview vivo (shape/gizmo/rótulo
+# acompanham, pois são filhos do corpo). No-op se o grupo não tem corpo no preview.
+func _apply_offset_to_group(group: String, offset: Vector3) -> void:
+	for body in _member_bodies():
+		if str((body as StaticBody3D).get_meta("group")) == group:
+			(body as StaticBody3D).position = offset
+			return
+
+
+# Chamado ANTES de processar uma nova seleção de membro/sub-membro: se o afastamento do grupo atual
+# foi alterado, pergunta se deve salvar. Confirmar grava em LimbConfig; cancelar reverte o corpo vivo
+# ao valor salvo. Consome o "dirty" de imediato (a nova seleção recarrega a row para o novo grupo).
+func _prompt_save_offset_if_dirty() -> void:
+	if not _offset_dirty or _offset_group == "":
+		return
+	var grp := _offset_group
+	var new_off := Vector3(offset_x.value, offset_y.value, offset_z.value)
+	var old_off := _offset_saved
+	var model_key := _current_model_key()
+	_offset_dirty = false
+	var dlg := ConfirmationDialog.new()
+	dlg.title = Locale.tr_key("Colisores")
+	dlg.dialog_text = "Deseja salvar modificações para colisores ?"
+	add_child(dlg)
+	dlg.confirmed.connect(func():
+		LimbConfig.set_collider_offset(model_key, grp, new_off)
+		dlg.queue_free()
+	)
+	dlg.canceled.connect(func():
+		_apply_offset_to_group(grp, old_off)   # descarta: reverte o corpo vivo ao valor salvo
+		dlg.queue_free()
+	)
+	dlg.popup_centered()
 
 
 func _on_rotate_toggled(pressed: bool) -> void:
@@ -887,6 +1112,150 @@ func _on_colliders_toggled(pressed: bool) -> void:
 	_refresh_member_overlays()
 
 
+# ── Realce de "osso avulso" (toggle "Realçar avulso") ─────────────────────────
+
+func _on_aux_highlight_toggled(pressed: bool) -> void:
+	_show_aux_highlight = pressed
+	_save_toggle("show_aux_highlight", pressed)
+	_refresh_aux_highlight()
+
+
+# Decide o que realçar a partir do toggle + do filtro "Ossos avulsos" (só vale no modo
+# "Todos os membros"). "Selecione..." ou toggle off → sem realce (modelo inteiro). Um osso →
+# realça aquele; "Todos os ossos avulsos" → realça todos os candidatos.
+func _refresh_aux_highlight() -> void:
+	if _preview_instance == null:
+		return
+	if not _show_aux_highlight or not member_row.visible or cbo_members.selected != 1:
+		_clear_aux_highlights()
+		return
+	var ssel := cbo_sub_members.selected
+	if ssel <= 0:
+		_clear_aux_highlights()
+		return
+	var val := _sub_member_value(ssel)
+	if val == ALL_AUX_VALUE:
+		_highlight_aux_bones(_aux_bone_candidates())
+	elif val != "":
+		_highlight_aux_bones([val])
+	else:
+		_clear_aux_highlights()
+
+
+# Remove as caixas de realce (filhas do esqueleto do preview).
+func _clear_aux_highlights() -> void:
+	if _preview_instance == null:
+		return
+	for n in _preview_instance.find_children(_AUX_HL_PREFIX + "*", "BoneAttachment3D", true, false):
+		(n as Node).free()
+
+
+# Desenha uma caixa translúcida (sem profundidade, por cima do modelo) ajustada à região de cada
+# osso, presa via BoneAttachment3D para acompanhar a pose. NÃO esconde nada (realce "por cima").
+func _highlight_aux_bones(bone_names: Array) -> void:
+	_clear_aux_highlights()
+	if _preview_instance == null:
+		return
+	var skels: Array = _preview_instance.find_children("*", "Skeleton3D", true, false)
+	if skels.is_empty():
+		return
+	var skel := skels[0] as Skeleton3D
+	for bn in bone_names:
+		var bidx := skel.find_bone(str(bn))
+		if bidx < 0:
+			continue
+		var box := LimbColliders.bone_vertex_box(skel, bidx)
+		if box.size == Vector3.ZERO:
+			continue
+		var att := BoneAttachment3D.new()
+		att.name = _AUX_HL_PREFIX + str(bn)
+		skel.add_child(att)
+		att.bone_name = str(bn)
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.no_depth_test = true
+		mat.albedo_color = _AUX_HL_COLOR
+		var bm := BoxMesh.new()
+		bm.size = box.size
+		var mi := MeshInstance3D.new()
+		mi.mesh = bm
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.position = box.position + box.size * 0.5
+		att.add_child(mi)
+
+
+# ── Rótulo do NOME do osso avulso (toggle "Osso") ─────────────────────────────
+
+# Espelha _refresh_aux_highlight, mas para os NOMES: decide o que rotular a partir do toggle "Osso"
+# + do dropdown "Ossos avulsos" (só vale no modo "Todos os membros"). "Selecione..." ou toggle off →
+# sem rótulo. Um osso → rotula aquele; "Todos os ossos avulsos" → rotula todos os candidatos.
+func _refresh_aux_labels() -> void:
+	if _preview_instance == null:
+		return
+	if not _show_osso or not member_row.visible or cbo_members.selected != 1:
+		_clear_aux_labels()
+		return
+	var ssel := cbo_sub_members.selected
+	if ssel <= 0:
+		_clear_aux_labels()
+		return
+	var val := _sub_member_value(ssel)
+	if val == ALL_AUX_VALUE:
+		_label_aux_bones(_aux_bone_candidates())
+	elif val != "":
+		_label_aux_bones([val])
+	else:
+		_clear_aux_labels()
+
+
+# Remove os rótulos de nome de osso avulso (filhos do esqueleto do preview).
+func _clear_aux_labels() -> void:
+	if _preview_instance == null:
+		return
+	for n in _preview_instance.find_children(_AUX_LBL_PREFIX + "*", "BoneAttachment3D", true, false):
+		(n as Node).free()
+
+
+# Desenha um Label3D (billboard, por cima do modelo) com o NOME de cada osso, preso via
+# BoneAttachment3D para acompanhar a pose, posicionado um pouco acima da região do osso.
+func _label_aux_bones(bone_names: Array) -> void:
+	_clear_aux_labels()
+	if _preview_instance == null:
+		return
+	var skels: Array = _preview_instance.find_children("*", "Skeleton3D", true, false)
+	if skels.is_empty():
+		return
+	var skel := skels[0] as Skeleton3D
+	for bn in bone_names:
+		var bidx := skel.find_bone(str(bn))
+		if bidx < 0:
+			continue
+		var att := BoneAttachment3D.new()
+		att.name = _AUX_LBL_PREFIX + str(bn)
+		skel.add_child(att)
+		att.bone_name = str(bn)
+		var lbl := Label3D.new()
+		lbl.text = str(bn)
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.no_depth_test = true
+		# Acima do realce/colliders e dos rótulos de membro, para o nome nunca ser engolido.
+		lbl.render_priority = 5
+		lbl.outline_render_priority = 4
+		lbl.pixel_size = _LBL_PIXEL_SIZE
+		lbl.font_size = _LBL_FONT_SIZE
+		lbl.modulate = _AUX_LBL_COLOR
+		lbl.outline_size = 4
+		lbl.outline_modulate = Color(0, 0, 0, 0.8)
+		# Posiciona um pouco acima do topo da caixa do osso (centro + meia-altura + folga).
+		var box := LimbColliders.bone_vertex_box(skel, bidx)
+		if box.size != Vector3.ZERO:
+			lbl.position = box.position + box.size * 0.5 + Vector3(0.0, box.size.y * 0.5 + 0.05, 0.0)
+		att.add_child(lbl)
+
+
 # Toggle PRÓPRIO dos rótulos de membro do browser: liga/desliga os Label3D "Membro: …"
 # sobre os colliders, sem depender da tela de Debug 3D.
 func _on_labels_toggled(pressed: bool) -> void:
@@ -915,6 +1284,14 @@ func _on_id_toggled(pressed: bool) -> void:
 	_refresh_member_overlays()
 
 
+# Toggle "Osso": liga/desliga o rótulo 3D com o NOME do osso avulso escolhido no dropdown
+# "Ossos avulsos". Não toca nos colliders/labels de membro (segue a mesma seleção do realce).
+func _on_osso_toggled(pressed: bool) -> void:
+	_show_osso = pressed
+	_save_toggle("show_osso", pressed)
+	_refresh_aux_labels()
+
+
 # True quando QUALQUER linha de rótulo de membro está ligada (Membro/Tipo/Nome/ID) — decide
 # construir colliders/labels do preview, já sem ler nada do Debug 3D global.
 func _any_member_label() -> bool:
@@ -926,6 +1303,71 @@ func _any_member_label() -> bool:
 func _on_damage_toggled(pressed: bool) -> void:
 	_show_damage_panel = pressed
 	_refresh_damage_panel()
+
+
+# Transforma o painel de dano numa JANELA FLUTUANTE estilo Windows: barra de título com fundo
+# próprio (área de arraste com cursor de mover) + botão × (fechar). Chamado uma vez em _ready.
+func _setup_damage_window() -> void:
+	# Fundo da JANELA: preto OPACO (alpha 1) com uma borda discreta.
+	var win_style := StyleBoxFlat.new()
+	win_style.bg_color = Color(0, 0, 0, 1)
+	win_style.border_color = Color(1, 1, 1, 0.18)
+	win_style.set_border_width_all(1)
+	win_style.set_corner_radius_all(4)
+	damage_panel.add_theme_stylebox_override("panel", win_style)
+	# Barra de título: cinza-escuro OPACO (contraste com o corpo preto), estilo janela do Windows.
+	var tb_style := StyleBoxFlat.new()
+	tb_style.bg_color = Color(0.16, 0.16, 0.2, 1)
+	tb_style.border_color = Color(1, 1, 1, 0.12)
+	tb_style.border_width_bottom = 1
+	tb_style.content_margin_left = 10
+	tb_style.content_margin_right = 6
+	tb_style.content_margin_top = 4
+	tb_style.content_margin_bottom = 4
+	damage_titlebar.add_theme_stylebox_override("panel", tb_style)
+	damage_titlebar.mouse_default_cursor_shape = Control.CURSOR_MOVE
+	damage_titlebar.gui_input.connect(_on_damage_titlebar_input)
+	damage_close_button.tooltip_text = Locale.tr_key("Fechar")
+	damage_close_button.pressed.connect(_on_damage_close)
+	# Restaura a ÚLTIMA posição salva da janela (default = posição do .tscn). Presa à viewport
+	# para nunca abrir fora da tela caso o valor salvo tenha ficado além da borda.
+	var saved_pos = Settings.config_file.get_value("models", "damage_panel_pos", damage_panel.position)
+	if saved_pos is Vector2:
+		var vp := get_viewport().get_visible_rect().size
+		var sz: Vector2 = damage_panel.size if damage_panel.size.x > 0 else (damage_panel.get_rect().size)
+		saved_pos.x = clampf(saved_pos.x, 0.0, maxf(0.0, vp.x - sz.x))
+		saved_pos.y = clampf(saved_pos.y, 0.0, maxf(0.0, vp.y - sz.y))
+		damage_panel.position = saved_pos
+
+
+# Persiste a posição atual da janela de dano (chamado ao terminar o arraste) — restaurada em
+# _setup_damage_window na próxima abertura/visita.
+func _save_damage_panel_pos() -> void:
+	Settings.config_file.set_value("models", "damage_panel_pos", damage_panel.position)
+	Settings.save_settings()
+
+
+# Arraste da janela: clique-segura na barra de título e move o painel inteiro, preso à viewport.
+func _on_damage_titlebar_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		_damage_panel_dragging = event.pressed
+		if event.pressed:
+			_damage_panel_drag_offset = damage_panel.position - damage_panel.get_global_mouse_position()
+		else:
+			_save_damage_panel_pos()   # salva a posição ao soltar
+	elif event is InputEventMouseMotion and _damage_panel_dragging:
+		var target := damage_panel.get_global_mouse_position() + _damage_panel_drag_offset
+		var vp := get_viewport().get_visible_rect().size
+		target.x = clampf(target.x, 0.0, maxf(0.0, vp.x - damage_panel.size.x))
+		target.y = clampf(target.y, 0.0, maxf(0.0, vp.y - damage_panel.size.y))
+		damage_panel.position = target
+
+
+# Botão × (fechar): desmarca o toggle "Dano por membro" — o handler do toggle esconde a janela e
+# limpa os campos flutuantes, mantendo o estado coerente (igual a desligar pelo toggle).
+func _on_damage_close() -> void:
+	_damage_panel_dragging = false
+	damage_toggle.button_pressed = false
 
 
 # The special-effect nodes already live in the preview (collected on build), so toggling
@@ -1331,6 +1773,12 @@ func _clear_preview() -> void:
 	_member_colliders_built = false
 	_preview_effect_nodes = []
 	_member_label_pivots = []
+	_clear_damage_fields()
+	# Zera o estado da edição de afastamento: sem preview não há corpo focado, e o próximo build deve
+	# recarregar os SpinBox do zero (senão um grupo de mesmo nome de outro modelo manteria valores velhos).
+	_offset_group = ""
+	_offset_dirty = false
+	collider_offset_row.visible = false
 	_yaw = 0.0
 	_pitch = 0.0
 	model_holder.rotation = Vector3.ZERO
@@ -1581,6 +2029,7 @@ const _LABEL_LINE_COLORS := {
 	"Type": Color(1.0, 0.66, 0.32),     # laranja (tipo)
 	"Name": Color(0.55, 1.0, 0.55),     # verde (nome)
 	"Id": Color(1.0, 0.92, 0.42),       # amarelo (id)
+	"Osso": Color(1.0, 0.6, 0.1),       # laranja (osso avulso — igual ao realce)
 }
 
 # Tamanho dos Label3D de membro (compartilhado entre a construção e o anti-colisão por tela,
@@ -1659,44 +2108,263 @@ func _preview_is_whole_character() -> bool:
 		and _part_value(cbo_meshes.selected) == WHOLE_MODEL_VALUE
 
 
-# (Re)constrói o painel: uma linha por membro (rótulo + SpinBox de bônus %), lendo o valor
-# salvo em LimbConfig. Oculta o painel quando o toggle está off ou o preview não é um
-# personagem completo. Idempotente — limpa as linhas antigas antes de repopular.
+# (Re)constrói o editor de dano como uma ÁRVORE (Tree): cada MEMBRO é um galho; seus sub-membros
+# (PART_*) são folhas SOB ele (ex.: "↳ PLACA BRAÇO E" sob "BRAÇO E") — a "estrutura de árvore com
+# galhos e folhas". Colunas: Nome | Definir(check) | Bônus %(range) | Dono(dropdown, só sub). O
+# footer abaixo tem "Adicionar sub-membro" + "Remover". Oculta tudo fora de "personagem em Modelo
+# completo". Idempotente — limpa árvore/footer antes. A associação dono→filho é salva em LimbConfig
+# e recarregada a cada add/remove (via _rebuild_member_colliders → aqui).
 func _refresh_damage_panel() -> void:
-	for child in damage_rows.get_children():
-		child.queue_free()
+	_damage_field_anchors = []
+	damage_tree.clear()
+	for c in damage_footer.get_children():
+		c.queue_free()
 	if not _show_damage_panel or not _preview_is_whole_character() or _preview_instance == null:
 		damage_panel.visible = false
 		return
 	_ensure_member_colliders()
 	var model_key := _current_model_key()
-	# Membros do plano (todos), na MESMA ordem/fonte do combo Membro. Cada membro vira uma linha
-	# e, INDENTADOS logo abaixo dele, seus sub-membros (PART_*) — agrupados pelo mesmo owner_hint
-	# usado nos combos, para painel e dropdowns concordarem sobre quem é dono de cada placa.
+	damage_tree.set_column_title(0, Locale.tr_key("Membro"))
+	damage_tree.set_column_title(1, Locale.tr_key("Def"))
+	damage_tree.set_column_title(2, Locale.tr_key("Bônus %"))
+	damage_tree.set_column_title(3, Locale.tr_key("Dono"))
+	var root := damage_tree.create_item()
 	var members := _plan_member_entries()
 	var member_groups := {}
 	for m in members:
 		member_groups[m["group"]] = true
 	var subs_by_owner := _sub_members_by_owner()
 	for m in members:
-		damage_rows.add_child(_make_damage_row(model_key, m["group"], m["label"]))
+		var mi := damage_tree.create_item(root)
+		_fill_member_item(mi, model_key, str(m["group"]), str(m["label"]))
 		for s in subs_by_owner.get(str(m["group"]), []):
-			damage_rows.add_child(_make_damage_row(model_key, s["group"], s["label"], s["bone"], true))
-	# Sub-membros cujo dono não está na lista (owner_hint "" ou grupo ausente): seção "Outros".
+			_fill_sub_member_item(damage_tree.create_item(mi), model_key, str(s["group"]), str(s["bone"]), str(s["label"]))
+	# Sub-membros cujo dono não está na lista (owner "" ou grupo ausente): galho "Outros".
 	var orphans: Array = []
 	for owner_group in subs_by_owner:
 		if not member_groups.has(owner_group):
 			for s in subs_by_owner[owner_group]:
 				orphans.append(s)
 	if not orphans.is_empty():
-		damage_rows.add_child(HSeparator.new())
-		var lbl := Label.new()
-		lbl.text = "Outros sub-membros"   # Label: auto-localizado pelo Locale via a chave no JSON
-		damage_rows.add_child(lbl)
+		var oi := damage_tree.create_item(root)
+		oi.set_text(0, Locale.tr_key("Outros sub-membros"))
+		oi.set_selectable(0, false)
 		for s in orphans:
-			damage_rows.add_child(_make_damage_row(model_key, s["group"], s["label"], s["bone"], true))
-	_add_sub_member_add_row(model_key)
+			_fill_sub_member_item(damage_tree.create_item(oi), model_key, str(s["group"]), str(s["bone"]), str(s["label"]))
+	_build_damage_footer(model_key)
 	damage_panel.visible = true
+
+
+# Configura o Tree do editor de dano (uma vez, em _ready): colunas, títulos visíveis, raiz oculta,
+# e conecta os sinais de edição/seleção das células.
+func _setup_damage_tree() -> void:
+	damage_tree.columns = 4
+	damage_tree.column_titles_visible = true
+	damage_tree.hide_root = true
+	damage_tree.set_column_expand(0, true)
+	damage_tree.set_column_expand(1, false)
+	damage_tree.set_column_custom_minimum_width(1, 44)
+	damage_tree.set_column_expand(2, false)
+	damage_tree.set_column_custom_minimum_width(2, 96)
+	damage_tree.set_column_expand(3, false)
+	damage_tree.set_column_custom_minimum_width(3, 150)
+	damage_tree.item_edited.connect(_on_damage_tree_edited)
+	damage_tree.button_clicked.connect(_on_damage_tree_button)
+	_trash_icon = _make_trash_icon()
+
+
+# Desenha em código um ícone de LIXEIRA (vermelho = excluir), usado no botão de remover de cada
+# folha de sub-membro da árvore. Gerado por código para não depender de asset/import externo.
+func _make_trash_icon() -> ImageTexture:
+	var s := 18
+	var img := Image.create(s, s, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var col := Color(0.93, 0.30, 0.24, 1.0)   # vermelho (ação destrutiva)
+	img.fill_rect(Rect2i(6, 1, 6, 2), col)    # alça (aba superior)
+	img.fill_rect(Rect2i(2, 3, 14, 2), col)   # tampa (barra larga)
+	img.fill_rect(Rect2i(4, 6, 10, 10), col)  # corpo da lixeira
+	# Ranhuras verticais (transparentes) — dão a cara de lixeira.
+	img.fill_rect(Rect2i(6, 7, 1, 8), Color(0, 0, 0, 0))
+	img.fill_rect(Rect2i(9, 7, 1, 8), Color(0, 0, 0, 0))
+	img.fill_rect(Rect2i(12, 7, 1, 8), Color(0, 0, 0, 0))
+	return ImageTexture.create_from_image(img)
+
+
+# Galho de um MEMBRO: nome + células de dano (sem dono — membros não herdam).
+func _fill_member_item(item: TreeItem, model_key: String, group: String, label: String) -> void:
+	item.set_text(0, label)
+	item.set_metadata(0, {"group": group, "bone": "", "owner": ""})
+	_fill_damage_cells(item, model_key, group, "")
+
+
+# Folha de um SUB-MEMBRO: "↳ nome" + células de dano + dropdown de DONO (col 3).
+func _fill_sub_member_item(item: TreeItem, model_key: String, group: String, bone: String, label: String) -> void:
+	item.set_text(0, "↳ " + label)
+	# Botão de lixeira à DIREITA do nome (col 0): remove ESTE sub-membro direto da árvore,
+	# sem precisar selecioná-lo + um botão grande no footer (ver _on_damage_tree_button).
+	if _trash_icon != null:
+		item.add_button(0, _trash_icon, _TRASH_BTN_ID, false, Locale.tr_key("Remover sub-membro"))
+	var owner := LimbConfig.sub_member_owner(model_key, bone)
+	if owner == "":
+		owner = str(_sub_member_owner_map().get(group, ""))
+	item.set_metadata(0, {"group": group, "bone": bone, "owner": owner})
+	_fill_damage_cells(item, model_key, group, owner)
+	# Col 3: DONO como dropdown (range com texto separado por vírgula = menu de opções).
+	var choices := _owner_choices()
+	var texts := PackedStringArray()
+	var sel := 0
+	for i in choices.size():
+		texts.append(str(choices[i]["label"]))
+		if str(choices[i]["group"]) == owner:
+			sel = i
+	item.set_cell_mode(3, TreeItem.CELL_MODE_RANGE)
+	item.set_text(3, ",".join(texts))
+	item.set_range_config(3, 0, maxi(choices.size() - 1, 0), 1)
+	item.set_range(3, sel)
+	item.set_editable(3, true)
+	item.set_tooltip_text(3, Locale.tr_key("Membro-dono (agrupa o dano; não mexe na malha)"))
+
+
+# Células de DANO de um item: col 1 = "Definir" (check), col 2 = bônus % (range -100..500, passo 5,
+# editável só com "Definir" ligado; senão mostra o valor EFETIVO herdado). Registra em
+# _damage_field_anchors p/ _refresh_tree_inherited atualizar os herdados ao vivo.
+func _fill_damage_cells(item: TreeItem, model_key: String, group: String, owner_group: String) -> void:
+	var has := LimbConfig.has_multiplier(model_key, group)
+	item.set_cell_mode(1, TreeItem.CELL_MODE_CHECK)
+	item.set_checked(1, has)
+	item.set_editable(1, true)
+	item.set_tooltip_text(1, Locale.tr_key("Definir dano (desmarcado = herda)"))
+	item.set_cell_mode(2, TreeItem.CELL_MODE_RANGE)
+	item.set_range_config(2, -100.0, 500.0, 5.0)
+	item.set_range(2, (LimbConfig.effective_multiplier(model_key, group, _current_classifier(), owner_group) - 1.0) * 100.0)
+	item.set_editable(2, has)
+	_damage_field_anchors.append({"item": item, "group": group, "owner": owner_group})
+
+
+# Edição de célula da árvore: Definir (check) liga/desliga o valor próprio; Bônus % (range) grava o
+# valor; Dono (range/dropdown) reassocia o sub-membro (com confirmação).
+func _on_damage_tree_edited() -> void:
+	var item := damage_tree.get_edited()
+	if item == null:
+		return
+	var meta = item.get_metadata(0)
+	if not (meta is Dictionary):
+		return
+	var col := damage_tree.get_edited_column()
+	var group := str(meta.get("group", ""))
+	var bone := str(meta.get("bone", ""))
+	var owner := str(meta.get("owner", ""))
+	var model_key := _current_model_key()
+	if col == 1:
+		var on := item.is_checked(1)
+		item.set_editable(2, on)
+		if on:
+			LimbConfig.set_multiplier(model_key, group, 1.0 + item.get_range(2) / 100.0)
+		else:
+			LimbConfig.clear_multiplier(model_key, group)
+			item.set_range(2, (LimbConfig.effective_multiplier(model_key, group, _current_classifier(), owner) - 1.0) * 100.0)
+		_restamp_damage_metas()
+		_refresh_tree_inherited()
+	elif col == 2:
+		if not item.is_checked(1):
+			return
+		LimbConfig.set_multiplier(model_key, group, 1.0 + item.get_range(2) / 100.0)
+		_restamp_damage_metas()
+		_refresh_tree_inherited()
+	elif col == 3:
+		_on_tree_owner_edited(model_key, item, bone, owner)
+
+
+# Reassocia o DONO de um sub-membro (col 3): pede CONFIRMAÇÃO (só agrupamento lógico, não mexe na
+# malha). Confirmado → grava e reconstrói a árvore; cancelado → reverte o dropdown.
+func _on_tree_owner_edited(model_key: String, item: TreeItem, bone: String, prev_owner: String) -> void:
+	var choices := _owner_choices()
+	var idx := int(item.get_range(3))
+	if idx < 0 or idx >= choices.size():
+		return
+	var new_group := str(choices[idx]["group"])
+	if new_group == prev_owner:
+		return
+	var dlg := ConfirmationDialog.new()
+	dlg.title = Locale.tr_key("Reassociar sub-membro")
+	dlg.dialog_text = "Mudar o dono de \"%s\" para \"%s\"?\nSó muda o agrupamento/dano (herança) — não altera a malha." % [bone, str(choices[idx]["label"])]
+	add_child(dlg)
+	dlg.confirmed.connect(func():
+		LimbConfig.set_sub_member_owner(model_key, bone, new_group)
+		dlg.queue_free()
+		_rebuild_member_colliders()
+	)
+	dlg.canceled.connect(func():
+		var prev_idx := 0
+		for i in choices.size():
+			if str(choices[i]["group"]) == prev_owner:
+				prev_idx = i
+		item.set_range(3, prev_idx)
+		dlg.queue_free()
+	)
+	dlg.popup_centered()
+
+
+# Clique num botão de célula da árvore: o ícone de lixeira (à direita do nome de um sub-membro)
+# pede CONFIRMAÇÃO e então remove AQUELE sub-membro. Outros ids/colunas são ignorados.
+func _on_damage_tree_button(item: TreeItem, _column: int, id: int, _mouse_button: int) -> void:
+	if id != _TRASH_BTN_ID or item == null:
+		return
+	var meta = item.get_metadata(0)
+	if not (meta is Dictionary):
+		return
+	var bone := str(meta.get("bone", ""))
+	if bone == "":
+		return
+	# Nome exibido do sub-membro (sem o prefixo "↳ " da árvore) para a frase da confirmação.
+	var sub_name := item.get_text(0).trim_prefix("↳ ").strip_edges()
+	var model_key := _current_model_key()
+	var dlg := ConfirmationDialog.new()
+	dlg.title = Locale.tr_key("Remover sub-membro")
+	dlg.dialog_text = "Deseja realmente remover associação do sub-membro: %s ?" % sub_name
+	add_child(dlg)
+	dlg.confirmed.connect(func():
+		dlg.queue_free()
+		_on_sub_member_removed(model_key, bone)
+	)
+	dlg.canceled.connect(func(): dlg.queue_free())
+	dlg.popup_centered()
+
+
+# Footer abaixo da árvore: só a linha "Adicionar sub-membro" (osso avulso + dono explícito +
+# Adicionar). A REMOÇÃO agora é por linha, via ícone de lixeira ao lado do nome de cada sub-membro
+# (ver _fill_sub_member_item / _on_damage_tree_button). Reconstruído a cada _refresh_damage_panel.
+func _build_damage_footer(model_key: String) -> void:
+	damage_footer.add_child(HSeparator.new())
+	var title := Label.new()
+	title.text = "Adicionar sub-membro"   # Label: auto-localizado pelo Locale
+	damage_footer.add_child(title)
+	var add_row := HBoxContainer.new()
+	add_row.add_theme_constant_override("separation", 8)
+	var picker := OptionButton.new()
+	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var candidates := _aux_bone_candidates()
+	if candidates.is_empty():
+		picker.add_item(Locale.tr_key("(sem ossos auxiliares)"))
+		picker.disabled = true
+	else:
+		for b in candidates:
+			picker.add_item(b)
+	add_row.add_child(picker)
+	var owner_btn := OptionButton.new()
+	owner_btn.tooltip_text = Locale.tr_key("Membro-dono (agrupa o dano; não mexe na malha)")
+	for ch in _owner_choices():
+		var i := owner_btn.item_count
+		owner_btn.add_item(str(ch["label"]))
+		owner_btn.set_item_metadata(i, str(ch["group"]))
+	owner_btn.disabled = candidates.is_empty()
+	add_row.add_child(owner_btn)
+	var add_btn := Button.new()
+	add_btn.text = "Adicionar"   # Button: auto-localizado pelo Locale
+	add_btn.disabled = candidates.is_empty()
+	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker, owner_btn))
+	add_row.add_child(add_btn)
+	damage_footer.add_child(add_row)
 
 
 # Mapa owner_group → [{group, label, bone}] dos sub-membros (PART_*) do preview, agrupados pelo
@@ -1722,80 +2390,63 @@ func _sub_members_by_owner() -> Dictionary:
 	return out
 
 
-# Uma linha do editor: rótulo do membro + SpinBox em bônus % (passo 5, faixa -100..+500),
-# pré-preenchido com (multiplicador salvo - 1) * 100. Mudar o valor grava em LimbConfig.
-# `remove_bone` != "" adiciona um botão × que remove o sub-membro (linhas PART_). `indent` recua
-# a linha (margem + prefixo ↳) para os sub-membros aninhados sob o membro dono.
-func _make_damage_row(model_key: String, group: String, label: String, remove_bone: String = "", indent: bool = false) -> Control:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	var name_lbl := Label.new()
-	name_lbl.text = ("↳ " + label) if indent else label
-	name_lbl.custom_minimum_size = Vector2(110, 0)
-	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(name_lbl)
-	var spin := SpinBox.new()
-	spin.min_value = -100.0
-	spin.max_value = 500.0
-	spin.step = 5.0
-	spin.suffix = "%"
-	spin.value = (LimbConfig.get_multiplier(model_key, group, _current_classifier()) - 1.0) * 100.0
-	spin.value_changed.connect(_on_member_damage_changed.bind(model_key, group))
-	row.add_child(spin)
-	if remove_bone != "":
-		var del := Button.new()
-		del.text = "×"
-		del.tooltip_text = Locale.tr_key("Remover sub-membro")
-		del.pressed.connect(_on_sub_member_removed.bind(model_key, remove_bone))
-		row.add_child(del)
-	if not indent:
-		return row
-	# Recuo dos sub-membros aninhados.
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 24)
-	margin.add_child(row)
-	return margin
+# ── Campos de dano (na janela) ────────────────────────────────────────────────
+
+# Esvazia o registro dos itens da árvore de dano (os TreeItem em si são liberados por
+# damage_tree.clear() em _refresh_damage_panel; aqui só zeramos o índice).
+func _clear_damage_fields() -> void:
+	_damage_field_anchors = []
 
 
-# Grava o novo multiplicador (1 + bônus%/100) em LimbConfig e atualiza a meta do collider
-# de preview vivo, para que o valor mostrado e o salvo fiquem coerentes na mesma sessão.
-func _on_member_damage_changed(pct: float, model_key: String, group: String) -> void:
-	var mult := 1.0 + pct / 100.0
-	LimbConfig.set_multiplier(model_key, group, mult)
+# Dono efetivo de um grupo p/ herança: membros não têm dono (""); sub-membros (PART_*) usam o
+# dono EXPLÍCITO salvo e, na falta, a resolução automática (owners_auto = _sub_member_owner_map).
+func _resolve_owner_for(model_key: String, group: String, owners_auto: Dictionary) -> String:
+	if not group.begins_with("PART_"):
+		return ""
+	var owner_group := LimbConfig.sub_member_owner(model_key, group.substr(len("PART_")))
+	if owner_group == "":
+		owner_group = str(owners_auto.get(group, ""))
+	return owner_group
+
+
+# Atualiza os valores HERDADOS na árvore (itens com "Definir" desligado): quando o valor de um
+# dono muda, os sub-membros sem valor próprio reexibem o número efetivo (range col 2), sem rebuild.
+func _refresh_tree_inherited() -> void:
+	var model_key := _current_model_key()
+	var classifier := _current_classifier()
+	for e in _damage_field_anchors:
+		var item: TreeItem = e["item"]
+		if is_instance_valid(item) and not item.is_checked(1):
+			item.set_range(2, (LimbConfig.effective_multiplier(model_key, str(e["group"]), classifier, str(e["owner"])) - 1.0) * 100.0)
+
+
+# Recarimba a meta "damage_multiplier" (lida pelo gameplay/gizmos) de TODOS os colliders do
+# preview com o valor EFETIVO (com herança), para o preview vivo bater com o salvo.
+func _restamp_damage_metas() -> void:
 	if _preview_instance == null:
 		return
+	var model_key := _current_model_key()
+	var classifier := _current_classifier()
+	var owners_auto := _sub_member_owner_map()
 	for node in _preview_instance.find_children("*", "StaticBody3D", true, false):
 		var body := node as StaticBody3D
-		if body.has_meta("group") and str(body.get_meta("group")) == group:
-			body.set_meta("damage_multiplier", mult)
+		if not body.has_meta("group"):
+			continue
+		var group := str(body.get_meta("group"))
+		var owner_group := _resolve_owner_for(model_key, group, owners_auto)
+		body.set_meta("damage_multiplier", LimbConfig.effective_multiplier(model_key, group, classifier, owner_group))
 
 
-# Linha "Adicionar sub-membro": separador + título + dropdown dos ossos auxiliares (group_of == "")
-# + botão Adicionar. As linhas dos sub-membros EXISTENTES agora são aninhadas sob cada membro em
-# _refresh_damage_panel; aqui fica só a promoção de um novo osso a sub-membro.
-func _add_sub_member_add_row(model_key: String) -> void:
-	damage_rows.add_child(HSeparator.new())
-	var title := Label.new()
-	title.text = "Adicionar sub-membro"   # Label: auto-localizado pelo Locale via a chave no JSON
-	damage_rows.add_child(title)
-	var add_row := HBoxContainer.new()
-	add_row.add_theme_constant_override("separation", 10)
-	var picker := OptionButton.new()
-	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var candidates := _aux_bone_candidates()
-	if candidates.is_empty():
-		picker.add_item(Locale.tr_key("(sem ossos auxiliares)"))
-		picker.disabled = true
-	else:
-		for b in candidates:
-			picker.add_item(b)
-	add_row.add_child(picker)
-	var add_btn := Button.new()
-	add_btn.text = "Adicionar"   # Button: auto-localizado pelo Locale via a chave no JSON
-	add_btn.disabled = candidates.is_empty()
-	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker))
-	add_row.add_child(add_btn)
-	damage_rows.add_child(add_row)
+# ── Painel de agrupamento (dono dos sub-membros) ──────────────────────────────
+
+# Opções de DONO para um sub-membro: os membros do plano + "(Outros / sem dono)" (group "").
+func _owner_choices() -> Array:
+	var out: Array = []
+	var c := _current_classifier()
+	for g in c.members():
+		out.append({"group": g, "label": c.label_of(g)})
+	out.append({"group": "", "label": "(Outros / sem dono)"})
+	return out
 
 
 # Ossos do esqueleto do preview que o classificador descarta (group_of == "") e ainda NÃO
@@ -1817,11 +2468,15 @@ func _aux_bone_candidates() -> Array[String]:
 	return out
 
 
-# Promove o osso escolhido a sub-membro, reconstrói os colliders do preview e repopula.
-func _on_sub_member_added(model_key: String, picker: OptionButton) -> void:
+# Promove o osso escolhido a sub-membro, com o membro-DONO escolhido no dropdown (item 3:
+# o usuário determina explicitamente onde ele entra). Reconstrói os colliders e repopula.
+func _on_sub_member_added(model_key: String, picker: OptionButton, owner_btn: OptionButton = null) -> void:
 	if picker.disabled or picker.selected < 0:
 		return
-	LimbConfig.add_sub_member(model_key, picker.get_item_text(picker.selected))
+	var owner_group := ""
+	if owner_btn != null and owner_btn.selected >= 0:
+		owner_group = str(owner_btn.get_item_metadata(owner_btn.selected))
+	LimbConfig.add_sub_member(model_key, picker.get_item_text(picker.selected), owner_group)
 	_rebuild_member_colliders()
 
 
@@ -1843,6 +2498,12 @@ func _rebuild_member_colliders() -> void:
 	if _member_colliders_built and _any_member_label():
 		_add_member_labels(_preview_instance)
 	_refresh_damage_panel()
+	# Repopula o dropdown Sub-membro/"Esqueleto": promover/remover um osso muda tanto a lista de
+	# sub-membros de um membro quanto os candidatos avulsos — sem isto o combo só atualizava ao
+	# re-selecionar o membro. Preserva a seleção atual (via _sub_member_value).
+	_populate_sub_members()
+	_refresh_aux_highlight()   # a lista de avulsos muda quando um osso é promovido/removido
+	_refresh_aux_labels()
 
 
 # Remove os colliders de membro atuais do preview: o nó LimbColliders (caminho com
@@ -1993,6 +2654,7 @@ func _add_member_labels(instance: Node) -> void:
 func _apply_label_line_colors() -> void:
 	var toggles := {
 		"Member": labels_toggle, "Type": type_check, "Name": name_check, "Id": id_check,
+		"Osso": osso_check,
 	}
 	for id in toggles:
 		var btn: CheckButton = toggles[id]
@@ -2102,9 +2764,27 @@ const _MODEL_HEAD_SHAPE := {
 	"player": "capsule",
 }
 
+# Forma do collider do TRONCO por modelo (espelha LimbColliders.torso_shape). Default "box".
+const _MODEL_TORSO_SHAPE := {
+	"red_robot": "sphere",
+}
+
+# Escala do collider da CABEÇA por modelo (espelha LimbColliders.head_scale). Default 1.0.
+const _MODEL_HEAD_SCALE := {
+	"red_robot": 1.3,
+}
+
+# Yaw frontal BASE por modelo (rad). Default é DEFAULT_FRONT_YAW (PI = 180°, para a convenção
+# front=-Z). O player e o red_robot foram exportados com a FRENTE em +Z (a mesma direção da
+# câmera), então o flip de 180° os mostraria de COSTAS — 0.0 os deixa de frente ao abrir.
+const _MODEL_FRONT_YAW := {
+	"player": 0.0,
+	"red_robot": 0.0,
+}
+
 # Sub-membros (placas salientes etc.) NÃO ficam mais numa tabela aqui: vêm de LimbConfig
-# (res://data/limb_config.json, por model_key), editáveis na tela — o preview os recebe ao
-# setar lc.model_key. Ver _add_member_colliders.
+# (res://data/limb_config/<model_key>.json — um arquivo por personagem), editáveis na tela — o
+# preview os recebe ao setar lc.model_key. Ver _add_member_colliders.
 
 
 # Build best-fit colliders that wrap each body MEMBER (sphere/capsule head, box torso,
@@ -2119,6 +2799,8 @@ func _add_member_colliders(instance: Node) -> void:
 		lc.body_type = _body_type_for_current()   # plano corporal → classificador
 		lc.model_key = _current_model_key()        # sub-membros + dano de LimbConfig
 		lc.head_shape = _MODEL_HEAD_SHAPE.get(_current_model_key(), "sphere")  # cabeça: esfera/cápsula
+		lc.torso_shape = _MODEL_TORSO_SHAPE.get(_current_model_key(), "box")   # tronco: caixa/esfera
+		lc.head_scale = _MODEL_HEAD_SCALE.get(_current_model_key(), 1.0)       # volume da cabeça
 		lc.hitbox_layer = 64        # own layer — does not touch damage layers (16/32)
 		lc.padding = 0.04           # tight gap around the mesh (hugs the body)
 		lc.head_bone_names = _head_bones_for_current()
@@ -2205,6 +2887,8 @@ func _add_mesh_member_colliders(instance: Node) -> void:
 		# editor de dano por membro também listar rigs sem Skeleton3D (criatura).
 		body.set_meta("group", g)
 		body.set_meta("member_label", members[g]["label"])
+		# Afastamento salvo (igual ao caminho com esqueleto em LimbColliders): move o corpo inteiro.
+		body.position = LimbConfig.collider_offset(_current_model_key(), g)
 		if is_weapon:
 			# Barrel → capsule along its length; receiver/grip/stock/mag → box.
 			var kind := "capsule" if g == WeaponParts.BARREL else "box"

@@ -5,14 +5,17 @@ extends Control
 ## Modo básico : FPS | NET | RAM | CPU% | GPU% | badge do StabilityGuard
 ## Modo avançado: painéis por categoria (CPU / GPU / Memória) com toggle
 ##
-## Todos os valores vêm do singleton Performance (confiável, multiplataforma). NET depende
-## de um NetworkManager opcional com get_total_bps(); como o ZIMARO não tem um, o indicador
-## degrada para "N/D" automaticamente. Textos fixos são localizados via Locale (todos no
-## grupo SKIP_GROUP — o script é dono deles e os re-traduz em language_changed).
+## A maioria dos valores vem do singleton Performance (confiável, multiplataforma). EXCEÇÃO: a
+## RAM vem de OS.get_memory_info() — memória do SISTEMA (usado/total) —, pois Performance.MEMORY_STATIC
+## só é rastreada em debug e fica 0 no .exe exportado em release. NET depende de um NetworkManager
+## opcional com get_total_bps(); como o ZIMARO não tem um, degrada para "N/D" automaticamente.
+## Textos fixos são localizados via Locale (todos no grupo SKIP_GROUP — o script é dono deles e os
+## re-traduz em language_changed).
 
 const UPDATE_INTERVAL  := 0.25
 const HEIGHT_BASIC     := 32
 const HEIGHT_ADVANCED  := 130
+const _GIB             := 1073741824.0   # bytes em 1 GiB (formatação da RAM do sistema)
 const COLOR_OK         := Color(0.2, 1.0, 0.4)
 const COLOR_WARN       := Color(1.0, 0.85, 0.1)
 const COLOR_CRIT       := Color(1.0, 0.25, 0.25)
@@ -92,7 +95,7 @@ func _build_ui() -> void:
 
 	_lbl_fps = _make_label("FPS: --",  hbox, 110)
 	_lbl_net = _make_label("NET: --",  hbox, 170)
-	_lbl_ram = _make_label("RAM: --",  hbox, 110)
+	_lbl_ram = _make_label("RAM: --",  hbox, 170)
 	_lbl_cpu = _make_label("CPU: --",  hbox, 110)
 	_lbl_gpu = _make_label("GPU: --",  hbox, 110)
 
@@ -155,7 +158,7 @@ func _build_ui() -> void:
 	_lbl_tex_mem    = _make_stat("Tex. Mem.",  "--", col_gpu)
 
 	var col_mem := _make_column("💾 Memória", cols)
-	_lbl_static_mem = _make_stat("RAM Estática", "--", col_mem)
+	_lbl_static_mem = _make_stat("RAM Sistema", "--", col_mem)
 	_lbl_resources  = _make_stat("Resources",    "--", col_mem)
 
 	var sep2 := ColorRect.new()
@@ -279,8 +282,23 @@ func _refresh() -> void:
 	else:
 		_lbl_net.text = "NET: %s" % Locale.tr_key("N/D")
 
-	var ram_bytes: float = Performance.get_monitor(Performance.MEMORY_STATIC)
-	_lbl_ram.text = "RAM: %d MB" % int(ram_bytes / 1_048_576.0)
+	# RAM do SISTEMA via OS.get_memory_info() — funciona em RELEASE (ao contrário de
+	# Performance.MEMORY_STATIC, que só é rastreado no editor/debug e fica 0 no .exe exportado).
+	# Mostra "usado/total" (usado = físico - livre, como o "Em uso" do Gerenciador de Tarefas) e
+	# colore pela % de uso. Plataforma sem dados → "N/D".
+	var mem_info := OS.get_memory_info()
+	var sys_phys: float = float(mem_info.get("physical", -1))
+	var sys_free: float = float(mem_info.get("free", -1))
+	if sys_free < 0.0:
+		sys_free = float(mem_info.get("available", -1))
+	var sys_used: float = maxf(0.0, sys_phys - sys_free) if (sys_phys > 0.0 and sys_free >= 0.0) else -1.0
+	if sys_used >= 0.0:
+		_lbl_ram.text = "RAM: %.1f/%.1f GB" % [sys_used / _GIB, sys_phys / _GIB]
+		var ram_frac := sys_used / sys_phys
+		_lbl_ram.add_theme_color_override("font_color",
+			COLOR_OK if ram_frac < 0.75 else (COLOR_WARN if ram_frac < 0.9 else COLOR_CRIT))
+	else:
+		_lbl_ram.text = "RAM: %s" % Locale.tr_key("N/D")
 
 	var proc_ms: float = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	var cpu_pct: float = clampf(proc_ms / 16.67 * 100.0, 0.0, 100.0)
@@ -330,10 +348,12 @@ func _refresh() -> void:
 	_color_threshold(_lbl_vram,       vram / 1_048_576.0, 256.0, 512.0)
 
 	var resources: float = Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)
-	_lbl_static_mem.text = "%d MB" % int(ram_bytes / 1_048_576.0)
+	if sys_used >= 0.0:
+		_lbl_static_mem.text = "%.1f/%.1f GB" % [sys_used / _GIB, sys_phys / _GIB]
+		_color_threshold(_lbl_static_mem, sys_used / sys_phys, 0.75, 0.9)
+	else:
+		_lbl_static_mem.text = Locale.tr_key("N/D")
 	_lbl_resources.text  = "%d" % int(resources)
-
-	_color_threshold(_lbl_static_mem, ram_bytes / 1_048_576.0, 256.0, 512.0)
 	_color_threshold(_lbl_resources,  resources, 1000.0, 3000.0)
 
 	_refresh_guard_badge()

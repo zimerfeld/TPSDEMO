@@ -6,8 +6,12 @@ extends Node
 ##   THROTTLE  → reduz a física (ticks/s) + emite sinal de aviso
 ##   EMERGENCY → pausa a árvore + overlay de emergência (tela cheia, dispensável com ESC)
 ##
-## Indicadores monitorados (via singleton Performance — internos da engine, confiáveis):
-##   • RAM estática    (MEMORY_STATIC)            esgotamento → OOM killer do SO
+## Indicadores monitorados (a maioria via singleton Performance — internos da engine, confiáveis):
+##   • RAM do SISTEMA  (OS.get_memory_info: "free")  pouca RAM física LIVRE → swap/OOM/freeze.
+##       Antes usava Performance.MEMORY_STATIC (RAM do jogo), mas ela é 0 no .exe em release —
+##       a proteção nunca disparava no executável. Agora age quando a RAM física LIVRE cai abaixo
+##       dos limites (ver ram_free_*_mb). Sem dado da plataforma (free < 0) → a checagem de RAM é
+##       ignorada (nunca dispara por falta de dado).
 ##   • VRAM            (RENDER_VIDEO_MEM_USED)    esgotamento → crash de driver GPU
 ##   • Collision Pairs (PHYSICS_3D_COLLISION_PAIRS) explosão → freeze do thread de física
 ##   • Node Count      (OBJECT_NODE_COUNT)        vazamento → RAM cresce sem parar
@@ -24,8 +28,11 @@ signal throttle_activated(reason: String)
 signal emergency_activated(reason: String)
 signal recovered()
 
-@export var ram_warn_mb:        float = 512.0
-@export var ram_crit_mb:        float = 800.0
+# Limiares de RAM física LIVRE do SISTEMA (MB): age quando a RAM livre cai ABAIXO deles
+# (pouca RAM livre = risco de swap/OOM). Independem do total instalado (512 MB livres já é
+# crítico em qualquer máquina). Ajustáveis no Inspector do autoload.
+@export var ram_free_warn_mb:   float = 1024.0
+@export var ram_free_crit_mb:   float = 512.0
 @export var vram_warn_mb:       float = 512.0
 @export var vram_crit_mb:       float = 800.0
 @export var col_pairs_warn:     float = 300.0
@@ -67,7 +74,14 @@ func _process(delta: float) -> void:
 
 
 func _evaluate() -> void:
-	var ram_mb:    float = Performance.get_monitor(Performance.MEMORY_STATIC) / 1_048_576.0
+	# RAM física LIVRE do SISTEMA (MB) via OS.get_memory_info() — funciona em release (MEMORY_STATIC
+	# ficaria 0). "free" = RAM física livre (no Windows = ullAvailPhys; "available" é virtual e não
+	# serve). -1.0 quando a plataforma não reporta → a checagem de RAM é pulada (não dispara).
+	var _mem := OS.get_memory_info()
+	var _free_b: float = float(_mem.get("free", -1))
+	if _free_b < 0.0:
+		_free_b = float(_mem.get("available", -1))
+	var ram_free_mb: float = _free_b / 1_048_576.0 if _free_b >= 0.0 else -1.0
 	var vram_mb:   float = Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1_048_576.0
 	var col_pairs: float = Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS)
 	var nodes:     float = Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
@@ -84,9 +98,9 @@ func _evaluate() -> void:
 	var worst: State = State.NORMAL
 	var reason: String = ""
 
-	if ram_mb >= ram_crit_mb:
+	if ram_free_mb >= 0.0 and ram_free_mb <= ram_free_crit_mb:
 		worst = State.EMERGENCY
-		reason = _reason("RAM crítica: %.0f MB (limite: %.0f MB)", [ram_mb, ram_crit_mb])
+		reason = _reason("RAM do sistema crítica: %.0f MB livres (limite: %.0f MB)", [ram_free_mb, ram_free_crit_mb])
 	elif vram_mb >= vram_crit_mb:
 		worst = State.EMERGENCY
 		reason = _reason("VRAM crítica: %.0f MB (limite: %.0f MB)", [vram_mb, vram_crit_mb])
@@ -101,9 +115,9 @@ func _evaluate() -> void:
 		reason = _reason("FPS ≤ %.0f por %d frames consecutivos (loop principal bloqueado)", [fps_crit, fps_crit_frames])
 
 	if worst == State.NORMAL:
-		if ram_mb >= ram_warn_mb:
+		if ram_free_mb >= 0.0 and ram_free_mb <= ram_free_warn_mb:
 			worst = State.THROTTLE
-			reason = _reason("RAM elevada: %.0f MB", [ram_mb])
+			reason = _reason("RAM do sistema baixa: %.0f MB livres", [ram_free_mb])
 		elif vram_mb >= vram_warn_mb:
 			worst = State.THROTTLE
 			reason = _reason("VRAM elevada: %.0f MB", [vram_mb])

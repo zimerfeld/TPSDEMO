@@ -1,10 +1,13 @@
 # ZIMARO
 
 > 🇬🇧 A small third-person shooter sandbox built on the [Godot Engine](https://godotengine.org).
+>
 > 🇧🇷 Um pequeno sandbox de tiro em terceira pessoa construído sobre a [Godot Engine](https://godotengine.org).
 
-- Help keep this project always updated 💜
-- Ajude a manter este projeto sempre atualizado 💜
+[![GitHub stars](https://img.shields.io/github/stars/zimerfeld/ZIMARO?style=for-the-badge&logo=github)](https://github.com/zimerfeld/ZIMARO/stargazers) &nbsp; [![GitHub downloads](https://img.shields.io/github/downloads/zimerfeld/ZIMARO/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/zimerfeld/ZIMARO/releases)
+
+This game is built and maintained in my free time. If you enjoy ZIMARO, a sponsorship helps keep new features and fixes coming. 💜
+Este jogo é construído e mantido no meu tempo livre. Se você curte o ZIMARO, um patrocínio ajuda a manter novas funcionalidades e correções chegando. 💜
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
@@ -12,6 +15,7 @@
 
 > 🇬🇧 **This file is a high-level bilingual summary.** Full, detailed docs:
 > **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)**
+>
 > 🇧🇷 **Este arquivo é um resumo bilíngue de alto nível.** Documentação completa e detalhada:
 > **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)**
 
@@ -38,10 +42,12 @@ vivo (sem botão Aplicar).
 ## Features · Funcionalidades
 
 🇬🇧 Highlights: localized damage (native per-limb 3D colliders, headshots deal extra) with a
-per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to
-`data/limb_config.json`) where the body type (biped/quadruped/crawler) defines the members and
+per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
+character, `data/limb_config/<character>.json`) where the body type (biped/quadruped/crawler) defines the members and
 protruding sub-members (plates, guards) are editable too; a Models viewer with per-category master toggles (rotation, animation,
-special effects, audio, colliders, member labels) and selector dropdowns — both persisted between
+special effects, audio, colliders — with live X/Y/Z offset inputs for the isolated member/sub-member
+collider — member labels — incl. a Bone toggle floating the chosen loose
+bone's name) and selector dropdowns — both persisted between
 visits, with the drill-down chain restored on reopen; a
 developer screen whose debug overlay is split into **Debug 2D** (light
 yellow) and **Debug 3D** (light cyan) columns — a master alone shows nothing, each dependent line
@@ -54,10 +60,12 @@ Português/English buttons** and each scene ships its own JSON dictionaries
 (`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load.
 
 🇧🇷 Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
-multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em
-`data/limb_config.json`), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
+multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
+por personagem, `data/limb_config/<personagem>.json`), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
 os sub-membros salientes (placas, guardas) também são editáveis; um visualizador Models com toggles mestres por categoria (rotação, animação,
-efeitos especiais, áudio, colliders, rótulos de membro) e dropdowns de seleção — ambos persistidos
+efeitos especiais, áudio, colliders — com inputs X/Y/Z de afastamento ao vivo para o collider do
+membro/sub-membro isolado — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
+do osso avulso escolhido) e dropdowns de seleção — ambos persistidos
 entre visitas, com a cadeia de navegação restaurada ao reabrir; uma tela developer cujo overlay de
 debug é dividido nas
 colunas **Debug 2D** (amarelo claro) e **Debug 3D** (ciano claro) — o master sozinho não mostra
@@ -71,10 +79,11 @@ para telas 3D; e um sistema de localização EN/PT em que **toda tela tem botõe
 cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json`),
 mesclados no carregamento.
 
-> 🇧🇷 **Sobre as hitboxes por membro:** você não reinventou a física do Godot; você automatizou a
-> autoria de hitboxes que, manualmente, seriam inviáveis de manter em escala.
 > 🇬🇧 **On the per-limb hitboxes:** you didn't reinvent Godot's physics; you automated the authoring
 > of hitboxes that would be unfeasible to maintain at scale by hand.
+>
+> 🇧🇷 **Sobre as hitboxes por membro:** você não reinventou a física do Godot; você automatizou a
+> autoria de hitboxes que, manualmente, seriam inviáveis de manter em escala.
 
 ## Requirements & running · Requisitos e execução
 
