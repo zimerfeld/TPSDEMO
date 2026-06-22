@@ -33,7 +33,8 @@ abaixo); os multiplicadores são os **defaults do PLANO** (`BodyParts.default_mu
 
 > Os multiplicadores acima são **defaults do plano corporal** (cabeça +50%, resto 1.0). Desde
 > 2026-06-20 cada modelo pode ter um multiplicador PRÓPRIO por membro, editável na tela Models e
-> persistido em `res://data/limb_config.json` (ver **Multiplicadores editáveis por modelo** abaixo).
+> persistido na pasta do modelo (`res://library3D/<cat>/<model_key>/limb_config.json`; override de
+> runtime em `user://` — ver **Multiplicadores editáveis por modelo** abaixo).
 > Os MEMBROS em si dependem do `body_type` do modelo (bípede/quadrúpede/rastejante).
 
 Lado detectado por sufixo `.L/.R` (player) ou prefixo `L-/R-` (enemy). `wing` conta
@@ -111,17 +112,29 @@ quaisquer de fase.
 `effects_shared/limb_config.gd` (`class_name LimbConfig`, `RefCounted` com API estática) — antigo
 `LimbDamage` (renomeado/substituído; `limb_damage.gd` + `data/limb_damage.json` foram **removidos**)
 — guarda o multiplicador de cada membro/sub-membro, a lista de sub-membros **e** a relação de dono
-de cada um. **UM ARQUIVO POR PERSONAGEM (2026-06-21):** `res://data/limb_config/<model_key>.json`
-(antes era um único `res://data/limb_config.json` com `{model_key: {...}}`). **Migração transparente:**
-`_load_entry` lê o arquivo por modelo e, se ainda não existir, cai no arquivo combinado ANTIGO; o
-primeiro SAVE de um modelo grava o arquivo próprio dele (sem perder os dados). Schema de cada arquivo:
+de cada um. **UM ARQUIVO POR MODELO NA PASTA DO MODELO (2026-06-22):**
+`res://library3D/<categoria>/<model_key>/limb_config.json` — junto da malha/cena, versionável e
+editável no Godot (`_model_dir` resolve a pasta varrendo `library3D`, com cache). **Override gravável
+de runtime:** como o `res://` é **somente-leitura no .exe exportado** (PCK embutido), edições feitas
+RODANDO o jogo (tela Models no .exe) vão para `user://limb_config/<model_key>.json`, que tem
+**precedência na leitura** — por isso o que você edita em tela é relido e aparece. No editor o save vai
+direto pra pasta do modelo (fonte canônica) e **apaga** o override `user://` obsoleto daquele modelo.
+> ⚠️ **Bug corrigido (2026-06-22):** antes a config era gravada em `res://data/limb_config/<key>.json`;
+> no **.exe** o `res://` é read-only, então Adicionar sub-membro (ex.: "mouth"→CABEÇA) **falhava ao
+> gravar** e o rebuild relia o disco sem ele → não aparecia na árvore nem no dropdown. Com o override
+> `user://` a edição persiste e reflete em tela mesmo no .exe.
+
+**Migração transparente (leitura, em ordem):** `user://` (override) → pasta do modelo → antigo
+`res://data/limb_config/<key>.json` → combinado legado `res://data/limb_config.json`; o primeiro SAVE
+grava no novo local sem perder dados. Schema de cada arquivo:
 
 ```json
 {
   "damage": { "HEAD": 2.0, "PART_L-RearLegGuard": 1.0 },
   "sub_members": ["L-RearLegGuard", "R-RearLegGuard"],
   "sub_member_owners": { "L-RearLegGuard": "LEG_L", "R-RearLegGuard": "LEG_R" },
-  "collider_offsets": { "HEAD": [0.0, 0.1, 0.0] }
+  "collider_offsets": { "HEAD": [0.0, 0.1, 0.0] },
+  "collider_scales": { "HEAD": [1.2, 1.2, 1.2] }
 }
 ```
 
@@ -131,14 +144,15 @@ primeiro SAVE de um modelo grava o arquivo próprio dele (sem perder os dados). 
   Valor = **multiplicador** (`1.0` = normal, `1.5` = +50%). `sub_member_owners` = membro-**DONO**
   EXPLÍCITO de cada sub-membro (agrupamento só lógico p/ herança; vazio = resolução automática).
   `collider_offsets` (2026-06-22) = **afastamento** `[x,y,z]` (metros, espaço local do collider)
-  aplicado à `position` do `StaticBody3D` de cada membro/sub-membro, editável na tela Models (ver
-  [[sistemas/biblioteca-de-modelos]]); ausente/zero = sem afastamento.
+  aplicado à `position` do `StaticBody3D`; `collider_scales` (2026-06-22) = **escala** `[x,y,z]`
+  aplicada à forma do collider (em torno do centro). Ambos por membro/sub-membro, editáveis na tela
+  Models (ver [[sistemas/biblioteca-de-modelos]]); ausente/zero(offset)/[1,1,1](escala) = neutro.
 - API estática (2026-06-21): `effective_multiplier(model_key, group, classifier, owner_group="")`
   (COM herança), `get_multiplier(...)` (wrapper sem owner), `has_multiplier`/`clear_multiplier`
   (estado do checkbox "Definir"), `set_multiplier`, `sub_members`, `sub_member_owner(s)`,
   `set_sub_member_owner`, `add_sub_member(model_key, bone, owner="")`, `remove_sub_member` (apaga
-  também o `PART_<bone>` do `damage`, o dono e o `collider_offsets`), `collider_offset`/
-  `set_collider_offset` (2026-06-22) e `load_table`.
+  também o `PART_<bone>` do `damage`, o dono, o `collider_offsets` e o `collider_scales`),
+  `collider_offset`/`set_collider_offset`, `collider_scale`/`set_collider_scale` (2026-06-22) e `load_table`.
 - **Herança / "nenhum valor é obrigatório" (2026-06-21):** `effective_multiplier` — valor EXPLÍCITO
   do próprio grupo tem precedência; um `PART_*` SEM valor próprio **herda o do membro-DONO**
   (explícito do dono, senão default do plano do dono); sem nada, cai no `default_multiplier` do

@@ -43,10 +43,10 @@ vivo (sem botão Aplicar).
 
 🇬🇧 Highlights: localized damage (native per-limb 3D colliders, headshots deal extra) with a
 per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
-character, `data/limb_config/<character>.json`) where the body type (biped/quadruped/crawler) defines the members and
+character, in the model's own folder `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits) where the body type (biped/quadruped/crawler) defines the members and
 protruding sub-members (plates, guards) are editable too; a Models viewer with per-category master toggles (rotation, animation,
-special effects, audio, colliders — with live X/Y/Z offset inputs for the isolated member/sub-member
-collider — member labels — incl. a Bone toggle floating the chosen loose
+special effects, audio, colliders — with live X/Y/Z offset & scale inputs (plus a Save button) for the
+isolated member/sub-member collider — member labels — incl. a Bone toggle floating the chosen loose
 bone's name) and selector dropdowns — both persisted between
 visits, with the drill-down chain restored on reopen; a
 developer screen whose debug overlay is split into **Debug 2D** (light
@@ -61,10 +61,10 @@ Português/English buttons** and each scene ships its own JSON dictionaries
 
 🇧🇷 Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
-por personagem, `data/limb_config/<personagem>.json`), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
+por personagem, na pasta do próprio modelo `library3D/<cat>/<modelo>/limb_config.json`, com override gravável em `user://` para edições no jogo), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
 os sub-membros salientes (placas, guardas) também são editáveis; um visualizador Models com toggles mestres por categoria (rotação, animação,
-efeitos especiais, áudio, colliders — com inputs X/Y/Z de afastamento ao vivo para o collider do
-membro/sub-membro isolado — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
+efeitos especiais, áudio, colliders — com inputs X/Y/Z de afastamento e escala ao vivo (mais botão
+Salvar) para o collider do membro/sub-membro isolado — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
 do osso avulso escolhido) e dropdowns de seleção — ambos persistidos
 entre visitas, com a cadeia de navegação restaurada ao reabrir; uma tela developer cujo overlay de
 debug é dividido nas

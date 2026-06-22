@@ -164,18 +164,21 @@ toggle é o **interruptor mestre** da sua categoria:
   Armas** desenha gizmo **só dos colliders de MEMBRO** (`_is_member_collider`, meta
   `member_label`); pula o collider de corpo genérico do modelo (ex.: a cápsula de corpo do
   red_robot) e as áreas de detecção/morte, que só eram ruído envolvendo tudo (2026-06-18).
-  - **Afastamento (offset) X/Y/Z por membro/sub-membro (2026-06-22):** com o toggle **Colisores
-    LIGADO** e **um** grupo isolado (membro ou sub-membro), aparece a `ColliderOffsetRow` (3 `SpinBox`
-    X/Y/Z, label "Afastamento:"/"Offset:") logo abaixo dos dropdowns. Carrega o valor salvo
-    (`LimbConfig.collider_offset(model_key, group)`) e, ao mudar, **move o `StaticBody3D` do grupo AO
-    VIVO** (`_apply_offset_to_group` seta `body.position`; shape/gizmo/rótulo acompanham). O valor é em
-    espaço LOCAL do osso/collider. Visibilidade/carga em `_refresh_collider_offset_inputs` (só recarrega
-    quando o GRUPO focado muda, preservando uma edição em andamento). Ao iniciar **uma nova seleção de
-    dropdown** (categoria/prefixo/modelo/parte/membro/sub-membro) com edição pendente, `_prompt_save_offset_if_dirty`
-    abre um `ConfirmationDialog` **"Deseja salvar modificações para colisores ?"** — confirmar grava
-    (`LimbConfig.set_collider_offset`), cancelar reverte o corpo ao valor salvo. O offset é aplicado no
-    build (`LimbColliders._build_member_shape` e `_add_mesh_member_colliders` setam `body.position`), então
-    vale também no gameplay. Ver [[sistemas/dano-localizado]].
+  - **Editor de collider (Afastamento + Escala) X/Y/Z por membro/sub-membro (2026-06-22):** com o
+    toggle **Colisores LIGADO** e **um** grupo isolado (membro ou sub-membro), aparece a
+    `ColliderEditBox` logo abaixo dos dropdowns: row **"Afastamento:"/"Offset:"** (3 `SpinBox` X/Y/Z),
+    row **"Escala:"/"Scale:"** (3 `SpinBox` X/Y/Z) e um botão **"Salvar"/"Save"**. Carrega os valores
+    salvos (`LimbConfig.collider_offset`/`collider_scale(model_key, group)`) e, ao mudar, aplica **AO
+    VIVO** no grupo (`_apply_collider_xform`: afastamento → `body.position`; escala → `scale` da forma,
+    em torno do centro; gizmo/rótulo acompanham). Valores em espaço LOCAL do osso/collider.
+    Visibilidade/carga em `_refresh_collider_offset_inputs` (só recarrega quando o GRUPO focado muda,
+    preservando uma edição em andamento). **Salvar** (`_on_collider_save_pressed`) persiste afastamento
+    + escala. Ao iniciar **uma nova seleção de dropdown** (categoria/prefixo/modelo/parte/membro/
+    sub-membro) com edição pendente, `_prompt_save_offset_if_dirty` abre um `ConfirmationDialog`
+    **"Deseja salvar modificações para colisores de \"&lt;nome do membro/sub-membro&gt;\" ?"** — confirmar
+    grava, cancelar reverte o corpo aos valores salvos. Ambos são aplicados no build
+    (`LimbColliders._build_member_shape` e `_add_mesh_member_colliders` setam `body.position` e
+    `shape.scale`), então valem também no gameplay. Ver [[sistemas/dano-localizado]].
 - **Efeitos especiais** — mostra/esconde **tudo o que sobra** ligado ao modelo e que
   nenhum outro toggle cobre: partículas, luzes, decals/névoa e malhas presas a osso (muzzle/
   laser), coletadas por `_collect_effect_nodes` (lista `_EFFECT_CLASSES`). O combo **"Efeitos
@@ -248,7 +251,9 @@ toggle é o **interruptor mestre** da sua categoria:
     (2026-06-22) — substituiu o antigo
     botão grande "Remover sub-membro" do footer (e o `_on_damage_tree_selected`/`_damage_remove_btn`,
     removidos). A associação dono→filho é salva em `LimbConfig` e **recarregada a cada add/remove** (via
-    `_rebuild_member_colliders` → `_refresh_damage_panel`). Ver [[sistemas/dano-localizado]].
+    `_rebuild_member_colliders` → `_refresh_damage_panel`). **Espaçamento das linhas (2026-06-22):**
+    `_setup_damage_tree` aplica overrides de tema (`v_separation`/`inner_item_margin_top`/`_bottom`) para
+    o ícone de lixeira não encostar na linha vizinha. Ver [[sistemas/dano-localizado]].
   Só aparece para **personagem em "Modelo completo"**
   (`_preview_is_whole_character`); `_refresh_damage_panel` repopula ao trocar de modelo e some no
   resto. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta
@@ -261,9 +266,15 @@ toggle é o **interruptor mestre** da sua categoria:
     mesmo sem geometria no preview), na ordem e com os rótulos do plano (CABEÇA/TRONCO/BRAÇO E-D/
     PERNA E-D); ARMAS seguem os colliders (WeaponParts).
   - **Sub-membros aninhados no painel (2026-06-21):** cada `PART_*` aparece **indentado (↳, margem
-    24px) sob o seu membro-dono**, agrupado pelo MESMO `_sub_member_owner_map`/`owner_hint` dos combos
+    24px) sob o seu membro-dono**, agrupado pelo MESMO `_sub_member_owner_map` dos combos
     (helper `_sub_members_by_owner`) — painel e dropdown concordam. Sub-membro sem dono na lista vai
     para a seção **"Outros sub-membros"**.
+  - **Dono EXPLÍCITO tem precedência no agrupamento (2026-06-22):** `_sub_member_owner_map` agora usa
+    PRIMEIRO o dono salvo em `LimbConfig.sub_member_owner` (o que o usuário escolheu ao **Adicionar** ou
+    no dropdown "Dono"), só caindo no `owner_hint`/hierarquia quando não há explícito. Antes a tela
+    ignorava o explícito e reagrupava por nome/hierarquia — então um sub-membro recém-adicionado a um
+    membro podia cair em "Outros" e **não aparecer sob o membro escolhido** (na árvore nem no dropdown
+    "Sub-membro" ao selecionar o membro). Agora aparece e o vínculo persiste/recarrega corretamente.
   - **Subseção "Sub-membros" (2026-06-20):** cada sub-membro existente é uma linha (rótulo + `SpinBox`
     de bônus % + botão **× (remover)**, agora aninhada — ver acima). A linha de **adicionar**
     (`_add_sub_member_add_row`) é um
