@@ -49,9 +49,11 @@ third-person shooter sandbox. At a high level it offers:
   old footer "Remove sub-member" button). **No value is required** — without its
   own value a sub-member **inherits the owner member's**, then the plan default. The **owner** is
   chosen **explicitly** (logical grouping only — it never changes the mesh; reassigning asks for
-  confirmation). Everything is saved to **one file per character**
-  (`data/limb_config/<character>.json` — damage values + each sub-member's owner/inheritance relation;
-  migrates from the old single `data/limb_config.json`) and read at runtime via `LimbConfig`; the default
+  confirmation). Everything is saved to **one file per model, in the model's own folder**
+  (`library3D/<cat>/<model>/limb_config.json` — damage values, offsets/scales + each sub-member's
+  owner/inheritance relation; since `res://` is read-only in the exported `.exe`, in-game edits go to a
+  writable `user://limb_config/<model>.json` override that takes read precedence; migrates from the old
+  `data/limb_config/<key>.json` / combined `data/limb_config.json`) and read at runtime via `LimbConfig`; the default
   multiplier comes from the body plan (head +50%, rest ×1). Collider shapes are per-model — e.g. the
   **red_robot** uses a **spherical torso** and a **larger head** (`torso_shape`/`head_scale` on
   `LimbColliders`).
@@ -65,8 +67,9 @@ third-person shooter sandbox. At a high level it offers:
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
   **Audio** (every sound the model emits — movement, motor, shots, explosions, voices),
-  colliders (with the toggle on and one member/sub-member isolated, **X/Y/Z offset inputs** tweak that
-  collider's position live, saved on confirm to `LimbConfig`), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
+  colliders (with the toggle on and one member/sub-member isolated, **X/Y/Z offset and scale inputs**
+  tweak that collider's position/size live, with a **Save** button — and changing selection with
+  unsaved edits prompts to save, naming the member/sub-member), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
   collider, independent of the Debug 3D screen — with extra Type/Name/ID lines and a **Bone** toggle
   that floats the chosen loose bone's name over it), **per-limb damage** (a **draggable floating window**
   with an opaque black background — title bar + × close — holding a **tree** of each member/sub-member's
@@ -300,8 +303,9 @@ asset library under `library3D/`:
   `weapons`, plus `geometry` and `textures` support folders. New model folders dropped in here
   show up automatically in the Models viewer.
 - `effects_shared/` — cross-character helpers: `limb_colliders.gd` (per-limb native colliders for
-  localized damage), `limb_config.gd` (`LimbConfig` — damage multipliers + sub-members + owners store,
-  **one file per character** in `data/limb_config/<character>.json`), the **body-plan hierarchy**
+  localized damage), `limb_config.gd` (`LimbConfig` — damage multipliers + sub-members + owners +
+  collider offsets/scales store, **one file per model in the model's own folder**
+  `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits), the **body-plan hierarchy**
   `body_parts.gd` (`BodyParts` base +
   `body_parts_biped/quadruped/crawler.gd` subclasses, bone → member classification) and
   `body_plans.gd` (`BodyPlans` factory), and shared blast/shadow assets.

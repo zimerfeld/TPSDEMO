@@ -1,7 +1,8 @@
 class_name LimbConfig
 extends RefCounted
-## Config de DANO LOCALIZADO por personagem, persistida em UM ARQUIVO POR MODELO em
-## res://data/limb_config/<model_key>.json. Cada arquivo guarda, daquele modelo: o multiplicador
+## Config de DANO LOCALIZADO por personagem, persistida em UM ARQUIVO POR MODELO na PASTA DO MODELO
+## (res://library3D/<categoria>/<model_key>/limb_config.json; override de runtime em
+## user://limb_config/<model_key>.json — ver bloco "ONDE FICA" abaixo). Cada arquivo guarda, daquele modelo: o multiplicador
 ## de cada MEMBRO/sub-membro ("damage"), a LISTA de sub-membros promovidos ("sub_members") e a
 ## RELAÇÃO de DONO de cada sub-membro ("sub_member_owners" — de quem ele HERDA o dano quando não
 ## tem valor próprio). A tela Models grava; LimbColliders.build_for() lê na construção dos
@@ -10,9 +11,11 @@ extends RefCounted
 ## Formato de cada arquivo <model_key>.json:
 ##   { "damage": { "<GROUP>": <mult> }, "sub_members": [<osso>],
 ##     "sub_member_owners": { "<osso>": "<GROUP_DONO>" },
-##     "collider_offsets": { "<GROUP>": [x, y, z] } }
+##     "collider_offsets": { "<GROUP>": [x, y, z] }, "collider_scales": { "<GROUP>": [x, y, z] } }
 ## - "collider_offsets" = afastamento (em metros, espaço LOCAL do osso/collider) aplicado à posição do
 ##   StaticBody3D de cada membro/sub-membro, editável na tela Models. Ausente/zero = sem afastamento.
+## - "collider_scales" = escala (por eixo, espaço LOCAL) aplicada à forma do collider de cada
+##   membro/sub-membro, editável na tela Models. Ausente/[1,1,1] = sem escala.
 ## - model_key = nome da pasta do modelo ("red_robot", "player"), o MESMO valor que
 ##   LimbColliders.model_key recebe no gameplay; é o nome do arquivo.
 ## - GROUP = chave do plano corporal (HEAD/TORSO/ARM_L/…) ou "PART_<osso>" p/ sub-membro.
@@ -23,56 +26,115 @@ extends RefCounted
 ## HERANÇA (effective_multiplier): valor explícito do grupo > valor do membro-dono (sub-membro sem
 ## valor próprio) > default do plano. "Nenhum valor de dano é obrigatório."
 ##
-## MIGRAÇÃO: o formato antigo era um ÚNICO res://data/limb_config.json ({ model_key: {...} }). Ele é
-## lido automaticamente quando o arquivo por modelo ainda não existe; o primeiro SAVE de um modelo
-## grava o arquivo próprio dele (res://data/limb_config/<model_key>.json), sem perder os dados.
+## ONDE FICA (2026-06-22): a config de cada modelo vive em UM ARQUIVO NA PASTA DO PRÓPRIO MODELO —
+## res://library3D/<categoria>/<model_key>/limb_config.json — junto da malha/cena, versionável e
+## editável no Godot. Como o res:// é SOMENTE-LEITURA no .exe exportado (PCK embutido), as edições
+## feitas RODANDO O JOGO (tela Models no .exe) são gravadas num OVERRIDE gravável em
+## user://limb_config/<model_key>.json, que tem precedência na leitura — assim o que você edita em
+## tela é relido e aparece. No editor, o save vai direto pra pasta do modelo (a fonte canônica) e
+## limpa qualquer override de user:// obsoleto daquele modelo.
+##
+## LEITURA (ordem): user:// (override de runtime) → pasta do modelo (autorado/shipado) →
+## res://data/limb_config/<key>.json (formato antigo) → res://data/limb_config.json (combinado legado).
 
-const DIR := "res://data/limb_config"
+const LIBRARY_ROOT := "res://library3D"
+const MODEL_FILE := "limb_config.json"
+const USER_DIR := "user://limb_config"
+const OLD_DIR := "res://data/limb_config"
 const LEGACY_PATH := "res://data/limb_config.json"
 
+# Cache model_key → pasta do modelo (res://library3D/<cat>/<model_key>), resolvida varrendo as
+# categorias. "" quando o modelo não está na biblioteca. Evita re-varrer a cada leitura/escrita.
+static var _dir_cache: Dictionary = {}
 
-# Caminho do arquivo por modelo.
-static func _path_for(model_key: String) -> String:
-	return "%s/%s.json" % [DIR, model_key]
+
+# Pasta do modelo na biblioteca (res://library3D/<cat>/<model_key>), ou "" se não achar.
+static func _model_dir(model_key: String) -> String:
+	if model_key == "":
+		return ""
+	if _dir_cache.has(model_key):
+		return _dir_cache[model_key]
+	var found := ""
+	var root := DirAccess.open(LIBRARY_ROOT)
+	if root != null:
+		for cat in root.get_directories():
+			var p := "%s/%s/%s" % [LIBRARY_ROOT, cat, model_key]
+			if DirAccess.dir_exists_absolute(p):
+				found = p
+				break
+	_dir_cache[model_key] = found
+	return found
 
 
-# Entrada (dicionário) de um modelo: do arquivo PRÓPRIO, ou — se ainda não existir — do arquivo
-# combinado ANTIGO (migração transparente na leitura). {} quando não há nada / está corrompido.
+# Caminho do arquivo na PASTA DO MODELO (res://), ou "" se o modelo não está na biblioteca.
+static func _model_path(model_key: String) -> String:
+	var d := _model_dir(model_key)
+	return "" if d == "" else "%s/%s" % [d, MODEL_FILE]
+
+
+# Caminho do OVERRIDE gravável (user://), sempre disponível (inclusive no .exe).
+static func _user_path(model_key: String) -> String:
+	return "%s/%s.json" % [USER_DIR, model_key]
+
+
+# Lê e faz parse de um JSON-objeto de `path`; {} se não der (inexistente/corrompido).
+static func _read_json(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return {}
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	return parsed if parsed is Dictionary else {}
+
+
+# Entrada (dicionário) de um modelo, na ordem: override user:// → pasta do modelo → formato antigo
+# (res://data/limb_config/<key>.json) → combinado legado (res://data/limb_config.json). {} se nada.
 static func _load_entry(model_key: String) -> Dictionary:
 	if model_key == "":
 		return {}
-	var p := _path_for(model_key)
-	if FileAccess.file_exists(p):
-		var f := FileAccess.open(p, FileAccess.READ)
-		if f != null:
-			var parsed: Variant = JSON.parse_string(f.get_as_text())
-			f.close()
-			if parsed is Dictionary:
-				return parsed
-		return {}
-	# Fallback de migração: a entrada deste modelo no arquivo combinado antigo.
+	var up := _user_path(model_key)
+	if FileAccess.file_exists(up):
+		return _read_json(up)
+	var mp := _model_path(model_key)
+	if mp != "" and FileAccess.file_exists(mp):
+		return _read_json(mp)
+	var oldp := "%s/%s.json" % [OLD_DIR, model_key]
+	if FileAccess.file_exists(oldp):
+		return _read_json(oldp)
 	if FileAccess.file_exists(LEGACY_PATH):
-		var lf := FileAccess.open(LEGACY_PATH, FileAccess.READ)
-		if lf != null:
-			var lparsed: Variant = JSON.parse_string(lf.get_as_text())
-			lf.close()
-			if lparsed is Dictionary and lparsed.has(model_key) and lparsed[model_key] is Dictionary:
-				return lparsed[model_key]
+		var lparsed := _read_json(LEGACY_PATH)
+		if lparsed.has(model_key) and lparsed[model_key] is Dictionary:
+			return lparsed[model_key]
 	return {}
 
 
-# Grava a entrada do modelo no seu arquivo próprio (criando o diretório).
+# Grava a entrada do modelo: tenta a PASTA DO MODELO (res://, editor) — fonte canônica, versionável;
+# se conseguir, apaga o override user:// obsoleto. Se o res:// for somente-leitura (.exe) ou o modelo
+# não estiver na biblioteca, grava o OVERRIDE em user:// (sempre gravável) — relido com precedência.
 static func _save_entry(model_key: String, entry: Dictionary) -> void:
 	if model_key == "":
 		return
-	DirAccess.make_dir_recursive_absolute(DIR)
-	var p := _path_for(model_key)
-	var f := FileAccess.open(p, FileAccess.WRITE)
-	if f == null:
-		push_error("LimbConfig: não foi possível gravar '%s': %s" % [p, error_string(FileAccess.get_open_error())])
+	var json := JSON.stringify(entry, "\t")
+	var mp := _model_path(model_key)
+	if mp != "":
+		var f := FileAccess.open(mp, FileAccess.WRITE)
+		if f != null:
+			f.store_string(json)
+			f.close()
+			var up := _user_path(model_key)
+			if FileAccess.file_exists(up):
+				DirAccess.remove_absolute(up)
+			return
+	# res:// somente-leitura (.exe) ou sem pasta do modelo → override gravável em user://.
+	DirAccess.make_dir_recursive_absolute(USER_DIR)
+	var uf := FileAccess.open(_user_path(model_key), FileAccess.WRITE)
+	if uf == null:
+		push_error("LimbConfig: não foi possível gravar config de '%s'" % model_key)
 		return
-	f.store_string(JSON.stringify(entry, "\t"))
-	f.close()
+	uf.store_string(json)
+	uf.close()
 
 
 # Sub-dicionário "damage" do modelo (ou {} se não existir).
@@ -181,6 +243,28 @@ static func set_collider_offset(model_key: String, group: String, offset: Vector
 	_save_entry(model_key, entry)
 
 
+## Escala (Vector3, por eixo, espaço local) salva para (modelo, grupo), ou Vector3.ONE (sem escala).
+static func collider_scale(model_key: String, group: String) -> Vector3:
+	var raw: Variant = _load_entry(model_key).get("collider_scales", {}).get(group, null)
+	if raw is Array and raw.size() == 3:
+		return Vector3(float(raw[0]), float(raw[1]), float(raw[2]))
+	return Vector3.ONE
+
+
+## Define (ou limpa, quando == Vector3.ONE) a escala do collider de (modelo, grupo) e persiste.
+static func set_collider_scale(model_key: String, group: String, scale: Vector3) -> void:
+	if model_key == "" or group == "":
+		return
+	var entry := _load_entry(model_key)
+	var sc: Dictionary = entry.get("collider_scales", {})
+	if scale == Vector3.ONE:
+		sc.erase(group)
+	else:
+		sc[group] = [scale.x, scale.y, scale.z]
+	entry["collider_scales"] = sc
+	_save_entry(model_key, entry)
+
+
 ## Mapa { osso → GROUP dono } dos sub-membros com dono EXPLÍCITO salvo. {} se não houver.
 static func sub_member_owners(model_key: String) -> Dictionary:
 	var out: Dictionary = {}
@@ -227,4 +311,7 @@ static func remove_sub_member(model_key: String, bone: String) -> void:
 	var offs: Dictionary = entry.get("collider_offsets", {})
 	offs.erase("PART_" + bone)
 	entry["collider_offsets"] = offs
+	var scs: Dictionary = entry.get("collider_scales", {})
+	scs.erase("PART_" + bone)
+	entry["collider_scales"] = scs
 	_save_entry(model_key, entry)

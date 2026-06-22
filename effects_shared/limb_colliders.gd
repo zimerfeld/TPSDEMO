@@ -383,7 +383,11 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	# inteiro (shape/gizmo/rótulo acompanham). Vazio/ausente = Vector3.ZERO (sem afastamento).
 	body.position = LimbConfig.collider_offset(model_key, group)
 
-	body.add_child(make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale))
+	var shape_node := make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale)
+	# Escala por eixo (espaço local da forma), editável na tela Models — escala a forma em torno do
+	# seu centro (o gizmo, filho dela, acompanha). Vazio/ausente = Vector3.ONE (sem escala).
+	shape_node.scale = LimbConfig.collider_scale(model_key, group)
+	body.add_child(shape_node)
 
 	att.add_child(body)
 	_bodies.append(body)

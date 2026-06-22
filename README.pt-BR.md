@@ -50,8 +50,11 @@ em terceira pessoa. Em alto nível, oferece:
   "Remover sub-membro" do rodapé). **Nenhum valor é obrigatório** — sem valor próprio um
   sub-membro **herda o do membro-dono**, depois o default do plano. O **dono** é escolhido
   **explicitamente** (agrupamento só lógico — não altera a malha; reassociar pede confirmação).
-  Tudo é salvo em **um arquivo por personagem** (`data/limb_config/<personagem>.json` — valores de dano +
-  a relação de dono/herança de cada sub-membro; migra do antigo `data/limb_config.json` único) e lido em
+  Tudo é salvo em **um arquivo por modelo, na pasta do próprio modelo**
+  (`library3D/<cat>/<modelo>/limb_config.json` — valores de dano, afastamentos/escalas + a relação de
+  dono/herança de cada sub-membro; como o `res://` é somente-leitura no `.exe` exportado, edições no
+  jogo vão para um override gravável `user://limb_config/<modelo>.json` que tem precedência na leitura;
+  migra do antigo `data/limb_config/<key>.json` / combinado `data/limb_config.json`) e lido em
   runtime via `LimbConfig`; o multiplicador default vem do plano corporal (cabeça +50%, resto ×1). As
   formas dos colliders são por modelo — ex.: o **red_robot** usa **tronco esférico** e **cabeça com
   volume maior** (`torso_shape`/`head_scale` em `LimbColliders`).
@@ -65,8 +68,9 @@ em terceira pessoa. Em alto nível, oferece:
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
   toggle cobre — partículas, luzes, malhas de laser/clarão presas a ossos), **Áudio** (todo som que
   o modelo emite — movimento, motor, tiros, explosões, vozes), colliders (com o toggle ligado e um
-  membro/sub-membro isolado, **inputs X/Y/Z de afastamento** ajustam a posição daquele collider ao
-  vivo, salvos ao confirmar em `LimbConfig`), **rótulos de membro**
+  membro/sub-membro isolado, **inputs X/Y/Z de afastamento e escala** ajustam a posição/tamanho daquele
+  collider ao vivo, com botão **Salvar** — e trocar de seleção com edição pendente pergunta se quer
+  salvar, citando o nome do membro/sub-membro), **rótulos de membro**
   (toggle próprio do browser para as tags "Membro: …" sobre cada collider, independente da tela
   Debug 3D — com linhas extras Tipo/Nome/ID e um toggle **Osso** que faz flutuar o nome do osso
   avulso escolhido sobre ele), **dano por membro** (uma **janela flutuante arrastável** de fundo preto opaco — barra
@@ -297,8 +301,9 @@ reutilizáveis em `library3D/`:
   colocadas aqui aparecem automaticamente no visualizador Models.
 - `effects_shared/` — helpers compartilhados entre personagens: `limb_colliders.gd` (colliders
   nativos por membro para dano localizado), `limb_config.gd` (`LimbConfig` — store dos
-  multiplicadores de dano + sub-membros + donos, **um arquivo por personagem** em
-  `data/limb_config/<personagem>.json`), a **hierarquia de
+  multiplicadores de dano + sub-membros + donos + afastamentos/escalas de collider, **um arquivo por
+  modelo na pasta do próprio modelo** `library3D/<cat>/<modelo>/limb_config.json`, com override gravável
+  em `user://` para edições no jogo), a **hierarquia de
   planos corporais** `body_parts.gd` (base `BodyParts` + subclasses
   `body_parts_biped/quadruped/crawler.gd`, classificação osso → membro) e `body_plans.gd` (factory
   `BodyPlans`), e assets de blast/sombra compartilhados.
