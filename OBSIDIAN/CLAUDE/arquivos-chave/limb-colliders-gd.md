@@ -24,6 +24,9 @@
 3. Para cada **vértice skinado** da malha, pega o osso de maior peso e o converte ao espaço local do osso-raiz usando a **bind pose** da skin (`get_bind_pose`) → acumula um **AABB por membro** (+ `padding` de folga)
 4. Cria `BoneAttachment3D` (no osso-raiz) → `StaticBody3D` + `CollisionShape3D (BoxShape3D)` do tamanho do AABB
 5. Metas no `StaticBody3D`: `group`, `damage_multiplier` (de `LimbConfig.get_multiplier(model_key, group, _classifier)`), `character` (dono)
+6. **Afastamento (offset) (2026-06-22):** `body.position = LimbConfig.collider_offset(model_key, group)` — desloca o corpo inteiro (shape/gizmo/rótulo acompanham) em espaço local do osso. Editável ao vivo na tela Models (3 SpinBox X/Y/Z com o toggle Colisores ligado); ver [[sistemas/biblioteca-de-modelos]]. Vazio/zero = sem deslocamento.
+
+- **Fallback de sub-membro sem vértices (2026-06-22):** o passo 3 só gera AABB para grupos com **vértices dominantes**. Um sub-membro (`PART_*`) promovido cujo osso não tem vértices próprios (ex.: `Mouth`, ossos estruturais) ficava **sem collider** e sumia da tela Models. Agora o passo 4 de `_collect_member_boxes` (helper `_fallback_part_size`) cria uma **pequena caixa centrada na origem (rest) do osso** (~20% do maior membro medido) para ele **aparecer e poder receber dano**. Vale só para `PART_*` (membros sem vértices seguem sem collider).
 
 - **Robô sem cabeça:** o rig do RedRobot não tem osso de cabeça padrão; usa `head_bone_names = ["mouth_eyes", "L-EYE", "R-EYE"]` para forçar a CABEÇA (rosto + olhos — os olhos, excluídos por "eye", entram p/ a esfera não ficar minúscula; 2026-06-18). Player tem os 6 grupos; enemy também resolve 6 (com o forçado).
 
@@ -47,6 +50,9 @@
 | `body_type` | `"biped"` | Plano corporal (`@export_enum` biped/quadruped/crawler) → classificador via `BodyPlans.for_type` (ver [[arquivos-chave/body-parts-gd]]) |
 | `padding` | `0.03` | Folga (m) somada a cada lado da caixa |
 | `head_bone_names` | `[] / ["mouth_eyes", "L-EYE", "R-EYE"]` | Bones forçados para CABEÇA |
+| `head_shape` | `"capsule" (player) / "sphere"` | Forma do collider da CABEÇA (`@export_enum` sphere/capsule) |
+| `head_scale` | `1.0 / 1.3` | Fator de escala do VOLUME da cabeça (red_robot = 1.3, headshot maior) — escala o AABB em torno do centro (2026-06-21) |
+| `torso_shape` | `"box" / "sphere"` | Forma do collider do TRONCO (`@export_enum` box/sphere; red_robot = esfera) (2026-06-21) |
 | `torso_bone_names` | `[] / ["Bone.001"]` | Bones forçados para TRONCO (osso genérico do enemy) |
 | `leg_bone_names` | `[]` | Bones forçados para PERNA E/D |
 | `standalone_part_bones` | `[] / []` | Sub-membros FIXOS no nó (collider PRÓPRIO) — UNIDOS aos de `LimbConfig` + do plano. O red_robot **não usa mais** (placas migraram p/ `limb_config.json`) |

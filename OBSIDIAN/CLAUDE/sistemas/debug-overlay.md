@@ -50,7 +50,7 @@ cena** (canto inferior esquerdo, no canvas persistente) ganhou **tooltip de Debu
 (`no_debug_overlay`); hoje `_is_overlay_exempt` só faz o `_tag` pular os overlays **3D** da cena
 (o 2D passa). O browser desenha sua PRÓPRIA
 pilha de tooltips (TYPE/Name/ID/Membro, em ciano) sobre cada collider de membro, controlada pelos
-**toggles dedicados da própria cena** (Rótulos + checkboxes Tipo/Nome/ID) — nada mais lê
+**toggles dedicados da própria cena** (Membro + checkboxes Tipo/Nome/ID) — nada mais lê
 `show_type_3d`/`show_members` etc. daqui. (A `exempt_member_labels` do preview permanece como
 defesa redundante.)
 

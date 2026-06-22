@@ -44,5 +44,11 @@ pwsh -File build_windows.ps1
   do Claude Code, mas graças ao skip-se-nada-mudou só exporta de fato quando algum fonte mudou.
   Visualizar/editar: o próprio arquivo `.claude/settings.json`, ou `/hooks` num terminal `claude`
   interativo. Ver memória `build-exe-at-end-of-tasks`.
+- **Hook `UserPromptSubmit` que fecha o ZIMARO (2026-06-21):** também em `.claude/settings.json`, roda
+  a **cada prompt do chat** (antes do Claude processar o pedido) o comando PowerShell
+  `Get-Process ZIMARO -ErrorAction SilentlyContinue | Stop-Process -Force …; exit 0` — encerra qualquer
+  instância aberta do jogo para liberar locks de arquivo antes do trabalho/build. O `exit 0` evita que
+  o hook reporte erro quando nada está rodando. Redundante (de propósito) com o `Stop-RunningZimaro` do
+  build, que cobre o instante do export.
 
 Relacionado: [[sistemas/recursos-nativos-godot]], [[fluxos/fluxo-de-cenas]].

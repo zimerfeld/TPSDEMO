@@ -20,12 +20,17 @@ Rede de segurança contra crash/freeze, **sempre ligada** (sem toggle). Amostra 
 
 | Indicador | Monitor | Risco real |
 |---|---|---|
-| RAM estática | `MEMORY_STATIC` | esgotamento → OOM killer do SO |
+| RAM livre do sistema | `OS.get_memory_info()` "free" | pouca RAM física livre → swap/OOM/freeze |
 | VRAM | `RENDER_VIDEO_MEM_USED` | esgotamento → crash de driver GPU |
 | Collision Pairs | `PHYSICS_3D_COLLISION_PAIRS` | explosão → freeze do thread de física |
 | Node Count | `OBJECT_NODE_COUNT` | vazamento → RAM cresce sem parar |
 | FPS | `TIME_FPS` | `≤ fps_crit` por `fps_crit_frames` → loop principal preso |
 
+- **RAM migrada para o sistema (2026-06-21):** a checagem de RAM usa `OS.get_memory_info()` "free"
+  e age quando a RAM física LIVRE fica **ABAIXO** dos limites (`ram_free_warn_mb` 1024 / `ram_free_crit_mb`
+  512) — invertido vs. os outros indicadores (que agem ACIMA do limite). `MEMORY_STATIC` (RAM do jogo)
+  ficava 0 no `.exe` em release, então a proteção de RAM nunca disparava no executável. Sem dado da
+  plataforma (`free < 0`) a checagem de RAM é pulada (nunca dispara por falta de dado).
 - Sinais: `state_changed(new_state, reason)`, `throttle_activated`, `emergency_activated`,
   `recovered` — o PerformanceHUD os escuta para o badge.
 - `state_name()`/`state_color()`/`last_reason`/`dismiss_emergency()`/`force_check()` são a API
@@ -44,9 +49,15 @@ Performance** na tela `developer`). É **click-through** (mouse só na barra do 
   - `CPU%` = `TIME_PROCESS / 16.67ms`; `GPU%` = proxy por `RENDER_TOTAL_DRAW_CALLS_IN_FRAME`.
   - **NET** depende de um `NetworkManager.get_total_bps()` OPCIONAL; o ZIMARO não tem um, então
     degrada para **"N/D"** (lookup gracioso por `get_node_or_null("/root/NetworkManager")`).
+  - **RAM** (2026-06-21) = memória do **SISTEMA** via `OS.get_memory_info()`, formato **"usado/total GB"**
+    (usado = `physical - free`, como o "Em uso" do Gerenciador de Tarefas; colorido por % de uso).
+    **Por quê:** `Performance.MEMORY_STATIC` só é rastreada em **debug** e fica **0 no .exe exportado em
+    release**. `OS.get_memory_info()` funciona em release; usa-se `free` (não `available`, que no Windows
+    é memória virtual/commit e daria `physical - available < 0` → 0).
 - **Avançado** (toggle ▼/▲, 130 px): colunas **CPU** (Processo/Física/Carga/Nós/Objetos/Corpos
-  3D/Col. Pairs), **GPU** (Draw Calls/Triângulos/VRAM/Tex. Mem.) e **Memória** (RAM Estática/
-  Resources), cada valor colorido por limiar (verde/amarelo/vermelho), mais a linha do Guard.
+  3D/Col. Pairs), **GPU** (Draw Calls/Triângulos/VRAM/Tex. Mem.) e **Memória** (**RAM Sistema** — o
+  mesmo usado/total GB do básico — / Resources), cada valor colorido por limiar (verde/amarelo/
+  vermelho), mais a linha do Guard.
 
 ## Integração
 

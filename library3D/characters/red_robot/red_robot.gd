@@ -129,8 +129,11 @@ func _setup_limb_colliders() -> void:
 	# O corpo do red_robot é o osso genérico "Bone.001", que o classificador não
 	# reconhece — sem isto ele ficaria sem collider de TRONCO (só a cabeça).
 	lc.torso_bone_names = (["Bone.001"] as Array[String])
+	lc.torso_shape = "sphere"   # corpo arredondado do red_robot → esfera, não caixa
+	lc.head_scale = 1.3         # cabeça com volume maior (headshot mais generoso)
 	# Os sub-membros (placas traseiras das pernas "L-/R-RearLegGuard") agora vêm de
-	# LimbConfig (res://data/limb_config.json) — editáveis na tela Models. Ver build_for.
+	# LimbConfig (res://data/limb_config/red_robot.json — um arquivo por personagem) —
+	# editáveis na tela Models. Ver build_for.
 	add_child(lc)
 	lc.build_for(skel)
 

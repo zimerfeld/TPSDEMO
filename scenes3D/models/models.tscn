@@ -174,6 +174,55 @@ text = "Sub-membro:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
+[node name="ColliderOffsetRow" type="HBoxContainer" parent="UI/Selectors"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="UI/Selectors/ColliderOffsetRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Afastamento:"
+
+[node name="LabelX" type="Label" parent="UI/Selectors/ColliderOffsetRow"]
+layout_mode = 2
+text = "X"
+
+[node name="OffsetX" type="SpinBox" parent="UI/Selectors/ColliderOffsetRow"]
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+min_value = -10.0
+max_value = 10.0
+step = 0.01
+allow_greater = true
+allow_lesser = true
+
+[node name="LabelY" type="Label" parent="UI/Selectors/ColliderOffsetRow"]
+layout_mode = 2
+text = "Y"
+
+[node name="OffsetY" type="SpinBox" parent="UI/Selectors/ColliderOffsetRow"]
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+min_value = -10.0
+max_value = 10.0
+step = 0.01
+allow_greater = true
+allow_lesser = true
+
+[node name="LabelZ" type="Label" parent="UI/Selectors/ColliderOffsetRow"]
+layout_mode = 2
+text = "Z"
+
+[node name="OffsetZ" type="SpinBox" parent="UI/Selectors/ColliderOffsetRow"]
+custom_minimum_size = Vector2(90, 50)
+layout_mode = 2
+min_value = -10.0
+max_value = 10.0
+step = 0.01
+allow_greater = true
+allow_lesser = true
+
 [node name="Toggles" type="VBoxContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 1
@@ -214,7 +263,7 @@ text = "Colisores"
 [node name="LabelsToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Rótulos"
+text = "Membro"
 
 [node name="LabelLinesRow" type="VBoxContainer" parent="UI/Toggles"]
 layout_mode = 2
@@ -236,49 +285,72 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "ID"
 
+[node name="OssoCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Osso"
+
 [node name="DamageToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Dano por membro"
 
+[node name="AuxHighlightToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Realçar avulso"
+
 [node name="DamagePanel" type="PanelContainer" parent="UI"]
 visible = false
 layout_mode = 1
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -436.0
-offset_top = -360.0
-offset_right = -16.0
-offset_bottom = 360.0
-grow_horizontal = 0
-grow_vertical = 2
+anchors_preset = 0
+offset_left = 1300.0
+offset_top = 140.0
+offset_right = 1900.0
+offset_bottom = 800.0
 
-[node name="Margin" type="MarginContainer" parent="UI/DamagePanel"]
+[node name="Main" type="VBoxContainer" parent="UI/DamagePanel"]
 layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="TitleBar" type="PanelContainer" parent="UI/DamagePanel/Main"]
+layout_mode = 2
+
+[node name="TitleRow" type="HBoxContainer" parent="UI/DamagePanel/Main/TitleBar"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="UI/DamagePanel/Main/TitleBar/TitleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+text = "Dano por membro"
+theme_override_font_sizes/font_size = 16
+
+[node name="CloseButton" type="Button" parent="UI/DamagePanel/Main/TitleBar/TitleRow"]
+custom_minimum_size = Vector2(34, 28)
+layout_mode = 2
+text = "×"
+theme_override_font_sizes/font_size = 20
+
+[node name="Margin" type="MarginContainer" parent="UI/DamagePanel/Main"]
+layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
+theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="Scroll" type="ScrollContainer" parent="UI/DamagePanel/Margin"]
+[node name="Content" type="VBoxContainer" parent="UI/DamagePanel/Main/Margin"]
 layout_mode = 2
-horizontal_scroll_mode = 0
-
-[node name="VBox" type="VBoxContainer" parent="UI/DamagePanel/Margin/Scroll"]
-layout_mode = 2
-size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="DamageTitle" type="Label" parent="UI/DamagePanel/Margin/Scroll/VBox"]
+[node name="DamageTree" type="Tree" parent="UI/DamagePanel/Main/Margin/Content"]
 layout_mode = 2
-text = "Dano por membro (bônus %)"
+size_flags_vertical = 3
 
-[node name="Rows" type="VBoxContainer" parent="UI/DamagePanel/Margin/Scroll/VBox"]
+[node name="Footer" type="VBoxContainer" parent="UI/DamagePanel/Main/Margin/Content"]
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
