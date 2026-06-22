@@ -6,7 +6,9 @@
 
 ZIMARO é um sandbox de tiro em terceira pessoa feito com a [Godot Engine](https://godotengine.org).
 
-- Ajude a manter este projeto sempre atualizado 💜
+[![GitHub stars](https://img.shields.io/github/stars/zimerfeld/ZIMARO?style=for-the-badge&logo=github)](https://github.com/zimerfeld/ZIMARO/stargazers) &nbsp; [![GitHub downloads](https://img.shields.io/github/downloads/zimerfeld/ZIMARO/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/zimerfeld/ZIMARO/releases)
+
+Este jogo é construído e mantido no meu tempo livre. Se você curte o ZIMARO, um patrocínio ajuda a manter novas funcionalidades e correções chegando. 💜
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
@@ -29,11 +31,30 @@ em terceira pessoa. Em alto nível, oferece:
   enquanto continua olhando/mirando e atirando.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
-- **Dano localizado** — colliders 3D nativos por membro (cabeça, tronco, braços, pernas)
-  dimensionados pela malha de cada personagem, então acertos em partes diferentes causam dano
-  diferente (headshots causam dano extra). Os tiros atravessam o collider de corpo genérico e
-  acertam os colliders de membro. Peças salientes ganham um collider PRÓPRIO em caixa (ex.: as
-  **placas traseiras das pernas** do Red Robot, que a cápsula da perna não cobriria).
+- **Dano localizado** — colliders 3D nativos por membro dimensionados pela malha de cada
+  personagem, então acertos em partes diferentes causam dano diferente (headshots causam dano
+  extra). Os membros vêm do **plano corporal** do modelo, escolhido por um `body_type`
+  (**bípede** = cabeça/tronco/2 braços/2 pernas — o padrão; **quadrúpede** = cabeça/tronco/4
+  pernas; **rastejante** = só cabeça/tronco), classificados pela hierarquia `BodyParts` via a
+  factory `BodyPlans`. Os tiros atravessam o collider de corpo genérico e acertam os colliders de
+  membro. **Sub-membros** — peças salientes que ganham um collider PRÓPRIO em caixa (ex.: as
+  **placas traseiras das pernas** do Red Robot e as **placas de ombro** do Player, que a cápsula
+  do membro não cobriria) — agora são **editáveis na tela Models** (adicionar/remover + um bônus %
+  cada), não mais hardcoded; cada peça é agrupada e rotulada sob o membro a que pertence pelo nome
+  (ex.: "PLACA BRAÇO E", "PLACA PERNA D"), mesmo quando está presa a outro osso no esqueleto. O
+  multiplicador por membro é **por modelo e editável na tela Models**, numa **janela flutuante
+  arrastável** (barra de título + **×**, estilo Windows) com uma **ÁRVORE (Tree)**: cada membro é um
+  galho, seus sub-membros são folhas sob ele (ex.: "↳ PLACA BRAÇO E" sob "BRAÇO E"). Colunas:
+  Nome | Definir (check) | Bônus % | Dono; cada folha de sub-membro tem um **botão de lixeira à
+  direita do nome** para removê-la ali mesmo (com diálogo de confirmação; no lugar do antigo botão
+  "Remover sub-membro" do rodapé). **Nenhum valor é obrigatório** — sem valor próprio um
+  sub-membro **herda o do membro-dono**, depois o default do plano. O **dono** é escolhido
+  **explicitamente** (agrupamento só lógico — não altera a malha; reassociar pede confirmação).
+  Tudo é salvo em **um arquivo por personagem** (`data/limb_config/<personagem>.json` — valores de dano +
+  a relação de dono/herança de cada sub-membro; migra do antigo `data/limb_config.json` único) e lido em
+  runtime via `LimbConfig`; o multiplicador default vem do plano corporal (cabeça +50%, resto ×1). As
+  formas dos colliders são por modelo — ex.: o **red_robot** usa **tronco esférico** e **cabeça com
+  volume maior** (`torso_shape`/`head_scale` em `LimbColliders`).
 - **Tiro reutilizável** — o disparo de bala de canhão e o de laser hitscan foram isolados em
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
   modelo pode usar; player e Red Robot disparam via `CannonShooter`.
@@ -43,27 +64,45 @@ em terceira pessoa. Em alto nível, oferece:
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
   toggle cobre — partículas, luzes, malhas de laser/clarão presas a ossos), **Áudio** (todo som que
-  o modelo emite — movimento, motor, tiros, explosões, vozes) e colliders. Cada toggle é o
-  interruptor mestre da sua categoria (nenhum som/animação toca enquanto o toggle estiver desligado,
-  inclusive som disparado por trilhas de animação) e os estados dos toggles são persistidos entre
-  visitas. Uma animação só roda quando **o toggle está ligado E um clip está escolhido** no dropdown
+  o modelo emite — movimento, motor, tiros, explosões, vozes), colliders (com o toggle ligado e um
+  membro/sub-membro isolado, **inputs X/Y/Z de afastamento** ajustam a posição daquele collider ao
+  vivo, salvos ao confirmar em `LimbConfig`), **rótulos de membro**
+  (toggle próprio do browser para as tags "Membro: …" sobre cada collider, independente da tela
+  Debug 3D — com linhas extras Tipo/Nome/ID e um toggle **Osso** que faz flutuar o nome do osso
+  avulso escolhido sobre ele), **dano por membro** (uma **janela flutuante arrastável** de fundo preto opaco — barra
+  de título + botão × para fechar — com uma **árvore** do bônus % de cada membro/sub-membro, para
+  personagens, além de adicionar/remover colliders salientes `PART_*` e definir o **membro-dono** de
+  cada um) e **Realçar avulso** (no modo "Todos os membros" → filtro "Esqueleto", destaca com uma
+  caixa translúcida a região do osso avulso escolhido, ou de todos). Cada toggle é o interruptor mestre da sua categoria (nenhum som/animação toca
+  enquanto o toggle estiver desligado, inclusive som disparado por trilhas de animação) e os estados
+  dos toggles são persistidos entre visitas (exceto o painel de dano, que abre fechado — mas a
+  **última posição** da janela de dano é lembrada e restaurada na reabertura). Uma
+  animação só roda quando **o toggle está ligado E um clip está escolhido** no dropdown
   "Animação" (não há mais auto-play de um clip padrão). Os dropdowns de "Animação" e "Efeitos
-  Especiais" aparecem só na visão montada "Modelo completo"; o de efeitos isola um único efeito quando
-  escolhido. Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Parte) reseta
+  Especiais" aparecem só na visão montada "Modelo completo". "Efeitos Especiais" lista, após
+  "Selecione…", a opção **"Todos"** e exibe efeitos de todos os tipos que existirem (luzes/
+  luminosidade, fumaça, partículas, decals, névoa…); escolher um item isola um único efeito.
+  Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Parte) reseta
   todos os dropdowns abaixo dele para "Selecione…". **Todas as escolhas dos seletores são
   persistidas** (junto com os toggles), e ao reabrir a tela a cadeia é restaurada exatamente como foi
   deixada — sem auto-selecionar nenhum item: o primeiro seletor sem escolha salva fica em "Selecione…"
   pronto para continuar; se uma escolha salva não existir mais na biblioteca, esse seletor (e os
-  abaixo) ficam desabilitados. Uma linha de status vermelha acompanha a
-  navegação e flutua logo **acima do combo a que se refere**; ao escolher a Parte ela não mostra mais
-  contagem, e só aparece — acima dos combos "Animação"/"Efeitos Especiais" — quando estes têm opções.
-  Arraste para girar o modelo à mão em
+  abaixo) ficam desabilitados. A navegação é guiada apenas pelo gating sequencial dos dropdowns
+  (sem linha de status). Arraste para girar o modelo à mão em
   até 180° nos dois eixos. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
-  o modelo nem altera a câmera/rotação. Para Personagens e Armas, a **pilha de tooltips do Debug 3D**
-  (TYPE/Name/ID/Membro, em ciano) flutua sobre o collider de cada membro — os **mesmos tooltips** das
-  fases, controlados pelas mesmas sub-chaves da coluna **Debug 3D** (tela developer): cada linha
-  aparece conforme `Type`/`Name`/`Id`/`Membros`. Personagens com skin são enquadrados/centralizados
-  pelos colliders posados para girarem no lugar em vez de derivar.
+  o modelo nem altera a câmera/rotação. Para Personagens e Armas, uma **pilha de tooltips de membro**
+  flutua sobre o collider de cada membro: cada linha tem **cor própria** (Membro = azul-ciano, Tipo =
+  laranja, Nome = verde, ID = amarelo), **a mesma cor aplicada ao toggle** que a liga, e as pilhas de
+  membros diferentes **não se sobrepõem** — quando colidiriam na tela, uma é empurrada para outra
+  posição (cada conjunto fica inteiro, "um abaixo do outro"). Controladas pelos toggles
+  **próprios** da tela Models (Membro + toggles Tipo/Nome/ID) — a cena Models está **totalmente
+  desacoplada** do overlay de **Debug 3D** global (seu nó raiz está no grupo `no_debug_overlay`),
+  então o Debug 3D só afeta os **levels do jogo** (o Debug 2D agora vale em todas as telas). O nome
+  da cena aparece pelo **watermark global** no canto inferior esquerdo (de `debug_overlay.gd`); o
+  rótulo LOCAL antigo fica oculto (não é exibido na janela de dano). Personagens com skin são
+  enquadrados/centralizados pelos colliders posados para girarem no lugar em vez de derivar, e os
+  modelos abrem **de frente para a câmera** (player e red_robot, exportados com a frente em +Z, já
+  iniciam mostrando o rosto, sem precisar rotacionar).
 - **HUD cyberpunk & widgets 2D** — um conjunto de controles de UI reutilizáveis (HUD, minimapa,
   vitais, mira, menu de pausa, scanlines e mais).
 - **Ferramentas de debug** — veja [Tela developer & overlay de debug](#tela-developer--overlay-de-debug).
@@ -81,7 +120,9 @@ distintas para você diferenciá-los:
 
 - **Debug 2D** (rótulos/tooltips amarelo claro) — master `debug_2d` mais os interruptores
   dependentes `Type` / `Name` / `Id`. Controla o overlay 2D (uma borda colorida + um tooltip
-  TYPE/Name/ID) em cada `Control`.
+  TYPE/Name/ID) em cada `Control`. Os tooltips 2D aparecem em **todas as telas, sem exceção** —
+  inclusive Models e o editor de Dano (que saem do overlay **3D** via `no_debug_overlay`) — e
+  também sobre o **rótulo do nome da cena** no canto inferior esquerdo.
 - **Debug 3D** (rótulos ciano claro) — master `debug_3d` mais os dependentes `Type` / `Name` /
   `Id` (descrevendo o nó `Skeleton3D`), `Members`, `Skeleton` e `Mesh`. Renderiza rótulos
   `Label3D` por membro que seguem a pose viva.
@@ -98,49 +139,42 @@ classificador `BodyParts` usado pelos colliders de dano localizado), **Skeleton*
 de osso refeitas todo frame a partir da pose viva) e **Mesh** (caixa wireframe ciano do AABB de
 cada MeshInstance3D).
 
-Acima das colunas, uma seção geral tem **HUD FPS** (`hud_fps`), **System Health**
-(`system_health`, veja abaixo) e **Malha no Solo** (`show_grid`) — uma grade wireframe de
+Acima das colunas, uma seção geral tem **HUD FPS** (`hud_fps`), **Performance HUD**
+(`performance_hud`, veja abaixo) e **Malha no Solo** (`show_grid`) — uma grade wireframe de
 100 m × 100 m na origem, em qualquer tela que contenha conteúdo 3D (Modelos 3D, fases). Como o
 `main.gd` troca as telas como filhas do nó `Main` (então `current_scene` permanece sempre `Main`,
 um `Node` comum), o grid detecta a tela carregada ativa e procura qualquer descendente `Node3D` em
 vez de checar o tipo da raiz; ele some nas telas puramente 2D (menu/configurações/developer).
 
-## Monitor System Health
+## Indicadores de performance (Performance HUD + StabilityGuard)
 
-A linha **System Health** da tela developer alterna um overlay de monitoramento global
-(`autoload/system_health.gd`, autoload **SystemHealth**) — um **painel flutuante arrastável**. A barra
-de título fica num **cabeçalho com uma linha**: o **texto do título** à esquerda (o **único** ponto
-que move a janela — segure o botão esquerdo do mouse **sobre o título**) e um **botão de fechar vermelho
-estilo Windows (✕)** à direita, cuja área **não** arrasta a janela. Fechar **esconde** o painel mas
-**mantém o monitoramento rodando** (a rede de segurança continua armada e um pico crítico reabre o
-painel); reabra pelo interruptor da tela developer. O painel **sempre fica dentro da tela** e sua
-**posição é lembrada entre execuções** (o **Reset** das configurações o devolve ao canto superior
-direito). Ele mostra: **FPS**, o **uso real de CPU do processo** (`CPU`), a memória estática do jogo
-(`Mem. Jogo`), a memória de vídeo (`Mem. Vídeo`) e a RAM do sistema em uso (`Mem. Sistema` = total −
-RAM física livre; ex.: 12,6 / 16,2 GB = 78%). As três linhas de memória seguem o mesmo padrão
-**"usado / total (%)"**, tendo a RAM física como total comum (ex.: `Mem. Jogo` = 0,4 / 16,2 GB = 2%).
+Dois autoloads complementares, ambos lendo **só** do singleton `Performance` do Godot (métricas
+internas da engine, confiáveis e multiplataforma). Substituíram o antigo monitor único "System Health".
 
-A CPU é o uso real do processo do Godot, batendo com o que o Gerenciador de Tarefas mostra: o Godot
-não tem API para isso, então uma **thread em segundo plano** amostra do SO (`Get-Process … .CPU` via
-PowerShell no Windows) e converte leituras sucessivas em porcentagem sobre os núcleos lógicos. Mostra
-**N/D** até o primeiro delta ficar pronto, ou em plataformas não-Windows. (Uso de GPU por processo e
-temperatura de CPU não estão disponíveis de forma confiável pela engine, então não são exibidos.)
+**StabilityGuard** (`autoload/stability_guard.gd`) é uma rede de segurança contra crash/freeze,
+**sempre ligada** (sem toggle). A cada 0,5 s classifica em três estados e age na transição: `NORMAL`
+(física a 60 ticks/s), `THROTTLE` (física cai para 30 ticks/s + sinal de aviso) e `EMERGENCY`
+(`get_tree().paused = true` + overlay de tela cheia, dispensável com **ESC**). Monitora cinco
+indicadores de risco real: **RAM física livre do sistema** (`OS.get_memory_info()` — age quando a RAM
+livre cai abaixo dos limites; antes usava `MEMORY_STATIC`, que fica 0 no `.exe` em release e nunca
+disparava), **VRAM** (`RENDER_VIDEO_MEM_USED`), **collision pairs** (`PHYSICS_3D_COLLISION_PAIRS`),
+**contagem de nós** (`OBJECT_NODE_COUNT`) e **FPS** (`TIME_FPS`, detecção de loop travado). Cada limite é um `@export`. Emite `state_changed` /
+`throttle_activated` / `emergency_activated` / `recovered`, e o overlay roda em `PROCESS_MODE_ALWAYS`
+(vive durante a pausa).
 
-Quando a RAM do sistema atinge o limite seguro de **90%** — ou a CPU fica acima dele por alguns
-segundos (picos curtos são tolerados) — o painel deixa a linha de alerta vermelha e, se o interruptor
-"Pausar ao atingir o limite" do painel estiver ligado (padrão), **pausa o processamento**
-(`get_tree().paused`) para impedir que uma máquina fraca congele ou trave o SO, oferecendo um botão
-**Retomar**. O overlay continua funcionando mesmo pausado (`PROCESS_MODE_ALWAYS`); ao retomar, trava a
-auto-pausa até o uso voltar abaixo do limite, para não pausar de novo na hora.
+**Performance HUD** (`autoload/performance_hud.gd` + `scenes2D/overlays/performance_bar.gd`) é uma
+barra-overlay global no topo, ligada/desligada pela linha **Performance HUD** da tela developer
+(`game/performance_hud`, padrão desligado). É **click-through** (só o botão do toggle captura o mouse)
+e fica ociosa quando oculta. O modo **básico** mostra `FPS | NET | RAM | CPU% | GPU% | ● badge do
+StabilityGuard` (CPU% por `TIME_PROCESS`, GPU% um proxy de draw calls; **NET** degrada para **N/D**,
+pois o projeto não tem um `NetworkManager` opcional; **RAM** = memória do **sistema** em "usado/total
+GB" via `OS.get_memory_info()` — funciona em release, onde `Performance.MEMORY_STATIC` ficaria 0). O
+modo **avançado** (toggle ▼/▲) acrescenta colunas por categoria — CPU (processo/física/carga/nós/
+objetos/corpos 3D/collision pairs), GPU (draw calls/triângulos/VRAM/mem. de textura) e Memória (RAM do
+sistema/resources) — cada valor colorido por limiar.
 
-Acima disso há a regra **crítica (> 95%)**: enquanto **qualquer** indicador fica acima de 95%, cada
-segundo sustentado conta como um **pico** e dispara um **bip de alerta** (um tom curto sintetizado, no
-bus SFX, audível mesmo pausado). Após **mais de 3 picos consecutivos** (de 1 s cada), o painel é
-**reexibido** (mesmo se o usuário o tinha fechado, desde que habilitado no developer) e o jogo é
-**pausado à força** — **ignorando** o interruptor "Pausar ao atingir o limite". Essa é a garantia
-máxima do brief: **em hipótese alguma** deixar o uso seguir até congelar/travar a máquina — antes
-disso, pausa. Pausar derruba a carga do jogo, então picos de CPU cedem e o usuário pode retomar; um
-recurso ainda crítico (ex.: RAM quase cheia) simplesmente permanece pausado, que é o desfecho seguro.
+> Nota: substituir o System Health abriu mão do CPU real por processo dele (thread PowerShell
+> `Get-Process`) e do bip de pico crítico; o CPU% do HUD é um proxy por tempo de frame.
 
 ## Localização (EN/PT)
 
@@ -164,7 +198,7 @@ O idioma da UI alterna entre **Português** e **English** pelo autoload **Locale
   `Locale.set_language(...)`, que persiste a escolha e re-localiza a árvore viva no lugar (o botão do
   idioma ativo fica acinzentado).
 - **Textos vindos de código** (linhas de status dinâmicas, placeholders de dropdown, os títulos das
-  abas de configurações e diálogos de confirmação, o painel System Health) não são alcançados pelo
+  abas de configurações e diálogos de confirmação, o Performance HUD e o overlay do StabilityGuard) não são alcançados pelo
   localizador automático de Button/Label, então esses nós entram no grupo `Locale.SKIP_GROUP` e
   reaplicam `Locale.tr_key(...)` sozinhos no sinal `language_changed`.
 
@@ -220,6 +254,28 @@ Pegue o projeto em [zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) — c
 [baixe um arquivo ZIP](https://github.com/zimerfeld/ZIMARO/archive/refs/heads/main.zip) — e abra-o
 no Godot 4.6.2.
 
+## Build Windows (executável + atalho no Desktop)
+
+Para gerar um executável Windows independente e um atalho no Desktop, rode:
+
+```powershell
+pwsh -File build_windows.ps1
+```
+
+Ele exporta `build/windows/ZIMARO.exe` (release, **PCK embutido** → um único arquivo
+autocontido de ~589 MB) pela CLI headless do Godot 4.6.2 e (re)cria um atalho **ZIMARO** no
+Desktop usando `build/icon.ico` (rasterizado uma vez a partir do `icon.svg`). Requer Godot 4.6.2 +
+os export templates instalados; o `.ico` é gerado só na 1ª execução (precisa de Python 3 com
+Pillow) e reusado depois. A pasta `build/` e o `export_presets.cfg` são ignorados pelo git.
+
+Antes de exportar, o script **encerra automaticamente** qualquer instância aberta do `ZIMARO.exe`
+(e limpa um `.tmp` órfão), evitando o erro *"Failed to rename temporary file"* quando o jogo está
+rodando — isso só acontece quando há de fato um rebuild (turnos sem mudança são pulados).
+
+O **boot splash** abre numa tela **preta sem o logo do Godot** (`application/boot_splash/show_image=false`
++ `bg_color=preto` + `minimum_display_time=0` no `project.godot`), então a janela só aparece escura
+até o menu carregar — sem a marca-d'água da engine.
+
 ## Estrutura do projeto
 
 As telas 2D e a UI ficam em `scenes2D/`, as fases 3D em `scenes3D/`, e a biblioteca de assets 3D
@@ -240,10 +296,14 @@ reutilizáveis em `library3D/`:
   `structures`, `weapons`, mais as pastas de apoio `geometry` e `textures`. Novas pastas de modelos
   colocadas aqui aparecem automaticamente no visualizador Models.
 - `effects_shared/` — helpers compartilhados entre personagens: `limb_colliders.gd` (colliders
-  nativos por membro para dano localizado), `body_parts.gd` (classificação osso → membro) e assets
-  de blast/sombra compartilhados.
+  nativos por membro para dano localizado), `limb_config.gd` (`LimbConfig` — store dos
+  multiplicadores de dano + sub-membros + donos, **um arquivo por personagem** em
+  `data/limb_config/<personagem>.json`), a **hierarquia de
+  planos corporais** `body_parts.gd` (base `BodyParts` + subclasses
+  `body_parts_biped/quadruped/crawler.gd`, classificação osso → membro) e `body_plans.gd` (factory
+  `BodyPlans`), e assets de blast/sombra compartilhados.
 - `autoload/` — singletons globais: `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`,
-  `locale.gd`, `system_health.gd`. O `Settings` fica em `scenes2D/settings/config.gd`.
+  `locale.gd`, `stability_guard.gd`, `performance_hud.gd`. O `Settings` fica em `scenes2D/settings/config.gd`.
 - `<cena>/Resources/*.pt.json` + `*.en.json` — dicionários de idioma da UI por cena, varridos e
   mesclados pelo autoload `Locale`.
 - `ui/`, `themes/` — recursos de tema compartilhados. `tools/` — scripts helper headless.
@@ -263,8 +323,9 @@ menu ─┬─ play ───────► chooseplayer ─► levels ─► l
 `main.gd` é o roteador: cada tela emite `replace_main_scene` e o `main` a troca, então os botões de
 voltar (e <kbd>Escape</kbd>) navegam para a tela anterior do mesmo jeito. A tela `settings` aplica e
 persiste cada mudança na hora e o `menu` reaplica todas as configurações salvas ao entrar. A tela
-`developer` e a aba "Debug" das configurações controlam o `DebugOverlay`, e a linha "System Health"
-da tela developer controla o monitor `SystemHealth`. O autoload `Locale` troca o idioma da UI
+`developer` e a aba "Debug" das configurações controlam o `DebugOverlay`, e a linha "Performance HUD"
+da tela developer controla o overlay `PerformanceHUD` (e o `StabilityGuard` roda sempre-ligado).
+O autoload `Locale` troca o idioma da UI
 (EN/PT) pelos botões Português/English presentes em todas as telas. A cena `cyberpunkhud` é um
 preview de HUD montado isolado, fora deste fluxo de navegação.
 
@@ -293,7 +354,7 @@ ZIMARO/
 │  ├─ geometry/          # malhas/materiais compartilhados (.tres)
 │  └─ textures/          # texturas compartilhadas
 ├─ effects_shared/       # helpers entre personagens: limb_colliders.gd, body_parts.gd, …
-├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, system_health
+├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud
 │                        #   (Settings fica em scenes2D/settings/config.gd)
 │                        # dicionários da UI por cena: <cena>/Resources/*.pt.json + *.en.json (lidos pelo Locale)
 ├─ ui/  themes/          # recursos de Theme compartilhados (ui_theme.tres, cyberpunk.tres)
@@ -303,6 +364,32 @@ ZIMARO/
 ├─ screenshots/          # imagens de preview capturadas
 └─ project.godot · default_bus_layout.tres · file_format.sh   # config do projeto · buses de áudio · formatador
 ```
+
+## Blocos nativos do Godot
+
+Tudo no jogo é construído com **nós e recursos NATIVOS do Godot** — não há nó custom em
+C++/GDExtension. As únicas abstrações próprias são helpers `RefCounted` de lógica pura, **sem nó**
+(`BodyParts` e suas subclasses de plano corporal + a factory `BodyPlans`, `WeaponParts`,
+`LimbConfig`, `LaserShooter`, `CannonShooter`), que apenas orquestram nós nativos. Por subsistema:
+
+- **Física & colisão:** `StaticBody3D`, `CharacterBody3D`, `RigidBody3D`, `Area3D`,
+  `CollisionShape3D` (e `BoxShape3D`/`CapsuleShape3D`/`SphereShape3D`/`CylinderShape3D`), `RayCast3D`.
+- **Malhas & geometria:** `MeshInstance3D`, `ArrayMesh` e primitivas (`BoxMesh`, `CylinderMesh`,
+  `SphereMesh`, `PrismMesh`…).
+- **Esqueleto & animação:** `Skeleton3D`, `BoneAttachment3D`, `Skin`, `AnimationPlayer`,
+  `AnimationTree`, `SkeletonModifier3D`.
+- **Câmera, luz & ambiente:** `Camera3D`, `SpringArm3D`, `Marker3D`, `DirectionalLight3D`/
+  `OmniLight3D`/`SpotLight3D`, `WorldEnvironment`, `Sky`.
+- **Partículas & materiais:** `CPUParticles3D`, `GPUParticles3D`, `StandardMaterial3D`, `ShaderMaterial`.
+- **Áudio:** `AudioStreamPlayer3D`, `AudioStreamPlayer`, `AudioStream`/`AudioStreamWAV`,
+  `AudioStreamRandomizer`.
+- **Rede:** `MultiplayerSynchronizer`, `MultiplayerSpawner`, `SceneReplicationConfig`.
+- **UI 2D (árvore `Control`):** `Button`, `Label`, containers, `OptionButton`, `ProgressBar`,
+  `CanvasLayer`, `Theme`.
+
+O sistema de hitboxes por membro é o exemplo canônico: `limb_colliders.gd` é um `Node3D` comum que
+**monta** `StaticBody3D` + `CollisionShape3D` + `BoneAttachment3D` nativos. A nota do Obsidian
+[`recursos-nativos-godot`](OBSIDIAN/CLAUDE/sistemas/recursos-nativos-godot.md) traz o inventário completo.
 
 ## Controles
 

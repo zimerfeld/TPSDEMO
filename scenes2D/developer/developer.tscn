@@ -83,17 +83,17 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Enabled"
 
-[node name="SystemHealthRow" type="HBoxContainer" parent="UI/General"]
+[node name="PerformanceHUDRow" type="HBoxContainer" parent="UI/General"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="SystemHealthLabel" type="Label" parent="UI/General/SystemHealthRow"]
+[node name="PerformanceHUDLabel" type="Label" parent="UI/General/PerformanceHUDRow"]
 custom_minimum_size = Vector2(220, 0)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
-text = "System Health:"
+text = "Performance HUD:"
 
-[node name="Disabled" type="Button" parent="UI/General/SystemHealthRow"]
+[node name="Disabled" type="Button" parent="UI/General/PerformanceHUDRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(90, 50)
 layout_mode = 2
@@ -101,7 +101,7 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/General/SystemHealthRow"]
+[node name="Enabled" type="Button" parent="UI/General/PerformanceHUDRow"]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(90, 50)
 layout_mode = 2

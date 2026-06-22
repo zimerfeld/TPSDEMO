@@ -9,19 +9,38 @@ extends Node3D
 ## então acompanha a pose/animação. Cada StaticBody3D carrega o multiplicador de
 ## DANO LOCALIZADO (cabeça = +50%) e uma referência ao personagem dono, em metas.
 ## Os projéteis colidem fisicamente com esses corpos (move_and_collide) e o laser
-## do inimigo os atinge por raycast contra CORPOS — não há mais Area3D nem visual.
+## do inimigo os atinge por raycast contra CORPOS. São StaticBody3D PASSIVOS
+## (collision_mask=0): só geometria de colisão, sem Area3D de detecção e sem
+## malha visual.
+##
+## Os MEMBROS de cada modelo vêm do seu PLANO CORPORAL (body_type): bípede tem
+## CABEÇA/TRONCO/BRAÇO/PERNA, quadrúpede tem 4 PERNAS, rastejante só CABEÇA/TRONCO
+## (ver [[BodyPlans]]/[[BodyParts]]). O multiplicador de DANO de cada membro vem de
+## LimbConfig (lido por model_key), com fallback para o default do plano.
 
-const HEAD_MULTIPLIER := 1.5
-const BODY_MULTIPLIER := 1.0
-
-# Prefixo de "grupo" interno para uma peça com collider próprio (standalone_part_bones).
+# Prefixo de "grupo" interno para uma peça com collider próprio (sub-membro).
 # Cada peça vira um grupo único "PART_<osso>", reaproveitando todo o pipeline de membros.
 # Sem ":" no prefixo: nomes de nó do Godot não aceitam ":".
 const _PART_PREFIX := "PART_"
 
 @export var enabled: bool = true
+## Plano corporal do modelo — escolhe o classificador de membros (ver BodyPlans).
+@export_enum("biped", "quadruped", "crawler") var body_type: String = "biped"
 ## Margem (m) somada a cada lado da caixa, para folga sobre a superfície.
 @export var padding: float = 0.03
+## Chave do modelo (nome da pasta, ex.: "red_robot"/"player") para buscar os
+## multiplicadores de dano e os sub-membros em LimbConfig. Vazio → usa os defaults do plano.
+@export var model_key: String = ""
+## Forma do collider da CABEÇA: "sphere" (padrão) ou "capsule". A cápsula é alinhada ao
+## eixo mais longo da cabeça (mesma orientação do osso) e mantém o raio cheio para abraçar
+## a cabeça — usada pelo player. Demais membros não são afetados.
+@export_enum("sphere", "capsule") var head_shape: String = "sphere"
+## Forma do collider do TRONCO: "box" (padrão) ou "sphere". O red_robot usa "sphere" (corpo
+## arredondado). Demais membros não são afetados.
+@export_enum("box", "sphere") var torso_shape: String = "box"
+## Fator de escala do collider da CABEÇA (1.0 = ajustado à malha). > 1 aumenta o VOLUME da cabeça
+## em torno do seu centro — ex.: red_robot usa ~1.3 para um headshot mais generoso.
+@export var head_scale: float = 1.0
 
 @export_group("Mapeamento de Bones")
 ## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
@@ -48,16 +67,31 @@ const _PART_PREFIX := "PART_"
 var _character: Node = null
 ## Todos os StaticBody3D criados (para o atirador excluir os próprios da colisão).
 var _bodies: Array[StaticBody3D] = []
+## Classificador do plano corporal (resolvido em build_for por body_type).
+var _classifier: BodyParts = null
+## Sub-membros efetivos = export ∪ LimbConfig(model_key) ∪ default do plano (em minúsculas).
+var _sub_member_set: Dictionary = {}
 
 
 func build_for(skel: Skeleton3D) -> void:
 	if not enabled or skel == null:
 		return
 	_character = get_parent()
+	_classifier = BodyPlans.for_type(body_type)
+	_resolve_sub_members()
 	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
 	var members := _collect_member_boxes(skel)
 	for group in members:
 		_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"])
+
+
+# Junta os sub-membros das 3 fontes (export do nó, config por modelo, default do plano)
+# num set em minúsculas para o _classify reconhecê-los independentemente de origem.
+func _resolve_sub_members() -> void:
+	_sub_member_set = {}
+	for src in [standalone_part_bones, LimbConfig.sub_members(model_key), _classifier.default_sub_members()]:
+		for b in src:
+			_sub_member_set[String(b).to_lower()] = true
 
 
 ## Lista os StaticBody3D dos membros (usada para excluir os próprios colliders da
@@ -72,20 +106,48 @@ func get_limb_bodies() -> Array[StaticBody3D]:
 # osso está em standalone_part_bones (peça com collider próprio). Intercepta ANTES do
 # classificador normal, então a peça nunca é absorvida pelo membro vizinho.
 func _classify(bone_name: String) -> String:
-	for p in standalone_part_bones:
-		if bone_name.to_lower() == String(p).to_lower():
-			return _PART_PREFIX + bone_name
-	return BodyParts.group_of(bone_name, head_bone_names, torso_bone_names, leg_bone_names)
+	if _sub_member_set.has(bone_name.to_lower()):
+		return _PART_PREFIX + bone_name
+	return _classifier.group_of(bone_name, head_bone_names, torso_bone_names, leg_bone_names)
 
 
-# Rótulo legível de uma peça standalone (a partir do nome do osso). Placas de perna viram
-# "PLACA PERNA E/D"; demais peças usam o próprio nome do osso.
-func _part_label(bone_name: String) -> String:
-	var ln := bone_name.to_lower()
-	if ln.contains("leg") and ln.contains("guard"):
-		match BodyParts.side_of(bone_name):
-			"L": return "PLACA PERNA E"
-			"R": return "PLACA PERNA D"
+# Membro-DONO de um sub-membro (peça/placa), resolvido em camadas — compartilhado pelo rótulo
+# (_part_label) e pelo agrupamento da tela Models (_sub_member_owner_map), para os dois
+# concordarem. Ordem: (1) NOME da própria peça (owner_hint); (2) sobe na hierarquia de ossos e, em
+# CADA ancestral, tenta owner_hint (pega placas penduradas num osso AUX/IK cujo nome diz o membro,
+# ex.: "L-Shield" → pai "L-ARMIK" → BRAÇO E) e depois group_of (com os overrides head/torso/leg).
+# "" quando nada decide.
+static func resolve_sub_member_owner(skel: Skeleton3D, bone_name: String, classifier: BodyParts,
+		head: Array = [], torso: Array = [], leg: Array = []) -> String:
+	var oh := classifier.owner_hint(bone_name)
+	if oh != "":
+		return oh
+	var b := skel.find_bone(bone_name)
+	while b != -1:
+		var nm := skel.get_bone_name(b)
+		var h := classifier.owner_hint(nm)
+		if h != "":
+			return h
+		var g := classifier.group_of(nm, head, torso, leg)
+		if g != "":
+			return g
+		b = skel.get_bone_parent(b)
+	return ""
+
+
+# Rótulo legível de uma peça standalone. Quando dá pra resolver a que membro a peça pertence
+# (ombreira→BRAÇO, escudo do braço→BRAÇO, placa de perna→PERNA; via resolve_sub_member_owner,
+# plano-aware + hierarquia), vira "PLACA <MEMBRO>" (ex.: "PLACA BRAÇO E", "PLACA PERNA D"). Sem
+# dono claro, usa o próprio nome do osso.
+func _part_label(skel: Skeleton3D, bone_name: String) -> String:
+	# Dono EXPLÍCITO escolhido na tela tem precedência; senão, resolução automática.
+	var owner_group := LimbConfig.sub_member_owner(model_key, bone_name)
+	if owner_group == "":
+		owner_group = resolve_sub_member_owner(skel, bone_name, _classifier, head_bone_names, torso_bone_names, leg_bone_names)
+	if owner_group != "":
+		var lab := _classifier.label_of(owner_group)
+		if lab != "":
+			return "PLACA " + lab
 	return bone_name
 
 
@@ -180,7 +242,29 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 		var mn: Vector3 = acc[g]["min"] - pad
 		var mx: Vector3 = acc[g]["max"] + pad
 		out[g] = {"bone": root_bone[g], "aabb": AABB(mn, mx - mn)}
+
+	# 4) FALLBACK para SUB-MEMBROS (PART_*) SEM vértices skinados próprios (ossos auxiliares/vazios,
+	# ex.: "Mouth"; um osso só "estrutural" cuja região é dominada pelo osso-pai). Sem isto, o
+	# sub-membro promovido pelo usuário não gera collider e SOME da árvore/dropdown da tela Models.
+	# Damos a ele uma pequena CAIXA centrada na origem do próprio osso (rest), para que apareça e
+	# possa carregar dano localizado. O tamanho é uma fração do maior membro medido (escala-aware).
+	var fb := _fallback_part_size(out)
+	for g in group_bones:
+		if not g.begins_with(_PART_PREFIX) or out.has(g):
+			continue
+		var s := Vector3(fb, fb, fb)
+		out[g] = {"bone": root_bone[g], "aabb": AABB(-s * 0.5, s)}
 	return out
+
+
+# Lado (m) da caixa-fallback de um sub-membro sem vértices: ~20% da maior dimensão de um membro já
+# medido (assim acompanha a escala do modelo), com um piso mínimo quando nada foi medido ainda.
+func _fallback_part_size(measured: Dictionary) -> float:
+	var biggest := 0.0
+	for g in measured:
+		var sz: Vector3 = measured[g]["aabb"].size
+		biggest = maxf(biggest, maxf(sz.x, maxf(sz.y, sz.z)))
+	return maxf(biggest * 0.2, 0.05)
 
 
 func _bone_depth(skel: Skeleton3D, b: int) -> int:
@@ -192,7 +276,7 @@ func _bone_depth(skel: Skeleton3D, b: int) -> int:
 	return d
 
 
-func _skinned_meshes(skel: Skeleton3D) -> Array[MeshInstance3D]:
+static func _skinned_meshes(skel: Skeleton3D) -> Array[MeshInstance3D]:
 	var out: Array[MeshInstance3D] = []
 	var stack: Array = [skel]
 	while stack.size() > 0:
@@ -203,6 +287,69 @@ func _skinned_meshes(skel: Skeleton3D) -> Array[MeshInstance3D]:
 		for c in n.get_children():
 			stack.append(c)
 	return out
+
+
+# AABB (no espaço LOCAL do osso `bone_idx`, em REST) dos vértices cujo osso DOMINANTE (maior peso)
+# é bone_idx. AABB de tamanho ZERO se nenhum vértice pertence a ele. Mesma matemática de skinning
+# de _collect_member_boxes, mas para UM osso — usado pelo realce de "osso avulso" na tela Models
+# (sem precisar promovê-lo a sub-membro). STATIC: não depende de estado de instância.
+static func bone_vertex_box(skel: Skeleton3D, bone_idx: int) -> AABB:
+	if skel == null or bone_idx < 0 or bone_idx >= skel.get_bone_count():
+		return AABB()
+	var bone_rest: Array[Transform3D] = []
+	bone_rest.resize(skel.get_bone_count())
+	for b in skel.get_bone_count():
+		bone_rest[b] = skel.get_bone_global_rest(b)
+	var root_inv := bone_rest[bone_idx].affine_inverse()
+	var has := false
+	var mn := Vector3.ZERO
+	var mx := Vector3.ZERO
+	for mi in _skinned_meshes(skel):
+		var skin: Skin = mi.skin
+		if skin == null:
+			continue
+		var idx_to_bone := PackedInt32Array()
+		idx_to_bone.resize(skin.get_bind_count())
+		var skin_xform: Array[Transform3D] = []
+		skin_xform.resize(skin.get_bind_count())
+		for i in skin.get_bind_count():
+			var bb := skin.get_bind_bone(i)
+			var skb_i := bb if bb >= 0 else skel.find_bone(skin.get_bind_name(i))
+			idx_to_bone[i] = skb_i
+			if skb_i >= 0:
+				skin_xform[i] = bone_rest[skb_i] * skin.get_bind_pose(i)
+		for s in mi.mesh.get_surface_count():
+			var arr := mi.mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var bones: PackedInt32Array = arr[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
+			if verts.is_empty() or bones.is_empty() or weights.is_empty():
+				continue
+			@warning_ignore("integer_division")
+			var per := bones.size() / verts.size()
+			for vi in verts.size():
+				var best_w := 0.0
+				var best_b := -1
+				for k in per:
+					var w := weights[vi * per + k]
+					if w > best_w:
+						best_w = w
+						best_b = bones[vi * per + k]
+				if best_b < 0 or best_b >= idx_to_bone.size():
+					continue
+				if idx_to_bone[best_b] != bone_idx:
+					continue
+				var p: Vector3 = root_inv * (skin_xform[best_b] * verts[vi])
+				if not has:
+					mn = p
+					mx = p
+					has = true
+				else:
+					mn = mn.min(p)
+					mx = mx.max(p)
+	if not has:
+		return AABB()
+	return AABB(mn, mx - mn)
 
 
 # ── Construção do collider de um membro ───────────────────────────────────────
@@ -217,15 +364,26 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	body.name = "Collider_%s" % group
 	body.collision_layer = hitbox_layer
 	body.collision_mask = 0   # passivo: é atingido, não detecta nada
-	var mult: float = HEAD_MULTIPLIER if group == BodyParts.HEAD else BODY_MULTIPLIER
-	# Peças standalone (PART_*) usam o rótulo derivado do osso; membros normais, o de BodyParts.
-	var label: String = _part_label(skel.get_bone_name(bone_idx)) if group.begins_with(_PART_PREFIX) else BodyParts.label_of(group)
+	# Dano EFETIVO: um sub-membro (PART_*) sem valor próprio herda o do membro-DONO. O dono vem
+	# da escolha EXPLÍCITA salva (LimbConfig); na falta, da resolução automática por nome/hierarquia.
+	var owner_group := ""
+	if group.begins_with(_PART_PREFIX):
+		var bn := skel.get_bone_name(bone_idx)
+		owner_group = LimbConfig.sub_member_owner(model_key, bn)
+		if owner_group == "":
+			owner_group = resolve_sub_member_owner(skel, bn, _classifier, head_bone_names, torso_bone_names, leg_bone_names)
+	var mult: float = LimbConfig.effective_multiplier(model_key, group, _classifier, owner_group)
+	# Peças standalone (PART_*) usam o rótulo derivado do osso; membros normais, o do plano.
+	var label: String = _part_label(skel, skel.get_bone_name(bone_idx)) if group.begins_with(_PART_PREFIX) else _classifier.label_of(group)
 	body.set_meta("group", group)
 	body.set_meta("damage_multiplier", mult)
 	body.set_meta("member_label", label)
 	body.set_meta("character", _character)
+	# Afastamento (offset) do collider em espaço LOCAL do osso, editável na tela Models. Move o corpo
+	# inteiro (shape/gizmo/rótulo acompanham). Vazio/ausente = Vector3.ZERO (sem afastamento).
+	body.position = LimbConfig.collider_offset(model_key, group)
 
-	body.add_child(make_member_shape(group, box_aabb))
+	body.add_child(make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale))
 
 	att.add_child(body)
 	_bodies.append(body)
@@ -235,29 +393,50 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 # tends to float a little loose around the limb, so we pull the cross-section
 # (radius / box width+depth) in and trim the length slightly — the colliders sit
 # closer to the character without leaving the mesh poking out.
-const CROSS_SHRINK := 0.82   # width/depth and radius multiplier
+const CROSS_SHRINK := 0.72   # width/depth and radius multiplier (limbs only; head keeps full radius)
 const LENGTH_SHRINK := 0.95  # along a limb's long axis
 const LIMB_RADIUS_RATIO := 0.32  # max capsule radius as a fraction of its length
 
 
-# Pick the geometry that best wraps a member from its (padded) AABB: a SPHERE for
-# the head, a BOX for the torso, and a CAPSULE aligned to the long axis for the
-# elongated limbs (arms/legs). Returns a positioned/oriented CollisionShape3D.
-# Static so the model browser can reuse it for non-skeleton rigs (criatura).
-static func make_member_shape(group: String, box_aabb: AABB) -> CollisionShape3D:
-	var kind := "capsule"
+# Pick the geometry that best wraps a member from its (padded) AABB: the HEAD is a
+# SPHERE by default but a CAPSULE when `head_kind` asks for it (player), the TORSO a
+# BOX, and the elongated limbs (arms/legs) a CAPSULE aligned to the long axis.
+# Returns a positioned/oriented CollisionShape3D. Static so the model browser can reuse
+# it for non-skeleton rigs (criatura).
+static func make_member_shape(group: String, box_aabb: AABB, head_kind: String = "sphere", torso_kind: String = "box", head_scale: float = 1.0) -> CollisionShape3D:
 	if group == BodyParts.HEAD:
-		kind = "sphere"
-	elif group == BodyParts.TORSO or group.begins_with(_PART_PREFIX):
+		# head_scale aumenta o volume da cabeça em torno do centro (AABB escalado simétrico).
+		var head_aabb := _scaled_aabb(box_aabb, head_scale)
+		# Head capsule keeps its FULL radius (cap_radius=false) so it hugs the roughly
+		# round head along its long axis, instead of pinching to a thin limb capsule.
+		if head_kind == "capsule":
+			return make_shape("capsule", head_aabb, false)
+		return make_shape(head_kind, head_aabb)
+	var kind := "capsule"
+	if group == BodyParts.TORSO:
+		# Tronco: "box" (padrão) ou "sphere" por modelo (ex.: red_robot tem corpo arredondado).
+		kind = torso_kind
+	elif group.begins_with(_PART_PREFIX):
 		# Peças salientes (placas) são chatas/retangulares → caixa, não cápsula.
 		kind = "box"
 	return make_shape(kind, box_aabb)
 
 
+# AABB com o TAMANHO multiplicado por `s` em torno do CENTRO (cresce/encolhe simétrico). s==1 → igual.
+static func _scaled_aabb(a: AABB, s: float) -> AABB:
+	if is_equal_approx(s, 1.0):
+		return a
+	var c := a.position + a.size * 0.5
+	var ns := a.size * s
+	return AABB(c - ns * 0.5, ns)
+
+
 # Build a positioned/oriented CollisionShape3D of an explicit `kind`
 # ("sphere"/"box"/"capsule") fitted to the AABB. Lets non-character rigs (weapons)
-# choose the shape per part (e.g. a CAPSULE barrel, BOX receiver/grip).
-static func make_shape(kind: String, box_aabb: AABB) -> CollisionShape3D:
+# choose the shape per part (e.g. a CAPSULE barrel, BOX receiver/grip). `cap_radius`
+# clamps a capsule's radius to a fraction of its length (keeps slim limbs slim); pass
+# false for round parts like the head so the capsule keeps its full hugging radius.
+static func make_shape(kind: String, box_aabb: AABB, cap_radius: bool = true) -> CollisionShape3D:
 	var size := box_aabb.size
 	var center := box_aabb.position + size * 0.5
 	var shape := CollisionShape3D.new()
@@ -285,11 +464,16 @@ static func make_shape(kind: String, box_aabb: AABB) -> CollisionShape3D:
 	var others := [size.x, size.y, size.z]
 	others.remove_at(long_axis)
 	var length := size[long_axis] * LENGTH_SHRINK
-	var radius := 0.5 * maxf(others[0], others[1]) * CROSS_SHRINK
-	# Keep limbs visibly elongated: cap the radius to a fraction of the length so a
-	# compact, near-cubic AABB (e.g. the player's gun-holding right arm, whose pose
-	# fattens its bounds) still reads as a proper capsule instead of a ball.
-	radius = minf(radius, length * LIMB_RADIUS_RATIO)
+	var radius := 0.5 * maxf(others[0], others[1])
+	# Limbs (cap_radius=true): pull the cross-section in (CROSS_SHRINK) so they hug the
+	# part, and keep them visibly elongated by capping the radius to a fraction of the
+	# length — a compact, near-cubic AABB (e.g. the player's gun-holding right arm, whose
+	# pose fattens its bounds) still reads as a proper capsule instead of a ball.
+	# Round parts (head, cap_radius=false) skip BOTH: full radius so the capsule covers
+	# the whole mesh.
+	if cap_radius:
+		radius *= CROSS_SHRINK
+		radius = minf(radius, length * LIMB_RADIUS_RATIO)
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = radius
 	# CapsuleShape3D.height is the full length including the two hemisphere caps.

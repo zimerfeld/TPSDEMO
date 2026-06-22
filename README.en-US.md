@@ -6,7 +6,9 @@
 
 ZIMARO is a third-person shooter sandbox made using [Godot Engine](https://godotengine.org).
 
-- Help keep this project always updated 💜
+[![GitHub stars](https://img.shields.io/github/stars/zimerfeld/ZIMARO?style=for-the-badge&logo=github)](https://github.com/zimerfeld/ZIMARO/stargazers) &nbsp; [![GitHub downloads](https://img.shields.io/github/downloads/zimerfeld/ZIMARO/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/zimerfeld/ZIMARO/releases)
+
+This game is built and maintained in my free time. If you enjoy ZIMARO, a sponsorship helps keep new features and fixes coming. 💜
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
@@ -29,11 +31,30 @@ third-person shooter sandbox. At a high level it offers:
   direction** while still facing/aiming at and shooting the player.
 - **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
   when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
-- **Localized damage** — per-limb native 3D colliders (head, torso, arms, legs) sized to
-  each character's mesh, so hits to different body parts deal different damage (headshots
-  deal extra). Shots pass through the generic body collider to land on the limb colliders.
-  Protruding parts get their OWN box collider (e.g. the Red Robot's **rear leg guard plates**,
-  which the leg capsule wouldn't wrap).
+- **Localized damage** — per-limb native 3D colliders sized to each character's mesh, so hits to
+  different body parts deal different damage (headshots deal extra). The members come from the
+  model's **body plan**, chosen by a `body_type` (**biped** = head/torso/2 arms/2 legs — the
+  default; **quadruped** = head/torso/4 legs; **crawler** = head/torso only), classified by the
+  `BodyParts` hierarchy via the `BodyPlans` factory. Shots pass through the generic body collider
+  to land on the limb colliders. **Sub-members** — protruding parts that get their OWN box collider
+  (e.g. the Red Robot's **rear leg guard plates** and the Player's **shoulder plates**, which the
+  limb capsule wouldn't wrap) — are now **editable in the Models screen** (add/remove + a bonus-%
+  each), not hardcoded; each part is grouped and labeled under the limb it belongs to by name
+  (e.g. "PLACA BRAÇO E", "PLACA PERNA D"), even when it's attached to another bone in the skeleton.
+  The per-limb multiplier is **per-model and editable in the Models screen**: each member/sub-member
+  is edited in a **draggable floating window** (title bar + **×**, Windows-style) holding a **TREE**:
+  each member is a branch, its sub-members are leaves under it (e.g. "↳ PLACA BRAÇO E" under
+  "BRAÇO E"). Columns: Name | Set (check) | Bonus % | Owner; each sub-member leaf carries a **trash
+  button to the right of its name** to remove it in place (with a confirmation dialog; replacing the
+  old footer "Remove sub-member" button). **No value is required** — without its
+  own value a sub-member **inherits the owner member's**, then the plan default. The **owner** is
+  chosen **explicitly** (logical grouping only — it never changes the mesh; reassigning asks for
+  confirmation). Everything is saved to **one file per character**
+  (`data/limb_config/<character>.json` — damage values + each sub-member's owner/inheritance relation;
+  migrates from the old single `data/limb_config.json`) and read at runtime via `LimbConfig`; the default
+  multiplier comes from the body plan (head +50%, rest ×1). Collider shapes are per-model — e.g. the
+  **red_robot** uses a **spherical torso** and a **larger head** (`torso_shape`/`head_scale` on
+  `LimbColliders`).
 - **Reusable shooting** — the cannon-bullet and hitscan-laser firing are isolated into
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
   can use; the player and Red Robot both fire via `CannonShooter`.
@@ -43,27 +64,46 @@ third-person shooter sandbox. At a high level it offers:
   browsable in-game through the Models screen (category → model → part) with toggles, in
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
-  **Audio** (every sound the model emits — movement, motor, shots, explosions, voices) and
-  colliders. Each toggle is the master switch for its category (no sound/animation plays
-  while its toggle is off — including sound driven by animation tracks) and the toggle states
-  are persisted between visits. An animation plays only when **the toggle is on AND a clip is
+  **Audio** (every sound the model emits — movement, motor, shots, explosions, voices),
+  colliders (with the toggle on and one member/sub-member isolated, **X/Y/Z offset inputs** tweak that
+  collider's position live, saved on confirm to `LimbConfig`), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
+  collider, independent of the Debug 3D screen — with extra Type/Name/ID lines and a **Bone** toggle
+  that floats the chosen loose bone's name over it), **per-limb damage** (a **draggable floating window**
+  with an opaque black background — title bar + × close — holding a **tree** of each member/sub-member's
+  bonus %, for characters, plus add/remove of protruding `PART_*` colliders and each one's **owner
+  member**) and **Highlight loose** (in "All members" mode → "Skeleton" filter, highlights the
+  chosen loose bone's region — or all of them — with a translucent box). Each toggle is the master switch for its category (no
+  sound/animation plays while its toggle is off — including sound driven by animation tracks) and
+  the toggle states are persisted between visits (the damage panel aside — it opens closed, but the
+  damage window's **last position** is remembered and restored on reopen). An
+  animation plays only when **the toggle is on AND a clip is
   picked** in the "Animação" dropdown (there is no default-clip auto-play anymore). The
   "Animação" and "Efeitos Especiais" dropdowns appear only for the assembled "Modelo completo"
-  view; the effects one isolates a single effect when picked. Picking a value in any selector
-  (Categoria → Prefixo → Modelo → Parte) resets every dropdown below it to "Selecione…". **Every
+  view. "Efeitos Especiais" lists, right after "Selecione…", a **"Todos"** option and shows every
+  kind of effect the model has (lights/luminosity, smoke, particles, decals, fog…); picking one
+  isolates a single effect. Picking a
+  value in any selector (Categoria → Prefixo → Modelo → Parte) resets every dropdown below it to
+  "Selecione…". **Every
   selector choice is persisted** (alongside the toggles), and reopening the screen restores the
   chain exactly as it was left — without auto-selecting any item: the first selector with no saved
   choice sits on "Selecione…" ready to continue, and if a saved choice no longer exists in the
-  library that selector (and the ones below it) are disabled. A red
-  status line tracks the drill-down and floats directly **above the combo it is about**; once a
-  Parte is picked it no longer shows a count, and only appears — above the "Animação"/"Efeitos
-  Especiais" combos — when those have options. Drag to hand-rotate the
+  library that selector (and the ones below it) are disabled. Navigation is guided purely by the
+  sequential dropdown gating (no status line). Drag to hand-rotate the
   model up to 180° on both axes. Toggling any option acts on the live preview in place — it
-  never reloads the model nor changes the camera/rotation. For Personagens and Armas, the
-  **Debug 3D tooltip stack** (TYPE/Name/ID/Membro, in cyan) floats over each member's collider —
-  the SAME tooltips as in the levels, driven by the same **Debug 3D** column sub-toggles
-  (developer screen): each line follows `Type`/`Name`/`Id`/`Membros`. Skinned characters
-  are framed/centered from their posed colliders so they spin in place instead of drifting.
+  never reloads the model nor changes the camera/rotation. For Personagens and Armas, a
+  **member tooltip stack** floats over each member's collider: each line has its **own color**
+  (Membro = cyan-blue, Tipo = orange, Nome = green, ID = yellow), **the same color applied to the
+  toggle** that turns it on, and stacks from different members **never overlap** — when they would
+  collide on screen one is pushed to another position (each set stays whole, "one below the other").
+  Driven by the Models screen's **own** dedicated toggles (Membro + Tipo/Nome/ID toggles) —
+  the Models scene is fully decoupled from the global **Debug 3D** overlay (its root is in the
+  `no_debug_overlay` group), so Debug 2D/3D only affect actual game levels. Being exempt from the
+  global overlay, so only Debug 3D is limited to game levels (Debug 2D now applies everywhere). The
+  scene name shows via the **global watermark** in the bottom-left corner (from `debug_overlay.gd`);
+  the old LOCAL label stays hidden (not shown in the damage window). Skinned characters
+  are framed/centered from their posed colliders so they spin in place instead of drifting, and
+  models open **facing the camera** (player and red_robot, exported with their front on +Z, start
+  showing their face with no need to rotate).
 - **Cyberpunk HUD & 2D widgets** — a set of reusable UI controls (HUD, minimap, vitals,
   crosshair, pause menu, scanlines, and more).
 - **Debug tooling** — see [Developer screen & debug overlay](#developer-screen--debug-overlay).
@@ -81,7 +121,9 @@ light colors so you can tell them apart:
 
 - **Debug 2D** (light-yellow labels/tooltips) — master `debug_2d` plus the dependent line
   switches `Type` / `Name` / `Id`. Controls the 2D overlay (a colored border + a
-  TYPE/Name/ID tooltip) on every `Control`.
+  TYPE/Name/ID tooltip) on every `Control`, in **every scene with no exception** — including Models
+  and the Damage editor (which opt out of the **3D** overlay via `no_debug_overlay`) — and also over
+  the bottom-left **scene-name label**.
 - **Debug 3D** (light-cyan labels/labels) — master `debug_3d` plus the dependent switches
   `Type` / `Name` / `Id` (describing the owning `Skeleton3D`), `Members`, `Skeleton` and
   `Mesh`. Renders per-member `Label3D` tags that follow the live pose.
@@ -98,50 +140,43 @@ The **Debug 3D** extras are: **Members** (per-limb labels CABEÇA/TRONCO/BRAÇO�
 lines rebuilt every frame from the live pose) and **Mesh** (a cyan AABB wireframe box around
 each MeshInstance3D).
 
-Above the columns, a general section holds **HUD FPS** (`hud_fps`), **System Health**
-(`system_health`, see below) and **Malha no Solo** (`show_grid`) — a 100 m × 100 m wireframe
+Above the columns, a general section holds **HUD FPS** (`hud_fps`), **Performance HUD**
+(`performance_hud`, see below) and **Malha no Solo** (`show_grid`) — a 100 m × 100 m wireframe
 floor grid drawn at the origin in any screen that contains 3D content (Modelos 3D, levels).
 Because `main.gd` swaps screens in as children of the `Main` node (so `current_scene` always
 stays `Main`, a plain `Node`), the grid detects the active loaded screen and looks for any
 `Node3D` descendant rather than checking the root type; it is absent on the pure-2D screens
 (menu/settings/developer).
 
-## System Health monitor
+## Performance indicators (Performance HUD + StabilityGuard)
 
-The developer screen's **System Health** row toggles a global monitoring overlay
-(`autoload/system_health.gd`, autoload **SystemHealth**) — a **draggable floating panel**. Its title
-bar sits in a **one-row header**: the **title text** on the left (the **only** thing that moves the
-window — hold the left mouse button **over the title**) and a **Windows-style red close button (✕)**
-on the right, whose area does **not** drag the window. Closing **hides** the panel but **keeps
-monitoring running** (the safety net stays armed and a critical spike re-reveals it); reopen it from
-the developer toggle. The panel always stays within the screen, and its position is remembered between
-runs (a settings **Reset** sends it back to the top-right corner).
-It shows: **FPS**, the **real per-process CPU usage** (`CPU`), the game's static memory
-(`Mem. Jogo`), the video memory (`Mem. Vídeo`) and the system RAM used (`Mem. Sistema` = total −
-free physical RAM, e.g. 12.6 / 16.2 GB = 78%). All three memory rows follow the same
-**"used / total (%)"** format, using physical RAM as the common total (e.g. `Mem. Jogo` = 0.4 / 16.2 GB = 2%).
+Two complementary autoloads, both reading only from Godot's `Performance` singleton (engine-internal,
+reliable, cross-platform). They replaced the old single "System Health" monitor.
 
-CPU is the actual usage of the Godot process, matching what the OS Task Manager shows for it:
-Godot has no API for it, so a **background thread** samples it from the OS (`Get-Process … .CPU`
-via PowerShell on Windows) and turns successive readings into a percentage across the logical
-cores. It reads **N/D** until the first delta is ready, or on non-Windows platforms. (GPU
-per-process and CPU temperature are not reliably available from the engine, so they are not shown.)
+**StabilityGuard** (`autoload/stability_guard.gd`) is an always-on crash/freeze safety net (no
+toggle). Every 0.5 s it classifies into three states and acts on the transition: `NORMAL` (physics at
+60 ticks/s), `THROTTLE` (physics dropped to 30 ticks/s + a warning signal) and `EMERGENCY`
+(`get_tree().paused = true` + a full-screen overlay dismissable with **ESC**). It watches five
+real-risk indicators: **free system RAM** (`OS.get_memory_info()` — acts when free RAM drops below the
+limits; it previously used `MEMORY_STATIC`, which reads 0 in the release `.exe` and never fired),
+**VRAM** (`RENDER_VIDEO_MEM_USED`), **collision pairs** (`PHYSICS_3D_COLLISION_PAIRS`), **node count**
+(`OBJECT_NODE_COUNT`) and **FPS** (`TIME_FPS`, stuck-loop detection). Each threshold is an `@export`. It emits `state_changed` /
+`throttle_activated` / `emergency_activated` / `recovered`, and the overlay runs in
+`PROCESS_MODE_ALWAYS` so it lives through the pause.
 
-When the system RAM reaches the **90%** safe limit — or CPU stays over it for a few seconds (short
-spikes are tolerated) — the panel turns its alert line red, and, if the in-panel "Pausar ao atingir
-o limite" switch is on (default), it **pauses processing** (`get_tree().paused`) to keep a low-spec
-machine from freezing or crashing the OS, offering a **Retomar** button to resume. The overlay keeps
-running while paused (`PROCESS_MODE_ALWAYS`); resuming latches auto-pause off until usage falls back
-under the limit, so it doesn't immediately re-pause.
+**Performance HUD** (`autoload/performance_hud.gd` + `scenes2D/overlays/performance_bar.gd`) is a
+global top-bar overlay, toggled by the developer screen's **Performance HUD** row
+(`game/performance_hud`, default off). It's click-through (only the toggle button captures the mouse)
+and idles while hidden. **Basic** mode shows `FPS | NET | RAM | CPU% | GPU% | ● StabilityGuard badge`
+(CPU% from `TIME_PROCESS`, GPU% a draw-call proxy; **NET** degrades to **N/D** since the project has
+no optional `NetworkManager`; **RAM** = **system** memory as "used/total GB" via `OS.get_memory_info()`
+— works in release, where `Performance.MEMORY_STATIC` would read 0). **Advanced** mode (▼/▲ toggle)
+adds per-category columns — CPU (process/physics/load/nodes/objects/3D bodies/collision pairs), GPU
+(draw calls/triangles/VRAM/texture mem.) and Memory (system RAM/resources) — each value colored by
+threshold.
 
-On top of that is the **critical (> 95%) rule**: while **any** indicator stays above 95%, each
-sustained second counts as a **spike** and fires an **alert beep** (a short synthesized tone on the
-SFX bus, audible even while paused). After **more than 3 consecutive spikes** (1 s each) the panel is
-**re-revealed** (even if the user had closed it, as long as it's enabled in the developer screen) and
-the game is **force-paused** — **ignoring** the "Pausar ao atingir o limite" switch. This is the
-brief's overriding guarantee: **never, under any circumstance**, let usage run on to a machine
-freeze/lock — pause first. Pausing drops the game's own load, so CPU spikes clear and the user can
-resume; a still-critical resource (e.g. RAM near full) simply stays paused, which is the safe outcome.
+> Note: replacing System Health dropped its real per-process CPU sampling (a PowerShell `Get-Process`
+> background thread) and its critical-spike beep; the HUD's CPU% is a frame-time proxy instead.
 
 ## Localization (EN/PT)
 
@@ -166,7 +201,7 @@ The UI language switches between **Português** and **English** via the **Locale
   `Locale.set_language(...)`, which persists the choice and re-localizes the live tree in
   place (the active language's button is greyed out).
 - **Code-driven text** (dynamic status lines, dropdown placeholders, the settings tab titles
-  and confirmation dialogs, the System Health panel) can't be reached by the automatic
+  and confirmation dialogs, the Performance HUD and StabilityGuard overlay) can't be reached by the automatic
   Button/Label localizer, so those nodes join the `Locale.SKIP_GROUP` group and re-apply
   `Locale.tr_key(...)` themselves on the `language_changed` signal.
 
@@ -222,6 +257,28 @@ Get the project from [zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) —
 [download a ZIP archive](https://github.com/zimerfeld/ZIMARO/archive/refs/heads/main.zip) — then
 open it in Godot 4.6.2.
 
+## Windows build (executable + desktop shortcut)
+
+To produce a standalone Windows executable and a desktop shortcut, run:
+
+```powershell
+pwsh -File build_windows.ps1
+```
+
+It exports `build/windows/ZIMARO.exe` (release, **PCK embedded** → a single ~589 MB self-contained
+file) with the Godot 4.6.2 headless CLI, and (re)creates a **ZIMARO** shortcut on the Desktop using
+`build/icon.ico` (rasterized once from `icon.svg`). Requires Godot 4.6.2 + its export templates
+installed; the `.ico` is generated only on the first run (needs Python 3 with Pillow) and reused
+afterwards. The `build/` folder and `export_presets.cfg` are git-ignored.
+
+Before exporting, the script **automatically closes** any running `ZIMARO.exe` instance (and clears a
+stray `.tmp`), avoiding the *"Failed to rename temporary file"* error when the game is open — this only
+happens on an actual rebuild (unchanged turns are skipped).
+
+The **boot splash** opens on a **black screen with no Godot logo** (`application/boot_splash/show_image=false`
++ `bg_color=black` + `minimum_display_time=0` in `project.godot`), so the window just appears dark until
+the menu loads — no engine watermark.
+
 ## Project structure
 
 2D screens and UI live under `scenes2D/`, 3D levels under `scenes3D/`, and the reusable 3D
@@ -243,9 +300,13 @@ asset library under `library3D/`:
   `weapons`, plus `geometry` and `textures` support folders. New model folders dropped in here
   show up automatically in the Models viewer.
 - `effects_shared/` — cross-character helpers: `limb_colliders.gd` (per-limb native colliders for
-  localized damage), `body_parts.gd` (bone → limb classification), and shared blast/shadow assets.
+  localized damage), `limb_config.gd` (`LimbConfig` — damage multipliers + sub-members + owners store,
+  **one file per character** in `data/limb_config/<character>.json`), the **body-plan hierarchy**
+  `body_parts.gd` (`BodyParts` base +
+  `body_parts_biped/quadruped/crawler.gd` subclasses, bone → member classification) and
+  `body_plans.gd` (`BodyPlans` factory), and shared blast/shadow assets.
 - `autoload/` — global singletons: `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`,
-  `locale.gd`, `system_health.gd`. `Settings` lives in `scenes2D/settings/config.gd`.
+  `locale.gd`, `stability_guard.gd`, `performance_hud.gd`. `Settings` lives in `scenes2D/settings/config.gd`.
 - `<scene>/Resources/*.pt.json` + `*.en.json` — per-scene UI language dictionaries, scanned and
   merged by the `Locale` autoload.
 - `ui/`, `themes/` — shared theme resources. `tools/` — headless helper scripts.
@@ -266,7 +327,8 @@ menu ─┬─ play ───────► chooseplayer ─► levels ─► l
 back buttons (and <kbd>Escape</kbd>) navigate to the previous screen the same way. The `settings`
 screen applies and persists every change immediately and the `menu` re-applies all stored settings
 on entry. The `developer` screen and the `settings` "Debug" tab toggle the `DebugOverlay`, and the
-developer "System Health" row toggles the `SystemHealth` monitor. The `Locale` autoload switches
+developer "Performance HUD" row toggles the `PerformanceHUD` overlay (and `StabilityGuard` runs
+always-on). The `Locale` autoload switches
 the UI language (EN/PT) from the Português/English buttons present on every screen. The
 `cyberpunkhud` scene is a standalone assembled-HUD preview, not part of this navigation flow.
 
@@ -295,7 +357,7 @@ ZIMARO/
 │  ├─ geometry/          # shared meshes/materials (.tres)
 │  └─ textures/          # shared textures
 ├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd, …
-├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, system_health
+├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud
 │                        #   (Settings lives in scenes2D/settings/config.gd)
 │                        # UI dictionaries live per scene: <scene>/Resources/*.pt.json + *.en.json (read by Locale)
 ├─ ui/  themes/          # shared Theme resources (ui_theme.tres, cyberpunk.tres)
@@ -305,6 +367,33 @@ ZIMARO/
 ├─ screenshots/          # captured preview images
 └─ project.godot · default_bus_layout.tres · file_format.sh   # project config · audio buses · formatter
 ```
+
+## Native Godot building blocks
+
+Everything in the game is built from **native Godot nodes and resources** — there is no custom
+C++/GDExtension node. The only project-specific abstractions are pure-logic `RefCounted` helpers with
+no node of their own (`BodyParts` and its body-plan subclasses + the `BodyPlans` factory,
+`WeaponParts`, `LimbConfig`, `LaserShooter`, `CannonShooter`), which just orchestrate native nodes.
+By subsystem:
+
+- **Physics & collision:** `StaticBody3D`, `CharacterBody3D`, `RigidBody3D`, `Area3D`,
+  `CollisionShape3D` (and `BoxShape3D`/`CapsuleShape3D`/`SphereShape3D`/`CylinderShape3D`), `RayCast3D`.
+- **Meshes & geometry:** `MeshInstance3D`, `ArrayMesh`, and primitives (`BoxMesh`, `CylinderMesh`,
+  `SphereMesh`, `PrismMesh`…).
+- **Skeleton & animation:** `Skeleton3D`, `BoneAttachment3D`, `Skin`, `AnimationPlayer`,
+  `AnimationTree`, `SkeletonModifier3D`.
+- **Camera, light & environment:** `Camera3D`, `SpringArm3D`, `Marker3D`, `DirectionalLight3D`/
+  `OmniLight3D`/`SpotLight3D`, `WorldEnvironment`, `Sky`.
+- **Particles & materials:** `CPUParticles3D`, `GPUParticles3D`, `StandardMaterial3D`, `ShaderMaterial`.
+- **Audio:** `AudioStreamPlayer3D`, `AudioStreamPlayer`, `AudioStream`/`AudioStreamWAV`,
+  `AudioStreamRandomizer`.
+- **Networking:** `MultiplayerSynchronizer`, `MultiplayerSpawner`, `SceneReplicationConfig`.
+- **2D UI (`Control` tree):** `Button`, `Label`, containers, `OptionButton`, `ProgressBar`,
+  `CanvasLayer`, `Theme`.
+
+The per-limb hitbox system is the canonical example: `limb_colliders.gd` is a plain `Node3D` that
+**assembles** native `StaticBody3D` + `CollisionShape3D` + `BoneAttachment3D`. The Obsidian note
+[`recursos-nativos-godot`](OBSIDIAN/CLAUDE/sistemas/recursos-nativos-godot.md) has the full inventory.
 
 ## Controls
 

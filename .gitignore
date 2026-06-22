@@ -6,6 +6,12 @@
 export.cfg
 export_presets.cfg
 
+# Build output (Windows .exe + generated icon) — see build_windows.ps1
+build/
+
+# Claude Code project hooks (contém caminho absoluto da máquina) — ver build_windows.ps1
+.claude/settings.json
+
 # Imported translations (automatically generated from CSV files)
 *.translation
 

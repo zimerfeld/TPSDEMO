@@ -48,14 +48,6 @@ offset_right = 700.0
 offset_bottom = 230.0
 theme_override_constants/separation = 12
 
-[node name="StatusLabel" type="Label" parent="UI/Selectors"]
-custom_minimum_size = Vector2(520, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 18
-text = "-"
-autowrap_mode = 2
-
 [node name="ControlRow" type="HBoxContainer" parent="UI/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16

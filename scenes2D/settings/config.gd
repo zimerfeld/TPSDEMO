@@ -43,11 +43,9 @@ var DEFAULTS := {
 		show_skeleton3d = false,
 		show_mesh3d = false,
 		show_grid = false,
-		# System Health monitor overlay (Developer screen) + its safety auto-pause.
-		system_health = false,
-		system_health_autopause = true,
-		# Persisted floating-panel position; (-1, -1) = unset → default top-right corner.
-		system_health_pos = Vector2(-1, -1),
+		# Performance HUD overlay (top bar; Developer screen). The crash/freeze PROTECTION
+		# is always-on via the StabilityGuard autoload and has no toggle.
+		performance_hud = false,
 		# UI language: "pt" (default) or "en". Persisted; read by the Locale autoload.
 		language = "pt",
 	},
@@ -60,6 +58,10 @@ var DEFAULTS := {
 		play_animation = false,
 		play_audio = false,
 		show_colliders = false,
+		show_member_labels = false,
+		show_type = false,
+		show_name = false,
+		show_id = false,
 		show_effects = false,
 	},
 	video = {

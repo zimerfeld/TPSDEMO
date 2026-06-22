@@ -1,0 +1,16 @@
+{
+	"player": {
+		"sub_members": [
+			"shoulderpad-adjust.L",
+			"shoulderpad-adjust.R"
+		]
+	},
+	"red_robot": {
+		"sub_members": [
+			"L-RearLegGuard",
+			"R-RearLegGuard",
+			"L-Shield",
+			"R-Shield"
+		]
+	}
+}

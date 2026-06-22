@@ -54,13 +54,15 @@ var _scene_name_label: Label = null
 func _ready() -> void:
 	get_tree().node_added.connect(_on_node_added)
 	get_tree().node_removed.connect(_on_node_removed)
+	# O watermark do nome da cena é montado ANTES dos overlays, para que _build_overlays já
+	# o encontre e possa lhe anexar o tooltip de Debug 2D na primeira construção.
+	call_deferred("_setup_scene_name_label")
 	if _is_overlay_active():
 		call_deferred("_build_overlays")
 	if _is_fps_on():
 		call_deferred("_update_fps_hud")
 	if _is_show_grid_on():
 		call_deferred("_update_grid")
-	call_deferred("_setup_scene_name_label")
 
 
 # 2D (Control) overlays are shown when the "Show Debug 2D" toggle
@@ -178,6 +180,7 @@ func _setup_scene_name_label() -> void:
 		_persistent_canvas.name = "DebugSceneCanvas"
 		get_tree().root.add_child(_persistent_canvas)
 	_scene_name_label = Label.new()
+	_scene_name_label.name = "SceneNameLabel"   # nome legível na linha "Name:" do tooltip 2D
 	_scene_name_label.add_theme_font_size_override("font_size", 13)
 	_scene_name_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.65))
 	_scene_name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
@@ -364,6 +367,11 @@ func _build_overlays() -> void:
 	# telas como filhas da root. Assim os overlays 2D e 3D aparecem em qualquer
 	# cena, controlados pelos toggles Debug 2D / Debug 3D.
 	_scan(get_tree().root)
+	# O watermark do nome da cena (canto inferior esquerdo) vive no canvas persistente, que o
+	# _scan pula de propósito — então registramos seu tooltip 2D explicitamente quando o
+	# Debug 2D está ligado (pedido: o rótulo de nome da cena também deve ter tooltip).
+	if _is_debug_2d_on() and is_instance_valid(_scene_name_label):
+		_add_2d(_scene_name_label)
 
 
 func _clear_all() -> void:
@@ -475,14 +483,19 @@ func _tag(node: Node) -> void:
 		return
 	if is_instance_valid(_persistent_canvas) and _persistent_canvas.is_ancestor_of(node):
 		return
-	if _is_overlay_exempt(node):
-		return
 	if node.has_meta(_LABEL3D_META) or node.has_meta(_DBG3D_META):
 		return
 	if node is Control and not (node is CanvasLayer):
+		# Os tooltips de Debug 2D aparecem em TODA tela, SEM exceção — inclusive nas que
+		# saem do overlay 3D (grupo no_debug_overlay), como Models e o editor de Dano. Por
+		# isso o 2D NÃO checa _is_overlay_exempt (diferente dos overlays 3D abaixo).
 		if _is_debug_2d_on():
 			_add_2d(node as Control)
 	elif node is Skeleton3D:
+		# Overlays 3D continuam respeitando no_debug_overlay (ex.: robô decorativo do menu,
+		# preview da Models que desenha seus próprios rótulos).
+		if _is_overlay_exempt(node):
+			return
 		var skel := node as Skeleton3D
 		# Members ride on Debug 3D: only scan skeletons when it's on (the per-bone
 		# member labels are then shown/hidden by the "Membros" sub-toggle).
@@ -492,6 +505,8 @@ func _tag(node: Node) -> void:
 		if _is_show_skeleton3d_on() and not _skeleton_gizmos.has(skel.get_instance_id()):
 			_add_skeleton_lines(skel)
 	elif node is MeshInstance3D:
+		if _is_overlay_exempt(node):
+			return
 		# Mesh AABB wireframe box ("Show Mesh3D" sub-toggle).
 		if node != _grid_mesh and _is_show_mesh3d_on():
 			_add_mesh_box(node as MeshInstance3D)
@@ -623,10 +638,14 @@ func _add_3d_skeleton(skel: Skeleton3D) -> void:
 	# One label per MEMBER, not per bone: a limb spans several bones (shoulder,
 	# arm, hand) that all map to the same group, so anchor the single "Membro: …"
 	# tag to the shallowest bone of each group to avoid a cluttered pile of labels.
+	# Classificador por instância (BodyParts não é polimórfico via estático). O overlay
+	# roda sobre esqueletos quaisquer de fase e não sabe o body_type, então usa o plano
+	# default (bípede) — rótulos são só debug.
+	var classifier := BodyPlans.default()
 	var rep_bone := {}      # group → bone index (shallowest)
 	var rep_depth := {}
 	for i in skel.get_bone_count():
-		var g := BodyParts.group_of(skel.get_bone_name(i))
+		var g := classifier.group_of(skel.get_bone_name(i))
 		if g == "":
 			continue
 		var d := _bone_depth(skel, i)
@@ -636,7 +655,7 @@ func _add_3d_skeleton(skel: Skeleton3D) -> void:
 
 	for g in rep_bone:
 		var i: int = rep_bone[g]
-		var member := BodyParts.label_of(g)
+		var member := classifier.label_of(g)
 
 		var att := BoneAttachment3D.new()
 		att.name = "DebugBoneLabel_%d" % i

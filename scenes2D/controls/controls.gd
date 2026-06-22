@@ -21,16 +21,9 @@ const CONTROLS_ROOT: String = "res://scenes2D/controls2D"
 var _controls: Array = []
 
 @onready var cbo_control: OptionButton = $UI/Selectors/ControlRow/cboControl
-@onready var status_label: Label = $UI/Selectors/StatusLabel
 @onready var preview: SubViewport = $UI/PreviewContainer/SubViewport
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
 @onready var english_button: Button = $UI/LangBar/EnglishButton
-
-# The status line is driven dynamically, so it opts out of the automatic localizer
-# (Locale.SKIP_GROUP) and re-translates itself from the stored template on a language
-# change. Empty template means "blank".
-var _status_template: String = ""
-var _status_args: Array = []
 
 
 func _ready() -> void:
@@ -42,9 +35,6 @@ func _ready() -> void:
 		cbo_control.add_item(entry["name"])
 	cbo_control.item_selected.connect(_on_control_selected)
 
-	# The status text is code-driven: skip the auto-localizer and re-apply on language
-	# change so it always matches the active language.
-	status_label.add_to_group(Locale.SKIP_GROUP)
 	Locale.language_changed.connect(_on_language_changed)
 	_update_language_buttons()
 
@@ -52,28 +42,10 @@ func _ready() -> void:
 	# the user picks a control.
 	cbo_control.select(0)
 	_on_control_selected(0)
-	if _controls.is_empty():
-		_set_status("Nenhum controle em %s.", [CONTROLS_ROOT])
-
-
-# Store a (translatable) template + args and render it in the active language.
-func _set_status(template: String, args: Array = []) -> void:
-	_status_template = template
-	_status_args = args
-	_apply_status()
-
-
-func _apply_status() -> void:
-	if _status_template == "":
-		status_label.text = ""
-		return
-	var text := Locale.tr_key(_status_template)
-	status_label.text = (text % _status_args) if not _status_args.is_empty() else text
 
 
 func _on_language_changed(_lang: String) -> void:
 	cbo_control.set_item_text(0, Locale.tr_key(SELECT_LABEL))
-	_apply_status()
 	_update_language_buttons()
 
 
@@ -115,7 +87,6 @@ func _on_control_selected(index: int) -> void:
 	for child in preview.get_children():
 		child.queue_free()
 	if index <= 0:
-		_set_status("Selecione um controle.")
 		return
 	var control_index := index - 1
 	if control_index >= _controls.size():
@@ -123,12 +94,9 @@ func _on_control_selected(index: int) -> void:
 	var entry: Dictionary = _controls[control_index]
 	var scene: PackedScene = load(entry["path"])
 	if scene == null:
-		_set_status("Falha ao carregar: %s", [entry["name"]])
 		return
 	var instance := scene.instantiate()
 	preview.add_child(instance)
-	# The control name is a proper noun: store it as-is (tr_key passes unknown keys through).
-	_set_status(entry["name"])
 	_center_preview(instance)
 
 

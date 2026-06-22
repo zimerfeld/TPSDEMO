@@ -21,6 +21,14 @@ Tudo sob `res://library3D/<tipo>/<modelo>/`:
 são ignoradas de propósito). Novo modelo em `library3D/<tipo>/<nome>/` com um `.glb`
 aparece sozinho — nada a editar em código.
 
+> [!warning] Compatibilidade com BUILD EXPORTADO (2026-06-21)
+> No `.exe` exportado os fontes não vão crus no PCK: o `.glb` vira **`<nome>.glb.import`** e o
+> `.tscn` vira **`<nome>.tscn.remap`** (ambos apontam para o recurso importado). Por isso o scanner
+> normaliza cada nome com **`_logical_name()`** (tira o sufixo `.import`/`.remap` → caminho lógico,
+> que `load()` resolve no editor E no export). Sem isso o `_find_model_file` não achava nada e o
+> **menu Categoria ficava vazio no `.exe`** (no editor funcionava). Validado: editor e export acham
+> os mesmos 21/1/6/2 modelos.
+
 ### Tipos de arquivo importáveis (escaneados)
 
 O navegador reconhece **apenas 3 extensões** (case-insensitive), só dos arquivos
@@ -66,11 +74,26 @@ recurso `Mesh` via `get_instance_id`), rótulo `Nome (×N) [+col]/[skin]` ordena
 uso. O preview mostra a peça selecionada, centrada/escalada (`_fit_to_view`). Os
 dropdowns são `OptionButton` nativos (sem listas de botões).
 
-Os combos **"Animação"** (`AnimationRow`) e **"Efeitos Especiais"** (`EffectsRow`,
-abaixo de Animação) só aparecem quando a Parte é **"Modelo completo"** (2026-06-16):
+Os combos **"Animação"** (`AnimationRow`) e **"Efeitos Especiais"** (`EffectsRow`, abaixo de
+Animação) só aparecem quando a Parte é **"Modelo completo"**:
 `_populate_animations()`/`_populate_effects()` mostram as linhas e
-`_reset_animations()`/`_reset_effects()` as escondem (placeholder e partes isoladas).
-Ambos só se aplicam ao modelo montado.
+`_reset_animations()`/`_reset_effects()` as escondem (placeholder e partes isoladas). Ambos só
+se aplicam ao modelo montado.
+
+- **Efeitos Especiais (2026-06-18):** lista, após "Selecione...", a opção **"Todos"** (mostra
+  todos os efeitos) e exibe **efeitos de todos os tipos** que existirem — luzes/luminosidade
+  (e sombras), fumaça/partículas, decals, névoa (`FogVolume`), atratores/colisores de partícula
+  e malhas presas a osso (muzzle/laser). Coletados por `_collect_effect_nodes` via a lista
+  `_EFFECT_CLASSES` (`node.is_class(...)`, pega subclasses). "Todos" só é incluído **quando há**
+  efeitos; sem efeitos, o combo fica só no placeholder e desabilitado.
+
+> [!note] StatusLabel removido (2026-06-18)
+> A linha de status (a label vermelha que guiava "Selecione um/uma …" acima dos combos) foi
+> **removida** da tela — o nó `StatusLabel` saiu da cena e todo o código de status
+> (`_set_status`/`_apply_status`/`_clear_status`/`_update_whole_model_status`/
+> `_refresh_whole_model_status`, vars `_status_*` e onready `selectors_box`/`*_row` órfãos) e as
+> chaves de mensagem nos JSONs foram apagados. A navegação é guiada só pelo gating sequencial
+> dos dropdowns.
 
 **Cascata de reset (2026-06-16):** mudar qualquer selector reseta **todos** os de
 baixo para "Selecione..." e reabilita só o filho imediato. As funções de reset
@@ -78,24 +101,21 @@ baixo para "Selecione..." e reabilita só o filho imediato. As funções de rese
 `_reset_animations()`+`_reset_effects()`, então os dois combos de baixo entram na
 cascata (antes ficavam "presos" visíveis ao trocar um selector acima).
 
-**StatusLabel (2026-06-18):** a linha de status (vermelha, +2pt) é reposicionada
-dinamicamente logo **acima** do combo a que a mensagem se refere (`_set_status(template,
-row, args)` + `_apply_status` movem o label com `move_child`). Textos via `Locale.tr_key`,
-label no `Locale.SKIP_GROUP` (ver [[sistemas/localizacao]]).
-
-**Após selecionar a Parte (2026-06-18):** o status **NÃO** mostra mais mensagem de
-quantidade ("Modelo completo — N parte(s)") nem rótulo de parte ("Parte: X"). Em vez disso,
-no **"Modelo completo"** o status só aparece **quando** os combos Animação e/ou Efeitos
-Especiais têm opções, posicionado **acima** do primeiro deles (`_update_whole_model_status`):
-"Selecione uma animação." (acima de `AnimationRow`), "Selecione um efeito." (acima de
-`EffectsRow`), ou "Selecione uma animação e/ou um efeito." quando ambos. Numa **parte
-isolada** (sem combos abaixo) o status fica **vazio** (`_clear_status`).
+> [!info] Sem linha de status (2026-06-18)
+> A tela **não tem mais** a `StatusLabel` que mostrava prompts "Selecione um/uma …" (categoria/
+> prefixo/modelo/parte/animação/efeito) nem a antiga contagem de partes. A orientação fica só
+> pelo gating sequencial dos dropdowns (cada combo desabilitado até o de cima ter escolha real).
 
 ### Rotação do preview
 
-`_yaw`/`_pitch` separados → `model_holder.rotation = Vector3(_pitch, _yaw, 0)`
-(roll sempre 0, só eixos ortogonais). Ao arrastar, **ambos** os eixos vão até
-**±180°** (2026-06-16): `_yaw` (esquerda/direita) gira o modelo até as costas e
+`_yaw`/`_pitch` separados → `model_holder.rotation = Vector3(_pitch, _front_yaw_base + _yaw, 0)`
+(roll sempre 0, só eixos ortogonais). `_front_yaw_base` é a **orientação frontal BASE** do modelo
+antes do drag (default `DEFAULT_FRONT_YAW = PI`, o flip de 180° da convenção front=-Z). **Por
+modelo (2026-06-21):** `_MODEL_FRONT_YAW` sobrescreve essa base — `player` e `red_robot` foram
+exportados com a **frente em +Z** (mesma direção da câmera), então o flip de 180° os mostrava de
+**costas**; com `0.0` eles **abrem de frente**, sem o usuário precisar rotacionar. Setado em
+`_on_model_selected` (e resetado em `_reset_meshes_and_preview`). Ao arrastar, **ambos** os eixos
+vão até **±180°** (2026-06-16): `_yaw` (esquerda/direita) gira o modelo até as costas e
 `_pitch` (cima/baixo) tomba o modelo de ponta-cabeça. O modelo é **nivelado** antes
 do giro: `_preview_whole_model()` zera a rotação embutida da raiz do `.glb`
 (desconsidera inclinações angulares). Arrastar com o botão esquerdo sobre a área 3D
@@ -105,10 +125,24 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (ordem em 2026-06-18): **Rotação · Animação · Efeitos especiais · Audio ·
-Colisores** (o antigo "Som" virou **Audio**; o toggle **Falas** foi REMOVIDO — o Audio agora
-cobre todos os emissores, inclusive vozes). Cada toggle é o **interruptor mestre** da sua
-categoria:
+Toggles atuais (ordem em 2026-06-22): **Rotação · Animação · Efeitos especiais · Audio ·
+Colisores · Membro · [Tipo · Nome · ID · Osso] · Dano por membro** (o toggle "Rótulos" foi renomeado para
+**Membro** em 2026-06-21 — `LabelsToggle` no `.tscn`, traduzido "Member" em en; o antigo "Som" virou **Audio**; o
+toggle **Falas** foi REMOVIDO — o Audio agora cobre todos os emissores, inclusive vozes). Cada
+toggle é o **interruptor mestre** da sua categoria:
+
+> [!important] Cena Models 100% desacoplada do Debug 3D (2026-06-21)
+> O nó raiz da cena está no grupo **`no_debug_overlay`**, então o `DebugOverlay` global pula a
+> cena Models inteira (2D **e** 3D) — as definições de Debug só valem nos **levels do jogo**. Os
+> rótulos de membro do preview (TYPE/Name/ID/Membro) agora seguem **toggles dedicados da própria
+> cena** (Membro + os checkboxes Tipo/Nome/ID), não mais os sub-toggles globais. Foram-se o
+> `_debug3d_tooltips_enabled()` e toda leitura de `game/*` em `models.gd`.
+>
+> **Rótulo do nome da cena (2026-06-20 → OCULTADO 2026-06-21):** o `SceneNameLabel` local (nó no
+> `.tscn`) hoje fica **sempre oculto** — o nome "Models" **não deve aparecer na janela de dano**. O
+> nó é preservado só para não quebrar `@onready`/referências; `_ready` faz `visible = false` e nada
+> mais o exibe. O nome da cena já é mostrado pelo **watermark GLOBAL** de `debug_overlay.gd` no canto
+> inferior esquerdo (que agora tem **tooltip de Debug 2D**). Ver [[sistemas/debug-overlay]].
 
 > [!important] Toggles agem **in-place** (2026-06-17)
 > Nenhum toggle **reconstrói** o preview: o modelo **não é recarregado** e a
@@ -130,11 +164,157 @@ categoria:
   Armas** desenha gizmo **só dos colliders de MEMBRO** (`_is_member_collider`, meta
   `member_label`); pula o collider de corpo genérico do modelo (ex.: a cápsula de corpo do
   red_robot) e as áreas de detecção/morte, que só eram ruído envolvendo tudo (2026-06-18).
+  - **Afastamento (offset) X/Y/Z por membro/sub-membro (2026-06-22):** com o toggle **Colisores
+    LIGADO** e **um** grupo isolado (membro ou sub-membro), aparece a `ColliderOffsetRow` (3 `SpinBox`
+    X/Y/Z, label "Afastamento:"/"Offset:") logo abaixo dos dropdowns. Carrega o valor salvo
+    (`LimbConfig.collider_offset(model_key, group)`) e, ao mudar, **move o `StaticBody3D` do grupo AO
+    VIVO** (`_apply_offset_to_group` seta `body.position`; shape/gizmo/rótulo acompanham). O valor é em
+    espaço LOCAL do osso/collider. Visibilidade/carga em `_refresh_collider_offset_inputs` (só recarrega
+    quando o GRUPO focado muda, preservando uma edição em andamento). Ao iniciar **uma nova seleção de
+    dropdown** (categoria/prefixo/modelo/parte/membro/sub-membro) com edição pendente, `_prompt_save_offset_if_dirty`
+    abre um `ConfirmationDialog` **"Deseja salvar modificações para colisores ?"** — confirmar grava
+    (`LimbConfig.set_collider_offset`), cancelar reverte o corpo ao valor salvo. O offset é aplicado no
+    build (`LimbColliders._build_member_shape` e `_add_mesh_member_colliders` setam `body.position`), então
+    vale também no gameplay. Ver [[sistemas/dano-localizado]].
 - **Efeitos especiais** — mostra/esconde **tudo o que sobra** ligado ao modelo e que
-  nenhum outro toggle cobre: partículas, luzes e malhas presas a osso (muzzle/laser),
-  coletadas por `_collect_effect_nodes`. O combo **"Efeitos Especiais"** isola **um**
-  efeito (mostra só ele); "Selecione..." mostra **todos** (só com o toggle ligado). A
-  visibilidade é aplicada por `_apply_effects_visibility` sem reconstruir o preview.
+  nenhum outro toggle cobre: partículas, luzes, decals/névoa e malhas presas a osso (muzzle/
+  laser), coletadas por `_collect_effect_nodes` (lista `_EFFECT_CLASSES`). O combo **"Efeitos
+  Especiais"** isola **um** efeito (mostra só ele); **"Selecione..."** e **"Todos"** (item 1,
+  2026-06-18) mostram **todos** (só com o toggle ligado). A visibilidade é aplicada por
+  `_apply_effects_visibility` (`sel <= 1` = todos; `>1` = isolado) sem reconstruir o preview.
+- **Membro · Tipo · Nome · ID** (2026-06-21; o toggle **Membro** chamava-se "Rótulos" até
+  2026-06-21 — só o TEXTO mudou, o nó segue `LabelsToggle`/`labels_toggle`) — a pilha de tooltips de
+  membro (TYPE/Name/ID/Membro) agora é **toda local** à cena Models, sem nada do Debug 3D global.
+  **Membro** (CheckButton) liga
+  a linha "Membro: …"; **Tipo/Nome/ID** são 3 `CheckButton` (toggles) **empilhados verticalmente** no
+  nó `LabelLinesRow` (um `VBoxContainer` desde 2026-06-21 — antes eram `CheckBox` numa linha horizontal
+  que **cortava os rótulos** na coluna estreita; o stack vertical garante que os 3 textos apareçam por
+  inteiro) que ligam as linhas que descrevem o `Skeleton3D`. Os tooltips de membro são desenhados com
+  `render_priority` alto (sempre por cima dos gizmos verdes e uns dos outros).
+  `_apply_member_labels_visibility` **recria a pilha in-place**
+  (limpa os pivôs `_MdlLbl_Pivot` e re-adiciona com a visibilidade por linha de
+  `_add_member_labels`), sem rebuild do modelo. `_any_member_label()` (qualquer das 4 ligada) decide
+  construir colliders/labels. Persistidos em `[models]` (`show_member_labels`/`show_type`/`show_name`/
+  `show_id`). Pensado para **inspecionar quais membros** o classificador reconhece (e pedir um membro novo).
+  - **Cor por linha = cor do toggle (2026-06-20):** cada linha tem **cor própria** (Membro = azul-ciano,
+    Tipo = laranja, Nome = verde, ID = amarelo, Osso = laranja — `const _LABEL_LINE_COLORS`) aplicada ao
+    `modulate` do `Label3D` **e** ao texto do `CheckButton` que a controla (`_apply_label_line_colors`,
+    cobrindo os estados normal/hover/pressed/focus), para o usuário ligar de relance o controle ao seu rótulo 3D.
+  - **Toggle "Osso" (nome do osso avulso) (2026-06-22):** 4º `CheckButton` do `LabelLinesRow`
+    (`OssoCheck`/`osso_check`, **abaixo de ID**, traduzido "Bone" em en). Quando ligado **E** o filtro
+    "Esqueleto" (modo "Todos os membros") tem um osso escolhido, desenha um **`Label3D` laranja**
+    (billboard, sem depth-test) com o **NOME do osso** acima da sua região, preso via `BoneAttachment3D`.
+    **Independente** do "Realçar avulso" (pode-se ver só o nome, só a caixa, ou ambos) — segue a MESMA
+    seleção. `_refresh_aux_labels` (chamado nos handlers de membro/sub-membro, em `_populate_members` e
+    `_rebuild_member_colliders`) decide; `_label_aux_bones` desenha (nós `_AuxLbl_*`); `_clear_aux_labels`
+    remove. Persistido em `[models]` (`show_osso`). "Todo o esqueleto" rotula todos de uma vez.
+  - **Anti-colisão entre membros (2026-06-20):** as 4 linhas de cada membro ficam sob um **pivô**
+    (`_MdlLbl_Pivot`, filho do collider) para deslocarem juntas. A cada frame `_layout_member_labels`
+    projeta a pilha de cada membro num retângulo de tela e, processando de cima para baixo, **empurra
+    para baixo** quem se sobrepuser a uma pilha já posicionada — assim conjuntos de membros distintos
+    nunca se sobrescrevem (cada conjunto continua inteiro, "um abaixo do outro"). O empurrão é convertido
+    de pixels para metros (fator px/m da câmera na profundidade da âncora, robusto ao zoom/escala do
+    fit-to-view) e aplicado movendo o pivô no espaço-mundo (para baixo = `-câmera.up`). Indexado em
+    `_member_label_pivots`; sem pilhas, é no-op.
+- **Dano por membro** — **JANELA FLUTUANTE (estado em 2026-06-21):** o `DamagePanel` é uma **janela
+  flutuante arrastável**, de **fundo PRETO OPACO**, **600×660**, com **todos os controles DENTRO dela**
+  (os campos de valor NÃO flutuam mais sobre o modelo 3D — revertido em 2026-06-21).
+  - **Janela (estilo Windows):** estrutura `DamagePanel(PanelContainer, âncora top-left) →
+    Main(VBox) → TitleBar(PanelContainer) → TitleRow[TitleLabel(IGNORE) + CloseButton ×] · Margin →
+    Scroll → VBox → Rows`. `_setup_damage_window` (em `_ready`) dá ao `DamagePanel` um `StyleBoxFlat`
+    **preto opaco** (alpha 1) e estiliza a `TitleBar` (cinza-escuro opaco), põe `CURSOR_MOVE` e conecta
+    `gui_input`→`_on_damage_titlebar_input` (clique-arrasta move `damage_panel.position`, preso à
+    viewport; rede de segurança no `_process` solta o arraste se o botão for liberado fora da barra) e
+    o `×`→`_on_damage_close` (desmarca o toggle "Dano por membro"). A **última posição é persistida**:
+    `_save_damage_panel_pos` grava `Settings.config_file("models","damage_panel_pos")` (um `Vector2`)
+    ao terminar o arraste, e `_setup_damage_window` a **restaura** na abertura (presa à viewport;
+    default = posição do `.tscn`).
+  - **ÁRVORE (Tree) NA janela (2026-06-21):** `_refresh_damage_panel` constrói um `Tree`
+    (`DamageTree`, montado por `_setup_damage_tree` em `_ready`): cada MEMBRO é um galho; seus
+    sub-membros (PART_*) são folhas SOB ele (ex.: "↳ PLACA BRAÇO E" sob "BRAÇO E"); órfãos vão p/ o
+    galho "Outros sub-membros". **Colunas:** 0 Nome · 1 **Def** (`CELL_MODE_CHECK`) · 2 **Bônus %**
+    (`CELL_MODE_RANGE` −100..500, passo 5; editável só com Def ligado) · 3 **Dono** (`CELL_MODE_RANGE`
+    com texto vírgula-separado = dropdown, só sub-membros). Check off = **SEM valor próprio** (mostra o
+    EFETIVO herdado via `effective_multiplier`); on = explícito (`set_multiplier`). **Nenhum valor é
+    obrigatório.** `_on_damage_tree_edited` despacha por coluna; `_restamp_damage_metas` recarimba as
+    metas e `_refresh_tree_inherited` reexibe os herdados (itens em `_damage_field_anchors` =
+    `{item,group,owner}`). Reassociar o **dono** (col 3) pede **confirmação** (`_on_tree_owner_edited`)
+    e reconstrói a árvore. **Footer** abaixo: só a linha "Adicionar sub-membro" (osso avulso + dono
+    explícito + Adicionar → `_on_sub_member_added`). A **remoção é por linha (2026-06-22):** cada folha
+    de sub-membro tem um **botão de LIXEIRA à direita do nome** (col 0; ícone vermelho gerado em código
+    por `_make_trash_icon` → `ImageTexture`; `TreeItem.add_button` com id `_TRASH_BTN_ID`), e
+    `_on_damage_tree_button` (sinal `Tree.button_clicked`) **pede confirmação** (`ConfirmationDialog`:
+    "Deseja realmente remover associação do sub-membro: &lt;nome&gt; ?") e então remove aquele sub-membro
+    (2026-06-22) — substituiu o antigo
+    botão grande "Remover sub-membro" do footer (e o `_on_damage_tree_selected`/`_damage_remove_btn`,
+    removidos). A associação dono→filho é salva em `LimbConfig` e **recarregada a cada add/remove** (via
+    `_rebuild_member_colliders` → `_refresh_damage_panel`). Ver [[sistemas/dano-localizado]].
+  Só aparece para **personagem em "Modelo completo"**
+  (`_preview_is_whole_character`); `_refresh_damage_panel` repopula ao trocar de modelo e some no
+  resto. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta
+  (`_current_model_key`), igual ao `model_key` do gameplay. Os MEMBROS listados vêm do plano
+  corporal do modelo: como o preview remove scripts (e não tem o `@export body_type`), a tela
+  espelha o tipo na const `_MODEL_BODY_TYPE := {"red_robot":"biped","player":"biped"}` e resolve o
+  classificador por `_body_type_for_current()`/`_current_classifier()` (`BodyPlans.for_type`).
+  - **Membros = TODOS os do plano (2026-06-21):** o painel Dano e o combo "Membro" usam
+    `_plan_member_entries()` — PERSONAGENS listam **todos** os membros do plano (`classifier.members()`,
+    mesmo sem geometria no preview), na ordem e com os rótulos do plano (CABEÇA/TRONCO/BRAÇO E-D/
+    PERNA E-D); ARMAS seguem os colliders (WeaponParts).
+  - **Sub-membros aninhados no painel (2026-06-21):** cada `PART_*` aparece **indentado (↳, margem
+    24px) sob o seu membro-dono**, agrupado pelo MESMO `_sub_member_owner_map`/`owner_hint` dos combos
+    (helper `_sub_members_by_owner`) — painel e dropdown concordam. Sub-membro sem dono na lista vai
+    para a seção **"Outros sub-membros"**.
+  - **Subseção "Sub-membros" (2026-06-20):** cada sub-membro existente é uma linha (rótulo + `SpinBox`
+    de bônus % + botão **× (remover)**, agora aninhada — ver acima). A linha de **adicionar**
+    (`_add_sub_member_add_row`) é um
+    `OptionButton` (`_aux_bone_candidates`) com os ossos AUXILIARES do esqueleto do preview
+    — aqueles cujo `group_of` do classificador dá "" — + botão "Adicionar". `_on_sub_member_added`/
+    `_on_sub_member_removed` chamam `LimbConfig.add_sub_member`/`remove_sub_member` e **reconstroem**
+    os colliders do preview (`_rebuild_member_colliders` → `_clear_member_colliders` +
+    `_ensure_member_colliders`), repondo gizmos/rótulos. Os membros principais continuam editáveis
+    como antes; só os `PART_*` ganham esta subseção. Ver [[sistemas/dano-localizado]]. A const
+    `_MODEL_STANDALONE_BONES` foi **removida** (os sub-membros vêm de `LimbConfig`/plano agora).
+  - **Sob qual MEMBRO o sub-membro aparece (2026-06-21):** o dropdown "Sub-membro" agrupa cada
+    `PART_*` pelo dono resolvido por **`LimbColliders.resolve_sub_member_owner`** (compartilhado com
+    o rótulo `_part_label`): 1º **NOME** da peça (`owner_hint`), 2º **sobe na hierarquia** tentando
+    `owner_hint`/`group_of` em cada ancestral. Destravou: **ombreiras do player**
+    (`shoulderpad-adjust`, filhas do `chest`) → BRAÇO pelo nome; **escudos do braço do red_robot**
+    (`L-/R-Shield`, filhos do `L-ARMIK`) → BRAÇO via o pai `L-ARMIK` na hierarquia. Ambos exibidos
+    como **"PLACA BRAÇO E/D"**. Ossos que já são MEMBRO (ex.: `L-Shoulder` → BRAÇO) NÃO entram na
+    lista "Adicionar sub-membro". Ver [[sistemas/dano-localizado]].
+  - **Opção "Todos os membros" + filtro "Esqueleto" (2026-06-21; rótulo renomeado de "Ossos avulsos"
+    → "Esqueleto" em 2026-06-22):** o dropdown "Membro" tem,
+    logo após "Selecione...", o item **"Todos os membros"** (`ALL_MEMBERS_LABEL`/`ALL_MEMBERS_VALUE`,
+    traduzido "All members"; retraduzido na troca de idioma como "Modelo completo"/"Todos"). Ele
+    **desloca os membros para os índices 2+** (`_member_value`/`_member_index_for_value` tratam índice
+    1 = sentinela). Escolhido, **exibe TODOS os membros** (sem isolamento) e a row de baixo vira o
+    filtro **"Esqueleto"**: o `cboSubMembers` passa a listar os **ossos avulsos** — os candidatos a
+    sub-membro (`_aux_bone_candidates`: `group_of == ""` e ainda não promovidos), os MESMOS do dropdown
+    "Adicionar sub-membro" da janela de dano. Não isola colliders (esses ossos não têm; `_current_focus_groups`
+    devolve `null` quando `msel == 1`). O rótulo da row alterna "Sub-membro:" ↔ **"Esqueleto:"** (traduzido
+    "Skeleton:"; no `Locale.SKIP_GROUP`, dirigido por `_populate_sub_members`/`_on_language_changed`).
+  - **Toggle "Realçar avulso" + "Todo o esqueleto" (2026-06-21; item antes "Todos os ossos avulsos"):** como os personagens são UMA
+    malha skinada (partes não separáveis por nó), o filtro **DESTACA sem esconder**: o toggle
+    `AuxHighlightToggle` (`_show_aux_highlight`, persistido) desenha uma **caixa laranja translúcida**
+    (sem depth-test, presa via `BoneAttachment3D`) sobre a região do osso avulso escolhido — AABB dos
+    vértices DOMINANTES do osso via `LimbColliders.bone_vertex_box` (static). O item **"Todos os ossos
+    avulsos"** (`ALL_AUX_VALUE`) no topo do filtro realça todos de uma vez; "Selecione..." / toggle off
+    = modelo inteiro sem realce. `_refresh_aux_highlight` (chamado nos handlers de membro/sub-membro,
+    em `_populate_members` e no `_rebuild_member_colliders`) decide o quê; `_highlight_aux_bones`
+    desenha; `_clear_aux_highlights` remove (nós com prefixo `_AuxHL_`).
+  - **Isolamento EXCLUSIVo (2026-06-21):** `_current_focus_groups` mostra **uma peça por vez** —
+    Membro escolhido **sem** Sub-membro → só o collider do MEMBRO; **com** Sub-membro → só aquele
+    sub-membro. "Todos os membros" → `null` (mostra tudo; a row vira o filtro "Esqueleto", que não
+    isola).
+  - **Colisores gateados pelo toggle (2026-06-21):** o ramo de foco de `_refresh_member_overlays`
+    **só exibe gizmos de collider/limbcollider com o toggle Colisores LIGADO** (`giz.visible =
+    _show_colliders and in_focus`; `_add_collider_gizmos` só roda no ramo de foco se `_show_colliders`).
+    Antes o dropdown forçava o gizmo a aparecer mesmo com o toggle off ("inspecionar"); agora o toggle
+    Colisores é o **interruptor mestre**. O isolamento dos **rótulos** continua independente do toggle
+    Colisores. Obs.: ossos que já são MEMBRO (ex.:
+    `shoulder.L/.R` → BRAÇO) **não** entram na lista "Adicionar sub-membro" (que só oferece os
+    auxiliares, `group_of == ""`); o "ombro" como sub-membro é a placa `shoulderpad-adjust` ("PLACA
+    BRAÇO"), pois `shoulderpad.L/.R` cru tem 0 vértices.
 
 ⚠️ Vários modelos disparam som por **tracks de animação** (`type = "audio"`/`"method"`,
 não só autoplay). Por isso `_apply_audio_state()` **muta** (volume_db = -80) os emissores
@@ -168,11 +348,13 @@ preview, para que ele não pose o esqueleto **em paralelo** com o clip tocado di
   `_main_body_root` (raiz do corpo, ex.: `RedRobotModel`) quando o clip escolhido é de morte
   (`_is_death_clip`: kaboom/explo/death/die/destr), deixando só a explosão.
 
-(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os 5 estados (rotação,
-animação, efeitos especiais, audio, colisores) são **persistidos** na seção
-`[models]` de `user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada
-handler) e relidos em `_ready` antes de conectar os sinais, então a tela reabre como
-foi deixada.
+(Os emissores vão pro bus `SFX` — ver [[sistemas/audio]].) Os estados de **rotação,
+animação, efeitos especiais, audio, colisores, rótulos e Tipo/Nome/ID/Osso** são **persistidos** na
+seção `[models]` de `user://settings.ini` via `Settings.config_file` (`_save_toggle` em cada
+handler; `show_member_labels` desde 2026-06-20, `show_type`/`show_name`/`show_id` desde 2026-06-21,
+`show_osso` desde 2026-06-22)
+e relidos em `_ready` antes de conectar os sinais, então a tela reabre como foi deixada. O toggle
+**Dano por membro** é a exceção — **não** é persistido (abre sempre fechado).
 
 ### Persistência da seleção + restauração da cadeia (2026-06-18)
 
@@ -181,8 +363,10 @@ Animação · Efeitos) é persistida na mesma seção `[models]` por um **valor 
 índice — via `_save_selection(key, value)` em cada `_on_*_selected`: `sel_category` = chave da
 categoria, `sel_prefix` = token do prefixo, `sel_model` = nome do modelo, `sel_part` = rótulo da
 malha **ou** a sentinela `WHOLE_MODEL_VALUE` (`"__whole_model__"`) p/ "Modelo completo",
-`sel_animation`/`sel_effect` = texto do item. Por isso a restauração sobrevive a um re-scan da
-biblioteca em ordem diferente.
+`sel_animation` = texto do clip, `sel_effect` = sentinela `ALL_VALUE` (`"__all__"`) p/ "Todos"
+**ou** o texto do item (`_effect_value`; o inverso `_effect_index_for_value` resolve p/ índice).
+Usar a sentinela p/ "Todos" evita quebrar a restauração quando o idioma muda (o rótulo é
+traduzido). Por isso a restauração sobrevive a um re-scan da biblioteca em ordem diferente.
 
 `_restore_selection_chain()` (chamada no fim de `_ready` no lugar do antigo
 `select(0)`+`_on_category_selected(0)`) **replaya a cadeia de cima p/ baixo**: como `select()`
@@ -205,16 +389,14 @@ membro (via [[arquivos-chave/limb-colliders-gd|LimbColliders]]) e `_add_member_l
 flutua um `Label3D` com o nome do membro (CABEÇA, TRONCO, BRAÇO…) sobre cada collider.
 A fonte do rótulo é **36** (¼ menor que os 48 originais — 2026-06-17), com outline 9.
 
-**Rótulos seguem os toggles Debug 3D + Membros (2026-06-18):** os labels de membro do
-browser só aparecem quando **ambos** os toggles do [[sistemas/debug-overlay]] (tela
-developer) estão ligados — `_member_labels_enabled()` lê `game/debug_3d` **e**
-`game/show_members` do `Settings.config_file`. Com Debug 3D ligado mas Membros **desligado**
-(ou Debug 3D desligado), **nenhum** label é desenhado. Os **colliders** de membro continuam
-sendo construídos sempre (enquadramento posado + gizmo do toggle Colisores) — só os rótulos
-são condicionados. Como o `DebugOverlay` (autoload) **também** rotularia o esqueleto do
-preview, `_preview_whole_model` chama `DebugOverlay.exempt_member_labels(instance)` para o
-overlay **pular só os labels de membro** desse subtree (gizmos de esqueleto/mesh do overlay
-seguem valendo) — assim não há rótulo dobrado, e os do browser (com overrides de
+**Rótulos: 100% locais à cena (2026-06-21):** cada linha do stack TYPE/Name/ID/Membro segue o
+**seu** toggle da cena Models (Membro + checkboxes Tipo/Nome/ID), sem **nenhuma** leitura do
+Debug 3D global. `_add_member_labels` nomeia cada linha com o prefixo `_MdlLbl_` e
+`_apply_member_labels_visibility` **recria o stack in-place** (limpa os `_MdlLbl_*` e re-adiciona
+com a visibilidade por linha). Como o nó raiz da cena está no grupo **`no_debug_overlay`**, o
+`DebugOverlay` (autoload) já pula a cena inteira — então não há rótulo dobrado nem gizmos globais
+no preview. (A chamada `DebugOverlay.exempt_member_labels(instance)` em `_preview_whole_model`
+permanece como defesa redundante.) Os rótulos do browser usam os overrides de
 cabeça/tronco) são a única fonte.
 
 > [!note] Collider de CABEÇA do red_robot = rosto + olhos (2026-06-18)
@@ -224,6 +406,13 @@ cabeça/tronco) são a única fonte.
 > minúscula escondida na caixa do TRONCO. Com os olhos, a esfera fica ~`r=0.34` (rosto inteiro).
 > Vale tanto para o gizmo do browser quanto para a **hitbox de headshot** em jogo (mesmo
 > `LimbColliders`) — o headshot ficou um alvo justo.
+
+> [!note] Collider de CABEÇA do player = CÁPSULA (2026-06-21)
+> A cabeça do **player** usa uma **cápsula** (não esfera): `player.gd` seta `lc.head_shape =
+> "capsule"` e a tela Models espelha por `_MODEL_HEAD_SHAPE := {"player":"capsule"}`. A cápsula é
+> alinhada ao eixo mais longo da cabeça (mesma orientação do osso) e mantém o **raio cheio**
+> (`make_member_shape` → `make_shape("capsule", aabb, cap_radius=false)`), sem o `CROSS_SHRINK`
+> dos demais membros, para **cobrir toda a malha** da cabeça. Ver [[sistemas/dano-localizado]].
 
 **Centralização posada (2026-06-17):** o AABB de uma malha **skinada** vem da pose de
 **bind**, que no red_robot fica ~1,4 m fora da pose idle em Z. Usá-lo ancoraria o pivô

@@ -36,12 +36,23 @@ dono — o [[sistemas/biblioteca-de-modelos|browser de modelos]] desenha sua pr�
 tooltips sobre o preview. `_add_3d_skeleton` pula esses esqueletos (via `_in_group_or_ancestor`),
 evitando rótulo **dobrado**; os gizmos de **esqueleto/mesh** do overlay continuam aplicando.
 
-**Tooltips Debug 3D na cena Models (2026-06-18):** o browser desenha a **mesma pilha** do overlay
-(TYPE/Name/ID/Membro), em **ciano**, com as **mesmas sub-chaves** (`show_type_3d`/`show_name_3d`/
-`show_id_3d`/`show_members`) — só que aqui ele tem os overrides de osso por personagem
-(cabeça/tronco/placas) que o classificador global não tem. Assim os tooltips do Debug 3D
-aparecem **também na cena Models**, sobre cada collider de membro do preview (incl. as placas das
-pernas, `PLACA PERNA E/D`). Antes o browser só desenhava o nome do membro (amarelo).
+**Debug 2D em TODAS as telas, sem exceção (2026-06-21):** o `_tag` deixou de checar
+`_is_overlay_exempt` no ramo **2D** — os tooltips de Debug 2D agora aparecem em **qualquer cena**,
+inclusive Models e o editor de Dano (antes isentas). A isenção `no_debug_overlay` passou a valer
+**só para os overlays 3D** (rótulos de membro/gizmos de esqueleto/mesh) — ex.: robô decorativo do
+menu e preview da Models (que desenha os próprios rótulos). Além disso, o **watermark do nome da
+cena** (canto inferior esquerdo, no canvas persistente) ganhou **tooltip de Debug 2D**: como o
+`_scan` pula o canvas persistente, `_build_overlays` registra o `_scene_name_label` explicitamente
+(`_add_2d`) quando `debug_2d` está ligado; `_ready` monta o watermark ANTES de `_build_overlays`.
+
+**Cena Models e o overlay 3D (2026-06-21):** o nó raiz da
+[[sistemas/biblioteca-de-modelos|cena Models]] está no grupo **`_NO_OVERLAY_GROUP`**
+(`no_debug_overlay`); hoje `_is_overlay_exempt` só faz o `_tag` pular os overlays **3D** da cena
+(o 2D passa). O browser desenha sua PRÓPRIA
+pilha de tooltips (TYPE/Name/ID/Membro, em ciano) sobre cada collider de membro, controlada pelos
+**toggles dedicados da própria cena** (Membro + checkboxes Tipo/Nome/ID) — nada mais lê
+`show_type_3d`/`show_members` etc. daqui. (A `exempt_member_labels` do preview permanece como
+defesa redundante.)
 
 ## Malha no Solo (grid)
 
