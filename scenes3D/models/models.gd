@@ -237,62 +237,62 @@ var _offset_dirty: bool = false
 # _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
 var _zoom: float = 0.0
 var _zoom_target: float = 0.0
-@onready var cbo_category: OptionButton = $UI/Selectors/CategoryRow/cboCategory
-@onready var cbo_prefix: OptionButton = $UI/Selectors/PrefixRow/cboPrefix
-@onready var cbo_models: OptionButton = $UI/Selectors/ModelRow/cboModels
-@onready var cbo_meshes: OptionButton = $UI/Selectors/MeshRow/cboMeshes
-@onready var animation_row: HBoxContainer = $UI/Selectors/AnimationRow
-@onready var cbo_animations: OptionButton = $UI/Selectors/AnimationRow/cboAnimations
-@onready var effects_row: HBoxContainer = $UI/Selectors/EffectsRow
-@onready var cbo_effects: OptionButton = $UI/Selectors/EffectsRow/cboEffects
-@onready var member_row: HBoxContainer = $UI/Selectors/MemberRow
-@onready var cbo_members: OptionButton = $UI/Selectors/MemberRow/cboMembers
-@onready var sub_member_row: HBoxContainer = $UI/Selectors/SubMemberRow
-@onready var cbo_sub_members: OptionButton = $UI/Selectors/SubMemberRow/cboSubMembers
+@onready var cbo_category: OptionButton = %cboCategory
+@onready var cbo_prefix: OptionButton = %cboPrefix
+@onready var cbo_models: OptionButton = %cboModels
+@onready var cbo_meshes: OptionButton = %cboMeshes
+@onready var animation_row: HBoxContainer = %AnimationRow
+@onready var cbo_animations: OptionButton = %cboAnimations
+@onready var effects_row: HBoxContainer = %EffectsRow
+@onready var cbo_effects: OptionButton = %cboEffects
+@onready var member_row: HBoxContainer = %MemberRow
+@onready var cbo_members: OptionButton = %cboMembers
+@onready var sub_member_row: HBoxContainer = %SubMemberRow
+@onready var cbo_sub_members: OptionButton = %cboSubMembers
 # Rótulo da row de sub-membro: gerenciado em código (alterna "Sub-membro:" ↔ "Ossos avulsos:"),
 # por isso entra no SKIP_GROUP do Locale para o auto-tradutor não sobrescrevê-lo.
-@onready var sub_member_label: Label = $UI/Selectors/SubMemberRow/Label
+@onready var sub_member_label: Label = %SubMemberLabel
 # Editor de collider do membro/sub-membro focado — só visível com o toggle de collider do tipo ligado E um
 # grupo isolado. SpinBox de Afastamento (X/Y/Z) movem o StaticBody3D e de Escala (X/Y/Z) escalam a
 # forma, ambos AO VIVO; o botão Salvar persiste os valores em LimbConfig.
-@onready var collider_edit_box: VBoxContainer = $UI/Selectors/ColliderEditBox
-@onready var offset_x: SpinBox = $UI/Selectors/ColliderEditBox/OffsetRow/OffsetX
-@onready var offset_y: SpinBox = $UI/Selectors/ColliderEditBox/OffsetRow/OffsetY
-@onready var offset_z: SpinBox = $UI/Selectors/ColliderEditBox/OffsetRow/OffsetZ
-@onready var scale_x: SpinBox = $UI/Selectors/ColliderEditBox/ScaleRow/ScaleX
-@onready var scale_y: SpinBox = $UI/Selectors/ColliderEditBox/ScaleRow/ScaleY
-@onready var scale_z: SpinBox = $UI/Selectors/ColliderEditBox/ScaleRow/ScaleZ
-@onready var collider_save_button: Button = $UI/Selectors/ColliderEditBox/SaveButton
-@onready var rotate_toggle: CheckButton = $UI/Toggles/RotateToggle
-@onready var animation_toggle: CheckButton = $UI/Toggles/AnimationToggle
-@onready var audio_toggle: CheckButton = $UI/Toggles/AudioToggle
-@onready var colliders_toggle: CheckButton = $UI/Toggles/CollidersToggle
-@onready var labels_toggle: CheckButton = $UI/Toggles/LabelsToggle
-@onready var type_check: CheckButton = $UI/Toggles/LabelLinesRow/TypeCheck
-@onready var name_check: CheckButton = $UI/Toggles/LabelLinesRow/NameCheck
-@onready var id_check: CheckButton = $UI/Toggles/LabelLinesRow/IdCheck
-@onready var osso_check: CheckButton = $UI/Toggles/LabelLinesRow/OssoCheck
-@onready var damage_toggle: CheckButton = $UI/Toggles/DamageToggle
-@onready var aux_highlight_toggle: CheckButton = $UI/Toggles/AuxHighlightToggle
-@onready var sub_member_label_toggle: CheckButton = $UI/Toggles/SubMemberLabelToggle
-@onready var sub_collider_toggle: CheckButton = $UI/Toggles/SubColliderToggle
-@onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
-@onready var damage_panel: PanelContainer = $UI/DamagePanel
+@onready var collider_edit_box: VBoxContainer = %ColliderEditBox
+@onready var offset_x: SpinBox = %OffsetX
+@onready var offset_y: SpinBox = %OffsetY
+@onready var offset_z: SpinBox = %OffsetZ
+@onready var scale_x: SpinBox = %ScaleX
+@onready var scale_y: SpinBox = %ScaleY
+@onready var scale_z: SpinBox = %ScaleZ
+@onready var collider_save_button: Button = %SaveButton
+@onready var rotate_toggle: CheckButton = %RotateToggle
+@onready var animation_toggle: CheckButton = %AnimationToggle
+@onready var audio_toggle: CheckButton = %AudioToggle
+@onready var colliders_toggle: CheckButton = %CollidersToggle
+@onready var labels_toggle: CheckButton = %LabelsToggle
+@onready var type_check: CheckButton = %TypeCheck
+@onready var name_check: CheckButton = %NameCheck
+@onready var id_check: CheckButton = %IdCheck
+@onready var osso_check: CheckButton = %OssoCheck
+@onready var damage_toggle: CheckButton = %DamageToggle
+@onready var aux_highlight_toggle: CheckButton = %AuxHighlightToggle
+@onready var sub_member_label_toggle: CheckButton = %SubMemberLabelToggle
+@onready var sub_collider_toggle: CheckButton = %SubColliderToggle
+@onready var effects_toggle: CheckButton = %EffectsToggle
+@onready var damage_panel: PanelContainer = %DamagePanel
 # Editor de dano em ÁRVORE (Tree): galhos = membros, folhas = sub-membros sob seu dono. Colunas:
 # Nome | Definir (check) | Bônus % (range) | Dono (dropdown, só sub-membros). Footer abaixo da
 # árvore = linha "Adicionar sub-membro" + botão "Remover sub-membro".
-@onready var damage_tree: Tree = $UI/DamagePanel/Main/Margin/Content/DamageTree
-@onready var damage_footer: VBoxContainer = $UI/DamagePanel/Main/Margin/Content/Footer
+@onready var damage_tree: Tree = %DamageTree
+@onready var damage_footer: VBoxContainer = %Footer
 # Barra de título (área de arraste) e botão fechar (×, estilo Windows) da janela flutuante de dano.
-@onready var damage_titlebar: PanelContainer = $UI/DamagePanel/Main/TitleBar
-@onready var damage_close_button: Button = $UI/DamagePanel/Main/TitleBar/TitleRow/CloseButton
+@onready var damage_titlebar: PanelContainer = %TitleBar
+@onready var damage_close_button: Button = %CloseButton
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
 @onready var english_button: Button = $UI/LangBar/EnglishButton
 # Watermark do nome da cena no canto inferior esquerdo (mesma faixa do botão "Voltar"),
 # espelhando o do debug_overlay.gd. A cena Models está no grupo no_debug_overlay (isenta
 # do overlay global), então ela mostra o PRÓPRIO rótulo, sempre visível e sem depender de
 # nenhum toggle de Debug.
-@onready var scene_name_label: Label = $UI/SceneNameLabel
+@onready var scene_name_label: Label = %SceneNameLabel
 
 
 func _ready() -> void:

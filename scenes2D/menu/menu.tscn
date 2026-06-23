@@ -157,68 +157,49 @@ theme_override_font_sizes/font_size = 15
 text = "MOVIMENTO // MIRA // SOBREVIVENCIA"
 horizontal_alignment = 1
 
-[node name="MenuPlate" type="ColorRect" parent="UI"]
+[node name="MenuCenter" type="CenterContainer" parent="UI"]
 layout_mode = 1
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -206.0
-offset_right = 250.0
-offset_bottom = 228.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.027451, 0.0431373, 0.0745098, 0.62)
 
-[node name="MenuPlateAccentTop" type="ColorRect" parent="UI"]
-layout_mode = 1
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -230.0
-offset_top = -186.0
-offset_right = 40.0
-offset_bottom = -183.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0.27451, 0.937255, 1, 0.72)
+[node name="MenuPanel" type="PanelContainer" parent="UI/MenuCenter"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
 
-[node name="VBox" type="VBoxContainer" parent="UI" unique_id=2018224844]
-layout_mode = 1
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -170.0
-offset_right = 200.0
-offset_bottom = 180.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="MenuMargin" type="MarginContainer" parent="UI/MenuCenter/MenuPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 30
+
+[node name="VBox" type="VBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin" unique_id=2018224844]
+unique_name_in_owner = true
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="MenuReadout" type="Label" parent="UI/VBox"]
+[node name="MenuReadout" type="Label" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.513726, 0.921569, 1, 0.92)
 theme_override_font_sizes/font_size = 18
 text = "MENU PRINCIPAL // PROTOCOLO ATIVO"
 horizontal_alignment = 1
 
-[node name="MenuHint" type="Label" parent="UI/VBox"]
+[node name="MenuHint" type="Label" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.901961, 0.941176, 1, 0.84)
 theme_override_font_sizes/font_size = 16
 text = "Selecione a rota de entrada para a arena."
 horizontal_alignment = 1
 
-[node name="PlayRow" type="HBoxContainer" parent="UI/VBox"]
+[node name="PlayRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
 layout_mode = 2
 
-[node name="Play" type="Button" parent="UI/VBox/PlayRow" unique_id=2068058598]
+[node name="Play" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/PlayRow" unique_id=2068058598]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -226,10 +207,10 @@ theme_override_font_sizes/font_size = 30
 text = "PLAY"
 alignment = 1
 
-[node name="PlayOnlineRow" type="HBoxContainer" parent="UI/VBox"]
+[node name="PlayOnlineRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
 layout_mode = 2
 
-[node name="PlayOnline" type="Button" parent="UI/VBox/PlayOnlineRow" unique_id=1771290010]
+[node name="PlayOnline" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/PlayOnlineRow" unique_id=1771290010]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -237,10 +218,10 @@ theme_override_font_sizes/font_size = 30
 text = "PLAY ONLINE"
 alignment = 1
 
-[node name="SettingsRow" type="HBoxContainer" parent="UI/VBox"]
+[node name="SettingsRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
 layout_mode = 2
 
-[node name="Settings" type="Button" parent="UI/VBox/SettingsRow" unique_id=1736245222]
+[node name="Settings" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/SettingsRow" unique_id=1736245222]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -248,10 +229,10 @@ theme_override_font_sizes/font_size = 30
 text = "SETTINGS"
 alignment = 1
 
-[node name="DeveloperRow" type="HBoxContainer" parent="UI/VBox"]
+[node name="DeveloperRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
 layout_mode = 2
 
-[node name="Developer" type="Button" parent="UI/VBox/DeveloperRow" unique_id=299022428]
+[node name="Developer" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/DeveloperRow" unique_id=299022428]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -259,10 +240,10 @@ theme_override_font_sizes/font_size = 30
 text = "MODO DEVELOPER"
 alignment = 1
 
-[node name="QuitRow" type="HBoxContainer" parent="UI/VBox"]
+[node name="QuitRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
 layout_mode = 2
 
-[node name="Quit" type="Button" parent="UI/VBox/QuitRow" unique_id=1164533481]
+[node name="Quit" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/QuitRow" unique_id=1164533481]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -343,6 +324,7 @@ grow_vertical = 0
 theme_override_constants/separation = 12
 
 [node name="PortugueseButton" type="Button" parent="UI/LangBar" unique_id=1700000002]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -350,6 +332,7 @@ theme_override_font_sizes/font_size = 20
 text = "Português"
 
 [node name="EnglishButton" type="Button" parent="UI/LangBar" unique_id=1700000003]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -357,6 +340,7 @@ theme_override_font_sizes/font_size = 20
 text = "English"
 
 [node name="Loading" type="HBoxContainer" parent="UI" unique_id=1026047706]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchor_left = 0.5
@@ -383,11 +367,11 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
-[connection signal="pressed" from="UI/VBox/PlayRow/Play" to="." method="_on_play_pressed"]
-[connection signal="pressed" from="UI/VBox/PlayOnlineRow/PlayOnline" to="." method="_on_play_online_pressed"]
-[connection signal="pressed" from="UI/VBox/SettingsRow/Settings" to="." method="_on_settings_pressed"]
-[connection signal="pressed" from="UI/VBox/DeveloperRow/Developer" to="." method="_on_developer_pressed"]
-[connection signal="pressed" from="UI/VBox/QuitRow/Quit" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/PlayRow/Play" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/PlayOnlineRow/PlayOnline" to="." method="_on_play_online_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/SettingsRow/Settings" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/DeveloperRow/Developer" to="." method="_on_developer_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/QuitRow/Quit" to="." method="_on_quit_pressed"]
 [connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
 [connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

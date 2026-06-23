@@ -51,7 +51,8 @@ bone's name) and selector dropdowns — both persisted between
 visits, with the drill-down chain restored on reopen; a
 developer screen whose debug overlay is split into **Debug 2D** (light
 yellow) and **Debug 3D** (light cyan) columns — a master alone shows nothing, each dependent line
-must also be selected; performance indicators built on Godot's `Performance` singleton — a toggleable
+must also be selected — with a live **player-model preview** beside the Debug 3D column (a rotating
+robot in its own viewport) that reflects the enabled/disabled toggles in real time; performance indicators built on Godot's `Performance` singleton — a toggleable
 **Performance HUD** top bar (FPS/NET/RAM/CPU/GPU + a basic/advanced view) plus an always-on
 **StabilityGuard** that throttles physics and force-pauses with a full-screen overlay before RAM/VRAM/
 collision-pairs/node-count/FPS can freeze or crash the machine;
@@ -69,7 +70,9 @@ do osso avulso escolhido) e dropdowns de seleção — ambos persistidos
 entre visitas, com a cadeia de navegação restaurada ao reabrir; uma tela developer cujo overlay de
 debug é dividido nas
 colunas **Debug 2D** (amarelo claro) e **Debug 3D** (ciano claro) — o master sozinho não mostra
-nada, cada linha dependente também precisa ser selecionada; indicadores de performance sobre o
+nada, cada linha dependente também precisa ser selecionada — com uma **pré-visualização do modelo do
+player** ao lado da coluna Debug 3D (um robô girando no próprio viewport) que reflete os botões
+ativado/desativado em tempo real; indicadores de performance sobre o
 singleton `Performance` do Godot — uma barra **Performance HUD** opcional (FPS/NET/RAM/CPU/GPU + visão
 básica/avançada) mais um **StabilityGuard** sempre-ligado, que reduz a física e pausa à força com um
 overlay de tela cheia antes que RAM/VRAM/collision pairs/contagem de nós/FPS congelem ou travem a

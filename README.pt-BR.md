@@ -146,8 +146,15 @@ classificador `BodyParts` usado pelos colliders de dano localizado), **Skeleton*
 de osso refeitas todo frame a partir da pose viva) e **Mesh** (caixa wireframe ciano do AABB de
 cada MeshInstance3D).
 
-Acima das colunas, uma seção geral tem **HUD FPS** (`hud_fps`), **Performance HUD**
-(`performance_hud`, veja abaixo) e **Malha no Solo** (`show_grid`) — uma grade wireframe de
+Ao lado da coluna Debug 3D, uma **pré-visualização do modelo do player** (mesma altura das colunas)
+renderiza o robô do player em um `SubViewport` próprio (com `World3D`, câmera e luz próprios),
+girando lentamente com sua animação idle. Como o modelo do preview fica **fora** do grupo
+`no_debug_overlay`, o `DebugOverlay` global o varre como qualquer outro esqueleto, então os toggles
+de **Debug 3D** (Skeleton / Mesh / Members / Type / Name / Id) se aplicam a ele ao vivo — clicar
+qualquer botão ativado/desativado mostra o efeito no robô na hora.
+
+Acima das colunas, uma seção geral tem **HUD FPS** (`hud_fps`), **Monitor de Saúde**
+(`performance_hud`, rótulo da linha na tela developer para o Performance HUD; veja abaixo) e **Malha no Solo** (`show_grid`) — uma grade wireframe de
 100 m × 100 m na origem, em qualquer tela que contenha conteúdo 3D (Modelos 3D, fases). Como o
 `main.gd` troca as telas como filhas do nó `Main` (então `current_scene` permanece sempre `Main`,
 um `Node` comum), o grid detecta a tela carregada ativa e procura qualquer descendente `Node3D` em
