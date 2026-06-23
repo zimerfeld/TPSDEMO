@@ -35,33 +35,39 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2")
 
-[node name="TitleLabel" type="Label" parent="UI" unique_id=634348711]
+[node name="Margin" type="MarginContainer" parent="UI"]
 layout_mode = 1
-anchors_preset = 10
-anchor_left = 0.0
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = 0.0
-offset_top = 30.0
-offset_right = 0.0
-offset_bottom = 100.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 110
+
+[node name="Main" type="VBoxContainer" parent="UI/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="UI/Margin/Main" unique_id=634348711]
+layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Níveis"
 horizontal_alignment = 1
 
-[node name="VBox" type="VBoxContainer" parent="UI" unique_id=412148386]
-layout_mode = 1
-anchors_preset = -1
-offset_left = 62.0
-offset_top = 130.0
-offset_right = 462.0
-offset_bottom = 400.0
+[node name="VBox" type="VBoxContainer" parent="UI/Margin/Main" unique_id=412148386]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
 theme_override_constants/separation = 16
 
-[node name="Level1Row" type="HBoxContainer" parent="UI/VBox"]
+[node name="Level1Row" type="HBoxContainer" parent="UI/Margin/Main/VBox"]
 layout_mode = 2
 
-[node name="Level1Button" type="Button" parent="UI/VBox/Level1Row" unique_id=1572114992]
+[node name="Level1Button" type="Button" parent="UI/Margin/Main/VBox/Level1Row" unique_id=1572114992]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -69,10 +75,11 @@ theme_override_font_sizes/font_size = 30
 text = "Level 1"
 alignment = 0
 
-[node name="Level2Row" type="HBoxContainer" parent="UI/VBox"]
+[node name="Level2Row" type="HBoxContainer" parent="UI/Margin/Main/VBox"]
 layout_mode = 2
 
-[node name="Level2Button" type="Button" parent="UI/VBox/Level2Row" unique_id=1572114993]
+[node name="Level2Button" type="Button" parent="UI/Margin/Main/VBox/Level2Row" unique_id=1572114993]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -80,10 +87,11 @@ theme_override_font_sizes/font_size = 30
 text = "Level 2"
 alignment = 0
 
-[node name="LevelBaseRow" type="HBoxContainer" parent="UI/VBox"]
+[node name="LevelBaseRow" type="HBoxContainer" parent="UI/Margin/Main/VBox"]
 layout_mode = 2
 
-[node name="LevelBaseButton" type="Button" parent="UI/VBox/LevelBaseRow" unique_id=1771458778]
+[node name="LevelBaseButton" type="Button" parent="UI/Margin/Main/VBox/LevelBaseRow" unique_id=1771458778]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -108,6 +116,7 @@ theme_override_constants/separation = 60
 alignment = 1
 
 [node name="BackButton" type="Button" parent="UI/Actions" unique_id=1391874588]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -129,6 +138,7 @@ grow_vertical = 0
 theme_override_constants/separation = 12
 
 [node name="PortugueseButton" type="Button" parent="UI/LangBar"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -136,6 +146,7 @@ theme_override_font_sizes/font_size = 20
 text = "Português"
 
 [node name="EnglishButton" type="Button" parent="UI/LangBar"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -143,6 +154,7 @@ theme_override_font_sizes/font_size = 20
 text = "English"
 
 [node name="Loading" type="HBoxContainer" parent="UI" unique_id=619865146]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchor_left = 0.5
@@ -161,17 +173,19 @@ layout_mode = 2
 text = "Loading..."
 
 [node name="Progress" type="ProgressBar" parent="UI/Loading" unique_id=50349706]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
 
 [node name="DoneTimer" type="Timer" parent="UI/Loading" unique_id=1747976654]
+unique_name_in_owner = true
 wait_time = 0.5
 one_shot = true
 
-[connection signal="pressed" from="UI/VBox/Level1Row/Level1Button" to="." method="_on_level_1_pressed"]
-[connection signal="pressed" from="UI/VBox/Level2Row/Level2Button" to="." method="_on_level_2_pressed"]
-[connection signal="pressed" from="UI/VBox/LevelBaseRow/LevelBaseButton" to="." method="_on_level_base_pressed"]
+[connection signal="pressed" from="UI/Margin/Main/VBox/Level1Row/Level1Button" to="." method="_on_level_1_pressed"]
+[connection signal="pressed" from="UI/Margin/Main/VBox/Level2Row/Level2Button" to="." method="_on_level_2_pressed"]
+[connection signal="pressed" from="UI/Margin/Main/VBox/LevelBaseRow/LevelBaseButton" to="." method="_on_level_base_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
 [connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]

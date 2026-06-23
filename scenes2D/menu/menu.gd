@@ -15,18 +15,18 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 @onready var ui: Control = $UI
-@onready var main: Control = ui.get_node(^"VBox")
+@onready var main: Control = %VBox
 @onready var play_button: Button = main.get_node(^"PlayRow/Play")
 @onready var play_online_button: Button = main.get_node(^"PlayOnlineRow/PlayOnline")
 @onready var settings_button: Button = main.get_node(^"SettingsRow/Settings")
 @onready var quit_button: Button = main.get_node(^"QuitRow/Quit")
 
-@onready var loading: HBoxContainer = ui.get_node(^"Loading")
+@onready var loading: HBoxContainer = %Loading
 @onready var loading_progress: ProgressBar = loading.get_node(^"Progress")
 @onready var loading_done_timer: Timer = loading.get_node(^"DoneTimer")
 
-@onready var portuguese_button: Button = ui.get_node(^"LangBar/PortugueseButton")
-@onready var english_button: Button = ui.get_node(^"LangBar/EnglishButton")
+@onready var portuguese_button: Button = %PortugueseButton
+@onready var english_button: Button = %EnglishButton
 
 
 func _ready() -> void:

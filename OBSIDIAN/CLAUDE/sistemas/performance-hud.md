@@ -4,6 +4,10 @@
 > **StabilityGuard** (proteção sempre-ligada) e **PerformanceHUD** (barra de leitura, opcional).
 > Ambos leem só do singleton `Performance` (métricas internas da engine, confiáveis e
 > multiplataforma). Ver [[sistemas/recursos-nativos-godot]].
+>
+> **Rótulo na tela developer (2026-06-23):** a linha que liga a barra (chave `performance_hud`) é
+> rotulada **"Monitor de Saúde"** / EN "Health Monitor" (era "HUD de Performance"). A chave de config
+> e os autoloads NÃO mudaram.
 
 ## StabilityGuard (`autoload/stability_guard.gd`)
 

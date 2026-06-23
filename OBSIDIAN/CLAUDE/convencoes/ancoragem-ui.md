@@ -23,5 +23,9 @@ fica maior que a tela (4K/8K num monitor 1080p) — aí a janela inteira (topo e
 (`DisplayServer.screen_get_usable_rect`) e centraliza — ver `_apply_video_resolution`
 (settings.gd) e `Settings.apply_window_resolution` (config.gd). Ver [[fluxos/fluxo-de-cenas]].
 
-Relacionado: [[convencoes/dropdowns]] · raiz de cena de UI deve ser `Node`/`Control`
-(Control filho de Node2D fica size 0).
+**Stretch = `disabled` (2026-06-23):** `window/stretch/mode` passou de `canvas_items` para `disabled`
+— controles com **tamanho fixo** (não escalam com a resolução); o layout reflui via Containers. Toda
+tela 2D foi migrada para o esqueleto de containers; ver [[convencoes/layout-responsivo]].
+
+Relacionado: [[convencoes/dropdowns]] · [[convencoes/layout-responsivo]] · raiz de cena de UI deve
+ser `Node`/`Control` (Control filho de Node2D fica size 0).

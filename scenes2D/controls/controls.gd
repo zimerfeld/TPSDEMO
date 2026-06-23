@@ -20,8 +20,8 @@ const CONTROLS_ROOT: String = "res://scenes2D/controls2D"
 # Construído em _ready varrendo CONTROLS_ROOT. Cada entrada: {"name", "path"}.
 var _controls: Array = []
 
-@onready var cbo_control: OptionButton = $UI/Selectors/ControlRow/cboControl
-@onready var preview: SubViewport = $UI/PreviewContainer/SubViewport
+@onready var cbo_control: OptionButton = %cboControl
+@onready var preview: SubViewport = %SubViewport
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
 @onready var english_button: Button = $UI/LangBar/EnglishButton
 

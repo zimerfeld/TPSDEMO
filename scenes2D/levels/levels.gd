@@ -9,15 +9,15 @@ const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn
 
 var loading_path: String = ""
 
-@onready var level1_button: Button = $UI/VBox/Level1Row/Level1Button
-@onready var level2_button: Button = $UI/VBox/Level2Row/Level2Button
-@onready var level_base_button: Button = $UI/VBox/LevelBaseRow/LevelBaseButton
-@onready var back_button: Button = $UI/Actions/BackButton
-@onready var loading: HBoxContainer = $UI/Loading
-@onready var loading_progress: ProgressBar = $UI/Loading/Progress
-@onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
-@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/LangBar/EnglishButton
+@onready var level1_button: Button = %Level1Button
+@onready var level2_button: Button = %Level2Button
+@onready var level_base_button: Button = %LevelBaseButton
+@onready var back_button: Button = %BackButton
+@onready var loading: HBoxContainer = %Loading
+@onready var loading_progress: ProgressBar = %Progress
+@onready var loading_done_timer: Timer = %DoneTimer
+@onready var portuguese_button: Button = %PortugueseButton
+@onready var english_button: Button = %EnglishButton
 
 
 func _ready() -> void:

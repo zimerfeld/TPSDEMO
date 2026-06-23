@@ -46,153 +46,182 @@ grow_vertical = 2
 mouse_filter = 2
 theme = ExtResource("2")
 
-[node name="TitleLabel" type="Label" parent="UI"]
+[node name="Margin" type="MarginContainer" parent="UI"]
 layout_mode = 1
-anchors_preset = 10
-anchor_left = 0.0
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = 0.0
-offset_top = 30.0
-offset_right = 0.0
-offset_bottom = 100.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 110
+
+[node name="Main" type="VBoxContainer" parent="UI/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="UI/Margin/Main"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Modelos 3D"
 horizontal_alignment = 1
 
-[node name="Selectors" type="VBoxContainer" parent="UI"]
-layout_mode = 0
-offset_left = 40.0
-offset_top = 140.0
-offset_right = 560.0
-offset_bottom = 520.0
+[node name="Body" type="HBoxContainer" parent="UI/Margin/Main"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_constants/separation = 40
+
+[node name="Selectors" type="VBoxContainer" parent="UI/Margin/Main/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
 theme_override_constants/separation = 16
 
-[node name="CategoryRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="CategoryRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/CategoryRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/CategoryRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Categoria:"
 
-[node name="cboCategory" type="OptionButton" parent="UI/Selectors/CategoryRow"]
+[node name="cboCategory" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/CategoryRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="PrefixRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="PrefixRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/PrefixRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/PrefixRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Prefixo:"
 
-[node name="cboPrefix" type="OptionButton" parent="UI/Selectors/PrefixRow"]
+[node name="cboPrefix" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/PrefixRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="ModelRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="ModelRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/ModelRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/ModelRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Modelo:"
 
-[node name="cboModels" type="OptionButton" parent="UI/Selectors/ModelRow"]
+[node name="cboModels" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/ModelRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="MeshRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="MeshRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/MeshRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/MeshRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Parte:"
 
-[node name="cboMeshes" type="OptionButton" parent="UI/Selectors/MeshRow"]
+[node name="cboMeshes" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MeshRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="AnimationRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="AnimationRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/AnimationRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/AnimationRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Animação:"
 
-[node name="cboAnimations" type="OptionButton" parent="UI/Selectors/AnimationRow"]
+[node name="cboAnimations" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/AnimationRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="EffectsRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="EffectsRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/EffectsRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/EffectsRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Efeitos Especiais:"
 
-[node name="cboEffects" type="OptionButton" parent="UI/Selectors/EffectsRow"]
+[node name="cboEffects" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/EffectsRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="MemberRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="MemberRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/MemberRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Membro:"
 
-[node name="cboMembers" type="OptionButton" parent="UI/Selectors/MemberRow"]
+[node name="cboMembers" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="SubMemberRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="SubMemberRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Selectors/SubMemberRow"]
+[node name="SubMemberLabel" type="Label" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Sub-membro:"
 
-[node name="cboSubMembers" type="OptionButton" parent="UI/Selectors/SubMemberRow"]
+[node name="cboSubMembers" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="ColliderEditBox" type="VBoxContainer" parent="UI/Selectors"]
+[node name="ColliderEditBox" type="VBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="OffsetRow" type="HBoxContainer" parent="UI/Selectors/ColliderEditBox"]
+[node name="OffsetRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 text = "Afastamento:"
 
-[node name="LabelX" type="Label" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+[node name="LabelX" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
 layout_mode = 2
 text = "X"
 
-[node name="OffsetX" type="SpinBox" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+[node name="OffsetX" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = -10.0
@@ -201,11 +230,12 @@ step = 0.01
 allow_greater = true
 allow_lesser = true
 
-[node name="LabelY" type="Label" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+[node name="LabelY" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
 layout_mode = 2
 text = "Y"
 
-[node name="OffsetY" type="SpinBox" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+[node name="OffsetY" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = -10.0
@@ -214,11 +244,12 @@ step = 0.01
 allow_greater = true
 allow_lesser = true
 
-[node name="LabelZ" type="Label" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+[node name="LabelZ" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
 layout_mode = 2
 text = "Z"
 
-[node name="OffsetZ" type="SpinBox" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+[node name="OffsetZ" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = -10.0
@@ -227,20 +258,21 @@ step = 0.01
 allow_greater = true
 allow_lesser = true
 
-[node name="ScaleRow" type="HBoxContainer" parent="UI/Selectors/ColliderEditBox"]
+[node name="ScaleRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 text = "Escala:"
 
-[node name="LabelX" type="Label" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+[node name="LabelX" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
 layout_mode = 2
 text = "X"
 
-[node name="ScaleX" type="SpinBox" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+[node name="ScaleX" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = 0.05
@@ -250,11 +282,12 @@ value = 1.0
 allow_greater = true
 allow_lesser = true
 
-[node name="LabelY" type="Label" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+[node name="LabelY" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
 layout_mode = 2
 text = "Y"
 
-[node name="ScaleY" type="SpinBox" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+[node name="ScaleY" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = 0.05
@@ -264,11 +297,12 @@ value = 1.0
 allow_greater = true
 allow_lesser = true
 
-[node name="LabelZ" type="Label" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+[node name="LabelZ" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
 layout_mode = 2
 text = "Z"
 
-[node name="ScaleZ" type="SpinBox" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+[node name="ScaleZ" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = 0.05
@@ -278,100 +312,110 @@ value = 1.0
 allow_greater = true
 allow_lesser = true
 
-[node name="SaveButton" type="Button" parent="UI/Selectors/ColliderEditBox"]
+[node name="SaveButton" type="Button" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 44)
 layout_mode = 2
 size_flags_horizontal = 0
 text = "Salvar"
 
-[node name="Toggles" type="VBoxContainer" parent="UI"]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -300.0
-offset_top = 100.0
-offset_right = -20.0
-offset_bottom = 680.0
-grow_horizontal = 0
+[node name="Toggles" type="VBoxContainer" parent="UI/Margin/Main/Body"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
 theme_override_constants/separation = 8
 
-[node name="RotateToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="RotateToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Rotação"
 
-[node name="AnimationToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="AnimationToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Animação"
 
-[node name="EffectsToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="EffectsToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Efeitos especiais"
 
-[node name="AudioToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="AudioToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Audio"
 
-[node name="CollidersToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="CollidersToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisores de Membro"
 
-[node name="LabelsToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="LabelsToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Membro"
 
-[node name="LabelLinesRow" type="VBoxContainer" parent="UI/Toggles"]
+[node name="LabelLinesRow" type="VBoxContainer" parent="UI/Margin/Main/Body/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
 theme_override_constants/separation = 6
 
-[node name="OssoCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
+[node name="OssoCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Esqueleto"
 
-[node name="TypeCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
+[node name="TypeCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Tipo"
 
-[node name="NameCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
+[node name="NameCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Nome"
 
-[node name="IdCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
+[node name="IdCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "ID"
 
-[node name="DamageToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="DamageToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Dano"
 
-[node name="AuxHighlightToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="AuxHighlightToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisores de Esqueleto"
 
-[node name="SubMemberLabelToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="SubMemberLabelToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Submembros"
 
-[node name="SubColliderToggle" type="CheckButton" parent="UI/Toggles"]
+[node name="SubColliderToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisores de Submembros"
 
 [node name="DamagePanel" type="PanelContainer" parent="UI"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchors_preset = 0
@@ -385,6 +429,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="TitleBar" type="PanelContainer" parent="UI/DamagePanel/Main"]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="TitleRow" type="HBoxContainer" parent="UI/DamagePanel/Main/TitleBar"]
@@ -399,6 +444,7 @@ text = "Dano"
 theme_override_font_sizes/font_size = 16
 
 [node name="CloseButton" type="Button" parent="UI/DamagePanel/Main/TitleBar/TitleRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(34, 28)
 layout_mode = 2
 text = "×"
@@ -417,10 +463,12 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="DamageTree" type="Tree" parent="UI/DamagePanel/Main/Margin/Content"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
 [node name="Footer" type="VBoxContainer" parent="UI/DamagePanel/Main/Margin/Content"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 
@@ -476,6 +524,7 @@ theme_override_font_sizes/font_size = 20
 text = "English"
 
 [node name="SceneNameLabel" type="Label" parent="UI"]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
