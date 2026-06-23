@@ -136,18 +136,10 @@ static func resolve_sub_member_owner(skel: Skeleton3D, bone_name: String, classi
 
 
 # Rótulo legível de uma peça standalone. Quando dá pra resolver a que membro a peça pertence
-# (ombreira→BRAÇO, escudo do braço→BRAÇO, placa de perna→PERNA; via resolve_sub_member_owner,
-# plano-aware + hierarquia), vira "PLACA <MEMBRO>" (ex.: "PLACA BRAÇO E", "PLACA PERNA D"). Sem
-# dono claro, usa o próprio nome do osso.
-func _part_label(skel: Skeleton3D, bone_name: String) -> String:
-	# Dono EXPLÍCITO escolhido na tela tem precedência; senão, resolução automática.
-	var owner_group := LimbConfig.sub_member_owner(model_key, bone_name)
-	if owner_group == "":
-		owner_group = resolve_sub_member_owner(skel, bone_name, _classifier, head_bone_names, torso_bone_names, leg_bone_names)
-	if owner_group != "":
-		var lab := _classifier.label_of(owner_group)
-		if lab != "":
-			return "PLACA " + lab
+# O sub-membro PRESERVA o nome ORIGINAL do osso, mesmo após ser adicionado a um membro-dono
+# (o dono só agrupa o dano; não renomeia a peça). Antes virava "PLACA <MEMBRO>" — descartado a
+# pedido: o nome original deve ser mantido.
+func _part_label(_skel: Skeleton3D, bone_name: String) -> String:
 	return bone_name
 
 
@@ -383,7 +375,11 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	# inteiro (shape/gizmo/rótulo acompanham). Vazio/ausente = Vector3.ZERO (sem afastamento).
 	body.position = LimbConfig.collider_offset(model_key, group)
 
-	body.add_child(make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale))
+	var shape_node := make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale)
+	# Escala por eixo (espaço local da forma), editável na tela Models — escala a forma em torno do
+	# seu centro (o gizmo, filho dela, acompanha). Vazio/ausente = Vector3.ONE (sem escala).
+	shape_node.scale = LimbConfig.collider_scale(model_key, group)
+	body.add_child(shape_node)
 
 	att.add_child(body)
 	_bodies.append(body)

@@ -174,22 +174,26 @@ text = "Sub-membro:"
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="ColliderOffsetRow" type="HBoxContainer" parent="UI/Selectors"]
+[node name="ColliderEditBox" type="VBoxContainer" parent="UI/Selectors"]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="UI/Selectors/ColliderOffsetRow"]
-custom_minimum_size = Vector2(150, 0)
+[node name="OffsetRow" type="HBoxContainer" parent="UI/Selectors/ColliderEditBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 text = "Afastamento:"
 
-[node name="LabelX" type="Label" parent="UI/Selectors/ColliderOffsetRow"]
+[node name="LabelX" type="Label" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
 layout_mode = 2
 text = "X"
 
-[node name="OffsetX" type="SpinBox" parent="UI/Selectors/ColliderOffsetRow"]
-custom_minimum_size = Vector2(90, 50)
+[node name="OffsetX" type="SpinBox" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = -10.0
 max_value = 10.0
@@ -197,12 +201,12 @@ step = 0.01
 allow_greater = true
 allow_lesser = true
 
-[node name="LabelY" type="Label" parent="UI/Selectors/ColliderOffsetRow"]
+[node name="LabelY" type="Label" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
 layout_mode = 2
 text = "Y"
 
-[node name="OffsetY" type="SpinBox" parent="UI/Selectors/ColliderOffsetRow"]
-custom_minimum_size = Vector2(90, 50)
+[node name="OffsetY" type="SpinBox" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = -10.0
 max_value = 10.0
@@ -210,18 +214,75 @@ step = 0.01
 allow_greater = true
 allow_lesser = true
 
-[node name="LabelZ" type="Label" parent="UI/Selectors/ColliderOffsetRow"]
+[node name="LabelZ" type="Label" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
 layout_mode = 2
 text = "Z"
 
-[node name="OffsetZ" type="SpinBox" parent="UI/Selectors/ColliderOffsetRow"]
-custom_minimum_size = Vector2(90, 50)
+[node name="OffsetZ" type="SpinBox" parent="UI/Selectors/ColliderEditBox/OffsetRow"]
+custom_minimum_size = Vector2(90, 44)
 layout_mode = 2
 min_value = -10.0
 max_value = 10.0
 step = 0.01
 allow_greater = true
 allow_lesser = true
+
+[node name="ScaleRow" type="HBoxContainer" parent="UI/Selectors/ColliderEditBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Escala:"
+
+[node name="LabelX" type="Label" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+layout_mode = 2
+text = "X"
+
+[node name="ScaleX" type="SpinBox" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+custom_minimum_size = Vector2(90, 44)
+layout_mode = 2
+min_value = 0.05
+max_value = 20.0
+step = 0.05
+value = 1.0
+allow_greater = true
+allow_lesser = true
+
+[node name="LabelY" type="Label" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+layout_mode = 2
+text = "Y"
+
+[node name="ScaleY" type="SpinBox" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+custom_minimum_size = Vector2(90, 44)
+layout_mode = 2
+min_value = 0.05
+max_value = 20.0
+step = 0.05
+value = 1.0
+allow_greater = true
+allow_lesser = true
+
+[node name="LabelZ" type="Label" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+layout_mode = 2
+text = "Z"
+
+[node name="ScaleZ" type="SpinBox" parent="UI/Selectors/ColliderEditBox/ScaleRow"]
+custom_minimum_size = Vector2(90, 44)
+layout_mode = 2
+min_value = 0.05
+max_value = 20.0
+step = 0.05
+value = 1.0
+allow_greater = true
+allow_lesser = true
+
+[node name="SaveButton" type="Button" parent="UI/Selectors/ColliderEditBox"]
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Salvar"
 
 [node name="Toggles" type="VBoxContainer" parent="UI"]
 layout_mode = 1
@@ -231,7 +292,7 @@ anchor_right = 1.0
 offset_left = -300.0
 offset_top = 100.0
 offset_right = -20.0
-offset_bottom = 520.0
+offset_bottom = 680.0
 grow_horizontal = 0
 theme_override_constants/separation = 8
 
@@ -258,7 +319,7 @@ text = "Audio"
 [node name="CollidersToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Colisores"
+text = "Colisores de Membro"
 
 [node name="LabelsToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
@@ -269,6 +330,11 @@ text = "Membro"
 layout_mode = 2
 size_flags_horizontal = 8
 theme_override_constants/separation = 6
+
+[node name="OssoCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Esqueleto"
 
 [node name="TypeCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
 layout_mode = 2
@@ -285,20 +351,25 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "ID"
 
-[node name="OssoCheck" type="CheckButton" parent="UI/Toggles/LabelLinesRow"]
-layout_mode = 2
-size_flags_horizontal = 8
-text = "Osso"
-
 [node name="DamageToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Dano por membro"
+text = "Dano"
 
 [node name="AuxHighlightToggle" type="CheckButton" parent="UI/Toggles"]
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Realçar avulso"
+text = "Colisores de Esqueleto"
+
+[node name="SubMemberLabelToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Submembros"
+
+[node name="SubColliderToggle" type="CheckButton" parent="UI/Toggles"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Colisores de Submembros"
 
 [node name="DamagePanel" type="PanelContainer" parent="UI"]
 visible = false
@@ -324,7 +395,7 @@ mouse_filter = 2
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
-text = "Dano por membro"
+text = "Dano"
 theme_override_font_sizes/font_size = 16
 
 [node name="CloseButton" type="Button" parent="UI/DamagePanel/Main/TitleBar/TitleRow"]

@@ -132,8 +132,8 @@ func _setup_limb_colliders() -> void:
 	lc.torso_shape = "sphere"   # corpo arredondado do red_robot → esfera, não caixa
 	lc.head_scale = 1.3         # cabeça com volume maior (headshot mais generoso)
 	# Os sub-membros (placas traseiras das pernas "L-/R-RearLegGuard") agora vêm de
-	# LimbConfig (res://data/limb_config/red_robot.json — um arquivo por personagem) —
-	# editáveis na tela Models. Ver build_for.
+	# LimbConfig (na pasta do modelo: res://library3D/characters/red_robot/limb_config.json;
+	# override de runtime em user://) — editáveis na tela Models. Ver build_for.
 	add_child(lc)
 	lc.build_for(skel)
 
