@@ -14,10 +14,11 @@ A `StartScreen` entra no grupo `no_debug_overlay` (sem tooltips de debug).
 ```
 main.tscn (main.gd — roteador + tela inicial: robô no pedestal + overlay)
    └─► menu.tscn (menu.gd)
-          ├─► play ───────► chooseplayer.tscn ─► levels.tscn ─┬─► level_1.tscn
-          │                                                   ├─► level_2.tscn
-          │                                                   └─► level_base.tscn
-          ├─► play online ─► playonline.tscn ─► level_base.tscn
+          ├─► Jogar Offline ─► chooseplayer.tscn ─► levels.tscn ─┬─► level_1.tscn
+          │     (online_mode=false)                              ├─► level_2.tscn   (carrega o nível direto)
+          │                                                      └─► level_base.tscn
+          ├─► Jogar Online ──► chooseplayer.tscn ─► levels.tscn ─► playonline.tscn ─► nível escolhido
+          │     (online_mode=true)                  (escolhe nível)   (Host/Connect)
           ├─► settings.tscn (UI: settings.gd)
           ├─► developer.tscn ─┬─► models.tscn   (visualizador de modelos 3D)
           │                   └─► controls.tscn (visualizador de controles 2D)
@@ -55,7 +56,7 @@ models. `cyberpunkhud` é cena avulsa de preview, fora do fluxo de navegação.)
 
 ## Telas (UI)
 
-- **menu** — Jogar (→ chooseplayer), Configurações (→ settings), Modo Developer (→ developer), Play Online (→ level_base), Sair. No `_ready` (antes de exibir a tela) **lê do disco e aplica TODAS as configs** (2026-06-16): `Settings.load_settings()` + `apply_graphics_settings()` + `apply_window_resolution()` (redimensiona a janela p/ a resolução salva se em modo Janela) + `apply_audio_settings()` (mute de Música/SFX).
+- **menu** — Jogar (→ chooseplayer), Configurações (→ settings), Modo Developer (→ developer), **Jogar Online** (mesma sequência do offline: chooseplayer → levels → playonline), Sair. **Os botões "Jogar Offline" e "Jogar Online" só diferem na flag `PlayerSelection.online_mode`** — ambos abrem `chooseplayer`; é a tela `levels` que, vendo a flag, carrega o nível direto (offline) ou abre `playonline` (online). O rótulo "Jogar Offline" vem da localização (`menu.*.json`, chave `"PLAY"`). No `_ready` (antes de exibir a tela) **lê do disco e aplica TODAS as configs** (2026-06-16): `Settings.load_settings()` + `apply_graphics_settings()` + `apply_window_resolution()` (redimensiona a janela p/ a resolução salva se em modo Janela) + `apply_audio_settings()` (mute de Música/SFX).
 - **settings** — `config.gd` (autoload **Settings**) + `settings.gd` (UI). Abas Display / Resolution / Antialiasing / Lighting / Effects / Audio / **Debug**. **Sem botão "Aplicar" (2026-06-16):** cada opção **persiste + aplica na hora** ao mudar (sinal `ButtonGroup.pressed` → `_apply_settings`). A **resolução de vídeo** é à parte: confirma num diálogo (Sim/Não) — "Sim" aplica e fixa o modo Janela (senão o próximo apply voltaria pra fullscreen e desfaria), "Não" volta o dropdown pra seleção persistida. A janela é **limitada à área útil da tela** (`screen_get_usable_rect`) e centralizada, então uma resolução maior que o monitor (4K/8K) não empurra a janela — e a barra de botões do rodapé — pra fora do visível (`_apply_video_resolution` / `Settings.apply_window_resolution`). Botão **Reset** (à direita de Voltar, 2026-06-16): mesma confirmação Sim/Não → `Settings.reset_to_defaults()` (reescreve tudo com `DEFAULTS`, baseline de hardware comum) + recarrega controles + aplica na hora. `DEFAULTS` é fonte única: vale também quando não há config salva (load_settings preenche). Só **Voltar** sai da tela.
 - **developer** — toggles estilo Disabled/Enabled (HUD FPS · Malha no Solo · Debug 2D · Debug 3D · Show TYPE · Show Name · Show ID · **Show Membros** · **Show Skeleton3D** · **Show Mesh3D**) + botões **Modelos 3D** / **Controles 2D**. **Três sub-switches do Debug 3D (2026-06-17):** só fazem efeito **enquanto Debug 3D está ligado**, e seus botões ficam **desabilitados** com Debug 3D desligado (`developer.gd._update_debug3d_subrows_enabled`, lista `_DEBUG3D_SUBROWS`):
   - **Show Membros** — rótulos de membro (CABEÇA/TRONCO/BRAÇO…). `_line_visible("member")` = `debug_3d AND show_members`; o scan de `Skeleton3D` só ocorre com Debug 3D ligado. (Rótulo era "Membros:" → agora **"Show Membros:"**.)
@@ -65,7 +66,8 @@ models. `cyberpunkhud` é cena avulsa de preview, fora do fluxo de navegação.)
 - **models** — navegador/extrator de modelos 3D: Categoria → Modelo → Malha (malhas distintas), preview rotacionável, "Salvar como cena 3D" (extrai p/ `library/extracted/`) e botão "Exportados". Detalhes em [[sistemas/biblioteca-de-modelos]]
 - **Exported** (`library/extracted/Exported.tscn`) — galeria que exibe todas as cenas de `library/extracted/` lado a lado; volta para models
 - **chooseplayer** — escolhe personagem (modelo 3D girando) → levels
-- **levels** — Level 1 (`scenes3D/level_1`) ou Level Base (`scenes3D/level_base`), load assíncrono
+- **levels** — Level 1 / Level 2 / Level Base, load assíncrono. `_select_level()` ramifica: **offline** carrega o nível direto; **online** (`PlayerSelection.online_mode`) guarda o caminho em `PlayerSelection.level_path` e abre `playonline`.
+- **playonline** — só **Host / Connect** (porta + endereço). **Não há seletor de nível**: o nível já foi escolhido na tela `levels` (fluxo online) e vem em `PlayerSelection.level_path`; `_selected_level()` faz fallback p/ `level_base` (ex.: servidor dedicado headless, que entra direto aqui). `_on_host_pressed`/`_on_connect_pressed` carregam esse nível. **Agora os 3 níveis são jogáveis online** — `level_1` e `level_2` ganharam `MultiplayerSpawner` + `PlayerSpawnpoints` (ver [[sistemas/multiplayer]]).
 
 ---
 

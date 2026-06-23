@@ -6,6 +6,7 @@ const LEVEL_1_PATH: String = "res://scenes3D/level_1/level_1.tscn"
 const LEVEL_2_PATH: String = "res://scenes3D/level_2/level_2.tscn"
 const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
+const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 
 var loading_path: String = ""
 
@@ -64,25 +65,25 @@ func _on_loading_done_timer_timeout() -> void:
 
 
 func _on_level_1_pressed() -> void:
-	loading_path = LEVEL_1_PATH
-	level1_button.hide()
-	level2_button.hide()
-	level_base_button.hide()
-	loading.show()
-	ResourceLoader.load_threaded_request(loading_path, "", true)
+	_select_level(LEVEL_1_PATH)
 
 
 func _on_level_2_pressed() -> void:
-	loading_path = LEVEL_2_PATH
-	level1_button.hide()
-	level2_button.hide()
-	level_base_button.hide()
-	loading.show()
-	ResourceLoader.load_threaded_request(loading_path, "", true)
+	_select_level(LEVEL_2_PATH)
 
 
 func _on_level_base_pressed() -> void:
-	loading_path = LEVEL_BASE_PATH
+	_select_level(LEVEL_BASE_PATH)
+
+
+# Offline: carrega o nível direto. Online: guarda o nível escolhido e abre a tela
+# playonline (Host/Connect), que carregará esse nível ao hospedar/conectar.
+func _select_level(level_path: String) -> void:
+	if PlayerSelection.online_mode:
+		PlayerSelection.level_path = level_path
+		loading_path = PLAYONLINE_PATH
+	else:
+		loading_path = level_path
 	level1_button.hide()
 	level2_button.hide()
 	level_base_button.hide()
