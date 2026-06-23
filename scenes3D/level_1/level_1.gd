@@ -7,21 +7,52 @@ var _player_scene: PackedScene
 
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 @onready var spawned_nodes: Node3D = $SpawnedNodes
+@onready var player_spawn_points: Node3D = $PlayerSpawnpoints
 
 
 func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
 	_player_scene = load(PlayerSelection.scene_path)
 
-	var player: CharacterBody3D = _player_scene.instantiate()
-	player.name = "1"
-	player.player_id = 1
-	player.position = Vector3(0, 1, 0)
-	spawned_nodes.add_child(player)
+	if multiplayer == null:
+		CrashHandler.show_error(
+			"MultiplayerAPI indisponível ao inicializar o nível.\n" +
+			"Verifique a configuração de rede e tente novamente."
+		)
+		return
 
-	var robot: CharacterBody3D = RedRobot.instantiate()
-	robot.position = Vector3(20, 1, 0)
-	spawned_nodes.add_child(robot)
+	# Offline (OfflineMultiplayerPeer) e host (ENet) entram aqui como servidor; o cliente
+	# recebe inimigo/players via MultiplayerSpawner. Mesmo padrão do level_base.
+	if multiplayer.is_server():
+		var robot: CharacterBody3D = RedRobot.instantiate()
+		robot.position = Vector3(20, 1, 0)
+		spawned_nodes.add_child(robot, true)
+
+		randomize()
+		var spawn_points: Array = player_spawn_points.get_children()
+		spawn_points.shuffle()
+		add_player(1, spawn_points.pop_front())
+		for id in multiplayer.get_peers():
+			add_player(id, spawn_points.pop_front())
+
+		multiplayer.peer_connected.connect(add_player)
+		multiplayer.peer_disconnected.connect(del_player)
+
+
+func del_player(id: int) -> void:
+	if not spawned_nodes.has_node(str(id)):
+		return
+	spawned_nodes.get_node(str(id)).queue_free()
+
+
+func add_player(id: int, spawn_point: Marker3D = null) -> void:
+	if spawn_point == null:
+		spawn_point = player_spawn_points.get_child(randi() % player_spawn_points.get_child_count())
+	var player: CharacterBody3D = _player_scene.instantiate()
+	player.name = str(id)
+	player.player_id = id
+	player.transform = spawn_point.transform
+	spawned_nodes.add_child(player)
 
 
 func _input(input_event: InputEvent) -> void:

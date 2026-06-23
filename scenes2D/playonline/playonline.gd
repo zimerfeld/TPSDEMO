@@ -24,6 +24,14 @@ func _ready() -> void:
 		_on_host_pressed.call_deferred()
 
 
+# Nível escolhido na tela de levels (fluxo online). Fallback p/ level_base — ex.: servidor
+# dedicado headless, que entra direto na playonline sem passar pela tela de levels.
+func _selected_level() -> String:
+	if PlayerSelection.level_path != "":
+		return PlayerSelection.level_path
+	return LEVEL_BASE_PATH
+
+
 # Grey out the button for the language already active (same pattern as the menu).
 func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
@@ -77,7 +85,7 @@ func _on_host_pressed() -> void:
 		)
 		return
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
-	loading_path = LEVEL_BASE_PATH
+	loading_path = _selected_level()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 
@@ -98,7 +106,7 @@ func _on_connect_pressed() -> void:
 		)
 		return
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
-	loading_path = LEVEL_BASE_PATH
+	loading_path = _selected_level()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 

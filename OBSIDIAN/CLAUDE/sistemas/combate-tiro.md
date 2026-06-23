@@ -55,6 +55,16 @@ explode.rpc()
 
 ---
 
+## Aparência da bala (bolinha)
+
+- A **bolinha visível** = `MeshInstance3D` (SphereMesh, escala **0.13**) com material `StandardMaterial3D_ffosa`:
+  **unshaded + azul HDR** `Color(0.14902, 0.74902, 1.50196)` (canal azul > 1 → "estoura" no glow). Antes era branco sem cor e dependia 100% do glow do cenário; agora é azul vistoso mesmo **sem** bloom.
+- Cor extra vem da `OmniLight3D` azul + rastro de partículas (`BulletBody/MainBody`, `Trail`).
+- `CannonShooter.fire(...)` aceita `tint`/`ball_color`/`ball_scale` (alpha 0 = mantém o visual autorado, o tiro azul do player); `bullet.gd._apply_visuals()` aplica em todos os peers.
+- ⚠️ O efeito "orbe brilhante" depende de **glow/bloom** do `Environment`. Só o `level_base` tinha glow afinado ([environment.tres](library3D/geometry/environment.tres)); `level_1`/`level_2` ganharam `glow_enabled` + `glow_hdr_threshold=0.9` + `glow_intensity` inline para a bala florescer igual. O setting "bloom" (`config.gd`) liga/desliga `glow_enabled` em runtime.
+
+---
+
 ## Ponto de Spawn da Bala
 
 - `ShootFrom`: `Marker3D` em `Robot_Skeleton/Skeleton3D/GunBone/ShootFrom`

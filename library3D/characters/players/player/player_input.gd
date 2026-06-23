@@ -39,9 +39,23 @@ var _focused_enemy: Node = null
 
 
 func _ready() -> void:
+	apply_authority()
+
+
+# (Re)aplica o setup que depende da autoridade (câmera local + leitura de input).
+# Precisa ser reentrante porque o MultiplayerSpawner só atribui o player_id (e,
+# portanto, a autoridade deste nó) DEPOIS que este _ready já rodou no cliente que
+# entra. Sem reaplicar, o cliente fica sem câmera ativa (view preso no centro do
+# mundo) e com o input desligado (player não se move). Chamado de novo pelo setter
+# de player_id em player.gd.
+func apply_authority() -> void:
+	if not is_inside_tree():
+		return
 	if get_multiplayer_authority() == multiplayer.get_unique_id():
 		camera_camera.make_current()
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		set_process(true)
+		set_process_input(true)
 	else:
 		set_process(false)
 		set_process_input(false)

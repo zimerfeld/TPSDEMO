@@ -13,6 +13,13 @@ sky = SubResource("2")
 ambient_light_source = 2
 ambient_light_color = Color(0.5, 0.55, 0.6, 1)
 ambient_light_energy = 0.5
+glow_enabled = true
+glow_levels/4 = 1.0
+glow_levels/7 = 1.0
+glow_intensity = 0.15
+glow_blend_mode = 1
+glow_hdr_threshold = 0.9
+glow_hdr_luminance_cap = 4.0
 
 [sub_resource type="PlaneMesh" id="4"]
 size = Vector2(100, 100)
@@ -41,6 +48,24 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 shape = SubResource("5")
 
 [node name="SpawnedNodes" type="Node3D" parent="." unique_id=1971470717]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://library3D/characters/players/player/player.tscn", "res://library3D/characters/players/playera/playera.tscn", "res://library3D/characters/red_robot/red_robot.tscn", "res://library3D/characters/player/bullet/bullet.tscn")
+spawn_path = NodePath("../SpawnedNodes")
+
+[node name="PlayerSpawnpoints" type="Node3D" parent="."]
+
+[node name="Marker3D1" type="Marker3D" parent="PlayerSpawnpoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Marker3D2" type="Marker3D" parent="PlayerSpawnpoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, 3)
+
+[node name="Marker3D3" type="Marker3D" parent="PlayerSpawnpoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1, 3)
+
+[node name="Marker3D4" type="Marker3D" parent="PlayerSpawnpoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5)
 
 [node name="TitleCanvas" type="CanvasLayer" parent="." unique_id=2064050424]
 
