@@ -2,6 +2,8 @@
 	"Jogar Online": "Play Online",
 	"Host": "Host",
 	"Connect": "Connect",
+	"Port:": "Port:",
+	"IP Address/Domain:": "IP Address/Domain:",
 	"Voltar": "Back",
 	"Loading...": "Loading..."
 }

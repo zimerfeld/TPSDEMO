@@ -31,6 +31,9 @@ properties/3/replication_mode = 1
 properties/4/path = NodePath(".:current_animation")
 properties/4/spawn = true
 properties/4/replication_mode = 1
+properties/5/path = NodePath(".:spawn_position")
+properties/5/spawn = true
+properties/5/replication_mode = 0
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_8yuxf"]
 properties/0/path = NodePath("CameraBase:rotation")

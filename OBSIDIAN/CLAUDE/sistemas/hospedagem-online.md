@@ -11,7 +11,10 @@
 - ENet roda sobre **UDP**. A porta padrão é **UDP 4383** (`playonline.tscn`, SpinBox `Port`, `value = 4383`).
 - O campo **Address** aceita hostname (o ENet resolve nome), então dá pra usar domínios em vez de IP.
 - O campo **Port** aceita **1–65535**. (Antes o `max_value` do SpinBox era 49151, que **truncava** portas dinâmicas como as do playit — ex.: digitar 54417 virava 49151 e a conexão falhava. Corrigido p/ 65535.)
-- **Histórico de porta/IP:** ao lado de Port e Address há um `OptionButton` ("Selecione…") com os **últimos 3 valores** usados. Persistido em `Settings.config_file` seção **`online`** (chaves `ports` / `addresses`), gravado ao clicar Host/Connect (`playonline.gd:_remember`), recarregado no `_ready` (`_refresh_history`). Selecionar um item preenche o campo e o dropdown volta a "Selecione…".
+- **Histórico de porta/IP:** ao lado de Port e Address há um `OptionButton` ("Selecione…") com os **últimos 3 valores** usados. Persistido em `Settings.config_file` seção **`online`** (chaves `ports` / `addresses`), recarregado no `_ready` (`_refresh_history`). Selecionar um item preenche o campo e o dropdown volta a "Selecione…".
+  - O campo Address guarda o **texto cru** — funciona igual para **IP** (`147.185.221.26`) e **domínio** (`wharf-pos.gl.at.ply.gg`).
+  - Gravado: ao clicar **Host**/**Connect** (`_remember`), ao pressionar **Enter** e ao o campo **perder o foco** (`_on_address_focus_exited` / `_on_port_focus_exited` — o Port salva pelo `get_line_edit().focus_exited` do SpinBox). Atualiza o dropdown na hora. ENet (`create_client`) resolve hostname, então domínio conecta direto.
+- **Layout da tela** (`playonline.tscn`): cada input tem um **Label à esquerda** localizado — `Port:` (PT "Porta:") e `IP Address/Domain:` (PT "Endereço IP/Domínio:"), via `Resources/playonline.*.json`. Os botões **HostButton** / **ConnectButton** (nós renomeados; texto "Host"/"Connect" → PT "Hospedar"/"Conectar") ficam juntos numa `ButtonsRow` centralizada **abaixo** das linhas de Port/Address, com espaço entre eles.
 
 > ⚠️ **ngrok NÃO funciona** aqui: ngrok só faz túnel de **TCP/HTTP**, não suporta **UDP**. Sem alterar o jogo para WebSocket/TCP, não há configuração de ngrok que conecte ao host ENet.
 

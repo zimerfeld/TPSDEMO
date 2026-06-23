@@ -162,6 +162,16 @@ var _show_osso: bool = false
 # "Esqueleto" tem um item escolhido, desenha uma caixa translúcida sobre a região daquele osso (ou de
 # todos, em "Todo o esqueleto"), sem esconder o modelo. "Selecione..." / off = modelo inteiro. Persistido.
 var _show_aux_highlight: bool = false
+# Toggle "Malha" (acima de Tipo): mostra/esconde a malha (MeshInstance3D) do modelo do preview
+# — útil para ver esqueleto/colliders sem a malha por cima. Vindo da antiga tela developer.
+# Default LIGADO (malha visível). Efeito local a esta cena (só o preview). Persistido.
+var _show_malha: bool = true
+# Toggle "Linhas do Esqueleto" (abaixo de Id): desenha as linhas brancas osso→pai do esqueleto
+# do preview, refeitas a cada frame pela pose viva. Vindo da antiga tela developer (Show
+# Skeleton3D). NÃO é o "Esqueleto" (que mostra o NOME do osso). Persistido.
+var _show_skeleton_lines: bool = false
+# Gizmo (ImmediateMesh) das linhas de osso do preview; recriado/removido por _refresh_skeleton_lines.
+var _skeleton_lines_mi: MeshInstance3D = null
 # Editor de dano por membro (painel com um input de bônus % por membro). Só faz sentido
 # para personagens em "Modelo completo"; não é persistido (abre fechado a cada visita).
 var _show_damage_panel: bool = false
@@ -276,6 +286,8 @@ var _zoom_target: float = 0.0
 @onready var aux_highlight_toggle: CheckButton = %AuxHighlightToggle
 @onready var sub_member_label_toggle: CheckButton = %SubMemberLabelToggle
 @onready var sub_collider_toggle: CheckButton = %SubColliderToggle
+@onready var malha_check: CheckButton = %MalhaCheck
+@onready var skeleton_lines_check: CheckButton = %SkeletonLinesCheck
 @onready var effects_toggle: CheckButton = %EffectsToggle
 @onready var damage_panel: PanelContainer = %DamagePanel
 # Editor de dano em ÁRVORE (Tree): galhos = membros, folhas = sub-membros sob seu dono. Colunas:
@@ -339,6 +351,8 @@ func _ready() -> void:
 	_show_id = Settings.config_file.get_value("models", "show_id", _show_id)
 	_show_osso = Settings.config_file.get_value("models", "show_osso", _show_osso)
 	_show_aux_highlight = Settings.config_file.get_value("models", "show_aux_highlight", _show_aux_highlight)
+	_show_malha = Settings.config_file.get_value("models", "show_malha", _show_malha)
+	_show_skeleton_lines = Settings.config_file.get_value("models", "show_skeleton_lines", _show_skeleton_lines)
 	_show_effects = Settings.config_file.get_value("models", "show_effects", _show_effects)
 
 	rotate_toggle.button_pressed = _auto_rotate
@@ -367,6 +381,10 @@ func _ready() -> void:
 	sub_member_label_toggle.toggled.connect(_on_sub_member_label_toggled)
 	sub_collider_toggle.button_pressed = _show_sub_colliders
 	sub_collider_toggle.toggled.connect(_on_sub_colliders_toggled)
+	malha_check.button_pressed = _show_malha
+	malha_check.toggled.connect(_on_malha_toggled)
+	skeleton_lines_check.button_pressed = _show_skeleton_lines
+	skeleton_lines_check.toggled.connect(_on_skeleton_lines_toggled)
 	effects_toggle.button_pressed = _show_effects
 	effects_toggle.toggled.connect(_on_effects_toggled)
 	# O rótulo da row de sub-membro é dirigido por código (alterna com o filtro "Ossos avulsos"),
@@ -448,6 +466,9 @@ func _process(delta: float) -> void:
 	# sobreponham na tela (o modelo gira, então a checagem é por frame). Sem pilhas, é no-op.
 	if not _member_label_pivots.is_empty():
 		_layout_member_labels()
+	# Linhas do esqueleto seguem a pose viva (reconstruídas todo frame), como na antiga developer.
+	if _show_skeleton_lines and is_instance_valid(_skeleton_lines_mi):
+		_update_skeleton_lines()
 	# Rede de segurança do arraste da janela: se o botão foi solto fora da barra (ex.: a janela
 	# bateu no limite da viewport e o cursor escapou), encerra o arraste e salva a posição.
 	if _damage_panel_dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -823,6 +844,8 @@ func _populate_members() -> void:
 	_refresh_member_overlays()
 	_refresh_aux_highlight()
 	_refresh_aux_labels()
+	_apply_malha_visibility()
+	_refresh_skeleton_lines()
 
 
 # Reseta o dropdown "Membro" ao placeholder, desabilita e esconde a row (e a de sub-membro).
@@ -906,6 +929,8 @@ func _on_member_selected(index: int) -> void:
 	_refresh_member_overlays()
 	_refresh_aux_highlight()
 	_refresh_aux_labels()
+	_apply_malha_visibility()
+	_refresh_skeleton_lines()
 
 
 # Escolher um sub-membro (ou um osso avulso no modo "Todos os membros"): persiste e reaplica o
@@ -916,6 +941,8 @@ func _on_sub_member_selected(index: int) -> void:
 	_refresh_member_overlays()
 	_refresh_aux_highlight()
 	_refresh_aux_labels()
+	_apply_malha_visibility()
+	_refresh_skeleton_lines()
 
 
 # Valor estável persistido de um índice de "Membro": "" (placeholder), ALL_MEMBERS_VALUE (índice 1
@@ -1450,6 +1477,77 @@ func _on_sub_member_label_toggled(pressed: bool) -> void:
 	_show_sub_member_label = pressed
 	_save_toggle("show_sub_member_label", pressed)
 	_refresh_sub_member_labels()
+
+
+# Toggle "Malha": mostra/esconde a malha do modelo do preview (efeito só nesta cena).
+func _on_malha_toggled(pressed: bool) -> void:
+	_show_malha = pressed
+	_save_toggle("show_malha", pressed)
+	_apply_malha_visibility()
+
+
+# Toggle "Linhas do Esqueleto": liga/desliga as linhas brancas osso→pai do preview.
+func _on_skeleton_lines_toggled(pressed: bool) -> void:
+	_show_skeleton_lines = pressed
+	_save_toggle("show_skeleton_lines", pressed)
+	_refresh_skeleton_lines()
+
+
+# Mostra/esconde a malha (MeshInstance3D) do modelo do preview. Pula os gizmos de debug
+# (nomes com prefixo "_": _ColliderGizmo, _AuxHL_, _SkeletonLines…), que seguem visíveis.
+func _apply_malha_visibility() -> void:
+	if _preview_instance == null:
+		return
+	for mi in _preview_instance.find_children("*", "MeshInstance3D", true, false):
+		if (mi as Node).name.begins_with("_"):
+			continue
+		(mi as MeshInstance3D).visible = _show_malha
+
+
+# Cria/remove o gizmo de linhas do esqueleto sob o Skeleton3D do preview, conforme o toggle.
+func _refresh_skeleton_lines() -> void:
+	if is_instance_valid(_skeleton_lines_mi):
+		_skeleton_lines_mi.queue_free()
+		_skeleton_lines_mi = null
+	if not _show_skeleton_lines or _preview_instance == null:
+		return
+	var skels: Array = _preview_instance.find_children("*", "Skeleton3D", true, false)
+	if skels.is_empty():
+		return
+	var skel := skels[0] as Skeleton3D
+	var mi := MeshInstance3D.new()
+	mi.name = "_SkeletonLines"
+	mi.mesh = ImmediateMesh.new()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.no_depth_test = true
+	mat.albedo_color = Color(1, 1, 1)
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	skel.add_child(mi)
+	_skeleton_lines_mi = mi
+	_update_skeleton_lines()
+
+
+# Refaz as linhas osso→pai a partir da pose viva (espaço local do Skeleton3D = espaço do gizmo).
+func _update_skeleton_lines() -> void:
+	if not is_instance_valid(_skeleton_lines_mi):
+		return
+	var skel := _skeleton_lines_mi.get_parent() as Skeleton3D
+	if skel == null:
+		return
+	var im := _skeleton_lines_mi.mesh as ImmediateMesh
+	im.clear_surfaces()
+	if skel.get_bone_count() == 0:
+		return
+	im.surface_begin(Mesh.PRIMITIVE_LINES)
+	for b in skel.get_bone_count():
+		var parent := skel.get_bone_parent(b)
+		if parent == -1:
+			continue
+		im.surface_add_vertex(skel.get_bone_global_pose(b).origin)
+		im.surface_add_vertex(skel.get_bone_global_pose(parent).origin)
+	im.surface_end()
 
 
 # True quando QUALQUER linha de rótulo de membro está ligada (Membro/Tipo/Nome/ID) — decide
@@ -2186,7 +2284,7 @@ const _LABEL_PREFIX := "_MdlLbl_"
 # relance o controle ao seu rótulo 3D. As chaves casam com o "id" das linhas em _add_member_labels.
 const _LABEL_LINE_COLORS := {
 	"Member": Color(0.45, 0.85, 1.0),   # azul-ciano (membro)
-	"Type": Color(1.0, 0.66, 0.32),     # laranja (tipo)
+	"Type": Color(1.0, 0.45, 0.85),     # rosa (tipo)
 	"Name": Color(0.55, 1.0, 0.55),     # verde (nome)
 	"Id": Color(1.0, 0.92, 0.42),       # amarelo (id)
 	"Osso": Color(1.0, 0.6, 0.1),       # laranja (osso avulso — igual ao realce)
