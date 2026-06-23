@@ -24,6 +24,8 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 func _ready() -> void:
 	_update_language_buttons()
 	_refresh_history()
+	# Salva a porta ao sair do campo (o SpinBox edita por um LineEdit interno).
+	port.get_line_edit().focus_exited.connect(_on_port_focus_exited)
 	# Dedicated server: auto-host when running headless.
 	if DisplayServer.get_name() == "headless":
 		_on_host_pressed.call_deferred()
@@ -67,6 +69,28 @@ func _on_address_history_item_selected(index: int) -> void:
 		return
 	address.text = address_history.get_item_text(index)
 	address_history.selected = 0
+
+
+# Salva o que foi digitado no campo (IP OU domínio) ao pressionar Enter e atualiza o
+# dropdown na hora — assim um domínio digitado fica no histórico mesmo sem clicar Connect.
+func _on_address_text_submitted(new_text: String) -> void:
+	if new_text.strip_edges() == "":
+		return
+	_remember("addresses", new_text.strip_edges())
+	_refresh_history()
+
+
+# Salva automaticamente ao o campo perder o foco (sem precisar de Enter).
+func _on_address_focus_exited() -> void:
+	if address.text.strip_edges() == "":
+		return
+	_remember("addresses", address.text.strip_edges())
+	_refresh_history()
+
+
+func _on_port_focus_exited() -> void:
+	_remember("ports", int(port.value))
+	_refresh_history()
 
 
 # Nível escolhido na tela de levels (fluxo online). Fallback p/ level_base — ex.: servidor

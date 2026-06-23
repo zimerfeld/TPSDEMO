@@ -125,9 +125,17 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (ordem em 2026-06-22): **Rotação · Animação · Efeitos especiais · Audio ·
-Colisores de Membro · Membro · [Esqueleto · Tipo · Nome · ID] · Dano · Colisores de Esqueleto ·
-Submembros · Colisores de Submembros**.
+Toggles atuais (ordem em 2026-06-23): **Rotação · Animação · Efeitos especiais · Audio ·
+Colisores de Membro · Membro · Colisores de Esqueleto · [Esqueleto · Colisores de Submembros ·
+Submembros · Malha · Tipo · Nome · ID · Linhas do Esqueleto] · Dano**.
+
+> [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
+> - **Malha** (`MalhaCheck`, acima de Tipo, chave `show_malha`, default LIGADO): mostra/esconde a
+>   malha (`MeshInstance3D`) do modelo do preview (pula gizmos com nome `_…`). `_apply_malha_visibility`.
+> - **Linhas do Esqueleto** (`SkeletonLinesCheck`, abaixo de Id, chave `show_skeleton_lines`): desenha
+>   as linhas brancas osso→pai do preview, refeitas todo frame pela pose viva (`_refresh_skeleton_lines`
+>   / `_update_skeleton_lines`, gizmo `_SkeletonLines`). É DIFERENTE de "Esqueleto" (que mostra o NOME
+>   do osso). Efeito **só nesta cena** (o preview). Ambos persistem na seção `models` do config.
 
 > [!note] Renomeações e novos toggles (2ª leva, 2026-06-22)
 > - **Colisores** → **Colisores de Membro** (`CollidersToggle`, `_show_colliders`).
@@ -148,6 +156,11 @@ o toggle "Osso" virou "SubMembro" e foi ao topo do `LabelLinesRow` (o toggle "R�
 **Membro** em 2026-06-21 — `LabelsToggle` no `.tscn`, traduzido "Member" em en; o antigo "Som" virou **Audio**; o
 toggle **Falas** foi REMOVIDO — o Audio agora cobre todos os emissores, inclusive vozes). Cada
 toggle é o **interruptor mestre** da sua categoria:
+
+> [!note] Cores dos rótulos 3D (`_LABEL_LINE_COLORS`)
+> Membro = ciano · **Tipo = ROSA (2026-06-23, antes laranja)** · Nome = verde · Id = amarelo ·
+> Osso/Esqueleto = laranja. O toggle **Tipo** (`TypeCheck`) também ficou **rosa** (`modulate`).
+> O `DebugOverlay` da tela developer reusa as mesmas cores (Tipo/Nome/Id/Membro) + Esqueleto branco.
 
 > [!important] Cena Models 100% desacoplada do Debug 3D (2026-06-21)
 > O nó raiz da cena está no grupo **`no_debug_overlay`**, então o `DebugOverlay` global pula a

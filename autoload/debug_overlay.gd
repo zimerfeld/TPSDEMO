@@ -32,6 +32,16 @@ const _PALETTE := [
 	Color(0.95, 0.9,  0.15),
 ]
 
+# Cor de cada LINHA de label (2D em cena + 3D no modelo), iguais às da cena Models
+# (_LABEL_LINE_COLORS em models.gd) — manter em sincronia. "skeleton" (Esqueleto) = branco.
+const _LINE_COLORS := {
+	"type": Color(1.0, 0.45, 0.85),    # rosa (Tipo)
+	"name": Color(0.55, 1.0, 0.55),    # verde (Nome)
+	"id": Color(1.0, 0.92, 0.42),      # amarelo (Id)
+	"member": Color(0.45, 0.85, 1.0),  # ciano (Membro)
+	"skeleton": Color(1.0, 1.0, 1.0),  # branco (Esqueleto)
+}
+
 var _canvas_layer: CanvasLayer = null
 # inst_id → {tooltip: PanelContainer, ctrl_border: Panel, color: Color}
 var _overlay_map: Dictionary = {}
@@ -140,6 +150,7 @@ func _line_visible_3d(kind: String) -> bool:
 		"name": return _is_show_name_3d_on()
 		"id": return _is_show_id_3d_on()
 		"member": return _is_show_members_on()
+		"skeleton": return _is_show_members_on()  # label "Esqueleto" acompanha o de Membro
 	return false
 
 
@@ -248,11 +259,10 @@ func _process(_delta: float) -> void:
 	var current := _active_screen_root()
 	if current != _last_scene:
 		_last_scene = current
-		if is_instance_valid(_grid_mesh):
-			_grid_mesh.queue_free()
-			_grid_mesh = null
-		if _is_show_grid_on():
-			call_deferred("_update_grid")
+		# Nova tela carregada (level, chooseplayer, etc.): reconstrói TODOS os overlays para
+		# que os toggles Debug 2D/3D também valham nela — não só na tela onde foram ligados.
+		# (Antes dependia só de _on_node_added, que tinha brechas de timing no carregamento.)
+		call_deferred("refresh")
 
 	# Toggle each 3D tooltip line (TYPE / Name / ID) from the saved config,
 	# the same way the 2D overlays react to the saved configuration.
@@ -485,31 +495,13 @@ func _tag(node: Node) -> void:
 		return
 	if node.has_meta(_LABEL3D_META) or node.has_meta(_DBG3D_META):
 		return
+	# Apenas o Debug 2D (tooltips de controles) é aplicado pelo overlay global, em TODA tela.
+	# O Debug 3D (esqueleto/malha/membros/type-name-id 3D) foi MOVIDO para a tela Models, que
+	# desenha seus próprios overlays sobre o preview — então o overlay global NÃO rotula mais
+	# nenhum Skeleton3D/MeshInstance3D das telas de jogo (levels/chooseplayer).
 	if node is Control and not (node is CanvasLayer):
-		# Os tooltips de Debug 2D aparecem em TODA tela, SEM exceção — inclusive nas que
-		# saem do overlay 3D (grupo no_debug_overlay), como Models e o editor de Dano. Por
-		# isso o 2D NÃO checa _is_overlay_exempt (diferente dos overlays 3D abaixo).
 		if _is_debug_2d_on():
 			_add_2d(node as Control)
-	elif node is Skeleton3D:
-		# Overlays 3D continuam respeitando no_debug_overlay (ex.: robô decorativo do menu,
-		# preview da Models que desenha seus próprios rótulos).
-		if _is_overlay_exempt(node):
-			return
-		var skel := node as Skeleton3D
-		# Members ride on Debug 3D: only scan skeletons when it's on (the per-bone
-		# member labels are then shown/hidden by the "Membros" sub-toggle).
-		if _is_debug_3d_on():
-			_add_3d_skeleton(skel)
-		# Skeleton bone-line visualizer ("Show Skeleton3D" sub-toggle).
-		if _is_show_skeleton3d_on() and not _skeleton_gizmos.has(skel.get_instance_id()):
-			_add_skeleton_lines(skel)
-	elif node is MeshInstance3D:
-		if _is_overlay_exempt(node):
-			return
-		# Mesh AABB wireframe box ("Show Mesh3D" sub-toggle).
-		if node != _grid_mesh and _is_show_mesh3d_on():
-			_add_mesh_box(node as MeshInstance3D)
 
 
 func _add_2d(ctrl: Control) -> void:
@@ -551,9 +543,9 @@ func _add_2d(ctrl: Control) -> void:
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 0)
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var type_lbl := _make_overlay_label("TYPE: %s" % ctrl.get_class())
-	var name_lbl := _make_overlay_label("Name: %s" % ctrl.name)
-	var id_lbl := _make_overlay_label("ID: %d" % id)
+	var type_lbl := _make_overlay_label("TYPE: %s" % ctrl.get_class(), _LINE_COLORS["type"])
+	var name_lbl := _make_overlay_label("Name: %s" % ctrl.name, _LINE_COLORS["name"])
+	var id_lbl := _make_overlay_label("ID: %d" % id, _LINE_COLORS["id"])
 	type_lbl.visible = _line_visible_2d("type")
 	name_lbl.visible = _line_visible_2d("name")
 	id_lbl.visible = _line_visible_2d("id")
@@ -570,12 +562,12 @@ func _add_2d(ctrl: Control) -> void:
 	}
 
 
-func _make_overlay_label(text: String) -> Label:
+func _make_overlay_label(text: String, color: Color = Color(1.0, 1.0, 0.5, 0.95)) -> Label:
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 10)
-	# Light yellow — the Debug 2D column color (3D labels use light cyan).
-	lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 0.5, 0.95))
+	# Cor por linha (Tipo/Nome/Id), igual à cena Models (ver _LINE_COLORS).
+	lbl.add_theme_color_override("font_color", color)
 	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
 	lbl.add_theme_constant_override("shadow_offset_x", 1)
 	lbl.add_theme_constant_override("shadow_offset_y", 1)
@@ -668,6 +660,7 @@ func _add_3d_skeleton(skel: Skeleton3D) -> void:
 		# shown/hidden by its own Debug 3D sub-toggle. Stacked top-down, so higher
 		# lines sit above the member tag.
 		var lines := [
+			{"kind": "skeleton", "text": "Esqueleto: %s" % skel.get_bone_name(i), "y": 0.24},
 			{"kind": "type", "text": "TYPE: %s" % skel.get_class(), "y": 0.18},
 			{"kind": "name", "text": "Name: %s" % skel.name, "y": 0.12},
 			{"kind": "id", "text": "ID: %d" % skel.get_instance_id(), "y": 0.06},
@@ -681,9 +674,8 @@ func _add_3d_skeleton(skel: Skeleton3D) -> void:
 			lbl.no_depth_test = true
 			lbl.pixel_size = 0.003
 			lbl.font_size = 14
-			# Light cyan — the Debug 3D column color, distinct from the light-yellow
-			# 2D tooltips.
-			lbl.modulate = Color(0.6, 1.0, 1.0)
+			# Cor por linha (igual à cena Models; Esqueleto = branco). Ver _LINE_COLORS.
+			lbl.modulate = _LINE_COLORS.get(str(line["kind"]), Color(0.6, 1.0, 1.0))
 			lbl.outline_size = 4
 			lbl.outline_modulate = Color(0, 0, 0, 0.8)
 			lbl.position = Vector3(0.0, line["y"], 0.0)

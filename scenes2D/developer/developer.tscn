@@ -9,13 +9,6 @@ background_color = Color(0.07, 0.08, 0.12, 1)
 ambient_light_source = 2
 ambient_light_color = Color(0.164706, 0.184314, 0.270588, 1)
 
-[sub_resource type="Environment" id="PreviewEnv"]
-background_mode = 1
-background_color = Color(0.09, 0.1, 0.15, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.6, 0.65, 0.75, 1)
-ambient_light_energy = 1.2
-
 [node name="Developer" type="Node" unique_id=968908006]
 script = ExtResource("1")
 
@@ -111,367 +104,112 @@ layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
-[node name="ShowGridLabel" type="Label" parent="UI/Margin/Main/General" unique_id=2070753949]
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Malha no Solo:"
-vertical_alignment = 1
-
-[node name="GridDisabled" type="Button" parent="UI/Margin/Main/General"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Disabled"
-
-[node name="GridEnabled" type="Button" parent="UI/Margin/Main/General"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Enabled"
-
-[node name="Content" type="HBoxContainer" parent="UI/Margin/Main"]
-layout_mode = 2
-theme_override_constants/separation = 60
-
-[node name="Col2D" type="VBoxContainer" parent="UI/Margin/Main/Content"]
+[node name="Col2D" type="VBoxContainer" parent="UI/Margin/Main"]
 custom_minimum_size = Vector2(440, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 size_flags_vertical = 0
 theme_override_constants/separation = 8
 
-[node name="Debug2DRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col2D"]
+[node name="Debug2DRow" type="HBoxContainer" parent="UI/Margin/Main/Col2D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Debug2DLabel" type="Label" parent="UI/Margin/Main/Content/Col2D/Debug2DRow"]
+[node name="Debug2DLabel" type="Label" parent="UI/Margin/Main/Col2D/Debug2DRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
 theme_override_font_sizes/font_size = 30
 text = "Debug 2D:"
 
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col2D/Debug2DRow"]
+[node name="Disabled" type="Button" parent="UI/Margin/Main/Col2D/Debug2DRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col2D/Debug2DRow"]
+[node name="Enabled" type="Button" parent="UI/Margin/Main/Col2D/Debug2DRow"]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
-[node name="ShowTypeRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col2D"]
+[node name="ShowTypeRow" type="HBoxContainer" parent="UI/Margin/Main/Col2D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowTypeLabel" type="Label" parent="UI/Margin/Main/Content/Col2D/ShowTypeRow"]
+[node name="ShowTypeLabel" type="Label" parent="UI/Margin/Main/Col2D/ShowTypeRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
 theme_override_font_sizes/font_size = 28
 text = "Type"
 
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col2D/ShowTypeRow"]
+[node name="Disabled" type="Button" parent="UI/Margin/Main/Col2D/ShowTypeRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col2D/ShowTypeRow"]
+[node name="Enabled" type="Button" parent="UI/Margin/Main/Col2D/ShowTypeRow"]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
-[node name="ShowNameRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col2D"]
+[node name="ShowNameRow" type="HBoxContainer" parent="UI/Margin/Main/Col2D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowNameLabel" type="Label" parent="UI/Margin/Main/Content/Col2D/ShowNameRow"]
+[node name="ShowNameLabel" type="Label" parent="UI/Margin/Main/Col2D/ShowNameRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
 theme_override_font_sizes/font_size = 28
 text = "Name"
 
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col2D/ShowNameRow"]
+[node name="Disabled" type="Button" parent="UI/Margin/Main/Col2D/ShowNameRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col2D/ShowNameRow"]
+[node name="Enabled" type="Button" parent="UI/Margin/Main/Col2D/ShowNameRow"]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
-[node name="ShowIDRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col2D"]
+[node name="ShowIDRow" type="HBoxContainer" parent="UI/Margin/Main/Col2D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowIDLabel" type="Label" parent="UI/Margin/Main/Content/Col2D/ShowIDRow"]
+[node name="ShowIDLabel" type="Label" parent="UI/Margin/Main/Col2D/ShowIDRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
 theme_override_font_sizes/font_size = 28
 text = "Id"
 
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col2D/ShowIDRow"]
+[node name="Disabled" type="Button" parent="UI/Margin/Main/Col2D/ShowIDRow"]
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Disabled"
 
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col2D/ShowIDRow"]
+[node name="Enabled" type="Button" parent="UI/Margin/Main/Col2D/ShowIDRow"]
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(130, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Enabled"
-
-[node name="Col3D" type="VBoxContainer" parent="UI/Margin/Main/Content"]
-custom_minimum_size = Vector2(440, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 0
-theme_override_constants/separation = 8
-
-[node name="Debug3DRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col3D"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="Debug3DLabel" type="Label" parent="UI/Margin/Main/Content/Col3D/Debug3DRow"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 1, 1, 1)
-theme_override_font_sizes/font_size = 30
-text = "Debug 3D:"
-
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col3D/Debug3DRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col3D/Debug3DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Enabled"
-
-[node name="ShowType3DRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col3D"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="ShowType3DLabel" type="Label" parent="UI/Margin/Main/Content/Col3D/ShowType3DRow"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 1, 1, 1)
-theme_override_font_sizes/font_size = 28
-text = "Type"
-
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowType3DRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowType3DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Enabled"
-
-[node name="ShowName3DRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col3D"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="ShowName3DLabel" type="Label" parent="UI/Margin/Main/Content/Col3D/ShowName3DRow"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 1, 1, 1)
-theme_override_font_sizes/font_size = 28
-text = "Name"
-
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowName3DRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowName3DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Enabled"
-
-[node name="ShowID3DRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col3D"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="ShowID3DLabel" type="Label" parent="UI/Margin/Main/Content/Col3D/ShowID3DRow"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 1, 1, 1)
-theme_override_font_sizes/font_size = 28
-text = "Id"
-
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowID3DRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowID3DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Enabled"
-
-[node name="MembrosRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col3D"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="MembrosLabel" type="Label" parent="UI/Margin/Main/Content/Col3D/MembrosRow"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 1, 1, 1)
-theme_override_font_sizes/font_size = 28
-text = "Members"
-
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col3D/MembrosRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col3D/MembrosRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Enabled"
-
-[node name="ShowSkeleton3DRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col3D"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="ShowSkeleton3DLabel" type="Label" parent="UI/Margin/Main/Content/Col3D/ShowSkeleton3DRow"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 1, 1, 1)
-theme_override_font_sizes/font_size = 28
-text = "Skeleton"
-
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowSkeleton3DRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowSkeleton3DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Enabled"
-
-[node name="ShowMesh3DRow" type="HBoxContainer" parent="UI/Margin/Main/Content/Col3D"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="ShowMesh3DLabel" type="Label" parent="UI/Margin/Main/Content/Col3D/ShowMesh3DRow"]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 1, 1, 1)
-theme_override_font_sizes/font_size = 28
-text = "Mesh"
-
-[node name="Disabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowMesh3DRow"]
-modulate = Color(0.376471, 1, 0.376471, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Disabled"
-
-[node name="Enabled" type="Button" parent="UI/Margin/Main/Content/Col3D/ShowMesh3DRow"]
-modulate = Color(1, 1, 0.313726, 1)
-custom_minimum_size = Vector2(130, 50)
-layout_mode = 2
-toggle_mode = true
-text = "Enabled"
-
-[node name="PreviewPanel" type="PanelContainer" parent="UI/Margin/Main/Content"]
-custom_minimum_size = Vector2(440, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PreviewBody" type="VBoxContainer" parent="UI/Margin/Main/Content/PreviewPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="PreviewTitle" type="Label" parent="UI/Margin/Main/Content/PreviewPanel/PreviewBody"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 1, 1, 1)
-theme_override_font_sizes/font_size = 26
-text = "Modelo do Player"
-horizontal_alignment = 1
-
-[node name="PreviewAspect" type="AspectRatioContainer" parent="UI/Margin/Main/Content/PreviewPanel/PreviewBody"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-ratio = 0.8
-stretch_mode = 2
-
-[node name="PreviewViewportContainer" type="SubViewportContainer" parent="UI/Margin/Main/Content/PreviewPanel/PreviewBody/PreviewAspect"]
-layout_mode = 2
-mouse_filter = 2
-stretch = true
-
-[node name="PreviewViewport" type="SubViewport" parent="UI/Margin/Main/Content/PreviewPanel/PreviewBody/PreviewAspect/PreviewViewportContainer"]
-own_world_3d = true
-handle_input_locally = false
-size = Vector2i(540, 380)
-render_target_update_mode = 4
-
-[node name="PreviewEnvironment" type="WorldEnvironment" parent="UI/Margin/Main/Content/PreviewPanel/PreviewBody/PreviewAspect/PreviewViewportContainer/PreviewViewport"]
-environment = SubResource("PreviewEnv")
-
-[node name="PreviewCamera" type="Camera3D" parent="UI/Margin/Main/Content/PreviewPanel/PreviewBody/PreviewAspect/PreviewViewportContainer/PreviewViewport"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72, 1.8)
-current = true
-
-[node name="PreviewKeyLight" type="DirectionalLight3D" parent="UI/Margin/Main/Content/PreviewPanel/PreviewBody/PreviewAspect/PreviewViewportContainer/PreviewViewport"]
-transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 3, 0)
-light_energy = 1.2
-shadow_enabled = true
-
-[node name="ModelHolder" type="Node3D" parent="UI/Margin/Main/Content/PreviewPanel/PreviewBody/PreviewAspect/PreviewViewportContainer/PreviewViewport"]
-unique_name_in_owner = true
 
 [node name="Actions" type="HBoxContainer" parent="UI" unique_id=1614213473]
 layout_mode = 1

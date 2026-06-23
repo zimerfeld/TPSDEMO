@@ -27,7 +27,7 @@ var _predicted_origin: Vector3
 var _predicted_velocity: Vector3
 const SERVER_SNAP_THRESHOLD: float = 2.0
 
-@onready var initial_position: Vector3 = transform.origin
+var initial_position: Vector3 = Vector3.ZERO
 
 @onready var player_input: PlayerInputSynchronizer = $InputSynchronizer
 @onready var animation_tree: AnimationTree = $AnimationTree
@@ -61,6 +61,15 @@ const SERVER_SNAP_THRESHOLD: float = 2.0
 
 @export var current_animation := Animations.WALK
 
+## Posição de spawn definida pelo servidor; replicada como spawn property (ver
+## ServerSynchronizer em player.tscn). O spawn do transform via MultiplayerSpawner NÃO
+## chega a tempo no cliente que entra — ele nasceria em (0,0,0) e cairia do mapa. Esta
+## property (entregue no pacote de spawn, como player_id) reposiciona o cliente.
+@export var spawn_position: Vector3 = Vector3.ZERO:
+	set(value):
+		spawn_position = value
+		_apply_spawn_position()
+
 const MAX_HP: int = 100
 var hp: int = MAX_HP
 
@@ -77,6 +86,9 @@ func _ready() -> void:
 	# Pre-initialize orientation transform.
 	orientation = player_model.global_transform
 	orientation.origin = Vector3()
+	initial_position = transform.origin
+	# Posiciona no spawn replicado (cobre o caso de a property já ter chegado antes do _ready).
+	_apply_spawn_position()
 	# Re-evaluate here: player_id setter may have run before add_child() (no tree = no multiplayer).
 	_is_local_player = not _safe_is_server_call(false) and player_id == multiplayer.get_unique_id()
 	if not _safe_is_server_call(false):
@@ -90,6 +102,18 @@ func _ready() -> void:
 	# Mira vertical procedural (gira o torso conforme o pitch da câmera). Substitui o
 	# blend additive AIM-Up/AIM-Down, que não conseguia abaixar o braço.
 	_setup_aim_modifier.call_deferred()
+
+
+# Coloca o player na posição de spawn enviada pelo servidor e zera a queda/predição local.
+# Reentrante: chamado pelo setter de spawn_position (quando a property replicada chega) e
+# pelo _ready. Idempotente — só age quando já está na árvore e há um spawn válido.
+func _apply_spawn_position() -> void:
+	if not is_inside_tree() or spawn_position == Vector3.ZERO:
+		return
+	global_position = spawn_position
+	initial_position = spawn_position
+	velocity = Vector3.ZERO
+	_has_prediction = false
 
 
 func _setup_health_bar() -> void:
