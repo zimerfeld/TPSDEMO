@@ -52,6 +52,9 @@ func add_player(id: int, spawn_point: Marker3D = null) -> void:
 	player.name = str(id)
 	player.player_id = id
 	player.transform = spawn_point.transform
+	# Posição de spawn replicada (spawn property): garante que o cliente conectado
+	# nasça aqui em vez de (0,0,0) e caia do mapa (o sync do transform não chega a tempo).
+	player.spawn_position = spawn_point.transform.origin
 	spawned_nodes.add_child(player)
 
 

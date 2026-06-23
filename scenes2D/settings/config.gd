@@ -41,7 +41,9 @@ var DEFAULTS := {
 		show_name_3d = false,
 		show_members = false,
 		show_skeleton3d = false,
-		show_mesh3d = false,
+		# "Show Mesh3D" (tela developer): controla a visibilidade da malha do modelo do
+		# preview — ligado por padrão (malha visível).
+		show_mesh3d = true,
 		show_grid = false,
 		# Performance HUD overlay (top bar; Developer screen). The crash/freeze PROTECTION
 		# is always-on via the StabilityGuard autoload and has no toggle.
@@ -67,11 +69,12 @@ var DEFAULTS := {
 	video = {
 		display_mode = Window.MODE_EXCLUSIVE_FULLSCREEN,
 		vsync = DisplayServer.VSYNC_ENABLED,
-		max_fps = 0,
+		max_fps = 60,
 		# First preset in settings.gd VIDEO_RESOLUTIONS (HD 1280 × 720) is the default.
 		resolution = Vector2i(1280, 720),
-		resolution_scale = 1.0,
-		scale_filter = Viewport.SCALING_3D_MODE_METALFX_TEMPORAL if metalfx_supported else Viewport.SCALING_3D_MODE_BILINEAR,
+		# "Equilibrado" (Balanced) na UI = 1.0 / 1.7 (ver settings.gd).
+		resolution_scale = 1.0 / 1.7,
+		scale_filter = Viewport.SCALING_3D_MODE_BILINEAR,
 	},
 	rendering = {
 		taa = false,
@@ -82,8 +85,8 @@ var DEFAULTS := {
 		gi_quality = GIQuality.LOW,
 		ssao_quality = RenderingServer.ENV_SSAO_QUALITY_MEDIUM,
 		ssil_quality = -1,  # Disabled
-		bloom = true,
-		volumetric_fog = true,
+		bloom = false,
+		volumetric_fog = false,
 	},
 }
 
@@ -155,10 +158,6 @@ func load_settings() -> void:
 			if not config_file.has_section_key(section, key):
 				config_file.set_value(section, key, DEFAULTS[section][key])
 				needs_save = true
-	# FSR2 causes "Texture dimensions exceed device maximum" on Godot 4.6.3 — fall back to Bilinear.
-	if config_file.get_value("video", "scale_filter", -1) == Viewport.SCALING_3D_MODE_FSR2:
-		config_file.set_value("video", "scale_filter", Viewport.SCALING_3D_MODE_BILINEAR)
-		needs_save = true
 	if needs_save:
 		save_settings()
 

@@ -1,0 +1,19 @@
+{
+	"collider_offsets": {
+
+	},
+	"collider_scales": {
+
+	},
+	"damage": {
+
+	},
+	"sub_member_owners": {
+		"eyes": "HEAD"
+	},
+	"sub_members": [
+		"shoulderpad-adjust.L",
+		"shoulderpad-adjust.R",
+		"eyes"
+	]
+}

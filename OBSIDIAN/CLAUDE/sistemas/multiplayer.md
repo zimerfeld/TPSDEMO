@@ -92,6 +92,24 @@ if multiplayer.is_server():
 
 ---
 
+## Posição de spawn do cliente (`spawn_position`)
+
+O `.:transform` é spawn property do `ServerSynchronizer`, mas **não chega a tempo** no
+cliente que entra: o player nascia em **(0,0,0)** e **caía do mapa** (o host ficava certo).
+Solução determinística (mesmo mecanismo confiável do `player_id`):
+
+- `player.gd` tem **`@export var spawn_position: Vector3`** com setter que chama
+  `_apply_spawn_position()` (seta `global_position`, `initial_position`, zera `velocity` e
+  `_has_prediction`). Registrada no `ServerSynchronizer` como **spawn property** (`spawn=true`,
+  `replication_mode=0` = só no pacote de spawn).
+- `add_player` (todos os níveis) seta `player.spawn_position = spawn_point.transform.origin`
+  antes do `add_child`. No cliente o setter dispara ao chegar a property → reposiciona.
+- `playera` herda tudo (instancia `player.tscn` + `extends Player`).
+- ⚠️ Sentinela: `spawn_position == Vector3.ZERO` é ignorado — **nenhum spawnpoint pode ficar
+  exatamente em (0,0,0)** (os markers usam y ≥ 1). Também conserta o respawn (usa `initial_position`).
+
+---
+
 ## Autoridade do Input no cliente (timing do Spawner)
 
 O `MultiplayerSpawner` cria o player no cliente e **só depois** aplica a propriedade
