@@ -40,10 +40,15 @@ const ALL_AUX_VALUE: String = "__all_aux__"
 const _AUX_HL_PREFIX := "_AuxHL_"
 const _AUX_HL_COLOR := Color(1.0, 0.6, 0.1, 0.35)   # laranja translúcido (distinto do verde dos colliders)
 
-# Prefixo dos BoneAttachment3D que carregam o Label3D com o NOME do osso avulso (toggle "Osso"),
+# Prefixo dos BoneAttachment3D que carregam o Label3D com o NOME do osso avulso (toggle "Esqueleto"),
 # e a cor do texto (laranja, casando com o realce). Independente do realce: pode haver nome sem caixa.
 const _AUX_LBL_PREFIX := "_AuxLbl_"
 const _AUX_LBL_COLOR := Color(1.0, 0.6, 0.1)
+
+# Prefixo dos Label3D "Submembro: <nome>" (toggle "Submembros"), presos ao corpo do sub-membro
+# selecionado no dropdown. Cor magenta para distinguir do membro (ciano) e do esqueleto (laranja).
+const _SUB_LBL_PREFIX := "_SubLbl_"
+const _SUB_LBL_COLOR := Color(1.0, 0.5, 0.9)
 
 # Root of the 3D model library. Models live in res://library3D/<tipo>/<modelo>/
 # (e.g. characters/red_robot, props/forklift, structures/core). The selection
@@ -132,6 +137,11 @@ var _front_yaw_base: float = DEFAULT_FRONT_YAW
 # laser/muzzle meshes (see _collect_effect_nodes). All start off so a freshly-picked
 # model previews static, silent and clean.
 var _show_colliders: bool = false
+# Toggle "Colisores de Submembros": mostra/oculta SÓ o limbcollider (gizmo) do sub-membro
+# selecionado no dropdown "Sub-membro". Independente de "Colisores de Membro". Persistido.
+var _show_sub_colliders: bool = false
+# Toggle "Submembros": rotula o sub-membro selecionado com "Submembro: <nome>" (Label3D flutuante).
+var _show_sub_member_label: bool = false
 var _play_animation: bool = false
 var _play_audio: bool = false
 var _show_effects: bool = false
@@ -143,13 +153,14 @@ var _show_member_labels: bool = false
 var _show_type: bool = false
 var _show_name: bool = false
 var _show_id: bool = false
-# Toggle "Osso" (abaixo de ID): mostra, como Label3D 3D flutuante, o NOME do osso avulso
-# escolhido no dropdown "Ossos avulsos" (modo "Todos os membros"). Independente do realce
-# laranja (toggle "Realçar avulso"); pode-se ver só o nome, só a caixa, ou ambos. Persistido.
+# Toggle "Esqueleto" (ex-"SubMembro"/"Osso"; topo do LabelLinesRow): mostra, como Label3D flutuante,
+# "Esqueleto: <nome>" do osso avulso escolhido no dropdown "Esqueleto" (modo "Todos os membros").
+# Independente da caixa de realce (toggle "Colisores de Esqueleto"); pode-se ver só o nome, só a
+# caixa, ou ambos. Persistido (chave `show_osso`, mantida).
 var _show_osso: bool = false
-# Toggle "Realçar avulso": quando ligado E o filtro "Ossos avulsos" tem um item escolhido, desenha
-# uma caixa translúcida sobre a região daquele osso (ou de todos, em "Todos os ossos avulsos"),
-# sem esconder o modelo. "Selecione..." / toggle off = modelo inteiro, sem realce. Persistido.
+# Toggle "Colisores de Esqueleto" (ex-"Realçar avulso"/"Esqueleto"): quando ligado E o filtro
+# "Esqueleto" tem um item escolhido, desenha uma caixa translúcida sobre a região daquele osso (ou de
+# todos, em "Todo o esqueleto"), sem esconder o modelo. "Selecione..." / off = modelo inteiro. Persistido.
 var _show_aux_highlight: bool = false
 # Editor de dano por membro (painel com um input de bônus % por membro). Só faz sentido
 # para personagens em "Modelo completo"; não é persistido (abre fechado a cada visita).
@@ -241,7 +252,7 @@ var _zoom_target: float = 0.0
 # Rótulo da row de sub-membro: gerenciado em código (alterna "Sub-membro:" ↔ "Ossos avulsos:"),
 # por isso entra no SKIP_GROUP do Locale para o auto-tradutor não sobrescrevê-lo.
 @onready var sub_member_label: Label = $UI/Selectors/SubMemberRow/Label
-# Editor de collider do membro/sub-membro focado — só visível com o toggle Colisores ligado E um
+# Editor de collider do membro/sub-membro focado — só visível com o toggle de collider do tipo ligado E um
 # grupo isolado. SpinBox de Afastamento (X/Y/Z) movem o StaticBody3D e de Escala (X/Y/Z) escalam a
 # forma, ambos AO VIVO; o botão Salvar persiste os valores em LimbConfig.
 @onready var collider_edit_box: VBoxContainer = $UI/Selectors/ColliderEditBox
@@ -263,6 +274,8 @@ var _zoom_target: float = 0.0
 @onready var osso_check: CheckButton = $UI/Toggles/LabelLinesRow/OssoCheck
 @onready var damage_toggle: CheckButton = $UI/Toggles/DamageToggle
 @onready var aux_highlight_toggle: CheckButton = $UI/Toggles/AuxHighlightToggle
+@onready var sub_member_label_toggle: CheckButton = $UI/Toggles/SubMemberLabelToggle
+@onready var sub_collider_toggle: CheckButton = $UI/Toggles/SubColliderToggle
 @onready var effects_toggle: CheckButton = $UI/Toggles/EffectsToggle
 @onready var damage_panel: PanelContainer = $UI/DamagePanel
 # Editor de dano em ÁRVORE (Tree): galhos = membros, folhas = sub-membros sob seu dono. Colunas:
@@ -318,6 +331,8 @@ func _ready() -> void:
 	_play_animation = Settings.config_file.get_value("models", "play_animation", _play_animation)
 	_play_audio = Settings.config_file.get_value("models", "play_audio", _play_audio)
 	_show_colliders = Settings.config_file.get_value("models", "show_colliders", _show_colliders)
+	_show_sub_colliders = Settings.config_file.get_value("models", "show_sub_colliders", _show_sub_colliders)
+	_show_sub_member_label = Settings.config_file.get_value("models", "show_sub_member_label", _show_sub_member_label)
 	_show_member_labels = Settings.config_file.get_value("models", "show_member_labels", _show_member_labels)
 	_show_type = Settings.config_file.get_value("models", "show_type", _show_type)
 	_show_name = Settings.config_file.get_value("models", "show_name", _show_name)
@@ -348,6 +363,10 @@ func _ready() -> void:
 	damage_toggle.toggled.connect(_on_damage_toggled)
 	aux_highlight_toggle.button_pressed = _show_aux_highlight
 	aux_highlight_toggle.toggled.connect(_on_aux_highlight_toggled)
+	sub_member_label_toggle.button_pressed = _show_sub_member_label
+	sub_member_label_toggle.toggled.connect(_on_sub_member_label_toggled)
+	sub_collider_toggle.button_pressed = _show_sub_colliders
+	sub_collider_toggle.toggled.connect(_on_sub_colliders_toggled)
 	effects_toggle.button_pressed = _show_effects
 	effects_toggle.toggled.connect(_on_effects_toggled)
 	# O rótulo da row de sub-membro é dirigido por código (alterna com o filtro "Ossos avulsos"),
@@ -741,8 +760,8 @@ func _apply_effects_visibility() -> void:
 #
 # Só aparecem na visão "Modelo completo" de Personagens/Armas (mesma porta dos tooltips de
 # membro). "Membro" lista os membros grandes (HEAD/TORSO/ARM…) lidos dos próprios colliders
-# do preview; escolher um ISOLA o seu collider (mostra só ele, mesmo com o toggle Colisores
-# desligado — o dropdown é seu próprio "inspecionar"). "Sub-membro" depende do membro
+# do preview; escolher um ISOLA o seu rótulo (e o gizmo, se o toggle de collider do tipo estiver
+# ligado). "Sub-membro" depende do membro
 # escolhido e lista os PART_* daquele membro (mapeados pelo OSSO-PAI, subindo na hierarquia
 # do esqueleto até o classificador devolver um membro); escolher um estreita o foco para
 # membro + aquele sub-membro. O placeholder "Selecione..." em cada um = sem isolamento /
@@ -999,16 +1018,17 @@ func _current_focus_groups():
 
 
 # Reaplica os overlays de membro (gizmos de collider + pilhas de label) respeitando o foco
-# dos dropdowns. SEM foco: estado normal dos toggles (Colisores/Rótulos). COM foco: isola só o
-# membro/sub-membro escolhido. **Os colisores/limbcolliders SÓ aparecem com o toggle Colisores
-# LIGADO** — mesmo isolando via dropdown (o toggle é o interruptor mestre); com ele desligado,
-# nenhum gizmo é exibido. O isolamento dos RÓTULOS independe do toggle Colisores (segue os
-# toggles de Rótulos). O ramo de foco não remove gizmos (só adiciona/esconde), evitando corrida
-# com o queue_free do _apply_colliders_visibility (que limpa os gizmos quando o toggle está off).
+# dos dropdowns. SEM foco: estado normal dos toggles (Colisores de Membro/Rótulos). COM foco: isola
+# só o membro/sub-membro escolhido. O gizmo do collider segue o toggle MESTRE conforme o tipo:
+# MEMBRO → "Colisores de Membro" (_show_colliders); SUB-MEMBRO (PART_*) → "Colisores de Submembros"
+# (_show_sub_colliders). O isolamento dos RÓTULOS independe desses toggles (segue os de Rótulos). O
+# ramo de foco não remove gizmos (só adiciona/esconde), evitando corrida com o queue_free do
+# _apply_colliders_visibility (que limpa os gizmos quando o toggle está off).
 func _refresh_member_overlays() -> void:
 	if _preview_instance == null:
 		return
 	_refresh_collider_offset_inputs()
+	_refresh_sub_member_labels()
 	var focus = _current_focus_groups()
 	if focus == null:
 		_apply_colliders_visibility()
@@ -1016,14 +1036,16 @@ func _refresh_member_overlays() -> void:
 		return
 	_ensure_member_colliders()
 	_apply_member_labels_visibility()        # (re)cria as pilhas conforme os toggles
-	if _show_colliders:
-		_add_collider_gizmos(_preview_instance)  # idempotente: garante gizmo no membro em foco
+	if _show_colliders or _show_sub_colliders:
+		_add_collider_gizmos(_preview_instance)  # idempotente: garante gizmo no membro/sub em foco
 	for body in _member_bodies():
-		var in_focus: bool = focus.has(str((body as StaticBody3D).get_meta("group")))
-		# Gizmo do collider visível só com o toggle Colisores LIGADO E o membro em foco.
+		var grp := str((body as StaticBody3D).get_meta("group"))
+		var in_focus: bool = focus.has(grp)
+		# Gizmo visível só em foco E com o toggle MESTRE do tipo ligado (membro vs sub-membro).
+		var giz_on: bool = in_focus and (_show_sub_colliders if grp.begins_with("PART_") else _show_colliders)
 		for giz in body.find_children(_GIZMO_NAME, "MeshInstance3D", true, false):
-			(giz as MeshInstance3D).visible = _show_colliders and in_focus
-		# Pilha de rótulos: isolamento independe de Colisores (o pivô agrupa as 4 linhas;
+			(giz as MeshInstance3D).visible = giz_on
+		# Pilha de rótulos: isolamento independe dos toggles de collider (o pivô agrupa as linhas;
 		# em foco fica visível e cada linha mantém o próprio toggle).
 		for piv in body.find_children(_LABEL_PREFIX + "Pivot", "Node3D", true, false):
 			(piv as Node3D).visible = in_focus
@@ -1031,17 +1053,19 @@ func _refresh_member_overlays() -> void:
 
 # ── Editor de collider (afastamento + escala) do membro/sub-membro focado ─────
 
-# Mostra/esconde e (re)carrega o editor conforme o foco e o toggle Colisores. Só aparece com Colisores
-# LIGADO E exatamente UM grupo focado (membro ou sub-membro). Ao mudar de grupo, carrega os valores
-# salvos (afastamento + escala) nos SpinBox (sem disparar sinais) e zera o "dirty"; mesmo grupo → não
-# mexe (preserva uma edição em andamento). Com Colisores desligado o box some, mas grupo/dirty ficam.
+# Mostra/esconde e (re)carrega o editor conforme o foco e o toggle de collider do grupo focado:
+# MEMBRO → "Colisores de Membro"; SUB-MEMBRO (PART_*) → "Colisores de Submembros". Só aparece com o
+# toggle LIGADO E exatamente UM grupo focado. Ao mudar de grupo, carrega os valores salvos
+# (afastamento + escala) nos SpinBox (sem disparar sinais) e zera o "dirty"; mesmo grupo → não mexe
+# (preserva uma edição em andamento). Com o toggle desligado o box some, mas grupo/dirty ficam.
 func _refresh_collider_offset_inputs() -> void:
 	var focus = _current_focus_groups()
 	var group := ""
 	if focus != null and focus.size() == 1:
 		group = str(focus.keys()[0])
-	collider_edit_box.visible = _show_colliders and group != ""
-	if not _show_colliders:
+	var toggle_on: bool = _show_sub_colliders if group.begins_with("PART_") else _show_colliders
+	collider_edit_box.visible = toggle_on and group != ""
+	if not toggle_on:
 		return
 	if group == "":
 		_offset_group = ""
@@ -1165,7 +1189,7 @@ func _on_colliders_toggled(pressed: bool) -> void:
 	_refresh_member_overlays()
 
 
-# ── Realce de "osso avulso" (toggle "Realçar avulso") ─────────────────────────
+# ── Realce de "osso avulso" (toggle "Esqueleto") ──────────────────────────────
 
 func _on_aux_highlight_toggled(pressed: bool) -> void:
 	_show_aux_highlight = pressed
@@ -1240,10 +1264,10 @@ func _highlight_aux_bones(bone_names: Array) -> void:
 		att.add_child(mi)
 
 
-# ── Rótulo do NOME do osso avulso (toggle "Osso") ─────────────────────────────
+# ── Rótulo "Esqueleto: <nome>" do osso avulso (toggle "Esqueleto") ────────────
 
-# Espelha _refresh_aux_highlight, mas para os NOMES: decide o que rotular a partir do toggle "Osso"
-# + do dropdown "Ossos avulsos" (só vale no modo "Todos os membros"). "Selecione..." ou toggle off →
+# Espelha _refresh_aux_highlight, mas para os NOMES: decide o que rotular a partir do toggle "Esqueleto"
+# + do dropdown "Esqueleto" (só vale no modo "Todos os membros"). "Selecione..." ou toggle off →
 # sem rótulo. Um osso → rotula aquele; "Todos os ossos avulsos" → rotula todos os candidatos.
 func _refresh_aux_labels() -> void:
 	if _preview_instance == null:
@@ -1291,7 +1315,7 @@ func _label_aux_bones(bone_names: Array) -> void:
 		skel.add_child(att)
 		att.bone_name = str(bn)
 		var lbl := Label3D.new()
-		lbl.text = str(bn)
+		lbl.text = "Esqueleto: %s" % str(bn)
 		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		lbl.no_depth_test = true
 		# Acima do realce/colliders e dos rótulos de membro, para o nome nunca ser engolido.
@@ -1307,6 +1331,74 @@ func _label_aux_bones(bone_names: Array) -> void:
 		if box.size != Vector3.ZERO:
 			lbl.position = box.position + box.size * 0.5 + Vector3(0.0, box.size.y * 0.5 + 0.05, 0.0)
 		att.add_child(lbl)
+
+
+# ── Rótulo "Submembro: <nome>" (toggle "Submembros") ──────────────────────────
+
+# Rotula o sub-membro SELECIONADO no dropdown "Sub-membro" com um Label3D "Submembro: <nome>".
+# Só vale com um MEMBRO específico escolhido (não placeholder, não "Todos os membros") E um
+# sub-membro escolhido. Toggle off / sem seleção → sem rótulo.
+func _refresh_sub_member_labels() -> void:
+	if _preview_instance == null:
+		return
+	if not _show_sub_member_label or not member_row.visible:
+		_clear_sub_member_labels()
+		return
+	var msel := cbo_members.selected
+	# msel <= 1: placeholder (0) ou "Todos os membros" (1, modo esqueleto) — sem sub-membro.
+	if msel <= 1:
+		_clear_sub_member_labels()
+		return
+	var ssel := cbo_sub_members.selected
+	if ssel <= 0:
+		_clear_sub_member_labels()
+		return
+	var val := _sub_member_value(ssel)
+	if not val.begins_with("PART_"):
+		_clear_sub_member_labels()
+		return
+	_label_sub_member(val)
+
+
+# Remove os rótulos de sub-membro (filhos dos corpos do preview).
+func _clear_sub_member_labels() -> void:
+	if _preview_instance == null:
+		return
+	for n in _preview_instance.find_children(_SUB_LBL_PREFIX + "*", "Label3D", true, false):
+		(n as Node).free()
+
+
+# Desenha um Label3D "Submembro: <nome>" preso ao corpo (StaticBody3D) do sub-membro, posicionado
+# acima da sua forma de colisão (acompanha a pose, pois o corpo é ancorado ao osso animado).
+func _label_sub_member(group: String) -> void:
+	_clear_sub_member_labels()
+	for body in _member_bodies():
+		if str((body as StaticBody3D).get_meta("group")) != group:
+			continue
+		var shapes: Array = body.find_children("*", "CollisionShape3D", true, false)
+		if shapes.is_empty():
+			return
+		var name_txt := str(body.get_meta("member_label")) if body.has_meta("member_label") else group.substr(len("PART_"))
+		var lbl := Label3D.new()
+		lbl.name = _SUB_LBL_PREFIX + group
+		lbl.text = "Submembro: %s" % name_txt
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.no_depth_test = true
+		lbl.render_priority = 5
+		lbl.outline_render_priority = 4
+		lbl.pixel_size = _LBL_PIXEL_SIZE
+		lbl.font_size = _LBL_FONT_SIZE
+		lbl.modulate = _SUB_LBL_COLOR
+		lbl.outline_size = 4
+		lbl.outline_modulate = Color(0, 0, 0, 0.8)
+		# Acima da forma do collider (centro + meia-altura + folga).
+		var cs := shapes[0] as CollisionShape3D
+		var top := cs.position
+		if cs.shape != null:
+			top += Vector3(0.0, cs.shape.get_debug_mesh().get_aabb().size.y * 0.5 * cs.scale.y + 0.06, 0.0)
+		lbl.position = top
+		body.add_child(lbl)
+		return
 
 
 # Toggle PRÓPRIO dos rótulos de membro do browser: liga/desliga os Label3D "Membro: …"
@@ -1337,12 +1429,27 @@ func _on_id_toggled(pressed: bool) -> void:
 	_refresh_member_overlays()
 
 
-# Toggle "Osso": liga/desliga o rótulo 3D com o NOME do osso avulso escolhido no dropdown
-# "Ossos avulsos". Não toca nos colliders/labels de membro (segue a mesma seleção do realce).
+# Toggle "Esqueleto" (ex-"SubMembro"): liga/desliga o rótulo 3D "Esqueleto: <nome>" do osso avulso
+# escolhido no dropdown "Esqueleto". Não toca nos colliders/labels de membro (segue a mesma seleção do realce).
 func _on_osso_toggled(pressed: bool) -> void:
 	_show_osso = pressed
 	_save_toggle("show_osso", pressed)
 	_refresh_aux_labels()
+
+
+# Toggle "Colisores de Submembros": liga/desliga o gizmo do limbcollider do sub-membro selecionado
+# no dropdown. Via _refresh_member_overlays (respeita o foco do dropdown Membro/Sub-membro).
+func _on_sub_colliders_toggled(pressed: bool) -> void:
+	_show_sub_colliders = pressed
+	_save_toggle("show_sub_colliders", pressed)
+	_refresh_member_overlays()
+
+
+# Toggle "Submembros": liga/desliga o rótulo 3D "Submembro: <nome>" do sub-membro selecionado.
+func _on_sub_member_label_toggled(pressed: bool) -> void:
+	_show_sub_member_label = pressed
+	_save_toggle("show_sub_member_label", pressed)
+	_refresh_sub_member_labels()
 
 
 # True quando QUALQUER linha de rótulo de membro está ligada (Membro/Tipo/Nome/ID) — decide
@@ -1416,7 +1523,7 @@ func _on_damage_titlebar_input(event: InputEvent) -> void:
 		damage_panel.position = target
 
 
-# Botão × (fechar): desmarca o toggle "Dano por membro" — o handler do toggle esconde a janela e
+# Botão × (fechar): desmarca o toggle "Dano" — o handler do toggle esconde a janela e
 # limpa os campos flutuantes, mantendo o estado coerente (igual a desligar pelo toggle).
 func _on_damage_close() -> void:
 	_damage_panel_dragging = false
@@ -2092,18 +2199,26 @@ const _LBL_FONT_SIZE := 14
 const _LBL_LINE_STEP := 0.06
 
 
-# Apply the Colliders toggle to the live preview in place: build the member colliders
-# on first use, then add or remove the wireframe gizmos — no rebuild, so the camera
-# and rotation are untouched.
+# Apply the "Colisores de Membro" toggle to the live preview in place: build the member colliders
+# on first use, then add or remove the wireframe gizmos — no rebuild, so the camera and rotation are
+# untouched. SUB-MEMBROS (PART_*) ficam OCULTOS nesta visão geral: só aparecem isolados, via o toggle
+# "Colisores de Submembros" (ramo de foco em _refresh_member_overlays) quando selecionados no dropdown.
 func _apply_colliders_visibility() -> void:
 	if _preview_instance == null:
 		return
-	if _show_colliders:
-		_ensure_member_colliders()
-		_add_collider_gizmos(_preview_instance)
-	else:
+	if not _show_colliders:
 		for gizmo in _preview_instance.find_children(_GIZMO_NAME, "MeshInstance3D", true, false):
 			gizmo.queue_free()
+		return
+	_ensure_member_colliders()
+	_add_collider_gizmos(_preview_instance)
+	# Reaplica a visibilidade EXPLICITAMENTE (não confia no default), para gizmos de membro escondidos
+	# por um foco anterior voltarem a aparecer ao sair do isolamento: MEMBRO visível, SUB-MEMBRO (PART_*)
+	# oculto (só aparece isolado, via "Colisores de Submembros"). _member_bodies() = corpos com "group".
+	for body in _member_bodies():
+		var is_part: bool = str((body as StaticBody3D).get_meta("group")).begins_with("PART_")
+		for giz in body.find_children(_GIZMO_NAME, "MeshInstance3D", true, false):
+			(giz as MeshInstance3D).visible = not is_part
 
 
 # Build the per-member colliders once for the current preview (idempotent), so the
@@ -2566,6 +2681,9 @@ func _rebuild_member_colliders() -> void:
 	_populate_sub_members()
 	_refresh_aux_highlight()   # a lista de avulsos muda quando um osso é promovido/removido
 	_refresh_aux_labels()
+	# Reaplica a visibilidade dos gizmos (esconde sub-membros na visão geral / respeita o foco) e
+	# recria o rótulo "Submembro: …" do selecionado — os nós antigos foram liberados com os corpos.
+	_refresh_member_overlays()
 
 
 # Remove os colliders de membro atuais do preview: o nó LimbColliders (caminho com
