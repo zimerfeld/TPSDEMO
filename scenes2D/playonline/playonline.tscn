@@ -43,34 +43,42 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2")
 
-[node name="TitleLabel" type="Label" parent="UI"]
+[node name="Margin" type="MarginContainer" parent="UI"]
 layout_mode = 1
-anchors_preset = 10
-anchor_left = 0.0
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = 0.0
-offset_top = 30.0
-offset_right = 0.0
-offset_bottom = 100.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 110
+
+[node name="Main" type="VBoxContainer" parent="UI/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="UI/Margin/Main"]
+layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Jogar Online"
 horizontal_alignment = 1
 
-[node name="VBox" type="VBoxContainer" parent="UI"]
-layout_mode = 1
-anchors_preset = -1
-offset_left = 100.0
-offset_top = 130.0
-offset_right = 800.0
-offset_bottom = 450.0
+[node name="FormCenter" type="CenterContainer" parent="UI/Margin/Main"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBox" type="VBoxContainer" parent="UI/Margin/Main/FormCenter"]
+custom_minimum_size = Vector2(700, 0)
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="HostRow" type="HBoxContainer" parent="UI/VBox"]
+[node name="HostRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Host" type="Button" parent="UI/VBox/HostRow"]
+[node name="Host" type="Button" parent="UI/Margin/Main/FormCenter/VBox/HostRow"]
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -78,7 +86,8 @@ theme_override_font_sizes/font_size = 30
 text = "Host"
 alignment = 0
 
-[node name="Port" type="SpinBox" parent="UI/VBox/HostRow"]
+[node name="Port" type="SpinBox" parent="UI/Margin/Main/FormCenter/VBox/HostRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -86,11 +95,11 @@ min_value = 1025.0
 max_value = 49151.0
 value = 4383.0
 
-[node name="ConnectRow" type="HBoxContainer" parent="UI/VBox"]
+[node name="ConnectRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Connect" type="Button" parent="UI/VBox/ConnectRow"]
+[node name="Connect" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ConnectRow"]
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -98,7 +107,8 @@ theme_override_font_sizes/font_size = 30
 text = "Connect"
 alignment = 0
 
-[node name="Address" type="LineEdit" parent="UI/VBox/ConnectRow"]
+[node name="Address" type="LineEdit" parent="UI/Margin/Main/FormCenter/VBox/ConnectRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -157,8 +167,11 @@ theme_override_font_sizes/font_size = 20
 text = "English"
 
 [node name="Loading" type="HBoxContainer" parent="UI"]
+unique_name_in_owner = true
 visible = false
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 12
+anchor_left = 0.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -166,6 +179,9 @@ offset_left = 100.0
 offset_top = -135.0
 offset_right = -130.0
 offset_bottom = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 12
 
 [node name="LoadingLabel" type="Label" parent="UI/Loading"]
 layout_mode = 2
@@ -180,8 +196,8 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
-[connection signal="pressed" from="UI/VBox/HostRow/Host" to="." method="_on_host_pressed"]
-[connection signal="pressed" from="UI/VBox/ConnectRow/Connect" to="." method="_on_connect_pressed"]
+[connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/HostRow/Host" to="." method="_on_host_pressed"]
+[connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ConnectRow/Connect" to="." method="_on_connect_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
 [connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]

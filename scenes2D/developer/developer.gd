@@ -6,13 +6,21 @@ signal replace_main_scene(resource: PackedScene)
 const MODELS_PATH: String = "res://scenes3D/models/models.tscn"
 const CONTROLS_PATH: String = "res://scenes2D/controls/controls.tscn"
 
+# Modelo do player exibido no painel de pré-visualização (SubViewport) à direita da
+# coluna Debug 3D. Os overlays de debug (esqueleto/malha/membros/type/name/id) são
+# aplicados pelo autoload DebugOverlay, que varre a árvore inteira — então ligar/desligar
+# os toggles desta tela reflete AO VIVO no preview. Mesma fonte/escala do chooseplayer.
+const _PREVIEW_MODEL_PATH: String = "res://library3D/characters/player/player.glb"
+const _PREVIEW_MODEL_SCALE: Vector3 = Vector3(0.803991, 0.803991, 0.803991)
+const _PREVIEW_ROT_SPEED: float = 0.6
+
+@onready var _preview_holder: Node3D = %ModelHolder
+var _preview_rot_y: float = 0.0
+
 # Each row is a Disabled/Enabled pair behaving like a single toggle. Maps the row
 # node name (found anywhere under UI) to the "game" config key it controls. Changes
 # are saved and applied to the DebugOverlay immediately.
 const _TOGGLES: Dictionary = {
-	"FPSRow": "hud_fps",
-	"PerformanceHUDRow": "performance_hud",
-	"ShowGridRow": "show_grid",
 	# Debug 2D column.
 	"Debug2DRow": "debug_2d",
 	"ShowTypeRow": "show_type",
@@ -26,6 +34,15 @@ const _TOGGLES: Dictionary = {
 	"MembrosRow": "show_members",
 	"ShowSkeleton3DRow": "show_skeleton3d",
 	"ShowMesh3DRow": "show_mesh3d",
+}
+
+# Os 3 toggles "gerais" (abaixo do título) vivem num GridContainer (UI/Margin/Main/General)
+# para alinhar os botões em colunas — então não têm um nó "row" (HBox) como os demais. Cada
+# chave de config mapeia o par [botão Desativado, botão Ativado], com nomes únicos no grid.
+const _GENERAL_TOGGLES: Dictionary = {
+	"hud_fps": ["FPSDisabled", "FPSEnabled"],
+	"performance_hud": ["PerfDisabled", "PerfEnabled"],
+	"show_grid": ["GridDisabled", "GridEnabled"],
 }
 
 # Sub-rows that only take effect while their column's master toggle is on (their
@@ -49,6 +66,21 @@ const _BASE_MODULATE_META := &"_base_modulate"
 
 
 func _ready() -> void:
+	# Toggles gerais (grid alinhado): mesma lógica dos demais, mas referenciando o par de
+	# botões direto (não há nó "row" no GridContainer).
+	var general := $UI/Margin/Main/General
+	for key in _GENERAL_TOGGLES:
+		var pair: Array = _GENERAL_TOGGLES[key]
+		var disabled_btn: Button = general.get_node(pair[0])
+		var enabled_btn: Button = general.get_node(pair[1])
+		var group := ButtonGroup.new()
+		disabled_btn.button_group = group
+		enabled_btn.button_group = group
+		var general_on: bool = Settings.config_file.get_value("game", key, false)
+		enabled_btn.set_pressed_no_signal(general_on)
+		disabled_btn.set_pressed_no_signal(not general_on)
+		enabled_btn.toggled.connect(_on_toggle.bind(key))
+
 	for row_name in _TOGGLES:
 		var row: HBoxContainer = _row(row_name)
 		var key: String = _TOGGLES[row_name]
@@ -71,6 +103,7 @@ func _ready() -> void:
 	_update_subrows_enabled()
 
 	_update_language_buttons()
+	_setup_preview()
 
 
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
@@ -92,6 +125,42 @@ func _on_portuguese_pressed() -> void:
 func _on_english_pressed() -> void:
 	Locale.set_language("en")
 	_update_language_buttons()
+
+
+# Instancia o robô do player no SubViewport de pré-visualização e toca a idle. O modelo
+# fica FORA do grupo no_debug_overlay, então o DebugOverlay o varre e aplica os mesmos
+# overlays dos toggles Debug 3D — o preview mostra ao vivo o efeito de cada botão.
+func _setup_preview() -> void:
+	if not is_instance_valid(_preview_holder):
+		return
+	var scene: PackedScene = load(_PREVIEW_MODEL_PATH)
+	if scene == null:
+		return
+	var model: Node3D = scene.instantiate()
+	# Mesma escala aplicada em player.tscn / chooseplayer.
+	var skeleton_root := model.get_node_or_null("Robot_Skeleton") as Node3D
+	if skeleton_root:
+		skeleton_root.scale = _PREVIEW_MODEL_SCALE
+	_preview_holder.add_child(model)
+	# Toca a idle para o esqueleto animar (e as linhas de osso seguirem a pose no preview).
+	var anim_players := model.find_children("*", "AnimationPlayer", true, false)
+	if not anim_players.is_empty():
+		var ap := anim_players[0] as AnimationPlayer
+		if ap.has_animation(&"Idlecombatrest"):
+			ap.play(&"Idlecombatrest")
+		elif not ap.get_animation_list().is_empty():
+			ap.play(ap.get_animation_list()[0])
+	# Reaplica os overlays para que o esqueleto/malha recém-adicionados já reflitam os
+	# toggles Debug 3D atuais (sem esperar o próximo clique).
+	DebugOverlay.refresh()
+
+
+func _process(delta: float) -> void:
+	# Giro lento do robô, como na tela de escolha de personagem, para ver os overlays 3D
+	# (esqueleto/malha) por todos os ângulos; os rótulos são billboard e seguem a câmera.
+	if is_instance_valid(_preview_holder):
+		_preview_rot_y += delta * _PREVIEW_ROT_SPEED
+		_preview_holder.rotation.y = _preview_rot_y
 
 
 func _row(row_name: String) -> HBoxContainer:

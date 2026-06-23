@@ -146,8 +146,15 @@ The **Debug 3D** extras are: **Members** (per-limb labels CABEÇA/TRONCO/BRAÇO�
 lines rebuilt every frame from the live pose) and **Mesh** (a cyan AABB wireframe box around
 each MeshInstance3D).
 
-Above the columns, a general section holds **HUD FPS** (`hud_fps`), **Performance HUD**
-(`performance_hud`, see below) and **Malha no Solo** (`show_grid`) — a 100 m × 100 m wireframe
+Beside the Debug 3D column, a **player-model preview** (same height as the columns) renders the
+player robot in its own `SubViewport` (own `World3D`, camera and light), slowly rotating with its
+idle animation. Because the preview model sits **outside** the `no_debug_overlay` group, the global
+`DebugOverlay` scans it like any other skeleton, so the **Debug 3D** toggles (Skeleton / Mesh /
+Members / Type / Name / Id) apply to it live — flipping any enabled/disabled button shows the effect
+on the robot immediately.
+
+Above the columns, a general section holds **HUD FPS** (`hud_fps`), **Health Monitor**
+(`performance_hud`, the developer-row label for the Performance HUD; see below) and **Malha no Solo** (`show_grid`) — a 100 m × 100 m wireframe
 floor grid drawn at the origin in any screen that contains 3D content (Modelos 3D, levels).
 Because `main.gd` swaps screens in as children of the `Main` node (so `current_scene` always
 stays `Main`, a plain `Node`), the grid detects the active loaded screen and looks for any

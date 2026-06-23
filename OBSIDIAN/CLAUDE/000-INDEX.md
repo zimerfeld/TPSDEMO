@@ -67,6 +67,7 @@ Canais de doação configurados no repositório (badges no topo dos READMEs + bo
 | [[convencoes/formatacao]] | Formatação de arquivos (UTF-8 sem BOM, LF, sem trailing ws, newline final) + rebuild do cache de UIDs |
 | [[convencoes/dropdowns]] | Todo OptionButton começa com "Selecione..." (item 0, default); cascata reseta dependentes e a tela |
 | [[convencoes/ancoragem-ui]] | Barras de botões no rodapé usam BOTTOM_WIDE (largura total); resolução limitada à tela útil |
+| [[convencoes/layout-responsivo]] | Organizar controles com Containers (não offsets absolutos); esqueleto Margin→VBox→HBox; piloto: developer |
 
 ---
 

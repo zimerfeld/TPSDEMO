@@ -8,8 +8,8 @@ const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
 var loading_path: String = ""
 var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
-@onready var port: SpinBox = $UI/VBox/HostRow/Port
-@onready var address: LineEdit = $UI/VBox/ConnectRow/Address
+@onready var port: SpinBox = %Port
+@onready var address: LineEdit = %Address
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer

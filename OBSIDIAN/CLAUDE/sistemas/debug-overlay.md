@@ -23,6 +23,25 @@ As linhas de cada coluna ficam **acinzentadas** (botões `disabled`) enquanto o 
 da coluna está desligado — a dependência fica explícita. Seção geral acima das colunas:
 **HUD FPS** (`hud_fps`) e **Malha no Solo** (`show_grid`).
 
+## Preview do modelo do player (2026-06-23)
+
+À **direita da coluna Debug 3D**, um painel (`UI/Margin/Main/Content/PreviewPanel`, um `PanelContainer`)
+mostra o **robô do player** girando, para ver ao vivo o efeito dos toggles. O layout é **baseado em
+containers** (ver [[convencoes/layout-responsivo|layout responsivo]]): `Content` é um `HBoxContainer`
+com três filhos `size_flags = Expand` — `Col2D`, `Col3D` e o `PreviewPanel` — então o painel tem a
+**mesma altura** das colunas e a largura se divide responsivamente (sem offsets fixos). O modelo
+(`library3D/characters/player/player.glb`, escala `0.803991` como no
+[[arquivos-chave/chooseplayer-gd|chooseplayer]]) é instanciado por `developer.gd::_setup_preview()`
+dentro de um `SubViewport` com **mundo próprio** (`own_world_3d`, `render_target_update_mode = Always`),
+câmera e `DirectionalLight3D` próprios; toca a idle (`Idlecombatrest`) e gira em `_process`. O
+`ModelHolder` usa `unique_name_in_owner` (acesso via `%ModelHolder`), desacoplado da hierarquia.
+
+**Por que reflete os toggles:** o preview fica **FORA** do grupo `no_debug_overlay`, então o `_scan`
+(que varre a `root` inteira, incluindo dentro do `SubViewport`) acha o `Skeleton3D`/`MeshInstance3D` do
+preview e aplica os mesmos overlays 3D (esqueleto/mesh/membros/type/name/id) controlados pela coluna
+Debug 3D — os gizmos/`Label3D` são filhos do esqueleto, no mundo do `SubViewport`, então renderizam no
+painel. `_setup_preview` chama `DebugOverlay.refresh()` para o estado já refletir ao entrar na tela.
+
 ## Rótulos 3D (por membro)
 
 Para cada membro (CABEÇA/TRONCO/BRAÇO…) classificado por `BodyParts`, um
