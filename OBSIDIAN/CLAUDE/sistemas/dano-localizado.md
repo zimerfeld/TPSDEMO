@@ -159,7 +159,7 @@ grava no novo local sem perder dados. Schema de cada arquivo:
   próprio grupo. `LimbColliders` carimba a meta `damage_multiplier` já RESOLVIDA (dono = explícito
   de `LimbConfig`, senão `resolve_sub_member_owner`). O arquivo só guarda ajustes do usuário (sem
   JSON = default do plano, zero regressão).
-- **Editor:** a tela Models tem o toggle **"Dano por membro"** que abre um painel flutuante
+- **Editor:** a tela Models tem o toggle **"Dano"** (renomeado de "Dano por membro" em 2026-06-22) que abre um painel flutuante
   (`DamagePanel`, centralizado, **720 px de altura** — aumentado de 500 em 2026-06-20 para caber
   mais membros/sub-membros sem rolar) com um `SpinBox` em **bônus %** por membro (cabeça `+50%` ⇒
   multiplicador `1.5`); mudar grava via `LimbConfig.set_multiplier`. Só aparece para **personagem
@@ -184,30 +184,32 @@ tela Models removeu a const `_MODEL_STANDALONE_BONES`.
 
 **A qual MEMBRO um sub-membro pertence (2026-06-21):** resolvido por
 **`LimbColliders.resolve_sub_member_owner(skel, bone, classifier, head, torso, leg)`** (estático,
-COMPARTILHADO pelo rótulo `_part_label` e pelo agrupamento `_sub_member_owner_map` da tela Models —
-para os dois SEMPRE concordarem). Camadas: (1) **NOME da própria peça** via `owner_hint` (palavras
+usado pelo agrupamento `_sub_member_owner_map`/herança de dano da tela Models). **NÃO** renomeia mais
+o rótulo: desde 2026-06-22 o `_part_label` retorna o **nome ORIGINAL do osso** (ver abaixo). Camadas: (1) **NOME da própria peça** via `owner_hint` (palavras
 de membro + lado, ignorando exclusões); (2) **sobe na HIERARQUIA** e, em cada ancestral, tenta
 `owner_hint` e depois `group_of` (com overrides head/torso/leg). O passo (2) com `owner_hint` é o
 que pega placas penduradas num osso AUX/IK cujo NOME diz o membro:
 - **player** — `shoulderpad-adjust.L/.R` (filhas do `chest`): resolvem por (1), nome "shoulder" → **BRAÇO E/D**.
 - **red_robot** — `L-Shield/R-Shield` (escudos do braço, filhos do `L-ARMIK`/`R-ARMIK`): (1) falha
   ("shield" não é palavra de membro), mas a subida acha o pai **`L-ARMIK`** cujo `owner_hint` dá
-  **ARM** → **BRAÇO E/D**, rótulo **"PLACA BRAÇO E/D"**.
+  **ARM** → **BRAÇO E/D** (só para AGRUPAR/herdar dano; o rótulo continua sendo o nome do osso).
 - **red_robot** — `L-/R-RearLegGuard`: nome tem "leg" → **PERNA E/D** por (1).
 
-O **rótulo** vira **"PLACA \<MEMBRO\>"** (ex.: "PLACA BRAÇO E", "PLACA PERNA D"); sem dono, usa o
-nome do osso. Seeds em `data/limb_config.json`: player = `shoulderpad-adjust.L/.R`; red_robot =
+O **rótulo MANTÉM o nome ORIGINAL do osso (2026-06-22):** `_part_label` foi simplificado para
+`return bone_name`. O antigo rótulo derivado do dono **"PLACA \<MEMBRO\>"** (ex.: "PLACA BRAÇO E",
+"PLACA PERNA D") foi **descartado a pedido** — adicionar um sub-membro a um membro só agrupa o dano,
+nunca renomeia a peça. Seeds em `data/limb_config.json`: player = `shoulderpad-adjust.L/.R`; red_robot =
 `L-/R-RearLegGuard` + `L-/R-Shield`. ⚠️ O osso idealmente tem **vértices skinados** próprios —
 `shoulderpad.L/.R` (sem `-adjust`) têm 0 vértices e a região é deformada por `shoulderpad-adjust.L/.R`.
 **Fallback para ossos sem vértices (2026-06-22):** um sub-membro promovido cujo osso NÃO tem vértices
 dominantes (ex.: `Mouth`, ossos estruturais/vazios) **não somava mais um collider** e sumia da
 árvore/dropdown da tela Models; agora `_collect_member_boxes` (passo 4, helper `_fallback_part_size`)
 gera uma **pequena caixa centrada na origem (rest) do osso** (~20% do maior membro medido, escala-aware),
-para o sub-membro **aparecer e poder receber dano**. (O realce laranja e o rótulo "Osso", que usam
+para o sub-membro **aparecer e poder receber dano**. (O realce laranja "Colisores de Esqueleto" e o rótulo do toggle "Esqueleto" (ex-"SubMembro"/"Osso"), que usam
 `bone_vertex_box`, continuam exigindo vértices.) Ossos que já são MEMBRO (`L-Shoulder`/`R-Shoulder` →
 BRAÇO) não entram na lista "Adicionar sub-membro" (que só oferece auxiliares, `group_of == ""`).
 
-**Editor (painel "Dano por membro"):** lista **todos os membros do plano** (`_plan_member_entries`,
+**Editor (painel "Dano"):** lista **todos os membros do plano** (`_plan_member_entries`,
 mesma fonte do combo "Membro" desde 2026-06-21) e, **aninhado (↳, margem 24px) sob cada membro**,
 seus sub-membros (`PART_*`) — agrupados pelo MESMO `_sub_member_owner_map`/`owner_hint` dos combos
 (helper `_sub_members_by_owner`), para painel e dropdown concordarem; sub-membro sem dono na lista

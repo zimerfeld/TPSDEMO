@@ -67,15 +67,18 @@ third-person shooter sandbox. At a high level it offers:
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
   **Audio** (every sound the model emits — movement, motor, shots, explosions, voices),
-  colliders (with the toggle on and one member/sub-member isolated, **X/Y/Z offset and scale inputs**
+  **Colisores de Membro** / member colliders (with the toggle on and one member/sub-member isolated, **X/Y/Z offset and scale inputs**
   tweak that collider's position/size live, with a **Save** button — and changing selection with
   unsaved edits prompts to save, naming the member/sub-member), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
-  collider, independent of the Debug 3D screen — with extra Type/Name/ID lines and a **Bone** toggle
-  that floats the chosen loose bone's name over it), **per-limb damage** (a **draggable floating window**
-  with an opaque black background — title bar + × close — holding a **tree** of each member/sub-member's
-  bonus %, for characters, plus add/remove of protruding `PART_*` colliders and each one's **owner
-  member**) and **Highlight loose** (in "All members" mode → "Skeleton" filter, highlights the
-  chosen loose bone's region — or all of them — with a translucent box). Each toggle is the master switch for its category (no
+  collider, independent of the Debug 3D screen — with, right below the **Membro** toggle, an **Esqueleto** toggle
+  that floats the "Esqueleto: \<name\>" label of the chosen loose bone over it, plus extra Type/Name/ID lines), **Dano** (a **draggable floating window**
+  with an opaque black background — "Dano" title bar + × close — holding a **tree** of each member/sub-member's
+  bonus %, for characters, plus add/remove of protruding `PART_*` colliders — which **keep the bone's original
+  name** when added to an owner member — and each one's **owner
+  member**), **Colisores de Esqueleto** (in "All members" mode → "Skeleton" filter, highlights the
+  chosen loose bone's region — or all of them — with a translucent box), **Submembros** (a floating
+  "Submembro: \<name\>" label over the sub-member chosen in the dropdown) and **Colisores de Submembros**
+  (shows only the selected sub-member's limbcollider, with the same offset/scale editor). Each toggle is the master switch for its category (no
   sound/animation plays while its toggle is off — including sound driven by animation tracks) and
   the toggle states are persisted between visits (the damage panel aside — it opens closed, but the
   damage window's **last position** is remembered and restored on reopen). An
