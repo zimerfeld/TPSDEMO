@@ -4,12 +4,16 @@ signal replace_main_scene
 signal quit
 
 const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
+# Quantos valores recentes (porta/IP) guardar para seleção.
+const HISTORY_MAX: int = 3
 
 var loading_path: String = ""
 var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
 @onready var port: SpinBox = %Port
 @onready var address: LineEdit = %Address
+@onready var port_history: OptionButton = %PortHistory
+@onready var address_history: OptionButton = %AddressHistory
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
@@ -19,9 +23,50 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
 func _ready() -> void:
 	_update_language_buttons()
+	_refresh_history()
 	# Dedicated server: auto-host when running headless.
 	if DisplayServer.get_name() == "headless":
 		_on_host_pressed.call_deferred()
+
+
+# Histórico de porta/IP persistido em Settings.config_file (seção "online"). Mostra os
+# últimos HISTORY_MAX valores num OptionButton (item 0 = "Selecione...", convenção do projeto).
+func _refresh_history() -> void:
+	_fill_history(port_history, "ports")
+	_fill_history(address_history, "addresses")
+
+
+func _fill_history(option: OptionButton, key: String) -> void:
+	option.clear()
+	option.add_item("Selecione...")
+	for value in Settings.config_file.get_value("online", key, []):
+		option.add_item(str(value))
+	option.selected = 0
+
+
+# Insere `value` no topo do histórico (sem duplicar), mantém só os HISTORY_MAX mais recentes.
+func _remember(key: String, value) -> void:
+	var arr: Array = (Settings.config_file.get_value("online", key, []) as Array).duplicate()
+	arr.erase(value)
+	arr.push_front(value)
+	while arr.size() > HISTORY_MAX:
+		arr.pop_back()
+	Settings.config_file.set_value("online", key, arr)
+	Settings.save_settings()
+
+
+func _on_port_history_item_selected(index: int) -> void:
+	if index <= 0:  # item 0 = "Selecione..."
+		return
+	port.value = float(port_history.get_item_text(index))
+	port_history.selected = 0
+
+
+func _on_address_history_item_selected(index: int) -> void:
+	if index <= 0:
+		return
+	address.text = address_history.get_item_text(index)
+	address_history.selected = 0
 
 
 # Nível escolhido na tela de levels (fluxo online). Fallback p/ level_base — ex.: servidor
@@ -70,6 +115,7 @@ func _on_loading_done_timer_timeout() -> void:
 
 
 func _on_host_pressed() -> void:
+	_remember("ports", int(port.value))
 	peer = ENetMultiplayerPeer.new()
 	var err: Error = peer.create_server(int(port.value))
 	if err != OK:
@@ -91,6 +137,9 @@ func _on_host_pressed() -> void:
 
 
 func _on_connect_pressed() -> void:
+	_remember("ports", int(port.value))
+	if address.text.strip_edges() != "":
+		_remember("addresses", address.text.strip_edges())
 	peer = ENetMultiplayerPeer.new()
 	var err: Error = peer.create_client(address.text, int(port.value))
 	if err != OK:

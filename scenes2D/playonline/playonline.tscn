@@ -70,7 +70,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="VBox" type="VBoxContainer" parent="UI/Margin/Main/FormCenter"]
-custom_minimum_size = Vector2(700, 0)
+custom_minimum_size = Vector2(960, 0)
 layout_mode = 2
 theme_override_constants/separation = 16
 
@@ -91,9 +91,15 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 1025.0
-max_value = 49151.0
+min_value = 1.0
+max_value = 65535.0
 value = 4383.0
+
+[node name="PortHistory" type="OptionButton" parent="UI/Margin/Main/FormCenter/VBox/HostRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
 
 [node name="ConnectRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
 layout_mode = 2
@@ -114,6 +120,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 30
 text = "127.0.0.1"
+
+[node name="AddressHistory" type="OptionButton" parent="UI/Margin/Main/FormCenter/VBox/ConnectRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
@@ -196,6 +208,8 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
+[connection signal="item_selected" from="UI/Margin/Main/FormCenter/VBox/HostRow/PortHistory" to="." method="_on_port_history_item_selected"]
+[connection signal="item_selected" from="UI/Margin/Main/FormCenter/VBox/ConnectRow/AddressHistory" to="." method="_on_address_history_item_selected"]
 [connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/HostRow/Host" to="." method="_on_host_pressed"]
 [connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ConnectRow/Connect" to="." method="_on_connect_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
