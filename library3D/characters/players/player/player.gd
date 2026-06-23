@@ -45,6 +45,12 @@ const SERVER_SNAP_THRESHOLD: float = 2.0
 	set(value):
 		player_id = value
 		$InputSynchronizer.set_multiplayer_authority(value)
+		# O MultiplayerSpawner atribui player_id (logo, a autoridade do input) só
+		# DEPOIS que $InputSynchronizer._ready() rodou no cliente que entra. Por isso
+		# o setup de câmera/input precisa ser reaplicado aqui — senão o cliente fica
+		# com a view presa no centro do mundo e o player não se move.
+		if is_inside_tree():
+			$InputSynchronizer.apply_authority.call_deferred()
 		# Garante o HUD do player local em toda cena de level, inclusive quando
 		# player_id chega via replicação depois do _ready (cliente multiplayer).
 		_setup_health_bar.call_deferred()

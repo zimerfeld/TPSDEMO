@@ -39,11 +39,19 @@ func _ready() -> void:
 	Settings.apply_audio_settings()
 
 	if DisplayServer.get_name() == "headless":
-		_on_play_online_pressed.call_deferred()
+		# Servidor dedicado: pula chooseplayer/levels e abre direto a tela online.
+		_start_online_headless.call_deferred()
 
 	_update_language_buttons()
 
 	play_button.grab_focus()
+
+
+# Headless auto-host: vai direto para playonline (que auto-hospeda o level_base).
+# Deferido porque main.gd só conecta replace_main_scene DEPOIS do _ready do menu.
+func _start_online_headless() -> void:
+	PlayerSelection.online_mode = true
+	emit_signal("replace_main_scene", load(PLAYONLINE_PATH))
 
 
 # Grey out the button for the language already active so the current choice is clear.
@@ -75,6 +83,8 @@ func _on_loading_done_timer_timeout() -> void:
 
 
 func _on_play_pressed() -> void:
+	# Offline: chooseplayer → levels → carrega o nível localmente.
+	PlayerSelection.online_mode = false
 	loading_path = CHOOSEPLAYER_PATH
 	main.hide()
 	loading.show()
@@ -90,7 +100,13 @@ func _on_quit_pressed() -> void:
 
 
 func _on_play_online_pressed() -> void:
-	emit_signal("replace_main_scene", load(PLAYONLINE_PATH))
+	# Online: mesma sequência do offline (chooseplayer → levels); a tela de levels é
+	# que, vendo online_mode, abre a playonline em vez de carregar o nível direto.
+	PlayerSelection.online_mode = true
+	loading_path = CHOOSEPLAYER_PATH
+	main.hide()
+	loading.show()
+	ResourceLoader.load_threaded_request(loading_path, "", true)
 
 
 func _on_developer_pressed() -> void:

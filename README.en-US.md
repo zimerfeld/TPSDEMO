@@ -329,8 +329,9 @@ asset library under `library3D/`:
 Screen flow:
 
 ```
-menu ─┬─ play ───────► chooseplayer ─► levels ─► level_1 / level_2 / level_base
-      ├─ play online ─► playonline ──► level_base
+menu ─┬─ Play Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
+      ├─ Play Online ──► chooseplayer ─► levels ─► playonline ─► chosen level
+      │                                  (pick level)   (host/connect)
       ├─ settings
       ├─ developer ──┬─ models    (3D model viewer for library3D assets)
       │              └─ controls  (2D controls viewer for controls2D widgets)

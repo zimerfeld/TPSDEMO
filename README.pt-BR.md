@@ -327,8 +327,9 @@ reutilizáveis em `library3D/`:
 Fluxo de telas:
 
 ```
-menu ─┬─ play ───────► chooseplayer ─► levels ─► level_1 / level_2 / level_base
-      ├─ play online ─► playonline ──► level_base
+menu ─┬─ Jogar Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
+      ├─ Jogar Online ──► chooseplayer ─► levels ─► playonline ─► nível escolhido
+      │                                  (escolhe nível)  (host/conectar)
       ├─ settings
       ├─ developer ──┬─ models    (visualizador de modelos 3D da library3D)
       │              └─ controls  (visualizador de controles 2D dos widgets controls2D)
