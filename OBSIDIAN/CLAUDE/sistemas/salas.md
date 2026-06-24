@@ -2,7 +2,7 @@
 
 > Permite ao host rodar **vários levels ao mesmo tempo** e gerenciá-los (iniciar/parar/reiniciar,
 > **observar** e **jogar** em cada um) sem que sair de um derrube o servidor. O papel (Host/Client) é
-> escolhido no `playonline` (radios) e a **sala é escolhida ANTES** do `chooseplayer` — só então o
+> escolhido no `playonline` (dois botões) e a **sala é escolhida ANTES** do `chooseplayer` — só então o
 > player nasce nela. Relacionado: [[sistemas/multiplayer]], [[sistemas/hospedagem-online]],
 > [[fluxos/fluxo-de-cenas]].
 
@@ -28,9 +28,8 @@
 
 ## Fluxo e telas — papel escolhido no `playonline`
 
-No `playonline`, abaixo de Port/Address, dois **radios Host/Client** decidem o papel e revelam só o
-botão correspondente: **Host → "Gerenciar Salas"** (abre `host_session`) ou **Client → "Entrar em
-Salas"** (abre `client_session`). O **"Jogar"** (host ou cliente) sempre passa pelo `chooseplayer`
+No `playonline`, abaixo de Port/Address, há dois botões: **"Gerenciar Salas"** (Host → abre
+`host_session`) e **"Entrar em Salas"** (Client → abre `client_session`). O **"Jogar"** (host ou cliente) sempre passa pelo `chooseplayer`
 ANTES de nascer: marca `pending_play_room`/`return`, vai ao seletor de personagem e, ao voltar, o
 `_ready` da sessão consome o marcador e entra em modo de jogo (spawna + esconde o painel + captura o
 mouse). Durante o jogo a **sessão continua sendo a cena raiz** (só esconde o painel).
@@ -87,7 +86,7 @@ nele) → tráfego cruzado é descartado.
   (`request_room_list`/`join_room`), espelho da sala no cliente, **visibilidade por-peer**. Corrigido
   `criatura_alada._find_player` (busca no próprio `SpawnedNodes`, não no `current_scene`).
 - ✅ **Fase 3 — reorganização do fluxo (parse/carga validados; jogo interativo pende):** papel
-  Host/Client por radios no `playonline`; `host_session` virou **server-only** e nasceu o
+  Host/Client por dois botões no `playonline`; `host_session` virou **server-only** e nasceu o
   `client_session` (client-only); **sala escolhida antes do `chooseplayer`** (marcadores
   `pending_play_*`); **host joga dentro da sala** (`host_spawn_in_room`, câmera livre desligada);
   **ESC** com confirmação para desconectar; **Parar** avisa os clientes da sala (`notify_room_closed`)

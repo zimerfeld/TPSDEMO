@@ -65,12 +65,12 @@ em terceira pessoa. Em alto nível, oferece:
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
   modelo pode usar; player e Red Robot disparam via `CannonShooter`.
 - **Várias fases** — uma arena simples (Level 1), um encontro com o bombardeiro (Level 2), uma
-  fase completa e complexa (Level Base), além do **jogo online por salas**: em **Jogar Online** você
-  primeiro escolhe o papel nos radios **Host / Client**. **Host** abre o gerenciador de salas
+  fase completa e complexa (Level Base), além do **jogo online por salas**: a tela **Jogar Online** tem
+  dois botões que escolhem o papel. **Gerenciar Salas** abre o gerenciador de salas
   (`host_session`), onde inicia um ou mais levels como salas isoladas e, por sala, **Jogar** (após o
   seletor de personagem, nasce nela como player), **Observar** (câmera livre sem colisão), **Reiniciar**
   ou **Parar** (encerra aquela sala e manda os clientes dela de volta ao navegador com o alerta "O
-  Servidor foi desligado"). **Client** abre o navegador de salas (`client_session`), que lista as salas
+  Servidor foi desligado"). **Entrar em Salas** abre o navegador de salas (`client_session`), que lista as salas
   em execução com um botão **Jogar** (só aparece enquanto houver sala) que leva à sala escolhida após o
   seletor de personagem. A variante/cor escolhida por cada jogador aparece para todos online (loadout
   por peer), e os outros players/inimigos são suavizados por um **buffer de interpolação com snapshots
@@ -346,7 +346,7 @@ Fluxo de telas:
 
 ```
 menu ─┬─ Jogar Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
-      ├─ Jogar Online ──► playonline (radios Host / Client)
+      ├─ Jogar Online ──► playonline (Gerenciar Salas / Entrar em Salas)
       │                    ├─ Host ───► host_session   (inicia salas; por sala: Jogar / Observar / Reiniciar / Parar)
       │                    └─ Client ─► client_session (navega salas; por sala: Jogar)
       │                                   └─ Jogar ─► chooseplayer ─► nasce na sala escolhida

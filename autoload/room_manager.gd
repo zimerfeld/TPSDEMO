@@ -89,14 +89,18 @@ func _instantiate_room(id: int, level_path: String, as_subviewport: bool) -> voi
 	var level: Node = (load(level_path) as PackedScene).instantiate()
 	level.name = "Level"                 # nome fixo → caminho casa entre server e cliente
 	level.set_meta("room_id", id)        # o nível lê isto no _ready e registra por-sala
-	container.add_child(level)
 
-	PlayerSelection.spectator_host = prev_spectator
-
+	# Registra a sala em _rooms ANTES do add_child: o _ready do nível chama register_room_level
+	# SINCRONAMENTE durante o add_child, e ele precisa achar a sala em _rooms (get_room) — senão sai
+	# cedo e a sala fica SEM câmera livre, sem spawned_nodes e sem spawn points (SubViewport cinza,
+	# Observar/Jogar não funcionam).
 	_rooms.append({
 		"id": id, "level_path": level_path, "viewport": container, "level": level,
 		"spawned_nodes": null, "spawn_points": null, "spawn_queue": [], "pending": {},
 	})
+	container.add_child(level)
+
+	PlayerSelection.spectator_host = prev_spectator
 
 
 func stop_room(id: int) -> void:
@@ -358,7 +362,23 @@ func host_spawn_in_room(room_id: int, variant_id: int) -> void:
 		player.spawn_position = marker.transform.origin
 	_peer_room[1] = room_id
 	spawned.add_child(player)  # child_entered_tree → aplica a visibilidade da sala
+	# Reforça a câmera do player como current no SubViewport (apply_authority já faz no _ready;
+	# isto garante contra qualquer outra câmera que tenha ficado current no World3D da sala).
+	var cams: Array = player.find_children("*", "Camera3D", true, false)
+	if not cams.is_empty():
+		(cams[0] as Camera3D).make_current()
 	_host_player_room = room_id
+
+
+# Garante a câmera livre da sala como current (observação), reabilitando seu processamento. Robusto
+# contra outras câmeras do nível que tenham ficado current no World3D do SubViewport.
+func activate_spectator(room_id: int) -> void:
+	var room := get_room(room_id)
+	var cam: Camera3D = room.get("spectator_cam")
+	if is_instance_valid(cam):
+		cam.set_process(true)
+		cam.set_process_input(true)
+		cam.make_current()
 
 
 # Host sai da sala em que jogava: despawna seu player e religa a câmera livre (deixando a sala em

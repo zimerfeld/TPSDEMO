@@ -98,6 +98,7 @@ func _set_observing(id: int) -> void:
 	_render_only(id)
 	if id >= 0:
 		_show_room_view(id)
+		RoomManager.activate_spectator(id)  # garante a câmera livre como current no SubViewport
 		_hint.text = "ESC volta à gerência | WASD voa | Espaço+W/S sobe/desce"
 		_hint.visible = true
 	else:
