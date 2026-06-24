@@ -16,6 +16,7 @@ const _TOGGLES: Dictionary = {
 	"ShowTypeRow": "show_type",
 	"ShowNameRow": "show_name",
 	"ShowIDRow": "show_id",
+	"ShowTabRow": "show_tab",
 }
 
 # Os toggles "gerais" (abaixo do título) vivem num GridContainer (UI/Margin/Main/General)
@@ -29,7 +30,7 @@ const _GENERAL_TOGGLES: Dictionary = {
 # Sub-rows do Debug 2D: só fazem efeito enquanto o master (Debug 2D) está ligado; seus
 # botões ficam acinzentados (disabled) caso contrário, deixando a dependência clara.
 const _DEBUG2D_SUBROWS: Array[String] = [
-	"ShowTypeRow", "ShowNameRow", "ShowIDRow",
+	"ShowTypeRow", "ShowNameRow", "ShowIDRow", "ShowTabRow",
 ]
 
 # The theme has no "disabled" Button stylebox and the buttons carry a green/yellow
@@ -69,16 +70,19 @@ func _ready() -> void:
 		enabled_btn.set_pressed_no_signal(on)
 		disabled_btn.set_pressed_no_signal(not on)
 		enabled_btn.toggled.connect(_on_toggle.bind(key))
-	# Remember each sub-toggle button's authored color so it can be restored after the
-	# greyed-out (disabled) state.
+	# Remember each sub-toggle ROW child's authored color (os botões E o rótulo) so it can be
+	# restored after the greyed-out (disabled) state.
 	for row_name in _DEBUG2D_SUBROWS:
-		for btn in _row(row_name).get_children():
-			if btn is BaseButton:
-				btn.set_meta(_BASE_MODULATE_META, btn.modulate)
+		for child in _row(row_name).get_children():
+			if child is Control:
+				child.set_meta(_BASE_MODULATE_META, (child as Control).modulate)
 	# As sub-toggles do Debug 2D só valem com o master (Debug 2D) ligado.
 	_update_subrows_enabled()
 
 	_update_language_buttons()
+
+	# Foco inicial para a navegação por setas do teclado.
+	UINav.focus_first.call_deferred(self)
 
 
 # Grey out the button for the language already active (same pattern as the menu).
@@ -111,12 +115,15 @@ func _update_subrows_enabled() -> void:
 func _set_subrows_disabled(rows: Array[String], is_disabled: bool) -> void:
 	for row_name in rows:
 		for child in _row(row_name).get_children():
-			if child is BaseButton:
-				var btn := child as BaseButton
-				btn.disabled = is_disabled
-				# Dim while disabled, restore the authored color when re-enabled, so the
-				# enable/disable state is visible (the theme has no disabled style).
-				btn.modulate = _DISABLED_MODULATE if is_disabled else btn.get_meta(_BASE_MODULATE_META, btn.modulate)
+			if child is Control:
+				var ctrl := child as Control
+				# O rótulo (ShowTypeLabel/…/ShowIDLabel/ShowTabLabel) também está "ligado" ao
+				# Debug 2D: escurece junto dos botões para a linha INTEIRA refletir o estado
+				# desativado, restaurando a cor original quando reativada (o tema não tem
+				# estilo "disabled" próprio).
+				ctrl.modulate = _DISABLED_MODULATE if is_disabled else ctrl.get_meta(_BASE_MODULATE_META, ctrl.modulate)
+				if ctrl is BaseButton:
+					(ctrl as BaseButton).disabled = is_disabled
 
 
 func _make_button_group(row: Node) -> void:
@@ -152,4 +159,9 @@ func _on_back_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
+		# ESC encerra primeiro um campo em edição; só o 2º ESC volta ao menu.
+		if UINav.cancel_active_edit(get_viewport()):
+			get_viewport().set_input_as_handled()
+			return
 		quit.emit()
+		get_viewport().set_input_as_handled()

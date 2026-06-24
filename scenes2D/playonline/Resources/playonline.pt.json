@@ -5,5 +5,9 @@
 	"Port:": "Porta:",
 	"IP Address/Domain:": "Endereço IP/Domínio:",
 	"Voltar": "Voltar",
-	"Loading...": "Carregando..."
+	"Loading...": "Carregando...",
+	"Reconectar": "Reconectar",
+	"Deseja se re-conectar na partida em andamento ?": "Deseja se re-conectar na partida em andamento ?",
+	"Sim": "Sim",
+	"Não": "Não"
 }

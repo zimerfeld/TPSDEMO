@@ -34,6 +34,8 @@ var DEFAULTS := {
 		show_id = false,
 		show_type = false,
 		show_name = false,
+		# Linha "Tab" (branca): índice de Tab/foco de cada controle 2D.
+		show_tab = false,
 		# Performance HUD overlay (top bar; Developer screen). The crash/freeze PROTECTION
 		# is always-on via the StabilityGuard autoload and has no toggle.
 		performance_hud = false,

@@ -9,9 +9,12 @@ const HISTORY_MAX: int = 3
 
 var loading_path: String = ""
 var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
+# Diálogo de confirmação de reconexão (evita empilhar vários ao clicar Connect repetidas vezes).
+var _reconnect_dialog: ConfirmationDialog = null
 
 @onready var port: SpinBox = %Port
 @onready var address: LineEdit = %Address
+@onready var host_button: Button = $UI/Margin/Main/FormCenter/VBox/ButtonsRow/HostButton
 @onready var port_history: OptionButton = %PortHistory
 @onready var address_history: OptionButton = %AddressHistory
 @onready var loading: HBoxContainer = $UI/Loading
@@ -29,6 +32,9 @@ func _ready() -> void:
 	# Dedicated server: auto-host when running headless.
 	if DisplayServer.get_name() == "headless":
 		_on_host_pressed.call_deferred()
+		return
+	# Foco inicial para a navegação por setas do teclado (não em headless, sem UI).
+	host_button.grab_focus.call_deferred()
 
 
 # Histórico de porta/IP persistido em Settings.config_file (seção "online"). Mostra os
@@ -138,20 +144,36 @@ func _on_loading_done_timer_timeout() -> void:
 	emit_signal("replace_main_scene", ResourceLoader.load_threaded_get(loading_path))
 
 
+# "Hospedar e Conectar": hospeda o servidor E entra no jogo como player controlado
+# (comportamento clássico do antigo botão "Host").
 func _on_host_pressed() -> void:
+	PlayerSelection.spectator_host = false
+	_start_host()
+
+
+# "Hospedar Somente": hospeda o servidor mas NÃO entra como player. O host observa o
+# level em tempo real com uma câmera livre (sem colisão, sem player controlado).
+func _on_host_only_pressed() -> void:
+	PlayerSelection.spectator_host = true
+	_start_host()
+
+
+# Cria o servidor ENet e dispara o carregamento do nível (comum aos dois modos de host).
+# O modo (player controlado x câmera livre) já foi definido em PlayerSelection.spectator_host.
+func _start_host() -> void:
 	_remember("ports", int(port.value))
 	peer = ENetMultiplayerPeer.new()
 	var err: Error = peer.create_server(int(port.value))
 	if err != OK:
 		CrashHandler.show_error(
 			"Falha ao criar servidor na porta %d.\nErro: %s\n\nVerifique se a porta está em uso." % [int(port.value), error_string(err)],
-			_on_host_pressed
+			_start_host
 		)
 		return
 	if peer.host == null:
 		CrashHandler.show_error(
 			"Servidor criado, mas host ENet é nulo.\nTente outra porta ou reinicie o jogo.",
-			_on_host_pressed
+			_start_host
 		)
 		return
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
@@ -160,7 +182,34 @@ func _on_host_pressed() -> void:
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 
 
+# Como um cliente pode reentrar numa partida já em andamento (basta que um host esteja
+# hospedando — o servidor respawna o player no peer_connected), confirmamos a reconexão
+# antes de abrir o socket. Evita conectar por engano enquanto outra partida acontece.
 func _on_connect_pressed() -> void:
+	if is_instance_valid(_reconnect_dialog):
+		return
+	var dlg := ConfirmationDialog.new()
+	dlg.title = Locale.tr_key("Reconectar")
+	dlg.dialog_text = Locale.tr_key("Deseja se re-conectar na partida em andamento ?")
+	dlg.get_ok_button().text = Locale.tr_key("Sim")
+	dlg.get_cancel_button().text = Locale.tr_key("Não")
+	dlg.confirmed.connect(func() -> void:
+		dlg.queue_free()
+		_reconnect_dialog = null
+		_do_connect()
+	)
+	dlg.canceled.connect(func() -> void:
+		dlg.queue_free()
+		_reconnect_dialog = null
+	)
+	_reconnect_dialog = dlg
+	add_child(dlg)
+	dlg.popup_centered()
+
+
+func _do_connect() -> void:
+	# Cliente nunca é spectator: garante o flag limpo ao conectar.
+	PlayerSelection.spectator_host = false
 	_remember("ports", int(port.value))
 	if address.text.strip_edges() != "":
 		_remember("addresses", address.text.strip_edges())
@@ -169,13 +218,13 @@ func _on_connect_pressed() -> void:
 	if err != OK:
 		CrashHandler.show_error(
 			"Falha ao conectar em %s:%d.\nErro: %s\n\nVerifique o endereço e a porta." % [address.text, int(port.value), error_string(err)],
-			_on_connect_pressed
+			_do_connect
 		)
 		return
 	if peer.host == null:
 		CrashHandler.show_error(
 			"Conexão iniciada, mas host ENet é nulo.\nTente novamente.",
-			_on_connect_pressed
+			_do_connect
 		)
 		return
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
@@ -190,4 +239,10 @@ func _on_back_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
+		# ESC encerra primeiro o preenchimento do IP/porta (devolvendo o foco ao botão
+		# Host); só o 2º ESC sai da tela. Cobre a regra do projeto p/ campos editáveis.
+		if UINav.cancel_active_edit(get_viewport(), host_button):
+			get_viewport().set_input_as_handled()
+			return
 		quit.emit()
+		get_viewport().set_input_as_handled()
