@@ -148,6 +148,18 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Conectar"
 
+[node name="ManageRoomsButton" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ButtonsRow"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Gerenciar Salas"
+
+[node name="JoinRoomsButton" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ButtonsRow"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Entrar em Salas"
+
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 12
@@ -236,6 +248,8 @@ one_shot = true
 [connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/HostButton" to="." method="_on_host_pressed"]
 [connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/HostOnlyButton" to="." method="_on_host_only_pressed"]
 [connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/ConnectButton" to="." method="_on_connect_pressed"]
+[connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/ManageRoomsButton" to="." method="_on_manage_rooms_pressed"]
+[connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/JoinRoomsButton" to="." method="_on_join_rooms_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
 [connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]

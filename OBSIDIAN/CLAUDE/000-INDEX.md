@@ -22,6 +22,7 @@ Canais de doação configurados no repositório (badges no topo dos READMEs + bo
 | [[sistemas/combate-tiro]] | Bullet, RPC hit, cooldown |
 | [[sistemas/multiplayer]] | Arquitetura server-authoritative |
 | [[sistemas/hospedagem-online]] | Jogar pela internet: playit.gg (UDP) · Tailscale/ZeroTier · port forwarding (ngrok NÃO serve) |
+| [[sistemas/salas]] | Servidor multi-level: salas simultâneas (SubViewport+World3D) + grade de gerência (Fase 1, lado host) |
 | [[sistemas/sistema-de-vida]] | HP, barra de vida, respawn |
 | [[sistemas/dano-localizado]] | Dano por arma, hitboxes Area3D por membro, headshot |
 | [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, grupo Level Base |

@@ -164,6 +164,78 @@ func _on_host_only_pressed() -> void:
 	_start_host()
 
 
+const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn"
+
+
+# "Gerenciar Salas": hospeda um servidor PERSISTENTE e abre o painel de salas (host_session),
+# onde dá pra iniciar/parar/reiniciar e observar VÁRIOS levels ao mesmo tempo. O peer fica aberto
+# até voltar ao menu (sair de uma sala NÃO encerra o servidor). Ver host_session.gd / RoomManager.
+func _on_manage_rooms_pressed() -> void:
+	PlayerSelection.spectator_host = true  # host observa as salas; não vira player
+	_remember("ports", int(port.value))
+	peer = ENetMultiplayerPeer.new()
+	var err: Error = peer.create_server(int(port.value))
+	if err != OK:
+		CrashHandler.show_error(
+			"Falha ao criar servidor na porta %d.\nErro: %s\n\nVerifique se a porta está em uso." % [int(port.value), error_string(err)],
+			_on_manage_rooms_pressed
+		)
+		return
+	if peer.host == null:
+		CrashHandler.show_error("Servidor criado, mas host ENet é nulo.\nTente outra porta.", _on_manage_rooms_pressed)
+		return
+	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
+	# Servidor já ativo: o host_session é a tela persistente (o peer NÃO é fechado ao navegar nele).
+	multiplayer.multiplayer_peer = peer
+	RoomManager.client_mode = false
+	emit_signal("replace_main_scene", ResourceLoader.load(HOST_SESSION_PATH))
+
+
+# "Entrar em Salas": conecta como CLIENTE a um servidor de salas e abre o NAVEGADOR de salas
+# (host_session em modo cliente), onde escolhe em qual sala/level entrar. Diferente de "Conectar"
+# (single-level). Abre o host_session só após o connected_to_server (o peer precisa estar conectado
+# para pedir a lista de salas via RPC).
+func _on_join_rooms_pressed() -> void:
+	if _probing:
+		return
+	PlayerSelection.spectator_host = false
+	_remember("ports", int(port.value))
+	if address.text.strip_edges() != "":
+		_remember("addresses", address.text.strip_edges())
+	peer = ENetMultiplayerPeer.new()
+	var err: Error = peer.create_client(address.text, int(port.value))
+	if err != OK:
+		CrashHandler.show_error(
+			"Falha ao conectar em %s:%d.\nErro: %s\n\nVerifique o endereço e a porta." % [address.text, int(port.value), error_string(err)],
+			_on_join_rooms_pressed
+		)
+		return
+	if peer.host == null:
+		CrashHandler.show_error("Conexão iniciada, mas host ENet é nulo.\nTente novamente.", _on_join_rooms_pressed)
+		return
+	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
+	multiplayer.multiplayer_peer = peer
+	RoomManager.client_mode = true
+	loading.show()
+	multiplayer.connected_to_server.connect(_open_rooms_client, CONNECT_ONE_SHOT)
+	multiplayer.connection_failed.connect(_on_rooms_connect_failed, CONNECT_ONE_SHOT)
+
+
+func _open_rooms_client() -> void:
+	emit_signal("replace_main_scene", ResourceLoader.load(HOST_SESSION_PATH))
+
+
+func _on_rooms_connect_failed() -> void:
+	loading.hide()
+	if multiplayer.connected_to_server.is_connected(_open_rooms_client):
+		multiplayer.connected_to_server.disconnect(_open_rooms_client)
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	CrashHandler.show_error(
+		"Falha ao conectar em %s:%d.\n\nVerifique o endereço e a porta." % [address.text, int(port.value)],
+		_on_join_rooms_pressed
+	)
+
+
 # Cria o servidor ENet e dispara o carregamento do nível (comum aos dois modos de host).
 # O modo (player controlado x câmera livre) já foi definido em PlayerSelection.spectator_host.
 func _start_host() -> void:

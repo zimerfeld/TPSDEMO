@@ -97,10 +97,12 @@ func _physics_process(delta: float) -> void:
 	_scan_cd -= delta
 	if _scan_cd <= 0.0:
 		_scan_cd = 1.0
-		var scene: Node = get_tree().current_scene
-		if scene == null:
-			scene = get_tree().root
-		_player = _find_player(scene)
+		# Procura o player só na PRÓPRIA sala (irmãos no SpawnedNodes) — não no current_scene
+		# global, que no servidor multi-level acharia o player de OUTRA sala. Vale tb p/ single-level.
+		var scope: Node = get_parent()
+		if scope == null:
+			scope = get_tree().current_scene
+		_player = _find_player(scope)
 
 	# sem player → repouso: paira no lugar (bom para preview/navegador de modelos)
 	if _player == null:
