@@ -34,6 +34,8 @@ var _loading_path: String = ""
 func _ready() -> void:
 	_load_character(current_index)
 	_update_language_buttons()
+	# Foco inicial para a navegação por setas do teclado.
+	UINav.focus_first.call_deferred(self)
 
 
 # Grey out the button for the language already active (same pattern as the menu).
@@ -132,6 +134,9 @@ func _on_right_pressed() -> void:
 
 func _on_play_pressed() -> void:
 	PlayerSelection.scene_path = CHARACTERS[current_index]["scene_path"]
+	# Índice da variante (CHARACTERS está na mesma ordem de PlayerSelection.VARIANTS): enviado
+	# ao servidor no multiplayer para spawnar o modelo/cor certos deste peer em todos os clientes.
+	PlayerSelection.variant_id = current_index
 	_loading_path = LEVELS_PATH
 	loading.show()
 	ResourceLoader.load_threaded_request(_loading_path, "", true)
@@ -147,4 +152,9 @@ func _on_loading_done_timer_timeout() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
+		# ESC encerra primeiro um campo em edição; só o 2º ESC volta ao menu.
+		if UINav.cancel_active_edit(get_viewport()):
+			get_viewport().set_input_as_handled()
+			return
 		quit.emit()
+		get_viewport().set_input_as_handled()

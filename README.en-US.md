@@ -64,7 +64,14 @@ third-person shooter sandbox. At a high level it offers:
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
   can use; the player and Red Robot both fire via `CannonShooter`.
 - **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2), a full
-  complex level (Level Base), plus online (host/connect) play.
+  complex level (Level Base), plus online play with three modes: **Host & Connect** (host and join
+  as a player), **Host-Only** (a free-fly spectator camera, no collision and no controlled player —
+  WASD glides on the plane, Space+W/S rises/descends at jump speed) and **Connect** — which first
+  pops a confirmation dialog ("Reconnect to the match in progress?") before opening the socket, since
+  a client can rejoin a running match for as long as a host is up. Each player's
+  chosen variant/colour shows for everyone online (per-peer loadout via `NetSpawn`), and other
+  players/enemies are smoothed with a **timestamped interpolation buffer** (rendered ~100 ms in the
+  past) for a flicker-free, high-FPS client view.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
   browsable in-game through the Models screen (category → model → part) with toggles, in
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
@@ -132,19 +139,20 @@ The developer screen lays the toggles out in **two columns**, whose tooltips use
 light colors so you can tell them apart:
 
 - **Debug 2D** (light-yellow labels/tooltips) — master `debug_2d` plus the dependent line
-  switches `Type` / `Name` / `Id`. Controls the 2D overlay (a colored border + a
-  TYPE/Name/ID tooltip) on every `Control`, in **every scene with no exception** — including Models
+  switches `Type` / `Name` / `Id` / `Tab`. Controls the 2D overlay (a colored border + a
+  TYPE/Name/ID/TAB tooltip) on every `Control`, in **every scene with no exception** — including Models
   and the Damage editor (which opt out of the **3D** overlay via `no_debug_overlay`) — and also over
-  the bottom-left **scene-name label**.
+  the bottom-left **scene-name label**. The **Tab** line (white, `show_tab`) reports each control's
+  keyboard **tab/focus index** in the active 2D scene (`-` for non-focusable controls).
 - **Debug 3D** (light-cyan labels/labels) — master `debug_3d` plus the dependent switches
   `Type` / `Name` / `Id` (describing the owning `Skeleton3D`), `Members`, `Skeleton` and
   `Mesh`. Renders per-member `Label3D` tags that follow the live pose.
 
 Dependency rule: a column master being on is **not enough** — each dependent line/feature
 takes effect only when it is _also_ selected, in sync with its master. When a column's
-master is off, its sub-toggle buttons are disabled and dimmed (visually greyed). When a
+master is off, its **whole sub-rows** (the row label plus the buttons) are disabled and dimmed (visually greyed). When a
 master is on but no dependent line is selected, that column shows nothing (the 2D border
-and tooltips appear only once at least one of Type/Name/Id is selected; the 3D labels are
+and tooltips appear only once at least one of Type/Name/Id/Tab is selected; the 3D labels are
 all hidden until their sub-toggles are selected).
 
 The **Debug 3D** extras are: **Members** (per-limb labels CABEÇA/TRONCO/BRAÇO… via the same
@@ -337,7 +345,7 @@ Screen flow:
 ```
 menu ─┬─ Play Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
       ├─ Play Online ──► chooseplayer ─► levels ─► playonline ─► chosen level
-      │                                  (pick level)   (host/connect)
+      │                                  (pick level)   (host & connect / host-only / connect)
       ├─ settings
       ├─ developer ──┬─ models    (3D model viewer for library3D assets)
       │              └─ controls  (2D controls viewer for controls2D widgets)
@@ -345,7 +353,12 @@ menu ─┬─ Play Offline ─► chooseplayer ─► levels ─► level_1 / l
 ```
 
 `main.gd` is the router: each screen emits `replace_main_scene` and `main` swaps it in, so the
-back buttons (and <kbd>Escape</kbd>) navigate to the previous screen the same way. The `settings`
+back buttons (and <kbd>Escape</kbd>) navigate to the previous screen the same way. Every 2D screen
+grabs an initial focus on entry so the **arrow keys** navigate between its buttons (shared helper
+`UINav`, autoload). <kbd>Escape</kbd> follows a single rule everywhere: it first **cancels an active
+field edit** (a focused `LineEdit`/`SpinBox` — e.g. the online IP/port) and only a second press
+leaves the screen; on the `menu` it opens a **"Quit Zimaro?" confirmation** (Yes/No) instead of
+quitting outright. The `settings`
 screen applies and persists every change immediately and the `menu` re-applies all stored settings
 on entry. The `developer` screen and the `settings` "Debug" tab toggle the `DebugOverlay`, and the
 developer "Performance HUD" row toggles the `PerformanceHUD` overlay (and `StabilityGuard` runs
@@ -369,6 +382,7 @@ ZIMARO/
 │  └─ controls2D/        # reusable HUD widgets: crosshair, minimap_panel, vitals_panel, …
 ├─ scenes3D/             # 3D levels and tools
 │  ├─ level_1/ level_2/ level_base/   # playable levels
+│  ├─ spectator_camera/  # free-fly camera for "Host-Only" mode (no-collision flight, WASD + Space)
 │  └─ models/            # 3D model viewer/inspector for the library3D assets
 ├─ library3D/            # reusable 3D asset library, organized by type
 │  ├─ characters/        # players + enemies
@@ -423,7 +437,8 @@ The per-limb hitbox system is the canonical example: `limb_colliders.gd` is a pl
 - <kbd>Space</kbd>, <kbd>Gamepad A/Cross</kbd>: Jump
 - <kbd>Right Mouse Button</kbd>, <kbd>Gamepad Left Trigger (L2)</kbd> (press to toggle, or hold and release): Aim
 - <kbd>Left Mouse Button</kbd>, <kbd>Gamepad Right Trigger (R2)</kbd>: Shoot (only while aiming)
-- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Go to main menu/quit
+- <kbd>Arrow keys</kbd> / <kbd>Gamepad D-Pad</kbd> (in menus): Move focus between buttons
+- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Cancel an active field edit, else go back / to main menu (the menu asks to confirm quitting)
 - <kbd>F11</kbd> or <kbd>Alt + Enter</kbd>: Toggle fullscreen
 - <kbd>F3</kbd>: Toggle debugging information (such as FPS counter)
 

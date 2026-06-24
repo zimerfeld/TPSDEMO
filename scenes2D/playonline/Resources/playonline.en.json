@@ -5,5 +5,9 @@
 	"Port:": "Port:",
 	"IP Address/Domain:": "IP Address/Domain:",
 	"Voltar": "Back",
-	"Loading...": "Loading..."
+	"Loading...": "Loading...",
+	"Reconectar": "Reconnect",
+	"Deseja se re-conectar na partida em andamento ?": "Reconnect to the match in progress ?",
+	"Sim": "Yes",
+	"Não": "No"
 }

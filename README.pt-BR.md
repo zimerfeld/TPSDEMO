@@ -65,7 +65,14 @@ em terceira pessoa. Em alto nível, oferece:
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
   modelo pode usar; player e Red Robot disparam via `CannonShooter`.
 - **Várias fases** — uma arena simples (Level 1), um encontro com o bombardeiro (Level 2), uma
-  fase completa e complexa (Level Base), além do jogo online (host/conectar).
+  fase completa e complexa (Level Base), além do jogo online com três modos: **Hospedar e Conectar**
+  (hospeda e entra como player), **Hospedar Somente** (câmera livre de observação, sem colisão e sem
+  player controlado — WASD voa no plano, Espaço+W/S sobe/desce na velocidade do pulo) e **Conectar** —
+  que abre antes um diálogo de confirmação ("Deseja se re-conectar na partida em andamento?") antes de
+  abrir o socket, já que um cliente pode reentrar numa partida em andamento enquanto houver um host.
+  A variante/cor escolhida por cada jogador aparece para todos online (loadout por peer via `NetSpawn`),
+  e os outros players/inimigos são suavizados por um **buffer de interpolação com snapshots datados**
+  (render ~100 ms no passado) — visão do cliente sem flicker e com FPS alto.
 - **Biblioteca + visualizador de modelos 3D** — assets 3D reutilizáveis organizados por tipo em
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
@@ -132,19 +139,21 @@ A tela developer organiza os toggles em **duas colunas**, cujos tooltips usam co
 distintas para você diferenciá-los:
 
 - **Debug 2D** (rótulos/tooltips amarelo claro) — master `debug_2d` mais os interruptores
-  dependentes `Type` / `Name` / `Id`. Controla o overlay 2D (uma borda colorida + um tooltip
-  TYPE/Name/ID) em cada `Control`. Os tooltips 2D aparecem em **todas as telas, sem exceção** —
+  dependentes `Type` / `Name` / `Id` / `Tab`. Controla o overlay 2D (uma borda colorida + um tooltip
+  TYPE/Name/ID/TAB) em cada `Control`. Os tooltips 2D aparecem em **todas as telas, sem exceção** —
   inclusive Models e o editor de Dano (que saem do overlay **3D** via `no_debug_overlay`) — e
-  também sobre o **rótulo do nome da cena** no canto inferior esquerdo.
+  também sobre o **rótulo do nome da cena** no canto inferior esquerdo. A linha **Tab** (branca,
+  `show_tab`) mostra o **índice de Tab/foco** de cada controle na cena 2D ativa (`-` para
+  controles não focáveis).
 - **Debug 3D** (rótulos ciano claro) — master `debug_3d` mais os dependentes `Type` / `Name` /
   `Id` (descrevendo o nó `Skeleton3D`), `Members`, `Skeleton` e `Mesh`. Renderiza rótulos
   `Label3D` por membro que seguem a pose viva.
 
 Regra de dependência: o master de uma coluna estar ligado **não basta** — cada linha/recurso
 dependente só passa a valer quando _também_ selecionado, em sincronia com seu master. Quando o
-master de uma coluna está desligado, os botões dos sub-toggles ficam desativados e escurecidos
-(acinzentados). Quando o master está ligado mas nenhuma linha dependente está selecionada, a
-coluna não mostra nada (a borda e os tooltips 2D só aparecem quando ao menos um de Type/Name/Id
+master de uma coluna está desligado, **as sub-linhas inteiras** (o rótulo da linha mais os botões)
+ficam desativadas e escurecidas (acinzentadas). Quando o master está ligado mas nenhuma linha dependente está selecionada, a
+coluna não mostra nada (a borda e os tooltips 2D só aparecem quando ao menos um de Type/Name/Id/Tab
 está selecionado; os rótulos 3D ficam ocultos até seus sub-toggles serem selecionados).
 
 Os extras de **Debug 3D** são: **Members** (rótulos por membro CABEÇA/TRONCO/BRAÇO… pelo mesmo
@@ -335,7 +344,7 @@ Fluxo de telas:
 ```
 menu ─┬─ Jogar Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
       ├─ Jogar Online ──► chooseplayer ─► levels ─► playonline ─► nível escolhido
-      │                                  (escolhe nível)  (host/conectar)
+      │                                  (escolhe nível)  (hospedar e conectar / hospedar somente / conectar)
       ├─ settings
       ├─ developer ──┬─ models    (visualizador de modelos 3D da library3D)
       │              └─ controls  (visualizador de controles 2D dos widgets controls2D)
@@ -343,7 +352,12 @@ menu ─┬─ Jogar Offline ─► chooseplayer ─► levels ─► level_1 / 
 ```
 
 `main.gd` é o roteador: cada tela emite `replace_main_scene` e o `main` a troca, então os botões de
-voltar (e <kbd>Escape</kbd>) navegam para a tela anterior do mesmo jeito. A tela `settings` aplica e
+voltar (e <kbd>Escape</kbd>) navegam para a tela anterior do mesmo jeito. Toda tela 2D dá um foco
+inicial ao entrar para as **setas do teclado** navegarem entre seus botões (helper compartilhado
+`UINav`, autoload). O <kbd>Escape</kbd> segue uma regra única em todas as telas: primeiro **cancela
+o preenchimento de um campo em edição** (um `LineEdit`/`SpinBox` em foco — ex.: o IP/porta do online)
+e só um segundo toque sai da tela; no `menu` ele abre uma **confirmação "Deseja sair do Zimaro ?"**
+(Sim/Não) em vez de sair direto. A tela `settings` aplica e
 persiste cada mudança na hora e o `menu` reaplica todas as configurações salvas ao entrar. A tela
 `developer` e a aba "Debug" das configurações controlam o `DebugOverlay`, e a linha "Performance HUD"
 da tela developer controla o overlay `PerformanceHUD` (e o `StabilityGuard` roda sempre-ligado).
@@ -367,6 +381,7 @@ ZIMARO/
 │  └─ controls2D/        # widgets de HUD reutilizáveis: crosshair, minimap_panel, vitals_panel, …
 ├─ scenes3D/             # fases e ferramentas 3D
 │  ├─ level_1/ level_2/ level_base/   # fases jogáveis
+│  ├─ spectator_camera/  # câmera livre do modo "Hospedar Somente" (voo sem colisão, WASD + Espaço)
 │  └─ models/            # visualizador/inspetor de modelos 3D da library3D
 ├─ library3D/            # biblioteca de assets 3D, organizada por tipo
 │  ├─ characters/        # players + inimigos
@@ -420,7 +435,8 @@ O sistema de hitboxes por membro é o exemplo canônico: `limb_colliders.gd` é 
 - <kbd>Espaço</kbd>, <kbd>Gamepad A/Cross</kbd>: Pular
 - <kbd>Botão direito do mouse</kbd>, <kbd>Gatilho esquerdo (L2)</kbd> (pressione p/ alternar, ou segure e solte): Mirar
 - <kbd>Botão esquerdo do mouse</kbd>, <kbd>Gatilho direito (R2)</kbd>: Atirar (apenas mirando)
-- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Ir ao menu principal/sair
+- <kbd>Setas</kbd> / <kbd>D-Pad</kbd> (nos menus): Mover o foco entre os botões
+- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Cancela um campo em edição, senão volta / vai ao menu principal (o menu pede confirmação para sair)
 - <kbd>F11</kbd> ou <kbd>Alt + Enter</kbd>: Alternar tela cheia
 - <kbd>F3</kbd>: Alternar informações de debug (como o contador de FPS)
 

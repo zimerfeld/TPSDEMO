@@ -211,6 +211,31 @@ layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
+[node name="ShowTabRow" type="HBoxContainer" parent="UI/Margin/Main/Col2D"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowTabLabel" type="Label" parent="UI/Margin/Main/Col2D/ShowTabRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.45, 1)
+theme_override_font_sizes/font_size = 28
+text = "Tab"
+
+[node name="Disabled" type="Button" parent="UI/Margin/Main/Col2D/ShowTabRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(130, 50)
+layout_mode = 2
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Margin/Main/Col2D/ShowTabRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(130, 50)
+layout_mode = 2
+toggle_mode = true
+text = "Enabled"
+
 [node name="Actions" type="HBoxContainer" parent="UI" unique_id=1614213473]
 layout_mode = 1
 anchors_preset = 12

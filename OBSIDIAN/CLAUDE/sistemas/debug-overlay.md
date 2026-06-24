@@ -18,11 +18,18 @@ aplicam na hora (`DebugOverlay.refresh()`).
 ## Tela developer
 
 - **Geral** (`GridContainer`): **HUD FPS** (`hud_fps`) e **Monitor de Saúde** (`performance_hud`).
-- **Debug 2D** (coluna única): master `debug_2d` + linhas `show_type` / `show_name` / `show_id`.
-  Desenha tooltips 2D (borda colorida + TYPE/Name/ID) em cada `Control`, com **cor por linha**
-  (Tipo = rosa, Nome = verde, Id = amarelo — `_LINE_COLORS`). **Debug 2D ligado sozinho não mostra
-  nada**: borda/tooltips só aparecem com ≥1 linha selecionada. As sub-linhas ficam **acinzentadas**
-  enquanto o master (Debug 2D) está desligado (`_DEBUG2D_SUBROWS`).
+- **Debug 2D** (coluna única): master `debug_2d` + linhas `show_type` / `show_name` / `show_id` /
+  `show_tab`. Desenha tooltips 2D (borda colorida + TYPE/Name/ID/TAB) em cada `Control`, com **cor por
+  linha** (Tipo = rosa, Nome = verde, Id = amarelo, **Tab = branco** — `_LINE_COLORS`). **Debug 2D
+  ligado sozinho não mostra nada**: borda/tooltips só aparecem com ≥1 linha selecionada. As sub-linhas **inteiras** (o rótulo
+  `Show*Label` **mais** os botões) ficam **acinzentadas** enquanto o master (Debug 2D) está desligado
+  — `_set_subrows_disabled` escurece todo `Control` da linha via `modulate` e só desabilita os
+  `BaseButton` (`_DEBUG2D_SUBROWS`; cor base lembrada em `_BASE_MODULATE_META`).
+  - **Linha Tab** (`ShowTabRow` → `show_tab`, adicionada abaixo de `ShowIDRow`): mostra o **índice de
+    Tab/foco** de cada controle (`TAB: n`, ou `TAB: -` se não focável). O índice é a ordem REAL de
+    navegação: o `_compute_tab_indices` parte do 1º focável (`UINav.first_focusable`) da tela ativa e
+    segue `find_next_valid_focus()` numerando 1, 2, 3… Recalculado a cada frame **só** enquanto a
+    linha Tab está visível (a ordem de foco muda conforme controles aparecem/somem). Ver [[fluxo-de-cenas]].
 - Botões **Modelos 3D** / **Controles 2D** (navegação).
 
 ## Debug 2D — detalhes

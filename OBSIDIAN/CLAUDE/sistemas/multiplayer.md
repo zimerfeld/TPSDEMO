@@ -25,10 +25,12 @@
 
 ### `ServerSynchronizer` (em `player.tscn`)
 Replica do servidor → clientes:
-- `transform`
+- `net_transform` (proxy do `transform` p/ interpolação — ver seção anti-flicker)
+- `net_model_transform` (proxy do `PlayerModel:transform`)
 - `player_id`
 - `motion`
 - `current_animation`
+- `spawn_position`
 
 ### `InputSynchronizer` (PlayerInputSynchronizer)
 Replica do cliente-dono → servidor:
@@ -84,6 +86,9 @@ if multiplayer.is_server():
 ```
 - **Offline** (OfflineMultiplayerPeer): `is_server()` = true, `get_peers()` = vazio →
   spawna só o player 1. O **mesmo script** serve offline e online.
+- **Modo "Hospedar Somente"** (`PlayerSelection.spectator_host`): em vez de `add_player(1, …)`, o
+  `level_base` chama `_add_spectator_camera()` — uma câmera livre não replicada (sem player do host).
+  Ver [[sistemas/hospedagem-online]].
 - `_spawnable_scenes` de cada spawner lista os **players** (`player` + `playera`), o
   **inimigo do nível** (`red_robot` no level_1/base, `criatura_alada` no level_2) e a
   **bullet** (disparada sob `SpawnedNodes`, precisa replicar).
@@ -94,15 +99,15 @@ if multiplayer.is_server():
 
 ## Posição de spawn do cliente (`spawn_position`)
 
-O `.:transform` é spawn property do `ServerSynchronizer`, mas **não chega a tempo** no
-cliente que entra: o player nascia em **(0,0,0)** e **caía do mapa** (o host ficava certo).
-Solução determinística (mesmo mecanismo confiável do `player_id`):
+O transform replicado **não chega a tempo** no cliente que entra: o player nascia em **(0,0,0)** e
+**caía do mapa** (o host ficava certo). Solução determinística (mesmo mecanismo confiável do
+`player_id`):
 
 - `player.gd` tem **`@export var spawn_position: Vector3`** com setter que chama
   `_apply_spawn_position()` (seta `global_position`, `initial_position`, zera `velocity` e
-  `_has_prediction`). Registrada no `ServerSynchronizer` como **spawn property** (`spawn=true`,
-  `replication_mode=0` = só no pacote de spawn).
-- `add_player` (todos os níveis) seta `player.spawn_position = spawn_point.transform.origin`
+  `_has_prediction`, e `reset_physics_interpolation()`). Registrada no `ServerSynchronizer` como
+  **spawn property** (`spawn=true`, `replication_mode=0` = só no pacote de spawn).
+- **`NetSpawn._spawn`** (ver seção acima) seta `player.spawn_position = spawn_point.transform.origin`
   antes do `add_child`. No cliente o setter dispara ao chegar a property → reposiciona.
 - `playera` herda tudo (instancia `player.tscn` + `extends Player`).
 - ⚠️ Sentinela: `spawn_position == Vector3.ZERO` é ignorado — **nenhum spawnpoint pode ficar
@@ -127,6 +132,53 @@ apenas no `_ready`.
 > a câmera presa no origin, pois `make_current` não foi chamado) e **não se move** (input
 > desligado, `motion` fica zerado e nada chega ao servidor). No host não aparece porque lá
 > o `player_id` é setado **antes** do `add_child`.
+
+---
+
+## Suavização do movimento remoto (anti-flicker) — buffer de interpolação
+
+No **cliente**, players/robôs remotos não têm predição (o `apply_input` roda só no servidor): a pose
+vem pelo `MultiplayerSynchronizer` ~30x/s. Aplicar esse transform cru gera **stutter/flicker**. A
+solução "de verdade" para netcode sobre UDP é um **buffer de interpolação com snapshots datados**.
+
+- **`effects_shared/net_interp.gd`** (`class_name NetInterp`, RefCounted): guarda as amostras de
+  `Transform3D` recebidas com o horário de chegada (`Time.get_ticks_msec()`) e devolve o transform
+  interpolado no instante **(agora − 100 ms)** (`RENDER_DELAY_MS`), via `Transform3D.interpolate_with`
+  (lerp da origem + slerp da base). Render "no passado" garante sempre 2 amostras ao redor → sem
+  extrapolar. Barato (busca linear curta + 1 interpolate por frame) → **não pesa no FPS**.
+- **Proxies replicados** no lugar do transform cru: o `ServerSynchronizer` do player passou a
+  replicar **`.:net_transform`** e **`.:net_model_transform`** (em vez de `.:transform` e
+  `PlayerModel:transform`); o `red_robot` replica **`.:net_transform`** (em vez de `.:global_transform`).
+  - **Servidor**: espelha o estado real nos proxies a cada frame (`net_transform = transform`).
+  - **Cliente remoto** (`_interpolate_remote`): bufferiza os proxies e aplica o transform interpolado.
+  - **Cliente DONO**: usa `net_transform` como **verdade do servidor** na `_reconcile` (o transform
+    real NÃO é mais sobrescrito pelo sync → predição local mais estável, sem briga de snap).
+- **Taxa de replicação** ~30 Hz (`replication_interval` 0.033) + **`reset_physics_interpolation()`**
+  em todo salto (spawn/teleporte) e na 1ª amostra interpolada (evita o "rasgo" a partir da origem).
+- `net_transform` é **spawn property** semeada **só no servidor** no `_ready` (no cliente o valor
+  chega pela replicação de spawn; semear no cliente faria interpolar a partir de (0,0,0)).
+- O **host não percebe** nada: é o servidor, tudo roda em física local a 60 Hz, sem sync.
+- **Tuning**: `NetInterp.RENDER_DELAY_MS` (100 ms). Mais alto = mais suave porém mais "atrasado";
+  mais baixo = mais responsivo porém sensível a jitter de UDP.
+
+---
+
+## Variante/cor por peer (loadout) — `NetSpawn`
+
+Antes, o servidor spawnava **todos** os players a partir da SUA própria `PlayerSelection.scene_path`
+→ a variante/cor que o **cliente** escolheu (ex.: `playera`) não aparecia. Centralizado no autoload
+**`NetSpawn`** (`autoload/net_spawn.gd`, caminho `/root/NetSpawn` igual em todos os peers → RPC
+confiável):
+
+- `chooseplayer` grava **`PlayerSelection.variant_id`** (índice em `PlayerSelection.VARIANTS`, mesma
+  ordem do seletor). Trafega como **int** (não um caminho arbitrário) no RPC.
+- Cada nível chama **`NetSpawn.setup(spawned_nodes, player_spawn_points[, spawn_host])`** no `_ready`
+  (substitui o `add_player`/`del_player` duplicado em level_base/1/2).
+  - **Host**: spawna a si mesmo (peer 1) com a própria variante. `spawn_host=false` no "Hospedar Somente".
+  - **Cliente que entra**: o servidor **reserva o spawn e ESPERA** o cliente informar a variante via
+    `register_loadout.rpc_id(1, variant_id)` (enviado quando `connected_to_server`); só então spawna o
+    modelo certo. O `MultiplayerSpawner` replica a cena instanciada → a cor/variante aparece em TODOS
+    os peers (a `playera.gd` aplica o tint no `_ready` de cada instância). Fallback de 5 s → variante padrão.
 
 ---
 

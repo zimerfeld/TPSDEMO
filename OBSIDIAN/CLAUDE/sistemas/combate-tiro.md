@@ -27,6 +27,14 @@ var ray_dir  = camera.project_ray_normal(crosshair_center)
 # Sem colisão → shoot_target = ray_from + ray_dir * 1000
 ```
 
+> 🐞 **Bug "bala torta" no aim→tiro muito rápido (corrigido):** a bala sai de `shoot_from` (cano,
+> preso ao `player_model`). Ao mirar, o corpo girava p/ a câmera via **slerp lento**
+> (`ROTATION_INTERPOLATE_SPEED`); num aim→tiro em 1-2 frames o cano ainda apontava p/ a direção
+> ANTIGA enquanto o `shoot_target` já era o da câmera → direção errada. **Fix** (`player.gd`,
+> branch de mira): no **aim-enter** (`_was_aiming` false → true) o corpo é **alinhado à câmera na
+> hora** (`orientation.basis = Basis(q_to)` + atualiza já o `player_model`), sem slerp, antes do
+> teste de disparo. Frames seguintes seguem com slerp normal.
+
 ---
 
 ## Bala (`bullet.gd`)

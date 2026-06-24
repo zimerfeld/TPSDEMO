@@ -22,6 +22,7 @@ const _LINE_COLORS := {
 	"type": Color(1.0, 0.45, 0.85),    # rosa (Tipo)
 	"name": Color(0.55, 1.0, 0.55),    # verde (Nome)
 	"id": Color(1.0, 0.92, 0.42),      # amarelo (Id)
+	"tab": Color(1.0, 1.0, 1.0),       # branco (índice de Tab) — pedido do projeto
 }
 
 var _canvas_layer: CanvasLayer = null
@@ -33,6 +34,10 @@ var _last_scene: Node = null
 
 var _persistent_canvas: CanvasLayer = null
 var _scene_name_label: Label = null
+
+# inst_id → índice de Tab (1-based) na cadeia de foco da tela ativa. Recalculado a cada
+# frame só enquanto a linha "Tab" do Debug 2D está visível (ver _process).
+var _tab_index_map: Dictionary = {}
 
 
 func _ready() -> void:
@@ -75,8 +80,13 @@ func _is_show_name_on() -> bool:
 	return Settings.config_file.get_value("game", "show_name", false)
 
 
+# Linha "Tab" (branca): mostra o índice de Tab/foco de cada controle nas cenas 2D.
+func _is_show_tab_on() -> bool:
+	return Settings.config_file.get_value("game", "show_tab", false)
+
+
 func _has_any_2d_line_enabled() -> bool:
-	return _is_show_type_on() or _is_show_name_on() or _is_show_id_on()
+	return _is_show_type_on() or _is_show_name_on() or _is_show_id_on() or _is_show_tab_on()
 
 
 # Visibility of a 2D tooltip line ("type" / "name" / "id"). A line shows only when
@@ -90,7 +100,29 @@ func _line_visible_2d(kind: String) -> bool:
 		"type": return _is_show_type_on()
 		"name": return _is_show_name_on()
 		"id": return _is_show_id_on()
+		"tab": return _is_show_tab_on()
 	return false
+
+
+# Numera os controles na ordem real de navegação por Tab da tela ativa: parte do primeiro
+# focável (UINav) e segue find_next_valid_focus() até fechar o ciclo. Preenche _tab_index_map
+# (inst_id → índice 1-based). Controles não focáveis ficam de fora (mostram "TAB: -").
+func _compute_tab_indices() -> void:
+	_tab_index_map.clear()
+	var screen := _active_screen_root()
+	if screen == null:
+		return
+	var cur: Control = UINav.first_focusable(screen)
+	var idx := 1
+	var guard := 0
+	while cur != null and guard < 4096:
+		var cid := cur.get_instance_id()
+		if _tab_index_map.has(cid):
+			break
+		_tab_index_map[cid] = idx
+		idx += 1
+		guard += 1
+		cur = cur.find_next_valid_focus()
 
 
 func refresh() -> void:
@@ -169,6 +201,12 @@ func _process(_delta: float) -> void:
 	if _canvas_layer == null:
 		return
 
+	# A linha "Tab" mostra a ordem de foco da tela ATIVA, que muda conforme controles
+	# aparecem/somem — então recalcula o mapa a cada frame, só quando ela está visível.
+	var tab_visible := _line_visible_2d("tab")
+	if tab_visible:
+		_compute_tab_indices()
+
 	var to_erase: Array = []
 	for inst_id in _overlay_map:
 		var obj := instance_from_id(inst_id)
@@ -194,10 +232,15 @@ func _process(_delta: float) -> void:
 			entry.type_lbl.visible = _line_visible_2d("type")
 			entry.name_lbl.visible = _line_visible_2d("name")
 			entry.id_lbl.visible = _line_visible_2d("id")
+			entry.tab_lbl.visible = tab_visible
+			if tab_visible:
+				var ti: int = _tab_index_map.get(inst_id, -1)
+				entry.tab_lbl.text = "TAB: %d" % ti if ti > 0 else "TAB: -"
 			tooltip.visible = shown and (
 				entry.type_lbl.visible
 				or entry.name_lbl.visible
 				or entry.id_lbl.visible
+				or entry.tab_lbl.visible
 			)
 		else:
 			if is_instance_valid(tooltip):
@@ -364,19 +407,24 @@ func _add_2d(ctrl: Control) -> void:
 	var type_lbl := _make_overlay_label("TYPE: %s" % ctrl.get_class(), _LINE_COLORS["type"])
 	var name_lbl := _make_overlay_label("Name: %s" % ctrl.name, _LINE_COLORS["name"])
 	var id_lbl := _make_overlay_label("ID: %d" % id, _LINE_COLORS["id"])
+	# Linha branca do índice de Tab; o texto é preenchido a cada frame em _process
+	# (o valor depende da ordem de foco viva da tela).
+	var tab_lbl := _make_overlay_label("TAB: -", _LINE_COLORS["tab"])
 	type_lbl.visible = _line_visible_2d("type")
 	name_lbl.visible = _line_visible_2d("name")
 	id_lbl.visible = _line_visible_2d("id")
+	tab_lbl.visible = _line_visible_2d("tab")
 	vbox.add_child(type_lbl)
 	vbox.add_child(name_lbl)
 	vbox.add_child(id_lbl)
+	vbox.add_child(tab_lbl)
 	tooltip.add_child(vbox)
 	tooltip.position = Vector2(rect.position.x + rect.size.x, rect.position.y)
 	_canvas_layer.add_child(tooltip)
 
 	_overlay_map[id] = {
 		"tooltip": tooltip, "ctrl_border": ctrl_border, "color": color,
-		"type_lbl": type_lbl, "name_lbl": name_lbl, "id_lbl": id_lbl,
+		"type_lbl": type_lbl, "name_lbl": name_lbl, "id_lbl": id_lbl, "tab_lbl": tab_lbl,
 	}
 
 

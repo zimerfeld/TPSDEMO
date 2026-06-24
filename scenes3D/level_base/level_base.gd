@@ -4,7 +4,7 @@ extends Node3D
 signal quit
 
 const RedRobot: PackedScene = preload("res://library3D/characters/red_robot/red_robot.tscn")
-var _player_scene: PackedScene
+const SpectatorCamera: PackedScene = preload("res://scenes3D/spectator_camera/spectator_camera.tscn")
 
 var lightmap_gi: LightmapGI = null
 
@@ -16,7 +16,6 @@ var lightmap_gi: LightmapGI = null
 
 func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
-	_player_scene = load(PlayerSelection.scene_path)
 
 	if Settings.config_file.get_value("rendering", "gi_type") == Settings.GIType.SDFGI:
 		setup_sdfgi()
@@ -36,18 +35,14 @@ func _ready() -> void:
 		# Server will spawn the red robots
 		for child in robot_spawn_points.get_children():
 			spawn_robot(child)
-
-		# Then spawn already connected players at random location
 		randomize()
-		var spawn_points = player_spawn_points.get_children()
-		spawn_points.shuffle()
-		add_player(1, spawn_points.pop_front())
-		for id in multiplayer.get_peers():
-			add_player(id, spawn_points.pop_front())
+		# Modo "Hospedar Somente": o host NÃO vira player; observa com câmera livre.
+		if PlayerSelection.spectator_host:
+			_add_spectator_camera(player_spawn_points.get_child(0) if player_spawn_points.get_child_count() > 0 else null)
 
-		# Then spawn/despawn players as they connect/disconnect
-		multiplayer.peer_connected.connect(add_player)
-		multiplayer.peer_disconnected.connect(del_player)
+	# Spawn de players (host + clientes, cada um com a variante que escolheu) via NetSpawn.
+	# spawn_host = false no modo "Hospedar Somente".
+	NetSpawn.setup(spawned_nodes, player_spawn_points, not PlayerSelection.spectator_host)
 
 
 func setup_sdfgi() -> void:
@@ -113,23 +108,14 @@ func _respawn_robot(spawn_point) -> void:
 	spawn_robot(spawn_point)
 
 
-func del_player(id: int) -> void:
-	if not spawned_nodes.has_node(str(id)):
-		return
-	spawned_nodes.get_node(str(id)).queue_free()
-
-
-func add_player(id: int, spawn_point: Marker3D = null) -> void:
-	if spawn_point == null:
-		spawn_point = player_spawn_points.get_child(randi() % player_spawn_points.get_child_count())
-	var player: CharacterBody3D = _player_scene.instantiate()
-	player.name = str(id)
-	player.player_id = id
-	player.transform = spawn_point.transform
-	# Posição de spawn replicada (spawn property): garante que o cliente conectado
-	# nasça aqui em vez de (0,0,0) e caia do mapa (o sync do transform não chega a tempo).
-	player.spawn_position = spawn_point.transform.origin
-	spawned_nodes.add_child(player)
+# Câmera livre do modo "Hospedar Somente". Filha direta do level (FORA do SpawnedNodes,
+# por isso não é replicada): existe apenas na instância do servidor que está observando.
+func _add_spectator_camera(spawn_point: Marker3D = null) -> void:
+	var cam: Camera3D = SpectatorCamera.instantiate()
+	add_child(cam)
+	if spawn_point != null:
+		# Começa um pouco acima do ponto de spawn, com uma visão do level.
+		cam.global_position = spawn_point.global_position + Vector3(0.0, 8.0, 0.0)
 
 
 func _input(input_event: InputEvent) -> void:
