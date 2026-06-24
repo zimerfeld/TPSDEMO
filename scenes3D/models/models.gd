@@ -46,9 +46,9 @@ const _AUX_LBL_PREFIX := "_AuxLbl_"
 const _AUX_LBL_COLOR := Color(1.0, 0.6, 0.1)
 
 # Prefixo dos Label3D "Submembro: <nome>" (toggle "Submembros"), presos ao corpo do sub-membro
-# selecionado no dropdown. Cor magenta para distinguir do membro (ciano) e do esqueleto (laranja).
+# selecionado no dropdown. Roxo (igual à cor do texto do toggle "Submembros").
 const _SUB_LBL_PREFIX := "_SubLbl_"
-const _SUB_LBL_COLOR := Color(1.0, 0.5, 0.9)
+const _SUB_LBL_COLOR := Color(0.6, 0.25, 0.9)
 
 # Root of the 3D model library. Models live in res://library3D/<tipo>/<modelo>/
 # (e.g. characters/red_robot, props/forklift, structures/core). The selection
@@ -172,6 +172,18 @@ var _show_malha: bool = true
 var _show_skeleton_lines: bool = false
 # Gizmo (ImmediateMesh) das linhas de osso do preview; recriado/removido por _refresh_skeleton_lines.
 var _skeleton_lines_mi: MeshInstance3D = null
+# LimbColliders + Skeleton3D do preview (modelos COM esqueleto). Enquanto uma animação toca,
+# `_member_lc.refit(_member_skel)` re-encaixa os colliders de membro/sub-membro à pose animada
+# (acompanham movimentos/dobra em tempo real). Null para rigs sem esqueleto (já seguem o nó animado).
+var _member_lc: LimbColliders = null
+var _member_skel: Skeleton3D = null
+# Throttle ADAPTATIVO do refit (a passada de skinning é cara em modelos densos): o intervalo é
+# ajustado para o refit custar ~3% do tempo (≈ elapsed × 30), com teto 10 Hz (modelos leves) e
+# piso 2 Hz (muito densos) — mantém ≥ 60 FPS. (BoneAttachment dá translação/rotação todo frame.)
+const _REFIT_MIN_INTERVAL := 0.1
+const _REFIT_MAX_INTERVAL := 0.5
+var _refit_accum := 0.0
+var _refit_interval := _REFIT_MIN_INTERVAL
 # Editor de dano por membro (painel com um input de bônus % por membro). Só faz sentido
 # para personagens em "Modelo completo"; não é persistido (abre fechado a cada visita).
 var _show_damage_panel: bool = false
@@ -469,6 +481,22 @@ func _process(delta: float) -> void:
 	# Linhas do esqueleto seguem a pose viva (reconstruídas todo frame), como na antiga developer.
 	if _show_skeleton_lines and is_instance_valid(_skeleton_lines_mi):
 		_update_skeleton_lines()
+	# Enquanto uma animação toca E os colliders estão visíveis, re-encaixa os colliders de
+	# membro/sub-membro à pose animada (acompanham a dobra) — com THROTTLE adaptativo para não
+	# derrubar o FPS em modelos densos.
+	if _play_animation and _show_colliders and cbo_animations.selected > 0 \
+			and is_instance_valid(_member_lc) and is_instance_valid(_member_skel):
+		_refit_accum += delta
+		if _refit_accum >= _refit_interval:
+			_refit_accum = 0.0
+			var t0 := Time.get_ticks_usec()
+			_member_lc.refit(_member_skel)
+			var elapsed := float(Time.get_ticks_usec() - t0) / 1_000_000.0
+			# Próximo refit espaçado para custar ~3% do tempo: modelo mais denso → menos frequente.
+			_refit_interval = clampf(elapsed * 30.0, _REFIT_MIN_INTERVAL, _REFIT_MAX_INTERVAL)
+	else:
+		# Pronto para re-encaixar de imediato quando a animação/colisores forem (re)ativados.
+		_refit_accum = _refit_interval
 	# Rede de segurança do arraste da janela: se o botão foi solto fora da barra (ex.: a janela
 	# bateu no limite da viewport e o cursor escapou), encerra o arraste e salva a posição.
 	if _damage_panel_dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -2090,10 +2118,8 @@ func _preview_whole_model() -> void:
 	# drive directly (that double-drive is what made red_robot look like two
 	# overlapping models). Playback is then started below per the active toggles.
 	_capture_av(instance)
-	# The model browser draws its OWN richer member labels (head/torso overrides) over the
-	# preview, so tell the global Debug 3D overlay not to ALSO label this subtree's skeleton
-	# (its skeleton-line/mesh-box gizmos still apply). Avoids double member labels.
-	DebugOverlay.exempt_member_labels(instance)
+	# (O overlay global não faz mais rótulos 3D — a inspeção 3D vive só aqui na Models —
+	# então não há mais necessidade de isentar o subtree do esqueleto.)
 	model_holder.add_child(instance)
 	_preview_instance = instance
 	_apply_animation_state()
@@ -2197,10 +2223,40 @@ func _apply_animation_state() -> void:
 		# Play the chosen clip on whichever player owns it; stop every other player (and all
 		# of them when nothing should play).
 		if should_play and ap.has_animation(chosen):
+			# Loop: ao terminar, _on_preview_anim_finished retoca o clipe (sem mexer no loop_mode
+			# do recurso, que é compartilhado com o jogo).
+			if not ap.animation_finished.is_connected(_on_preview_anim_finished):
+				ap.animation_finished.connect(_on_preview_anim_finished)
 			ap.play(chosen)
 		else:
 			ap.stop()
+	# Sem clip tocando (dropdown "Selecione..." ou toggle off): volta o(s) esqueleto(s) à pose
+	# de descanso = ESTADO INICIAL do modelo. `stop()` apenas CONGELA a pose corrente do clipe
+	# anterior, então reposicionamos cada osso na sua transform de REST (os modelos não têm
+	# animação "RESET" para tocar).
+	if not should_play and _preview_instance != null:
+		for skel_node in _preview_instance.find_children("*", "Skeleton3D", true, false):
+			var skel := skel_node as Skeleton3D
+			for i in skel.get_bone_count():
+				var rest := skel.get_bone_rest(i)
+				skel.set_bone_pose_position(i, rest.origin)
+				skel.set_bone_pose_rotation(i, rest.basis.get_rotation_quaternion())
+				skel.set_bone_pose_scale(i, rest.basis.get_scale())
 	_apply_audio_state()
+
+
+# Loop do preview: ao terminar um clipe não-looping, retoca o MESMO (se ainda for o selecionado e
+# a Animação seguir ligada). Por SINAL — não altera o `loop_mode` do recurso (compartilhado com o
+# jogo). Clipes de morte/explosão NÃO dão loop (revelam destroços uma vez).
+func _on_preview_anim_finished(anim_name: StringName) -> void:
+	if not _play_animation:
+		return
+	var chosen := "" if cbo_animations.selected <= 0 else cbo_animations.get_item_text(cbo_animations.selected)
+	if chosen == "" or String(anim_name) != chosen or _is_death_clip(chosen):
+		return
+	for ap: AnimationPlayer in _preview_anim_players:
+		if is_instance_valid(ap) and ap.has_animation(chosen):
+			ap.play(chosen)
 
 
 # A death/explosion clip (by common naming) that reveals the model's debris instead of
@@ -2942,6 +2998,12 @@ func _apply_label_line_colors() -> void:
 			"font_hover_pressed_color", "font_focus_color",
 		]:
 			btn.add_theme_color_override(key, col)
+	# "Submembros": texto roxo (igual ao rótulo 3D _SUB_LBL_COLOR), fundo normal.
+	for key in [
+		"font_color", "font_hover_color", "font_pressed_color",
+		"font_hover_pressed_color", "font_focus_color",
+	]:
+		sub_member_label_toggle.add_theme_color_override(key, _SUB_LBL_COLOR)
 
 
 # Anti-colisão das pilhas de rótulos de membro (chamado por frame enquanto houver pilhas). O
@@ -3086,7 +3148,15 @@ func _add_member_colliders(instance: Node) -> void:
 		lc.torso_bone_names = _torso_bones_for_current()
 		instance.add_child(lc)
 		lc.build_for(skels[0] as Skeleton3D)
+		_member_lc = lc
+		_member_skel = skels[0] as Skeleton3D
+		# Monta o cache de refit JÁ aqui (ao construir os colliders), movendo o custo único
+		# (~150 ms, `surface_get_arrays`) para FORA da animação — sem soluço ao animar depois.
+		lc._build_refit_cache(_member_skel)
 		return
+	# Rig sem esqueleto: colliders parentados ao nó animado (já seguem); sem refit por osso.
+	_member_lc = null
+	_member_skel = null
 	_add_mesh_member_colliders(instance)
 
 

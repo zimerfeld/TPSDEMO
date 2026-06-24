@@ -9,8 +9,11 @@ aplicam na hora (`DebugOverlay.refresh()`).
 > developer e das telas de jogo** (levels/chooseplayer) e vive agora na tela **Models**, com toggles
 > próprios sobre o preview — ver [[sistemas/biblioteca-de-modelos]]. O overlay GLOBAL aplica **só o
 > Debug 2D** (tooltips de controles), em qualquer tela. O `_tag` não rotula mais
-> `Skeleton3D`/`MeshInstance3D` das telas de jogo (o código 3D do `debug_overlay.gd` ficou dormente).
-> A **coluna Debug 3D** e o **painel de preview** do developer foram **removidos**.
+> `Skeleton3D`/`MeshInstance3D`. **Limpeza (2026-06-23):** todo o código 3D/grid morto do
+> `debug_overlay.gd` foi **removido** (≈200 linhas: `_add_3d_skeleton`, linhas de osso, caixa AABB,
+> grid, getters `*_3d`/`show_members`/`show_grid`, metas/grupos `no_debug_overlay`/`no_debug_member`,
+> `exempt_member_labels`), junto das chaves mortas no `DEFAULTS.game` do config. A **coluna Debug 3D**
+> e o **painel de preview** do developer foram **removidos**.
 
 ## Tela developer
 

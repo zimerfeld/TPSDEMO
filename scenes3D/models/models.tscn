@@ -312,7 +312,15 @@ value = 1.0
 allow_greater = true
 allow_lesser = true
 
-[node name="SaveButton" type="Button" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
+[node name="SaveRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SaveSpacer" type="Control" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/SaveRow"]
+custom_minimum_size = Vector2(262, 0)
+layout_mode = 2
+
+[node name="SaveButton" type="Button" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/SaveRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 44)
 layout_mode = 2

@@ -8,7 +8,6 @@ const PREVIEW_PATH := "res://library3D/characters/demonio_rig2/demonio_rig2.tscn
 const SHOW_MEMBERS := false
 const SHOT_PATH := "res://_gen/shot.png"
 const LimbCollidersScript = preload("res://effects_shared/limb_colliders.gd")
-const BodyPartsScript = preload("res://effects_shared/body_parts.gd")
 
 
 func _ready() -> void:

@@ -27,24 +27,13 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 # button). Single source of truth for "the defaults".
 var DEFAULTS := {
 	game = {
+		# Debug 2D (tooltips de controles na tela developer). A inspeção 3D foi para a Models.
 		debug_2d = false,
-		debug_3d = false,
 		hud_fps = false,
 		# 2D tooltip lines (Debug 2D column).
 		show_id = false,
 		show_type = false,
 		show_name = false,
-		# 3D label lines (Debug 3D column) — separate from the 2D set so each column
-		# is toggled independently.
-		show_id_3d = false,
-		show_type_3d = false,
-		show_name_3d = false,
-		show_members = false,
-		show_skeleton3d = false,
-		# "Show Mesh3D" (tela developer): controla a visibilidade da malha do modelo do
-		# preview — ligado por padrão (malha visível).
-		show_mesh3d = true,
-		show_grid = false,
 		# Performance HUD overlay (top bar; Developer screen). The crash/freeze PROTECTION
 		# is always-on via the StabilityGuard autoload and has no toggle.
 		performance_hud = false,

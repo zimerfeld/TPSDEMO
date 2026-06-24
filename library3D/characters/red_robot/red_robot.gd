@@ -25,9 +25,6 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 
 @export var test_shoot: bool = false
 
-# Camada das hitboxes do player (bit5 = 16) — alvo do laser do enemy.
-const PLAYER_HITBOX_LAYER: int = 16
-
 @export var enemy_name: String = "Red Robot"
 @export var max_health: int = 200
 
