@@ -58,12 +58,10 @@ robot in its own viewport) that reflects the enabled/disabled toggles in real ti
 collision-pairs/node-count/FPS can freeze or crash the machine;
 a floor grid for 3D screens; and an EN/PT localization system where **every screen carries
 Português/English buttons** and each scene ships its own JSON dictionaries
-(`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load. Online play offers two host modes —
-**Host & Connect** (host and join as a player) and **Host-Only** (a free-fly spectator camera, no
-collision and no controlled player: WASD to glide, Space+W/S to rise/descend at jump speed, to watch
-the level live) — plus the client **Connect**, which pops a confirmation ("Reconnect to the match in
-progress?") before opening the socket, since a client can rejoin a running match while a host is up.
-Each player's chosen variant/colour shows for everyone,
+(`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load. Online play is **rooms-based**: pick **Host** or **Client** on the Play Online screen. **Host** opens a
+room manager to start levels as isolated rooms and, per room, **Play** into it, **Observe** with a
+free-fly no-collision camera, **Restart** or **Stop** it; **Client** opens a room browser that lists the
+running rooms with a **Play** button. Each player's chosen variant/colour shows for everyone,
 and other players/enemies are smoothed with a timestamped interpolation buffer (rendered ~100 ms in the
 past) for a flicker-free, high-FPS client view.
 
@@ -87,12 +85,10 @@ máquina; uma
 malha no solo
 para telas 3D; e um sistema de localização EN/PT em que **toda tela tem botões Português/English** e
 cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json`),
-mesclados no carregamento. O jogo online tem dois modos de host — **Hospedar e Conectar** (hospeda e
-entra como player) e **Hospedar Somente** (uma câmera livre de observação, sem colisão e sem player
-controlado: WASD para voar no plano, Espaço+W/S para subir/descer na velocidade do pulo, para
-acompanhar o level ao vivo) — além do **Conectar** do cliente, que abre uma confirmação ("Deseja se
-re-conectar na partida em andamento?") antes de abrir o socket, já que um cliente pode reentrar numa
-partida em andamento enquanto houver um host hospedando. A variante/cor escolhida por cada
+mesclados no carregamento. O jogo online é **por salas**: escolha **Host** ou **Client** na tela Jogar
+Online. **Host** abre um gerenciador de salas para iniciar levels como salas isoladas e, por sala,
+**Jogar** nela, **Observar** com uma câmera livre sem colisão, **Reiniciar** ou **Parar**; **Client**
+abre um navegador que lista as salas em execução com um botão **Jogar**. A variante/cor escolhida por cada
 jogador aparece para todos, e os outros players/inimigos são suavizados por um buffer de interpolação
 com snapshots datados (renderizados ~100 ms no passado) para uma visão do cliente sem flicker e com FPS alto.
 

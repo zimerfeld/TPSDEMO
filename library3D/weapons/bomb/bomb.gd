@@ -18,6 +18,8 @@ var _done := false
 
 
 func _ready() -> void:
+	# Projétil → grupo usado para a aniquilação mútua projétil×projétil (ver _physics_process).
+	add_to_group(&"projectiles")
 	# Clientes não simulam — a posição é replicada pelo servidor.
 	if not _is_server():
 		set_physics_process(false)
@@ -25,6 +27,11 @@ func _ready() -> void:
 
 func set_initial_velocity(v: Vector3) -> void:
 	velocity = v
+
+
+# Aniquilação mútua projétil×projétil: detona a bomba (sem dano a player). Idempotente (_done).
+func annihilate() -> void:
+	_explode(null)
 
 
 func _physics_process(delta: float) -> void:
@@ -39,7 +46,14 @@ func _physics_process(delta: float) -> void:
 		_mesh.rotate_x(2.0 * delta)
 	var col := move_and_collide(velocity * delta)
 	if col:
-		_explode(col.get_collider() as Node)
+		var collided := col.get_collider() as Node
+		# Projétil × projétil → explosão anulativa (ambos se destroem). Idempotente.
+		if collided != null and collided.is_in_group(&"projectiles"):
+			annihilate()
+			if collided.has_method(&"annihilate"):
+				collided.annihilate()
+			return
+		_explode(collided)
 
 
 func _explode(collider: Node) -> void:

@@ -27,9 +27,12 @@ func _ready() -> void:
 		spawned_nodes.add_child(robot, true)
 		randomize()
 
-	# Spawn de players (host + clientes, cada um com a variante escolhida) via NetSpawn.
-	# spawn_host = false no modo "Hospedar Somente" → NetSpawn adiciona a câmera livre (sem player).
-	NetSpawn.setup(spawned_nodes, player_spawn_points, not PlayerSelection.spectator_host)
+	# Modo-sala (servidor multi-level) usa spawn POR-SALA (RoomManager); senão, NetSpawn single-level.
+	if has_meta("room_id"):
+		RoomManager.register_room_level(int(get_meta("room_id")), spawned_nodes, player_spawn_points)
+	else:
+		# spawn_host = false no modo "Hospedar Somente" → NetSpawn adiciona a câmera livre (sem player).
+		NetSpawn.setup(spawned_nodes, player_spawn_points, not PlayerSelection.spectator_host)
 
 
 func _input(input_event: InputEvent) -> void:
