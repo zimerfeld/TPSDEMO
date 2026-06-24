@@ -195,8 +195,9 @@ limits; it previously used `MEMORY_STATIC`, which reads 0 in the release `.exe` 
 global top-bar overlay, toggled by the developer screen's **Performance HUD** row
 (`game/performance_hud`, default off). It's click-through (only the toggle button captures the mouse)
 and idles while hidden. **Basic** mode shows `FPS | NET | RAM | CPU% | GPU% | ● StabilityGuard badge`
-(CPU% from `TIME_PROCESS`, GPU% a draw-call proxy; **NET** degrades to **N/D** since the project has
-no optional `NetworkManager`; **RAM** = **system** memory as "used/total GB" via `OS.get_memory_info()`
+(CPU% from `TIME_PROCESS`, GPU% a draw-call proxy; **NET** shows the ENet round-trip **ping** —
+client→server, or the host's average of its clients, colour-coded by latency; works through UDP tunnels
+like playit.gg, and degrades to **N/D** only when offline; **RAM** = **system** memory as "used/total GB" via `OS.get_memory_info()`
 — works in release, where `Performance.MEMORY_STATIC` would read 0). **Advanced** mode (▼/▲ toggle)
 adds per-category columns — CPU (process/physics/load/nodes/objects/3D bodies/collision pairs), GPU
 (draw calls/triangles/VRAM/texture mem.) and Memory (system RAM/resources) — each value colored by

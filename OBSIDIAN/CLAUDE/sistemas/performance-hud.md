@@ -55,8 +55,12 @@ Performance** na tela `developer`). É **click-through** (mouse só na barra do 
     Tarefas), no lugar do antigo `TIME_PROCESS / 16,67` fixo que **saturava em 100%** por núcleo.
     Ainda é proxy (só main-thread process+física; não conta a render-thread) — subconta vs o CPU real
     do processo, mas não satura mais. `GPU%` = proxy por `RENDER_TOTAL_DRAW_CALLS_IN_FRAME`.
-  - **NET** depende de um `NetworkManager.get_total_bps()` OPCIONAL; o ZIMARO não tem um, então
-    degrada para **"N/D"** (lookup gracioso por `get_node_or_null("/root/NetworkManager")`).
+  - **NET (2026-06-24)** mede o **RTT/ping do ENet** (`_refresh_net`): no **cliente**, o ping até o
+    servidor (`enet.get_peer(1).get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME)`); no **host**, a
+    **média** dos pings dos clientes + a contagem (`NET: 42 ms (2)`); sem cliente mostra `NET: host (0)`.
+    Colorido por limiar (<80 ms verde / <160 amarelo / senão vermelho). Offline ou sem peer ENet →
+    **"N/D"**. Funciona através de túneis UDP (ex.: **playit.gg**): o ENet mede o RTT real do pacote,
+    incluindo o relay. (Antes dependia de um `NetworkManager.get_total_bps()` inexistente → travado em "N/D".)
   - **RAM** (2026-06-21) = memória do **SISTEMA** via `OS.get_memory_info()`, formato **"usado/total GB"**
     (usado = `physical - free`, como o "Em uso" do Gerenciador de Tarefas; colorido por % de uso).
     **Por quê:** `Performance.MEMORY_STATIC` só é rastreada em **debug** e fica **0 no .exe exportado em

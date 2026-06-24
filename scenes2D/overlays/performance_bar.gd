@@ -7,8 +7,8 @@ extends Control
 ##
 ## A maioria dos valores vem do singleton Performance (confiável, multiplataforma). EXCEÇÃO: a
 ## RAM vem de OS.get_memory_info() — memória do SISTEMA (usado/total) —, pois Performance.MEMORY_STATIC
-## só é rastreada em debug e fica 0 no .exe exportado em release. NET depende de um NetworkManager
-## opcional com get_total_bps(); como o ZIMARO não tem um, degrada para "N/D" automaticamente.
+## só é rastreada em debug e fica 0 no .exe exportado em release. NET mede o RTT/ping do ENet
+## (ver _refresh_net): cliente → servidor, host → média dos clientes; offline degrada para "N/D".
 ## Textos fixos são localizados via Locale (todos no grupo SKIP_GROUP — o script é dono deles e os
 ## re-traduz em language_changed).
 
@@ -274,13 +274,7 @@ func _refresh() -> void:
 	_lbl_fps.add_theme_color_override("font_color",
 		COLOR_OK if fps >= 55 else (COLOR_WARN if fps >= 30 else COLOR_CRIT))
 
-	# NET depends on an optional NetworkManager autoload with get_total_bps(); absent here,
-	# so it degrades to N/D instead of breaking.
-	var nm: Node = get_node_or_null("/root/NetworkManager")
-	if nm != null and nm.has_method("get_total_bps"):
-		_lbl_net.text = "NET: %s" % _fmt_bits(nm.get_total_bps() * 8.0)
-	else:
-		_lbl_net.text = "NET: %s" % Locale.tr_key("N/D")
+	_refresh_net()
 
 	# RAM do SISTEMA via OS.get_memory_info() — funciona em RELEASE (ao contrário de
 	# Performance.MEMORY_STATIC, que só é rastreado no editor/debug e fica 0 no .exe exportado).
@@ -401,6 +395,66 @@ func _on_language_changed(_lang: String) -> void:
 func _color_threshold(lbl: Label, value: float, warn: float, crit: float) -> void:
 	lbl.add_theme_color_override("font_color",
 		COLOR_OK if value < warn else (COLOR_WARN if value < crit else COLOR_CRIT))
+
+
+# Saúde da rede a partir do ENet (RTT/ping). Cliente: ping até o servidor (peer 1). Host:
+# ping médio dos clientes + nº de conectados. Offline/sem rede → N/D. Funciona através de
+# túneis UDP (ex.: playit.gg) — o ENet mede o RTT real do pacote, incluindo o relay.
+func _refresh_net() -> void:
+	var peer: MultiplayerPeer = multiplayer.multiplayer_peer if multiplayer != null else null
+	if not (peer is ENetMultiplayerPeer):
+		_set_net("N/D", COLOR_LABEL)
+		return
+	var enet := peer as ENetMultiplayerPeer
+	match enet.get_connection_status():
+		MultiplayerPeer.CONNECTION_CONNECTING:
+			_set_net(Locale.tr_key("Conectando…"), COLOR_WARN)
+			return
+		MultiplayerPeer.CONNECTION_DISCONNECTED:
+			_set_net("N/D", COLOR_LABEL)
+			return
+
+	if multiplayer.is_server():
+		var peers: PackedInt32Array = multiplayer.get_peers()
+		var total := 0.0
+		var count := 0
+		for pid in peers:
+			var rtt := _peer_rtt(enet, pid)
+			if rtt >= 0.0:
+				total += rtt
+				count += 1
+		if count == 0:
+			# Host sem clientes (ou RTT ainda não medido): rede ok, mostra a contagem.
+			_lbl_net.text = "NET: host (%d)" % peers.size()
+			_lbl_net.add_theme_color_override("font_color", COLOR_OK)
+		else:
+			var avg := total / count
+			_lbl_net.text = "NET: %d ms (%d)" % [int(round(avg)), peers.size()]
+			_color_ping(avg)
+	else:
+		var rtt := _peer_rtt(enet, 1)  # peer 1 = servidor
+		if rtt < 0.0:
+			_set_net("N/D", COLOR_LABEL)
+		else:
+			_lbl_net.text = "NET: %d ms" % int(round(rtt))
+			_color_ping(rtt)
+
+
+func _peer_rtt(enet: ENetMultiplayerPeer, pid: int) -> float:
+	var pp := enet.get_peer(pid)
+	if pp == null:
+		return -1.0
+	return pp.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME)
+
+
+func _set_net(value: String, color: Color) -> void:
+	_lbl_net.text = "NET: %s" % value
+	_lbl_net.add_theme_color_override("font_color", color)
+
+
+func _color_ping(ms: float) -> void:
+	_lbl_net.add_theme_color_override("font_color",
+		COLOR_OK if ms < 80.0 else (COLOR_WARN if ms < 160.0 else COLOR_CRIT))
 
 
 func _fmt_bits(bps: float) -> String:

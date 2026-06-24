@@ -40,6 +40,18 @@ var _scan_cd := 0.0
 var _player: Node3D = null
 var _dead := false
 
+## Proxy replicado NO LUGAR de global_transform: o servidor o espelha a cada frame; o cliente
+## o bufferiza (NetInterp) e renderiza ~100 ms no passado, suavizando o voo (anti-flicker).
+## Mesmo padrão de player.gd / red_robot.gd — sem isto a criatura ficava PARADA nos clientes,
+## pois ela só simula no servidor.
+@export var net_transform: Transform3D = Transform3D.IDENTITY:
+	set(value):
+		net_transform = value
+		_net_received = true
+var _net_received := false
+var _interp := NetInterp.new()
+var _interp_seeded := false
+
 @onready var _rig: Node3D = $Rig
 @onready var _anim: AnimationPlayer = $AnimationPlayer
 @onready var _bay: Node3D = $BombBay
@@ -50,6 +62,10 @@ func _ready() -> void:
 	_bomb_cd = bomb_interval
 	if _anim and _anim.has_animation("voar"):
 		_anim.play("voar")
+	# Semeia o proxy de rede com a pose inicial APENAS no servidor (assim o spawn property já
+	# carrega o valor certo). No cliente o valor chega pela replicação de spawn.
+	if _is_server():
+		net_transform = global_transform
 
 
 func _is_server() -> bool:
@@ -63,13 +79,16 @@ func _is_server() -> bool:
 func _physics_process(delta: float) -> void:
 	if not auto_fly:
 		return
-	# Clientes não simulam: o servidor é autoritativo (a posição é replicada).
+	# Clientes não simulam: o servidor é autoritativo. O cliente interpola o transform
+	# recebido (~100 ms no passado) para um voo suave; sem isto a criatura ficava parada.
 	if not _is_server():
+		_interpolate_remote()
 		return
 
 	if _dead:
 		velocity.y -= BOMB_GRAVITY * delta
 		move_and_slide()
+		net_transform = global_transform  # espelha p/ replicação (clientes interpolam)
 		return
 
 	_t += delta
@@ -88,6 +107,7 @@ func _physics_process(delta: float) -> void:
 		_phase = Phase.CLIMB
 		velocity = Vector3.UP * (bob_amplitude * bob_freq * cos(_t * bob_freq))
 		move_and_slide()
+		net_transform = global_transform  # espelha p/ replicação (clientes interpolam)
 		return
 
 	# ---- direção horizontal: orbitar o player no raio desejado
@@ -130,6 +150,22 @@ func _physics_process(delta: float) -> void:
 		if _bomb_cd <= 0.0:
 			_bomb_cd = bomb_interval
 			_drop_bomb()
+
+	net_transform = global_transform  # espelha p/ replicação (clientes interpolam)
+
+
+# Aplica o transform interpolado (buffer de snapshots datados) na criatura remota.
+func _interpolate_remote() -> void:
+	if not _net_received:
+		return  # nada recebido ainda: fica na posição de spawn
+	var now: float = float(Time.get_ticks_msec())
+	_interp.push(now, net_transform)
+	if _interp.has_data():
+		global_transform = _interp.sample(now)
+	if not _interp_seeded:
+		# 1ª aplicação: zera a interpolação física p/ não "rasgar" do spawn até a 1ª amostra.
+		_interp_seeded = true
+		reset_physics_interpolation()
 
 
 func _drop_bomb() -> void:

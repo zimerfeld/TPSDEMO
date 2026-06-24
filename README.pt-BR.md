@@ -195,8 +195,9 @@ disparava), **VRAM** (`RENDER_VIDEO_MEM_USED`), **collision pairs** (`PHYSICS_3D
 barra-overlay global no topo, ligada/desligada pela linha **Performance HUD** da tela developer
 (`game/performance_hud`, padrão desligado). É **click-through** (só o botão do toggle captura o mouse)
 e fica ociosa quando oculta. O modo **básico** mostra `FPS | NET | RAM | CPU% | GPU% | ● badge do
-StabilityGuard` (CPU% por `TIME_PROCESS`, GPU% um proxy de draw calls; **NET** degrada para **N/D**,
-pois o projeto não tem um `NetworkManager` opcional; **RAM** = memória do **sistema** em "usado/total
+StabilityGuard` (CPU% por `TIME_PROCESS`, GPU% um proxy de draw calls; **NET** mostra o **ping**
+(RTT) do ENet — cliente→servidor, ou a média dos clientes no host, colorido por latência; funciona
+através de túneis UDP como o playit.gg e só degrada para **N/D** quando offline; **RAM** = memória do **sistema** em "usado/total
 GB" via `OS.get_memory_info()` — funciona em release, onde `Performance.MEMORY_STATIC` ficaria 0). O
 modo **avançado** (toggle ▼/▲) acrescenta colunas por categoria — CPU (processo/física/carga/nós/
 objetos/corpos 3D/collision pairs), GPU (draw calls/triângulos/VRAM/mem. de textura) e Memória (RAM do

@@ -50,6 +50,8 @@ Replica do cliente-dono → servidor:
 | `player.animate()` | Apenas clientes |
 | `bullet._physics_process()` | Apenas servidor |
 | `red_robot._physics_process()` | Apenas servidor |
+| `criatura_alada._physics_process()` | Apenas servidor (cliente só interpola — ver anti-flicker) |
+| `bomb._physics_process()` | Apenas servidor (cliente recebe o `global_transform` replicado) |
 | `player_input._process()` | Apenas o peer dono (`authority`) |
 
 ---
@@ -86,12 +88,14 @@ if multiplayer.is_server():
 ```
 - **Offline** (OfflineMultiplayerPeer): `is_server()` = true, `get_peers()` = vazio →
   spawna só o player 1. O **mesmo script** serve offline e online.
-- **Modo "Hospedar Somente"** (`PlayerSelection.spectator_host`): em vez de `add_player(1, …)`, o
-  `level_base` chama `_add_spectator_camera()` — uma câmera livre não replicada (sem player do host).
+- **Modo "Hospedar Somente"** (`PlayerSelection.spectator_host`): com `spawn_host=false`, o **`NetSpawn`**
+  (não mais só o `level_base`) adiciona uma **câmera livre não replicada** em vez do player do host.
+  Centralizado em `NetSpawn._add_spectator_camera` **(2026-06-24)** → funciona nos **3 níveis** (antes
+  só o `level_base` tratava; `level_1`/`level_2` ignoravam e criavam player mesmo no "Hospedar Somente").
   Ver [[sistemas/hospedagem-online]].
 - `_spawnable_scenes` de cada spawner lista os **players** (`player` + `playera`), o
-  **inimigo do nível** (`red_robot` no level_1/base, `criatura_alada` no level_2) e a
-  **bullet** (disparada sob `SpawnedNodes`, precisa replicar).
+  **inimigo do nível** (`red_robot` no level_1/base, `criatura_alada` no level_2), a
+  **bullet** e, no level_2, a **bomb** da criatura (ambos disparados sob `SpawnedNodes`, precisam replicar).
 - Os níveis são escolhidos no fluxo **Jogar Online** (chooseplayer → levels → playonline);
   ver [[fluxos/fluxo-de-cenas]].
 
@@ -148,7 +152,9 @@ solução "de verdade" para netcode sobre UDP é um **buffer de interpolação c
   extrapolar. Barato (busca linear curta + 1 interpolate por frame) → **não pesa no FPS**.
 - **Proxies replicados** no lugar do transform cru: o `ServerSynchronizer` do player passou a
   replicar **`.:net_transform`** e **`.:net_model_transform`** (em vez de `.:transform` e
-  `PlayerModel:transform`); o `red_robot` replica **`.:net_transform`** (em vez de `.:global_transform`).
+  `PlayerModel:transform`); o `red_robot` e a **`criatura_alada` (2026-06-24)** replicam
+  **`.:net_transform`** (em vez de `.:global_transform`). Sem isto a criatura **não tinha
+  `MultiplayerSynchronizer` algum** e ficava **parada nos clientes** (só simulava no host).
   - **Servidor**: espelha o estado real nos proxies a cada frame (`net_transform = transform`).
   - **Cliente remoto** (`_interpolate_remote`): bufferiza os proxies e aplica o transform interpolado.
   - **Cliente DONO**: usa `net_transform` como **verdade do servidor** na `_reconcile` (o transform
@@ -172,9 +178,14 @@ confiável):
 
 - `chooseplayer` grava **`PlayerSelection.variant_id`** (índice em `PlayerSelection.VARIANTS`, mesma
   ordem do seletor). Trafega como **int** (não um caminho arbitrário) no RPC.
-- Cada nível chama **`NetSpawn.setup(spawned_nodes, player_spawn_points[, spawn_host])`** no `_ready`
-  (substitui o `add_player`/`del_player` duplicado em level_base/1/2).
-  - **Host**: spawna a si mesmo (peer 1) com a própria variante. `spawn_host=false` no "Hospedar Somente".
+- Cada nível chama **`NetSpawn.setup(spawned_nodes, player_spawn_points, not PlayerSelection.spectator_host)`**
+  no `_ready` (substitui o `add_player`/`del_player` duplicado em level_base/1/2). Os **3 níveis** passam
+  o mesmo argumento → comportamento uniforme do "Hospedar Somente" **(2026-06-24)**.
+  - **Host**: spawna a si mesmo (peer 1) com a própria variante. `spawn_host=false` no "Hospedar Somente"
+    → `NetSpawn` adiciona a câmera livre em vez do player.
+  - **Cenário em execução**: `NetSpawn` guarda o caminho da cena do nível (`_server_scenario`) e o
+    responde ao cliente via os RPCs **`request_scenario`/`answer_scenario`** — usado pela `playonline`
+    para só confirmar reconexão quando o cliente entra no **mesmo cenário**. Ver [[sistemas/hospedagem-online]].
   - **Cliente que entra**: o servidor **reserva o spawn e ESPERA** o cliente informar a variante via
     `register_loadout.rpc_id(1, variant_id)` (enviado quando `connected_to_server`); só então spawna o
     modelo certo. O `MultiplayerSpawner` replica a cena instanciada → a cor/variante aparece em TODOS

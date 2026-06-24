@@ -85,6 +85,8 @@ func _select_level(level_path: String) -> void:
 		PlayerSelection.level_path = level_path
 		loading_path = PLAYONLINE_PATH
 	else:
+		# Offline (solo): garante o player controlado (sem herdar um "Hospedar Somente" anterior).
+		PlayerSelection.spectator_host = false
 		loading_path = level_path
 	level1_button.hide()
 	level2_button.hide()
