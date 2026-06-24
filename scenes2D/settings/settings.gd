@@ -165,6 +165,9 @@ func _ready() -> void:
 	Locale.language_changed.connect(_on_language_changed)
 	_update_language_buttons()
 
+	# Foco inicial para a navegação por setas (deferido: espera o layout/abas assentarem).
+	UINav.focus_first.call_deferred(self)
+
 
 # Translate each tab's title from its (English) node name via the active dictionary.
 func _localize_tabs() -> void:
@@ -562,5 +565,9 @@ func _on_back_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
+		# ESC encerra primeiro um campo em edição; só o 2º ESC volta ao menu.
+		if UINav.cancel_active_edit(get_viewport()):
+			get_viewport().set_input_as_handled()
+			return
 		_on_back_pressed()
 		get_viewport().set_input_as_handled()

@@ -35,6 +35,7 @@ PlayerSelection="*res://autoload/player_selection.gd"
 DebugOverlay="*res://autoload/debug_overlay.gd"
 StabilityGuard="*res://autoload/stability_guard.gd"
 PerformanceHUD="*res://autoload/performance_hud.gd"
+UINav="*res://autoload/ui_nav.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]

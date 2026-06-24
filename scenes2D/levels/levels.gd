@@ -23,6 +23,8 @@ var loading_path: String = ""
 
 func _ready() -> void:
 	_update_language_buttons()
+	# Foco inicial para a navegação por setas do teclado.
+	UINav.focus_first.call_deferred(self)
 
 
 # Grey out the button for the language already active (same pattern as the menu).
@@ -97,4 +99,9 @@ func _on_back_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
+		# ESC encerra primeiro um campo em edição; só o 2º ESC volta de tela.
+		if UINav.cancel_active_edit(get_viewport()):
+			get_viewport().set_input_as_handled()
+			return
 		emit_signal("replace_main_scene", load(CHOOSEPLAYER_PATH))
+		get_viewport().set_input_as_handled()

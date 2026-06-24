@@ -12,6 +12,7 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
 @onready var port: SpinBox = %Port
 @onready var address: LineEdit = %Address
+@onready var host_button: Button = $UI/Margin/Main/FormCenter/VBox/ButtonsRow/HostButton
 @onready var port_history: OptionButton = %PortHistory
 @onready var address_history: OptionButton = %AddressHistory
 @onready var loading: HBoxContainer = $UI/Loading
@@ -29,6 +30,9 @@ func _ready() -> void:
 	# Dedicated server: auto-host when running headless.
 	if DisplayServer.get_name() == "headless":
 		_on_host_pressed.call_deferred()
+		return
+	# Foco inicial para a navegação por setas do teclado (não em headless, sem UI).
+	host_button.grab_focus.call_deferred()
 
 
 # Histórico de porta/IP persistido em Settings.config_file (seção "online"). Mostra os
@@ -190,4 +194,10 @@ func _on_back_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
+		# ESC encerra primeiro o preenchimento do IP/porta (devolvendo o foco ao botão
+		# Host); só o 2º ESC sai da tela. Cobre a regra do projeto p/ campos editáveis.
+		if UINav.cancel_active_edit(get_viewport(), host_button):
+			get_viewport().set_input_as_handled()
+			return
 		quit.emit()
+		get_viewport().set_input_as_handled()

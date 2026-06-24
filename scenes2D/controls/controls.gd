@@ -43,6 +43,9 @@ func _ready() -> void:
 	cbo_control.select(0)
 	_on_control_selected(0)
 
+	# Foco inicial para a navegação por setas do teclado.
+	UINav.focus_first.call_deferred(self)
+
 
 func _on_language_changed(_lang: String) -> void:
 	cbo_control.set_item_text(0, Locale.tr_key(SELECT_LABEL))
@@ -136,5 +139,9 @@ func _on_back_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
+		# ESC encerra primeiro um campo em edição; só o 2º ESC volta à tela developer.
+		if UINav.cancel_active_edit(get_viewport()):
+			get_viewport().set_input_as_handled()
+			return
 		_on_back_pressed()
 		get_viewport().set_input_as_handled()
