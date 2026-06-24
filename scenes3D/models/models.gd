@@ -294,7 +294,7 @@ var _zoom_target: float = 0.0
 @onready var name_check: CheckButton = %NameCheck
 @onready var id_check: CheckButton = %IdCheck
 @onready var osso_check: CheckButton = %OssoCheck
-@onready var damage_toggle: CheckButton = %DamageToggle
+@onready var damage_button: Button = %DamageButton
 @onready var aux_highlight_toggle: CheckButton = %AuxHighlightToggle
 @onready var sub_member_label_toggle: CheckButton = %SubMemberLabelToggle
 @onready var sub_collider_toggle: CheckButton = %SubColliderToggle
@@ -385,8 +385,8 @@ func _ready() -> void:
 	id_check.toggled.connect(_on_id_toggled)
 	osso_check.button_pressed = _show_osso
 	osso_check.toggled.connect(_on_osso_toggled)
-	damage_toggle.button_pressed = _show_damage_panel
-	damage_toggle.toggled.connect(_on_damage_toggled)
+	# "Dano" virou botão de ação (ao lado do "Voltar"), não mais um toggle da lista: abre a janela.
+	damage_button.pressed.connect(_on_damage_button_pressed)
 	aux_highlight_toggle.button_pressed = _show_aux_highlight
 	aux_highlight_toggle.toggled.connect(_on_aux_highlight_toggled)
 	sub_member_label_toggle.button_pressed = _show_sub_member_label
@@ -1623,8 +1623,10 @@ func _any_member_label() -> bool:
 
 # Abre/fecha o painel de edição de dano por membro (só popula para personagem em
 # "Modelo completo"; _refresh_damage_panel decide a visibilidade real).
-func _on_damage_toggled(pressed: bool) -> void:
-	_show_damage_panel = pressed
+# Botão "Dano" (à direita do "Voltar"): abre a JANELA de Dano. O × da janela a fecha
+# (_on_damage_close). Antes era um toggle na lista; virou botão de ação dedicado.
+func _on_damage_button_pressed() -> void:
+	_show_damage_panel = true
 	_refresh_damage_panel()
 
 
@@ -1686,11 +1688,12 @@ func _on_damage_titlebar_input(event: InputEvent) -> void:
 		damage_panel.position = target
 
 
-# Botão × (fechar): desmarca o toggle "Dano" — o handler do toggle esconde a janela e
-# limpa os campos flutuantes, mantendo o estado coerente (igual a desligar pelo toggle).
+# Botão × (fechar): esconde a janela de Dano e limpa os campos flutuantes (mesmo efeito de
+# reabrir depois pelo botão "Dano"). Mantém o estado coerente via _refresh_damage_panel.
 func _on_damage_close() -> void:
 	_damage_panel_dragging = false
-	damage_toggle.button_pressed = false
+	_show_damage_panel = false
+	_refresh_damage_panel()
 
 
 # The special-effect nodes already live in the preview (collected on build), so toggling

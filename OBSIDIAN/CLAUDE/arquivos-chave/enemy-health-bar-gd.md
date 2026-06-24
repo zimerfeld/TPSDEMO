@@ -75,7 +75,10 @@ passa `effective_range`). Texto **"Alcance: N m"** (PT) ou **"Range: N m"** (EN)
 ## Acionado por
 
 1. **Acerto:** `red_robot.gd.hit()` → `show_health_hud()` → `get_shared(...).show_enemy(...)`
-2. **Mira do player (entra):** `player_input.gd._update_enemy_focus()` → `collider.show_health_hud()`
+2. **Mira do player (entra):** `player_input.gd._update_enemy_focus()` → `collider.show_health_hud()`.
+   O raio acusa tanto o **corpo** quanto os **colliders de membro/SUB-MEMBRO** (layer 32); um
+   sub-membro saliente (ex.: placa de perna) resolve o dono por `meta("character")`. Ver
+   [[arquivos-chave/player-input-gd]].
 3. **Mira do player (sai):** `_update_enemy_focus()` chama `_focused_enemy.hide_health_hud()` → `hide_now()`
 4. **Morte:** `red_robot.gd` → `hide_health_hud()` → `hide_now()`
 
