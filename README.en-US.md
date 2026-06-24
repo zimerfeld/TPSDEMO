@@ -31,6 +31,9 @@ third-person shooter sandbox. At a high level it offers:
   direction** while still facing/aiming at and shooting the player.
 - **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
   when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
+  It appears when you **aim at the enemy** and hides the moment your aim leaves it; the aim ray
+  recognizes both the body and the **limb/sub-member colliders** — so aiming at a **protruding
+  sub-member** (e.g. the leg guards) also reveals the enemy's health.
 - **Localized damage** — per-limb native 3D colliders sized to each character's mesh, so hits to
   different body parts deal different damage (headshots deal extra). The members come from the
   model's **body plan**, chosen by a `body_type` (**biped** = head/torso/2 arms/2 legs — the

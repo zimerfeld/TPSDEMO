@@ -31,6 +31,9 @@ em terceira pessoa. Em alto nível, oferece:
   enquanto continua olhando/mirando e atirando.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
+  Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo
+  quanto os **colliders de membro/sub-membro** — então apontar para um **sub-membro saliente**
+  (ex.: as placas das pernas) também exibe a vida do inimigo.
 - **Dano localizado** — colliders 3D nativos por membro dimensionados pela malha de cada
   personagem, então acertos em partes diferentes causam dano diferente (headshots causam dano
   extra). Os membros vêm do **plano corporal** do modelo, escolhido por um `body_type`
