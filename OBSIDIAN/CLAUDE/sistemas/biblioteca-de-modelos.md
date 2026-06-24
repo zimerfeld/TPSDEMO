@@ -125,11 +125,12 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (ordem/nomes em 2026-06-23): **Rotação · Animação · Efeitos especiais · Audio ·
+Toggles atuais (ordem/nomes em 2026-06-23): **Malha · Rotação · Animação · Efeitos especiais · Audio ·
 Colisor de Membro · Membro · Colisor de Submembro · Submembros · Colisor de Esqueleto ·
-[Esqueleto · Linhas do Esqueleto · Tipo · Nome · ID · Malha] · Dano**. (Renomeados de "Colisores
+[Esqueleto · Linhas do Esqueleto · Tipo · Nome · ID]**. (Renomeados de "Colisores
 de X" → **"Colisor de X"**; `SubColliderToggle`/`SubMemberLabelToggle` movidos para o topo, logo
-**abaixo de "Membro"**.)
+**abaixo de "Membro"**; **"Malha" promovido ao 1º da lista** e **"Dano" deixou de ser toggle** —
+virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 
 > [!note] Labels Tipo/Nome/Id no Esqueleto e Submembro + exclusividade (2026-06-23)
 > - **Tipo/Nome/Id** (cores rosa/verde/amarelo de `_LABEL_LINE_COLORS`) agora aparecem também sobre o
@@ -143,8 +144,8 @@ de X" → **"Colisor de X"**; `SubColliderToggle`/`SubMemberLabelToggle` movidos
 >   promover; `_on_sub_member_added` ainda bloqueia + avisa se um osso de Membro chegar lá.
 
 > [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
-> - **Malha** (`MalhaCheck`, acima de Tipo, chave `show_malha`, default LIGADO): mostra/esconde a
->   malha (`MeshInstance3D`) do modelo do preview (pula gizmos com nome `_…`). `_apply_malha_visibility`.
+> - **Malha** (`MalhaCheck`, **1º toggle da lista** desde 2026-06-23, chave `show_malha`, default LIGADO):
+>   mostra/esconde a malha (`MeshInstance3D`) do modelo do preview (pula gizmos com nome `_…`). `_apply_malha_visibility`.
 > - **Linhas do Esqueleto** (`SkeletonLinesCheck`, abaixo de Id, chave `show_skeleton_lines`): desenha
 >   as linhas brancas osso→pai do preview, refeitas todo frame pela pose viva (`_refresh_skeleton_lines`
 >   / `_update_skeleton_lines`, gizmo `_SkeletonLines`). É DIFERENTE de "Esqueleto" (que mostra o NOME
@@ -287,8 +288,11 @@ toggle é o **interruptor mestre** da sua categoria:
     de pixels para metros (fator px/m da câmera na profundidade da âncora, robusto ao zoom/escala do
     fit-to-view) e aplicado movendo o pivô no espaço-mundo (para baixo = `-câmera.up`). Indexado em
     `_member_label_pivots`; sem pilhas, é no-op.
-- **Dano** (janela e toggle renomeados de "Dano por membro" em 2026-06-22; `TitleLabel` e `DamageToggle` agora
-  exibem "Dano") — **JANELA FLUTUANTE (estado em 2026-06-21):** o `DamagePanel` é uma **janela
+- **Dano** — aberto pelo **botão `DamageButton`** (à direita do "Voltar", em `UI/Actions`; texto "Dano"/"Damage").
+  Antes era o toggle `DamageToggle` na lista; em 2026-06-23 virou **botão de ação dedicado** que invoca a tela de
+  Dano (`_on_damage_button_pressed` → `_show_damage_panel = true` → `_refresh_damage_panel`); o `×` da janela fecha
+  (`_on_damage_close`). (Janela renomeada de "Dano por membro" em 2026-06-22; `TitleLabel` exibe "Dano".)
+  — **JANELA FLUTUANTE (estado em 2026-06-21):** o `DamagePanel` é uma **janela
   flutuante arrastável**, de **fundo PRETO OPACO**, **600×660**, com **todos os controles DENTRO dela**
   (os campos de valor NÃO flutuam mais sobre o modelo 3D — revertido em 2026-06-21).
   - **Janela (estilo Windows):** estrutura `DamagePanel(PanelContainer, âncora top-left) →
@@ -297,7 +301,7 @@ toggle é o **interruptor mestre** da sua categoria:
     **preto opaco** (alpha 1) e estiliza a `TitleBar` (cinza-escuro opaco), põe `CURSOR_MOVE` e conecta
     `gui_input`→`_on_damage_titlebar_input` (clique-arrasta move `damage_panel.position`, preso à
     viewport; rede de segurança no `_process` solta o arraste se o botão for liberado fora da barra) e
-    o `×`→`_on_damage_close` (desmarca o toggle "Dano"). A **última posição é persistida**:
+    o `×`→`_on_damage_close` (fecha a janela: `_show_damage_panel = false` + `_refresh_damage_panel`). A **última posição é persistida**:
     `_save_damage_panel_pos` grava `Settings.config_file("models","damage_panel_pos")` (um `Vector2`)
     ao terminar o arraste, e `_setup_damage_window` a **restaura** na abertura (presa à viewport;
     default = posição do `.tscn`).
