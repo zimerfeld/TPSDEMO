@@ -125,9 +125,22 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (ordem em 2026-06-23): **Rotação · Animação · Efeitos especiais · Audio ·
-Colisores de Membro · Membro · Colisores de Esqueleto · [Esqueleto · Colisores de Submembros ·
-Submembros · Malha · Tipo · Nome · ID · Linhas do Esqueleto] · Dano**.
+Toggles atuais (ordem/nomes em 2026-06-23): **Rotação · Animação · Efeitos especiais · Audio ·
+Colisor de Membro · Membro · Colisor de Submembro · Submembros · Colisor de Esqueleto ·
+[Esqueleto · Linhas do Esqueleto · Tipo · Nome · ID · Malha] · Dano**. (Renomeados de "Colisores
+de X" → **"Colisor de X"**; `SubColliderToggle`/`SubMemberLabelToggle` movidos para o topo, logo
+**abaixo de "Membro"**.)
+
+> [!note] Labels Tipo/Nome/Id no Esqueleto e Submembro + exclusividade (2026-06-23)
+> - **Tipo/Nome/Id** (cores rosa/verde/amarelo de `_LABEL_LINE_COLORS`) agora aparecem também sobre o
+>   rótulo do **Esqueleto** (`_label_aux_bones`) e do **Submembro** (`_label_sub_member`), via
+>   `_add_tni_lines` — descrevendo o ELEMENTO (classe do nó · nome do osso/submembro · id do nó). Os
+>   handlers Tipo/Nome/Id refrescam membro+submembro (`_refresh_member_overlays`) e esqueleto
+>   (`_refresh_aux_labels`).
+> - **Bug corrigido:** o stack "Membro:" não aparece mais sobre **submembros** — `_add_member_labels`
+>   pula corpos `PART_*` (um elemento é Membro OU Submembro, nunca os dois).
+> - **Exclusividade:** `_aux_bone_candidates` já só oferece ossos não-membros (`group_of==""`) para
+>   promover; `_on_sub_member_added` ainda bloqueia + avisa se um osso de Membro chegar lá.
 
 > [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
 > - **Malha** (`MalhaCheck`, acima de Tipo, chave `show_malha`, default LIGADO): mostra/esconde a

@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1782259877
+::res://::1782260296
 AIPrompts.txt::TextFile::-1::1780762580::0::1::::<><><>0<>0<><>::
 contagem de downloads.txt::TextFile::-1::1781951986::0::1::::<><><>0<>0<><>::
 default_bus_layout.tres::AudioBusLayout::1513395931677394583::1782244843::0::1::::<><><>0<>0<><>::
@@ -155,9 +155,9 @@ locale.gd::GDScript::2098539873856337717::1781951985::0::1::::<>Node<><>0<>0<><>
 performance_hud.gd::GDScript::6103572712386556022::1782100429::0::1::::<>Node<><>0<>0<><>::
 player_selection.gd::GDScript::8198692221097200293::1782246496::0::1::::<>Node<><>0<>0<><>::
 stability_guard.gd::GDScript::827762660584854590::1782256592::0::1::::<>Node<><>0<>0<><>::
-::res://build/::1782256787
+::res://build/::1782262591
 icon.ico::OtherFile::-1::1781967641::0::1::::<><><>0<>0<><>::
-::res://build/windows/::1782259876
+::res://build/windows/::1782262573
 ::res://data/::1782100429
 limb_config.json::JSON::-1::1782100429::0::1::::<><><>0<>0<><>::
 ::res://effects_shared/::1782259855
@@ -195,7 +195,7 @@ enemy_health_bar.gd::GDScript::1538669343273556771::1781951990::0::1::::<>Canvas
 ::res://library3D/characters/mecha07_infantil/::1781951990
 mecha07_infantil.tscn::PackedScene::-1::1781951990::0::1::::<><><>0<>0<><>::
 ::res://library3D/characters/player/::1782255584
-limb_config.json::JSON::-1::1782255584::0::1::::<><><>0<>0<><>::
+limb_config.json::JSON::-1::1782262776::0::1::::<><><>0<>0<><>::
 muzzle_flash_particle_mesh_Cone.mesh::ArrayMesh::1082389752442802573::1781493868::0::1::::<><><>0<>0<><>::
 player.glb::PackedScene::7765818617047381251::1781493868::1781951993::1::::<><><>0<>0<>2978f0839d1d5905ddf9453d5d593ac7<>res://.godot/imported/player.glb-503e661c669e29d8095e695488e44b4f.scn::uid://deuketc2tfbcu::::res://library3D/characters/player/playerobot.tres<>uid://bb8w80od0uuhd::::res://library3D/characters/player/robotemitter.tres
 player.tscn::PackedScene::-1::1781951993::0::1::::<><><>0<>0<><>::uid://div25sd40yx1d::::res://library3D/characters/player/player.glb
@@ -236,8 +236,9 @@ procedural_aim.gd::GDScript::2977643352985813754::1781951995::0::1::::<>Skeleton
 ::res://library3D/characters/players/playera/::1781951996
 playera.gd::GDScript::4966960283928500117::1781951996::0::1::::Playera<>Player<><>0<>0<><>::
 playera.tscn::PackedScene::-1::1781951996::0::1::::<><><>0<>0<><>::uid://cs1k22tdf04k4::::res://library3D/characters/players/player/player.tscn<>uid://cc1bd0ncv115r::::res://library3D/characters/players/playera/playera.gd
-::res://library3D/characters/red_robot/::1782256714
+::res://library3D/characters/red_robot/::1782262875
 EvilRobo.tres::StandardMaterial3D::2446451608419707340::1781951996::0::1::::<><><>0<>0<><>::uid://buosl00vcjypt::::res://library3D/characters/red_robot/textures/red_robot_emission.png<>uid://daxby8xdf31fb::::res://library3D/characters/red_robot/textures/red_robot_normal.png<>uid://c0o7286nq1di4::::res://library3D/characters/red_robot/textures/red_robot_orm.png<>uid://bwosvc562wtg7::::res://library3D/characters/red_robot/textures/red_robot_albedo.png
+limb_config.json::JSON::-1::1782263363::0::1::::<><><>0<>0<><>::
 red_robot.gd::GDScript::2792821720276115913::1782256714::0::1::::<>CharacterBody3D<><>0<>0<><>::
 red_robot.glb::PackedScene::5666207521100253164::1781493868::1781952004::1::::<><><>0<>0<>18cf4d1d6997ec09d002c46e6960001e<>res://.godot/imported/red_robot.glb-1147cc42b3449bd47cebb0874f3b4f74.scn::uid://ba4cx232blvi7::::res://library3D/characters/red_robot/EvilRobo.tres<>uid://cjq1xb305wq1b::::res://library3D/characters/red_robot/ShadelessBlack.tres
 red_robot.tscn::PackedScene::4089353330099355754::1781952004::0::1::::<><><>0<>0<><>::uid://bf14mo0lrrvjl::::res://library3D/characters/red_robot/red_robot.gd<>uid://cmy0u0gubi0bw::::res://library3D/characters/red_robot/red_robot.glb<>uid://b5a08lep8yhf1::::res://library3D/characters/red_robot/laser/circle.mesh<>uid://cfq45e1sfaycm::::res://library3D/characters/red_robot/laser/LaserMaterial.tres<>uid://mku55kdo1248::::res://library3D/characters/red_robot/laser/raymesh.mesh<>uid://bfl0kmtf31qti::::res://library3D/characters/red_robot/laser/LaserShader.gdshader<>uid://yxudvmlt7e3h::::res://library3D/characters/red_robot/laser/impact_effect/EmissionEmbers.tres<>uid://cp4djbb113s3h::::res://library3D/characters/red_robot/laser/LaserBodyNoise.tres<>uid://b2atvw0yire0x::::res://library3D/characters/red_robot/laser/EmberTrailCutoff.tres<>uid://b0yi1uf4xb6ex::::res://library3D/characters/red_robot/parts/sparks_effect/SparkMaterial.tres<>uid://sqhcvf58y6wj::::res://library3D/characters/red_robot/laser/EmbersColorOverLife.tres<>uid://bfewuxtmeylhc::::res://library3D/characters/red_robot/audio/charge.wav<>uid://cqxcjajjrcqvk::::res://library3D/characters/red_robot/laser/LaserCenter.material<>uid://bcvohx7obe6ar::::res://library3D/characters/red_robot/laser/BarrelSmoke_Plane.mesh<>uid://vld48oqn441w::::res://library3D/characters/red_robot/audio/shoot.wav<>uid://bhf6kwdlc7f5h::::res://library3D/characters/red_robot/laser/smoke.tres<>uid://biuwx526bcnen::::res://library3D/characters/red_robot/parts/part_head.glb<>uid://d08ew7v88qgom::::res://library3D/characters/red_robot/parts/part_shield.glb<>uid://8d78kbpqjumj::::res://effects_shared/blob_shadow.tres<>uid://bmmpsboaqxy4s::::res://library3D/characters/red_robot/audio/explosion.wav<>uid://h53v0p3a82ki::::res://library3D/characters/red_robot/audio/walk.wav<>uid://iodygamtcovk::::res://library3D/characters/red_robot/audio/hit.wav<>uid://cna0fa1wdq56d::::res://library3D/characters/red_robot/parts/sparks_effect/SparkParticle_Sphere.mesh<>uid://c3vo80hyj6w6c::::res://library3D/characters/red_robot/parts/part.gd<>uid://kl4f3mi24xdv::::res://library3D/characters/red_robot/laser/impact_effect/impact_effect.tscn
@@ -568,9 +569,9 @@ layout-responsivo.md::TextFile::-1::1782225200::0::1::::<><><>0<>0<><>::
 fluxo-de-cenas.md::TextFile::-1::1782255584::0::1::::<><><>0<>0<><>::
 fluxo-de-input.md::TextFile::-1::1781951942::0::1::::<><><>0<>0<><>::
 fluxo-de-tiro.md::TextFile::-1::1781951942::0::1::::<><><>0<>0<><>::
-::res://OBSIDIAN/CLAUDE/sistemas/::1782259896
+::res://OBSIDIAN/CLAUDE/sistemas/::1782262642
 audio.md::TextFile::-1::1781951942::0::1::::<><><>0<>0<><>::
-biblioteca-de-modelos.md::TextFile::-1::1782259896::0::1::::<><><>0<>0<><>::
+biblioteca-de-modelos.md::TextFile::-1::1782262603::0::1::::<><><>0<>0<><>::
 build-windows.md::TextFile::-1::1782100429::0::1::::<><><>0<>0<><>::
 combate-tiro.md::TextFile::-1::1782246496::0::1::::<><><>0<>0<><>::
 dano-localizado.md::TextFile::-1::1782172904::0::1::::<><><>0<>0<><>::
@@ -579,7 +580,7 @@ hospedagem-online.md::TextFile::-1::1782255584::0::1::::<><><>0<>0<><>::
 inimigos.md::TextFile::-1::1781951943::0::1::::<><><>0<>0<><>::
 localizacao.md::TextFile::-1::1782100429::0::1::::<><><>0<>0<><>::
 multiplayer.md::TextFile::-1::1782255584::0::1::::<><><>0<>0<><>::
-performance-hud.md::TextFile::-1::1782225200::0::1::::<><><>0<>0<><>::
+performance-hud.md::TextFile::-1::1782262642::0::1::::<><><>0<>0<><>::
 player.md::TextFile::-1::1781951943::0::1::::<><><>0<>0<><>::
 recursos-nativos-godot.md::TextFile::-1::1782100429::0::1::::<><><>0<>0<><>::
 sistema-de-vida.md::TextFile::-1::1781951944::0::1::::<><><>0<>0<><>::
@@ -685,8 +686,8 @@ PT_Sans-Web-Bold.ttf::FontFile::360480240899609243::1780851340::1781952051::1:::
 ::res://scenes2D/menu/Resources/::1782246496
 menu.en.json::JSON::-1::1782246496::0::1::::<><><>0<>0<><>::
 menu.pt.json::JSON::-1::1782246496::0::1::::<><><>0<>0<><>::
-::res://scenes2D/overlays/::1782100429
-performance_bar.gd::GDScript::475329158874176594::1782100429::0::1::::<>Control<><>0<>0<><>::
+::res://scenes2D/overlays/::1782262548
+performance_bar.gd::GDScript::475329158874176594::1782262548::0::1::::<>Control<><>0<>0<><>::
 ::res://scenes2D/overlays/Resources/::1782100429
 overlays.en.json::JSON::-1::1782100429::0::1::::<><><>0<>0<><>::
 overlays.pt.json::JSON::-1::1782100429::0::1::::<><><>0<>0<><>::
@@ -716,12 +717,12 @@ level_base.gd::GDScript::4960781092139784172::1782255584::0::1::::<>Node3D<><>0<
 level_base.lmbake::LightmapGIData::8418303874976137457::1780851340::0::1::::<><><>0<>0<><>::uid://bwrkkvnq7ekgo::::res://level/level.exr
 level_base.tscn::PackedScene::4546746168046854455::1782246496::0::1::::<><><>0<>0<><>::uid://ccxbls23ev7u3::::res://scenes3D/level_base/level_base.gd<>res://library3D/geometry/scenes/props.tscn<>uid://bw86lhn5p1ovp::::res://library3D/geometry/giprobe_data.res<>uid://bqfjtqyo6pdu3::::res://scenes3D/level_base/level_base_music.ogg<>uid://6ec6m14rhsxi::::res://scenes3D/level_base/debug.gd<>res://library3D/propulsores/forklift/flying_forklift.tscn<>res://library3D/geometry/scenes/lights.tscn<>res://library3D/geometry/scenes/core.tscn<>res://library3D/geometry/scenes/structure.tscn<>uid://cnn46umvf55rs::::res://library3D/geometry/environment.tres
 level_base_music.ogg::AudioStreamOggVorbis::3520345331818033656::1780851340::1781952055::1::::<><><>0<>0<>88ea164b4f8a5bc069cd79d04632e42d<>res://.godot/imported/level_base_music.ogg-81522dbcac446213531f88b05acbc917.oggvorbisstr::
-::res://scenes3D/models/::1782260261
-models.gd::GDScript::2670394553313246587::1782260261::0::1::::<>Node<><>0<>0<><>::
-models.tscn::PackedScene::-1::1782257102::0::1::::<><><>0<>0<><>::res://scenes3D/models/models.gd<>uid://buithemedemo1::::res://ui/ui_theme.tres
-::res://scenes3D/models/Resources/::1782172904
-models.en.json::JSON::-1::1782172904::0::1::::<><><>0<>0<><>::
-models.pt.json::JSON::-1::1782172904::0::1::::<><><>0<>0<><>::
+::res://scenes3D/models/::1782262525
+models.gd::GDScript::2670394553313246587::1782261790::0::1::::<>Node<><>0<>0<><>::
+models.tscn::PackedScene::-1::1782262525::0::1::::<><><>0<>0<><>::res://scenes3D/models/models.gd<>uid://buithemedemo1::::res://ui/ui_theme.tres
+::res://scenes3D/models/Resources/::1782261474
+models.en.json::JSON::-1::1782261474::0::1::::<><><>0<>0<><>::
+models.pt.json::JSON::-1::1782261453::0::1::::<><><>0<>0<><>::
 ::res://themes/::1781952056
 cyberpunk.tres::Theme::7050551186058551672::1781952056::0::1::::<><><>0<>0<><>::
 ::res://tools/::1782123635

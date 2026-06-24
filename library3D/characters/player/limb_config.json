@@ -29,7 +29,8 @@
 		]
 	},
 	"damage": {
-
+		"PART_eyes": 1.7,
+		"PART_mouth": 1.6
 	},
 	"sub_member_owners": {
 		"eyes": "HEAD",
