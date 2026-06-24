@@ -77,7 +77,10 @@ third-person shooter sandbox. At a high level it offers:
   that floats the "Esqueleto: \<name\>" label of the chosen loose bone over it, plus extra Type/Name/ID lines), **Colisores de Esqueleto** (in "All members" mode → "Skeleton" filter, highlights the
   chosen loose bone's region — or all of them — with a translucent box), **Submembros** (a floating
   "Submembro: \<name\>" label over the sub-member chosen in the dropdown) and **Colisores de Submembros**
-  (shows only the selected sub-member's limbcollider, with the same offset/scale editor). The **Dano (Damage)
+  (shows only the selected sub-member's limbcollider, with the same offset/scale editor). The selectors are **three
+  dropdowns** — **Membro** (member), **Sub-membro** right below it (with a **"Todos os Sub-membros"** option to show
+  them all at once) and, only in **"Todos os membros"** mode, **Esqueleto** (loose bones), which sits below Sub-membro
+  — or below the **Salvar**/Save button when a sub-member is selected and the editor appears. The **Dano (Damage)
   screen** is not in the toggle list: it opens from the **"Dano" button** (right of the "Voltar"/Back button) — a
   **draggable floating window** with an opaque black background ("Dano" title bar + × close) holding a **tree** of
   each member/sub-member's bonus %, where you also add/remove protruding `PART_*` colliders (which **keep the
