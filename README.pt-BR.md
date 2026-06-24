@@ -79,7 +79,10 @@ em terceira pessoa. Em alto nível, oferece:
   "Esqueleto: \<nome\>" do osso avulso escolhido sobre ele, e as linhas extras Tipo/Nome/ID), **Colisores de Esqueleto** (no modo "Todos os membros" → filtro "Esqueleto", destaca com uma
   caixa translúcida a região do osso avulso escolhido, ou de todos), **Submembros** (rótulo flutuante
   "Submembro: \<nome\>" sobre o sub-membro escolhido no dropdown) e **Colisores de Submembros** (mostra
-  só o limbcollider do sub-membro selecionado, com o mesmo editor de afastamento/escala). A **tela de Dano** não
+  só o limbcollider do sub-membro selecionado, com o mesmo editor de afastamento/escala). Os seletores são **três
+  dropdowns** — **Membro**, **Sub-membro** (logo abaixo, com a opção **"Todos os Sub-membros"** para ver todos de
+  uma vez) e, só no modo **"Todos os membros"**, **Esqueleto** (ossos avulsos), que fica abaixo de Sub-membro — ou
+  abaixo do botão **Salvar** quando um sub-membro está selecionado e o editor aparece. A **tela de Dano** não
   fica na lista de toggles: é aberta pelo **botão "Dano"** (à direita do botão "Voltar") — uma **janela flutuante
   arrastável** de fundo preto opaco (barra de título "Dano" + botão × para fechar) com uma **árvore** do bônus %
   de cada membro/sub-membro, onde também se adicionam/removem colliders salientes `PART_*` (que **mantêm o nome

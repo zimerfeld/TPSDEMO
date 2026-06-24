@@ -327,6 +327,22 @@ layout_mode = 2
 size_flags_horizontal = 0
 text = "Salvar"
 
+[node name="SkeletonRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Esqueleto:"
+
+[node name="cboSkeleton" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
 [node name="Toggles" type="VBoxContainer" parent="UI/Margin/Main/Body"]
 layout_mode = 2
 size_flags_horizontal = 8

@@ -371,17 +371,28 @@ toggle é o **interruptor mestre** da sua categoria:
     (`L-/R-Shield`, filhos do `L-ARMIK`) → BRAÇO via o pai `L-ARMIK` na hierarquia. Ambos **agrupados sob
     BRAÇO E/D**, mas exibidos com o **nome original** do osso (ver item acima). Ossos que já são MEMBRO (ex.: `L-Shoulder` → BRAÇO) NÃO entram na
     lista "Adicionar sub-membro". Ver [[sistemas/dano-localizado]].
-  - **Opção "Todos os membros" + filtro "Esqueleto" (2026-06-21; rótulo renomeado de "Ossos avulsos"
-    → "Esqueleto" em 2026-06-22):** o dropdown "Membro" tem,
+  - **Opção "Todos os membros" (2026-06-21):** o dropdown "Membro" tem,
     logo após "Selecione...", o item **"Todos os membros"** (`ALL_MEMBERS_LABEL`/`ALL_MEMBERS_VALUE`,
     traduzido "All members"; retraduzido na troca de idioma como "Modelo completo"/"Todos"). Ele
     **desloca os membros para os índices 2+** (`_member_value`/`_member_index_for_value` tratam índice
-    1 = sentinela). Escolhido, **exibe TODOS os membros** (sem isolamento) e a row de baixo vira o
-    filtro **"Esqueleto"**: o `cboSubMembers` passa a listar os **ossos avulsos** — os candidatos a
-    sub-membro (`_aux_bone_candidates`: `group_of == ""` e ainda não promovidos), os MESMOS do dropdown
-    "Adicionar sub-membro" da janela de dano. Não isola colliders (esses ossos não têm; `_current_focus_groups`
-    devolve `null` quando `msel == 1`). O rótulo da row alterna "Sub-membro:" ↔ **"Esqueleto:"** (traduzido
-    "Skeleton:"; no `Locale.SKIP_GROUP`, dirigido por `_populate_sub_members`/`_on_language_changed`).
+    1 = sentinela). Escolhido, **exibe TODOS os membros** (sem isolamento).
+  - **Três dropdowns separados — Membro · Sub-membro · Esqueleto (reestruturado em 2026-06-23):** o
+    `cboSubMembers` ("Sub-membro:", logo abaixo de "Membro") agora é SEMPRE a lista de sub-membros —
+    nunca mais o filtro de ossos avulsos. Com **membro específico** lista os `PART_*` daquele membro;
+    com **"Todos os membros"** lista **TODOS os `PART_*` do modelo** (ordenados) e ganha, no topo, a
+    opção **"Todos os Sub-membros"** (`ALL_SUB_MEMBERS_LABEL`/`ALL_SUB_MEMBERS_VALUE`) = não isola,
+    mostra o modelo inteiro. Os **ossos avulsos** saíram para um dropdown PRÓPRIO **"Esqueleto"**
+    (`SkeletonRow` → `cboSkeleton`, label estático "Esqueleto:" auto-traduzido), exibido **só no modo
+    "Todos os membros"** e **sempre visível nesse modo** — quando o modelo não tem ossos avulsos
+    candidatos, aparece **desabilitado** (só "Selecione..."). Ele lista `_aux_bone_candidates`
+    (`group_of == ""`, não promovidos), com **"Todo o esqueleto"** (`ALL_AUX_VALUE`) no topo; só
+    inspeção/realce (não isola). `_populate_sub_members` (sub-membros) e `_populate_skeleton` (ossos
+    avulsos, chamado no topo daquele) populam; `_reset_skeleton` limpa. **Posição do "Esqueleto":** a
+    `SkeletonRow` fica APÓS o `ColliderEditBox` na árvore, então quando um sub-membro está selecionado
+    o editor (afastamento/escala + **Salvar**) aparece e empurra o "Esqueleto" para baixo dele; sem
+    sub-membro selecionado o editor some (colapsa) e o "Esqueleto" fica logo abaixo de "Sub-membro".
+    Persistência: sub-membro em `sel_submember` (cobre os dois modos), osso avulso em `sel_skeleton`;
+    ambos restaurados no `_restore_selection_chain`.
   - **Toggle "Colisores de Esqueleto" (renomeado de "Realçar avulso"→"Esqueleto"→"Colisores de Esqueleto" em 2026-06-22) + "Todo o esqueleto" (2026-06-21; item antes "Todos os ossos avulsos"):** como os personagens são UMA
     malha skinada (partes não separáveis por nó), o filtro **DESTACA sem esconder**: o toggle
     `AuxHighlightToggle` (`_show_aux_highlight`, persistido) desenha uma **caixa laranja translúcida**
@@ -393,8 +404,8 @@ toggle é o **interruptor mestre** da sua categoria:
     desenha; `_clear_aux_highlights` remove (nós com prefixo `_AuxHL_`).
   - **Isolamento EXCLUSIVo (2026-06-21):** `_current_focus_groups` mostra **uma peça por vez** —
     Membro escolhido **sem** Sub-membro → só o collider do MEMBRO; **com** Sub-membro → só aquele
-    sub-membro. "Todos os membros" → `null` (mostra tudo; a row vira o filtro "Esqueleto", que não
-    isola).
+    sub-membro. "Todos os membros" → o `cboSubMembers` isola o `PART_*` escolhido (ou `null` = mostra
+    tudo, em "Selecione..."/"Todos os Sub-membros"); o dropdown "Esqueleto" (`cboSkeleton`) nunca isola.
   - **Colisores gateados por toggle, POR TIPO (2026-06-21; separado em 2026-06-22):** o ramo de foco de
     `_refresh_member_overlays` exibe o gizmo conforme o **toggle MESTRE do tipo** do grupo em foco:
     MEMBRO → **"Colisores de Membro"** (`_show_colliders`); SUB-MEMBRO (PART_*) → **"Colisores de
