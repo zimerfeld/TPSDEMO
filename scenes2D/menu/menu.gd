@@ -122,13 +122,10 @@ func _on_quit_pressed() -> void:
 
 
 func _on_play_online_pressed() -> void:
-	# Online: mesma sequência do offline (chooseplayer → levels); a tela de levels é
-	# que, vendo online_mode, abre a playonline em vez de carregar o nível direto.
+	# Online: vai DIRETO para a tela de salas (PlayOnline), onde se decide Host/Client. O
+	# personagem (ChoosePlayer) e a sala são escolhidos depois, já dentro do fluxo de salas.
 	PlayerSelection.online_mode = true
-	loading_path = CHOOSEPLAYER_PATH
-	main.hide()
-	loading.show()
-	ResourceLoader.load_threaded_request(loading_path, "", true)
+	emit_signal("replace_main_scene", load(PLAYONLINE_PATH))
 
 
 func _on_developer_pressed() -> void:

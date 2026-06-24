@@ -64,12 +64,14 @@ third-person shooter sandbox. At a high level it offers:
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
   can use; the player and Red Robot both fire via `CannonShooter`.
 - **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2), a full
-  complex level (Level Base), plus online play with three modes: **Host & Connect** (host and join
-  as a player), **Host-Only** (a free-fly spectator camera, no collision and no controlled player —
-  WASD glides on the plane, Space+W/S rises/descends at jump speed) and **Connect** — which first
-  pops a confirmation dialog ("Reconnect to the match in progress?") before opening the socket, since
-  a client can rejoin a running match for as long as a host is up. Each player's
-  chosen variant/colour shows for everyone online (per-peer loadout via `NetSpawn`), and other
+  complex level (Level Base), plus **rooms-based online play**: on **Play Online** you first pick a
+  role with **Host / Client** radio buttons. **Host** opens the room manager (`host_session`), where
+  you start one or more levels as isolated rooms and, per room, **Play** (after the character picker,
+  spawn into it as a player), **Observe** (free-fly no-collision camera), **Restart** or **Stop**
+  (ends that room and sends its clients back to the browser with a "server shut down" alert).
+  **Client** opens the room browser (`client_session`), which lists the running rooms with a **Play**
+  button (shown only while a room exists) that drops you into the chosen room after the character
+  picker. Each player's chosen variant/colour shows for everyone online (per-peer loadout), and other
   players/enemies are smoothed with a **timestamped interpolation buffer** (rendered ~100 ms in the
   past) for a flicker-free, high-FPS client view.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
@@ -345,8 +347,10 @@ Screen flow:
 
 ```
 menu ─┬─ Play Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
-      ├─ Play Online ──► chooseplayer ─► levels ─► playonline ─► chosen level
-      │                                  (pick level)   (host & connect / host-only / connect)
+      ├─ Play Online ──► playonline (Host / Client radios)
+      │                    ├─ Host ───► host_session   (start rooms; per room: Play / Observe / Restart / Stop)
+      │                    └─ Client ─► client_session (browse rooms; per room: Play)
+      │                                   └─ Play ─► chooseplayer ─► spawn into the chosen room
       ├─ settings
       ├─ developer ──┬─ models    (3D model viewer for library3D assets)
       │              └─ controls  (2D controls viewer for controls2D widgets)
@@ -378,12 +382,14 @@ ZIMARO/
 │  ├─ levels/            # level selector
 │  ├─ settings/          # settings screen + Settings autoload (config.gd)
 │  ├─ developer/         # developer tools menu (debug toggles, links to viewers)
-│  ├─ playonline/        # host/connect online screen
+│  ├─ playonline/        # online entry: Host/Client role → room manager/browser
+│  ├─ host_session/      # server: room manager (start + Play/Observe/Restart/Stop per room)
+│  ├─ client_session/    # client: room browser (Play into a running room)
 │  ├─ controls/          # 2D widget viewer (analog of the Models screen)
 │  └─ controls2D/        # reusable HUD widgets: crosshair, minimap_panel, vitals_panel, …
 ├─ scenes3D/             # 3D levels and tools
 │  ├─ level_1/ level_2/ level_base/   # playable levels
-│  ├─ spectator_camera/  # free-fly camera for "Host-Only" mode (no-collision flight, WASD + Space)
+│  ├─ spectator_camera/  # free-fly no-collision camera to Observe a room (host) — WASD + Space
 │  └─ models/            # 3D model viewer/inspector for the library3D assets
 ├─ library3D/            # reusable 3D asset library, organized by type
 │  ├─ characters/        # players + enemies
