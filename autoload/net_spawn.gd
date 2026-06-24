@@ -17,19 +17,65 @@ extends Node
 const LOADOUT_TIMEOUT: float = 5.0
 const DEFAULT_VARIANT: int = 0
 
+# Câmera livre de observação do modo "Hospedar Somente" (sem colisão, sem player controlado).
+const SpectatorCamera: PackedScene = preload("res://scenes3D/spectator_camera/spectator_camera.tscn")
+
+# Emitido no cliente quando o servidor responde qual cenário (nível) está hospedando — usado
+# pela tela playonline para só confirmar reconexão quando for o MESMO cenário do cliente.
+signal scenario_received(scenario_path: String)
+
 var _spawned_nodes: Node3D = null
 var _spawn_points_parent: Node3D = null
 var _spawn_queue: Array = []
 # peer_id -> Marker3D do spawn reservado, aguardando o register_loadout daquele cliente.
 var _pending: Dictionary = {}
+# Caminho da cena do nível que o SERVIDOR está hospedando (preenchido em _begin_server).
+# Respondido ao cliente via request_scenario/answer_scenario.
+var _server_scenario: String = ""
 
 
-# Chamado pelo nível no _ready. `spawn_host` = false no modo "Hospedar Somente" (sem player do host).
+# Chamado pelo nível no _ready. `spawn_host` = false no modo "Hospedar Somente" (sem player do
+# host): em vez de um player controlado, adiciona uma câmera livre que observa o level sem colisão.
 func setup(spawned_nodes: Node3D, spawn_points_parent: Node3D, spawn_host: bool = true) -> void:
 	if multiplayer.is_server():
+		# Cenário em execução = caminho da cena do nível (raiz, pai do SpawnedNodes).
+		var level_root: Node = spawned_nodes.get_parent()
+		_server_scenario = level_root.scene_file_path if level_root != null else ""
 		_begin_server(spawned_nodes, spawn_points_parent, spawn_host)
+		# Modo "Hospedar Somente": sem player do host → câmera livre observando o level.
+		if not spawn_host:
+			_add_spectator_camera(spawned_nodes, spawn_points_parent)
 	else:
 		_announce_loadout()
+
+
+# Câmera livre do modo "Hospedar Somente". Filha direta do level (FORA do SpawnedNodes,
+# por isso NÃO é replicada): existe apenas na instância do servidor que está observando.
+func _add_spectator_camera(spawned_nodes: Node3D, spawn_points_parent: Node3D) -> void:
+	var level_root: Node = spawned_nodes.get_parent()
+	if level_root == null:
+		return
+	var cam: Camera3D = SpectatorCamera.instantiate()
+	level_root.add_child(cam)
+	# Começa um pouco acima do 1º ponto de spawn, com uma visão do level.
+	if is_instance_valid(spawn_points_parent) and spawn_points_parent.get_child_count() > 0:
+		var spawn_point: Node3D = spawn_points_parent.get_child(0)
+		cam.global_position = spawn_point.global_position + Vector3(0.0, 8.0, 0.0)
+
+
+# Cliente → servidor: "qual cenário você está hospedando?". O servidor responde via answer_scenario.
+@rpc("any_peer", "reliable")
+func request_scenario() -> void:
+	if not multiplayer.is_server():
+		return
+	var id: int = multiplayer.get_remote_sender_id()
+	answer_scenario.rpc_id(id, _server_scenario)
+
+
+# Servidor → cliente: o caminho da cena do nível em execução. O cliente compara com o que escolheu.
+@rpc("authority", "reliable")
+func answer_scenario(scenario_path: String) -> void:
+	scenario_received.emit(scenario_path)
 
 
 func _begin_server(spawned_nodes: Node3D, spawn_points_parent: Node3D, spawn_host: bool) -> void:

@@ -17,10 +17,22 @@
 - **Layout da tela** (`playonline.tscn`): cada input tem um **Label à esquerda** localizado — `Port:` (PT "Porta:") e `IP Address/Domain:` (PT "Endereço IP/Domínio:"), via `Resources/playonline.*.json`. A `ButtonsRow` centralizada **abaixo** das linhas de Port/Address tem **três botões**:
   - **HostButton** ("Hospedar e Conectar") → `_on_host_pressed`: hospeda E entra no jogo como player (comportamento clássico do antigo "Host").
   - **HostOnlyButton** ("Hospedar Somente") → `_on_host_only_pressed`: hospeda mas **não** entra como player — abre uma **câmera livre de observação** (`scenes3D/spectator_camera/`) para acompanhar o level ao vivo (ver seção abaixo).
-  - **ConnectButton** ("Conectar") → `_on_connect_pressed`: abre antes um **`ConfirmationDialog`** ("Deseja se re-conectar na partida em andamento ?", botões Sim/Não); só ao confirmar chama `_do_connect()`, que cria o `create_client()` e conecta ao host. Cancelar não faz nada; o diálogo não empilha (guarda `_reconnect_dialog`). Strings em `Resources/playonline.*.json` (`Reconectar`, `Deseja…`, `Sim`, `Não`).
-  - Os três compartilham `_start_host()` (host) — o modo é gravado em `PlayerSelection.spectator_host` (true só no "Hospedar Somente") e lido no `level_base.gd`.
+  - **ConnectButton** ("Conectar") → `_on_connect_pressed`: **(2026-06-24)** faz primeiro uma **sondagem
+    ("probe")** — conecta brevemente ao host só para **perguntar qual cenário ele hospeda** (RPC
+    `NetSpawn.request_scenario` → `answer_scenario`). Só mostra o **`ConfirmationDialog`** ("Deseja se
+    re-conectar na partida em andamento ?", Sim/Não) **quando o cenário do host é o MESMO** que o cliente
+    escolheu (`_selected_level()`); caso contrário conecta direto, sem perguntar. O probe é **descartado**
+    (`_end_probe` fecha o socket e volta ao `OfflineMultiplayerPeer`) antes do **join real** (`_do_connect`),
+    preservando a ordem de carga do nível (o spawner do cliente precisa existir antes do join, senão
+    perde os spawns já existentes). Falha de conexão → erro; sem resposta em `PROBE_TIMEOUT` (3 s, ex.:
+    servidor antigo sem o RPC) → conecta direto. O diálogo não empilha (guarda `_reconnect_dialog`).
+    Strings em `Resources/playonline.*.json` (`Reconectar`, `Deseja…`, `Sim`, `Não`).
+  - Os três compartilham `_start_host()` (host) — o modo é gravado em `PlayerSelection.spectator_host` (true só no "Hospedar Somente") e lido no `NetSpawn.setup` dos **3 níveis** (level_base/1/2).
 
-> **Reconexão:** como um cliente pode reentrar numa partida já em andamento enquanto houver um host (o servidor respawna o player no `peer_connected` via `NetSpawn`), o **Conectar** confirma a reconexão antes de abrir o socket — evita conectar por engano a uma partida em andamento.
+> **Reconexão (mesmo cenário):** um cliente pode reentrar numa partida em andamento enquanto houver um
+> host (o servidor respawna o player no `peer_connected` via `NetSpawn`). Mas a confirmação só faz sentido
+> quando se reentra no **mesmo cenário** — por isso o **Conectar** pergunta o cenário ao servidor antes de
+> decidir. Cenário diferente conecta direto, sem o diálogo. Ver [[sistemas/multiplayer]].
 
 > ⚠️ **ngrok NÃO funciona** aqui: ngrok só faz túnel de **TCP/HTTP**, não suporta **UDP**. Sem alterar o jogo para WebSocket/TCP, não há configuração de ngrok que conecte ao host ENet.
 
@@ -32,8 +44,11 @@ Hospeda o servidor **sem** virar player: o host voa pelo level com uma câmera l
 sem player controlado, para ver em tempo real o que acontece (robôs, players conectados).
 
 - **Fluxo:** `_on_host_only_pressed` (playonline) seta `PlayerSelection.spectator_host = true` e chama
-  `_start_host()` (mesmo servidor ENet do "Hospedar e Conectar"). No `level_base.gd`, quando
-  `is_server()` **e** `spectator_host`, em vez de `add_player(1, …)` chama `_add_spectator_camera()`.
+  `_start_host()` (mesmo servidor ENet do "Hospedar e Conectar"). **(2026-06-24)** a câmera é adicionada
+  pelo **`NetSpawn.setup`** quando `spawn_host=false` (`_add_spectator_camera`), valendo para os **3
+  níveis** — antes só o `level_base` tratava, então no `level_1`/`level_2` o "Hospedar Somente" criava
+  player do host por engano. O jogo **offline** reseta `spectator_host=false` em `levels.gd` (solo sempre
+  tem player).
 - **Câmera** (`scenes3D/spectator_camera/spectator_camera.{gd,tscn}`): um `Camera3D` filho **direto do
   level** (fora do `SpawnedNodes` → **não replica**; existe só na instância do servidor). Não consome
   spawn point — todos ficam para os clientes.

@@ -22,6 +22,24 @@ personagens, `Cannon`/`Explosion`/`Hit`/`Walk` do red_robot, etc.) recebeu
 `bus = &"SFX"`, e os buses de reverb `Outside`/`Reactor` foram religados para mandar
 em `SFX` em vez de `Master`. Assim mutar `SFX` silencia todo efeito sem tocar na música.
 
+## Sons do player posicionais (3D) — 2026-06-24
+
+Os efeitos do player (`SoundEffects/Step`, `Jump`, `Land`, `Shoot`) eram
+`AudioStreamPlayer` (não-posicional) → no multiplayer você ouvia o tiro de outro
+player sem saber de onde vinha. Agora são **`AudioStreamPlayer3D`** e o nó pai
+`SoundEffects` virou **`Node3D`** (senão os filhos 3D tocariam na origem do mundo, não
+na posição do player). Como esses sons já disparam via RPC **`@rpc("call_local")`**
+(`jump`/`land`/`shoot`), eles tocam em todos os peers a partir da **posição replicada**
+do player → espacialização correta, **sem tráfego de rede extra nem latência**. Para o
+player **local** (câmera = listener, bem perto) o som fica nítido e consistente.
+
+- **Alcance/atenuação** (calibrado p/ não desperdiçar vozes de áudio com players
+  distantes): `Step` `unit_size 8`/`max_distance 30`;
+  `Jump`/`Land` `8`/`35`; `Shoot` `12`/`60` (tiro carrega mais longe; alcances espelham
+  o `Motor` da criatura ~35 e a `Explosion` do red_robot ~60). Acima do `max_distance` o
+  Godot descarta a voz → custo de CPU só para sons audíveis.
+- A `playera` herda tudo (instancia `player.tscn`), então o mesmo vale para a variante.
+
 ## Controles nas settings
 
 Aba **Audio** de `scenes2D/settings/settings.tscn` tem duas linhas independentes,

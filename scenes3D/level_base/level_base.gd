@@ -4,7 +4,6 @@ extends Node3D
 signal quit
 
 const RedRobot: PackedScene = preload("res://library3D/characters/red_robot/red_robot.tscn")
-const SpectatorCamera: PackedScene = preload("res://scenes3D/spectator_camera/spectator_camera.tscn")
 
 var lightmap_gi: LightmapGI = null
 
@@ -36,12 +35,9 @@ func _ready() -> void:
 		for child in robot_spawn_points.get_children():
 			spawn_robot(child)
 		randomize()
-		# Modo "Hospedar Somente": o host NÃO vira player; observa com câmera livre.
-		if PlayerSelection.spectator_host:
-			_add_spectator_camera(player_spawn_points.get_child(0) if player_spawn_points.get_child_count() > 0 else null)
 
 	# Spawn de players (host + clientes, cada um com a variante que escolheu) via NetSpawn.
-	# spawn_host = false no modo "Hospedar Somente".
+	# spawn_host = false no modo "Hospedar Somente" → NetSpawn adiciona a câmera livre.
 	NetSpawn.setup(spawned_nodes, player_spawn_points, not PlayerSelection.spectator_host)
 
 
@@ -106,16 +102,6 @@ func spawn_robot(spawn_point) -> void:
 func _respawn_robot(spawn_point) -> void:
 	await get_tree().create_timer(15.0).timeout
 	spawn_robot(spawn_point)
-
-
-# Câmera livre do modo "Hospedar Somente". Filha direta do level (FORA do SpawnedNodes,
-# por isso não é replicada): existe apenas na instância do servidor que está observando.
-func _add_spectator_camera(spawn_point: Marker3D = null) -> void:
-	var cam: Camera3D = SpectatorCamera.instantiate()
-	add_child(cam)
-	if spawn_point != null:
-		# Começa um pouco acima do ponto de spawn, com uma visão do level.
-		cam.global_position = spawn_point.global_position + Vector3(0.0, 8.0, 0.0)
 
 
 func _input(input_event: InputEvent) -> void:

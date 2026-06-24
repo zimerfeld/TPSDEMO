@@ -28,7 +28,8 @@ func _ready() -> void:
 		randomize()
 
 	# Spawn de players (host + clientes, cada um com a variante escolhida) via NetSpawn.
-	NetSpawn.setup(spawned_nodes, player_spawn_points)
+	# spawn_host = false no modo "Hospedar Somente" → NetSpawn adiciona a câmera livre (sem player).
+	NetSpawn.setup(spawned_nodes, player_spawn_points, not PlayerSelection.spectator_host)
 
 
 func _input(input_event: InputEvent) -> void:

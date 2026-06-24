@@ -54,9 +54,9 @@ var initial_position: Vector3 = Vector3.ZERO
 @onready var fire_cooldown: Timer = $FireCooldown
 
 @onready var sound_effects: Node = $SoundEffects
-@onready var sound_effect_jump: AudioStreamPlayer = sound_effects.get_node(^"Jump")
-@onready var sound_effect_land: AudioStreamPlayer = sound_effects.get_node(^"Land")
-@onready var sound_effect_shoot: AudioStreamPlayer = sound_effects.get_node(^"Shoot")
+@onready var sound_effect_jump: AudioStreamPlayer3D = sound_effects.get_node(^"Jump")
+@onready var sound_effect_land: AudioStreamPlayer3D = sound_effects.get_node(^"Land")
+@onready var sound_effect_shoot: AudioStreamPlayer3D = sound_effects.get_node(^"Shoot")
 
 @export var player_id: int = 1:
 	set(value):
