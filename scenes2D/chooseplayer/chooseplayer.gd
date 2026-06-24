@@ -134,6 +134,9 @@ func _on_right_pressed() -> void:
 
 func _on_play_pressed() -> void:
 	PlayerSelection.scene_path = CHARACTERS[current_index]["scene_path"]
+	# Índice da variante (CHARACTERS está na mesma ordem de PlayerSelection.VARIANTS): enviado
+	# ao servidor no multiplayer para spawnar o modelo/cor certos deste peer em todos os clientes.
+	PlayerSelection.variant_id = current_index
 	_loading_path = LEVELS_PATH
 	loading.show()
 	ResourceLoader.load_threaded_request(_loading_path, "", true)

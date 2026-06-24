@@ -142,20 +142,36 @@ func _on_loading_done_timer_timeout() -> void:
 	emit_signal("replace_main_scene", ResourceLoader.load_threaded_get(loading_path))
 
 
+# "Hospedar e Conectar": hospeda o servidor E entra no jogo como player controlado
+# (comportamento clássico do antigo botão "Host").
 func _on_host_pressed() -> void:
+	PlayerSelection.spectator_host = false
+	_start_host()
+
+
+# "Hospedar Somente": hospeda o servidor mas NÃO entra como player. O host observa o
+# level em tempo real com uma câmera livre (sem colisão, sem player controlado).
+func _on_host_only_pressed() -> void:
+	PlayerSelection.spectator_host = true
+	_start_host()
+
+
+# Cria o servidor ENet e dispara o carregamento do nível (comum aos dois modos de host).
+# O modo (player controlado x câmera livre) já foi definido em PlayerSelection.spectator_host.
+func _start_host() -> void:
 	_remember("ports", int(port.value))
 	peer = ENetMultiplayerPeer.new()
 	var err: Error = peer.create_server(int(port.value))
 	if err != OK:
 		CrashHandler.show_error(
 			"Falha ao criar servidor na porta %d.\nErro: %s\n\nVerifique se a porta está em uso." % [int(port.value), error_string(err)],
-			_on_host_pressed
+			_start_host
 		)
 		return
 	if peer.host == null:
 		CrashHandler.show_error(
 			"Servidor criado, mas host ENet é nulo.\nTente outra porta ou reinicie o jogo.",
-			_on_host_pressed
+			_start_host
 		)
 		return
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
@@ -165,6 +181,8 @@ func _on_host_pressed() -> void:
 
 
 func _on_connect_pressed() -> void:
+	# Cliente nunca é spectator: garante o flag limpo ao conectar.
+	PlayerSelection.spectator_host = false
 	_remember("ports", int(port.value))
 	if address.text.strip_edges() != "":
 		_remember("addresses", address.text.strip_edges())

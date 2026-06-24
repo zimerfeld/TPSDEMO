@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8zspectatcam01"]
+
+[ext_resource type="Script" path="res://scenes3D/spectator_camera/spectator_camera.gd" id="1"]
+
+[node name="SpectatorCamera" type="Camera3D"]
+current = true
+script = ExtResource("1")

@@ -134,13 +134,19 @@ alignment = 1
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
-text = "Host"
+text = "Hospedar e Conectar"
+
+[node name="HostOnlyButton" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ButtonsRow"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Hospedar Somente"
 
 [node name="ConnectButton" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ButtonsRow"]
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
-text = "Connect"
+text = "Conectar"
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
@@ -228,6 +234,7 @@ one_shot = true
 [connection signal="text_submitted" from="UI/Margin/Main/FormCenter/VBox/AddressRow/Address" to="." method="_on_address_text_submitted"]
 [connection signal="focus_exited" from="UI/Margin/Main/FormCenter/VBox/AddressRow/Address" to="." method="_on_address_focus_exited"]
 [connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/HostButton" to="." method="_on_host_pressed"]
+[connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/HostOnlyButton" to="." method="_on_host_only_pressed"]
 [connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/ConnectButton" to="." method="_on_connect_pressed"]
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]

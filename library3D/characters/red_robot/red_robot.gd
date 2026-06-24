@@ -42,6 +42,16 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 @export var dead: bool = false
 @export var aim_preparing: float = AIM_PREPARE_TIME
 
+## Proxy replicado NO LUGAR de global_transform: o servidor o espelha; o cliente o bufferiza
+## (NetInterp) e renderiza ~100 ms no passado, suavizando o movimento do robô (anti-flicker).
+@export var net_transform: Transform3D = Transform3D.IDENTITY:
+	set(value):
+		net_transform = value
+		_net_received = true
+var _net_received: bool = false
+var _interp := NetInterp.new()
+var _interp_seeded: bool = false
+
 var shoot_countdown: float = SHOOT_WAIT
 var aim_countdown: float = AIM_TIME
 
@@ -76,6 +86,10 @@ var shoot_reload: float = SHOOT_WAIT
 func _ready() -> void:
 	orientation = global_transform
 	orientation.origin = Vector3()
+	# Semeia o proxy de rede com a pose inicial APENAS no servidor (spawn property correto). No
+	# cliente o valor chega pela replicação de spawn; semear aqui causaria flicker a partir da origem.
+	if multiplayer.is_server():
+		net_transform = global_transform
 	$AnimationTree.active = true
 
 	# IA do red_robot: instancia o controlador de comportamento/decisões (pasta IA/) e
@@ -250,11 +264,14 @@ func animate(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if dead:
+	if not multiplayer.is_server():
+		# Remoto: interpola o transform recebido (~100 ms no passado) e anima.
+		if not dead:
+			_interpolate_remote()
+			animate(delta)
 		return
 
-	if not multiplayer.is_server():
-		animate(delta)
+	if dead:
 		return
 
 	if test_shoot:
@@ -267,6 +284,7 @@ func _physics_process(delta: float) -> void:
 		set_velocity(get_gravity() * delta)
 		set_up_direction(Vector3.UP)
 		move_and_slide()
+		net_transform = global_transform  # espelha p/ replicação (clientes interpolam)
 		return
 
 	target_position = player.global_transform.origin
@@ -348,6 +366,21 @@ func _physics_process(delta: float) -> void:
 	orientation = orientation.orthonormalized() # orthonormalize orientation.
 
 	global_transform.basis = orientation.basis
+	net_transform = global_transform  # espelha p/ replicação (clientes interpolam)
+
+
+# Aplica o transform interpolado (buffer de snapshots datados) no robô remoto.
+func _interpolate_remote() -> void:
+	if not _net_received:
+		return  # nada recebido ainda: fica na posição de spawn
+	var now: float = float(Time.get_ticks_msec())
+	_interp.push(now, net_transform)
+	if _interp.has_data():
+		global_transform = _interp.sample(now)
+	if not _interp_seeded:
+		# 1ª aplicação: zera a interpolação física p/ não "rasgar" do spawn até a 1ª amostra.
+		_interp_seeded = true
+		reset_physics_interpolation()
 
 
 # Recuo (IA → Action.FLEE): orienta o corpo para ENCARAR o player (frente do robô é +Z) e

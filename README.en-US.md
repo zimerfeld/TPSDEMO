@@ -64,7 +64,12 @@ third-person shooter sandbox. At a high level it offers:
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
   can use; the player and Red Robot both fire via `CannonShooter`.
 - **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2), a full
-  complex level (Level Base), plus online (host/connect) play.
+  complex level (Level Base), plus online play with three modes: **Host & Connect** (host and join
+  as a player), **Host-Only** (a free-fly spectator camera, no collision and no controlled player —
+  WASD glides on the plane, Space+W/S rises/descends at jump speed) and **Connect**. Each player's
+  chosen variant/colour shows for everyone online (per-peer loadout via `NetSpawn`), and other
+  players/enemies are smoothed with a **timestamped interpolation buffer** (rendered ~100 ms in the
+  past) for a flicker-free, high-FPS client view.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
   browsable in-game through the Models screen (category → model → part) with toggles, in
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
@@ -338,7 +343,7 @@ Screen flow:
 ```
 menu ─┬─ Play Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
       ├─ Play Online ──► chooseplayer ─► levels ─► playonline ─► chosen level
-      │                                  (pick level)   (host/connect)
+      │                                  (pick level)   (host & connect / host-only / connect)
       ├─ settings
       ├─ developer ──┬─ models    (3D model viewer for library3D assets)
       │              └─ controls  (2D controls viewer for controls2D widgets)
@@ -375,6 +380,7 @@ ZIMARO/
 │  └─ controls2D/        # reusable HUD widgets: crosshair, minimap_panel, vitals_panel, …
 ├─ scenes3D/             # 3D levels and tools
 │  ├─ level_1/ level_2/ level_base/   # playable levels
+│  ├─ spectator_camera/  # free-fly camera for "Host-Only" mode (no-collision flight, WASD + Space)
 │  └─ models/            # 3D model viewer/inspector for the library3D assets
 ├─ library3D/            # reusable 3D asset library, organized by type
 │  ├─ characters/        # players + enemies

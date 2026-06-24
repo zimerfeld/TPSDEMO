@@ -27,6 +27,23 @@ var _predicted_origin: Vector3
 var _predicted_velocity: Vector3
 const SERVER_SNAP_THRESHOLD: float = 2.0
 
+# --- Interpolação de rede (suavização das entidades remotas) ---
+## Proxies replicados pelo ServerSynchronizer NO LUGAR de transform/PlayerModel:transform.
+## O servidor os espelha do estado real a cada frame; o cliente remoto os bufferiza (NetInterp)
+## e renderiza ~100 ms no passado, eliminando o stutter de aplicar o transform cru ~30x/s. O
+## cliente DONO usa net_transform como "verdade do servidor" para reconciliar a predição.
+@export var net_transform: Transform3D = Transform3D.IDENTITY:
+	set(value):
+		net_transform = value
+		_net_received = true
+@export var net_model_transform: Transform3D = Transform3D.IDENTITY
+var _net_received: bool = false
+var _interp_body := NetInterp.new()
+var _interp_model := NetInterp.new()
+var _interp_seeded: bool = false
+# Estado da mira no frame anterior — para detectar o "aim-enter" e alinhar o corpo na hora.
+var _was_aiming: bool = false
+
 var initial_position: Vector3 = Vector3.ZERO
 
 @onready var player_input: PlayerInputSynchronizer = $InputSynchronizer
@@ -89,6 +106,13 @@ func _ready() -> void:
 	initial_position = transform.origin
 	# Posiciona no spawn replicado (cobre o caso de a property já ter chegado antes do _ready).
 	_apply_spawn_position()
+	# Semeia os proxies de rede com a pose inicial APENAS no servidor (assim o spawn property
+	# já carrega o valor certo). No cliente NÃO semeamos: o valor correto chega pela replicação
+	# de spawn; semear aqui marcaria _net_received cedo e a entidade interpolaria a partir da
+	# origem (flicker). Até chegar, o remoto fica na spawn_position.
+	if _safe_is_server_call(false):
+		net_transform = transform
+		net_model_transform = player_model.transform
 	# Re-evaluate here: player_id setter may have run before add_child() (no tree = no multiplayer).
 	_is_local_player = not _safe_is_server_call(false) and player_id == multiplayer.get_unique_id()
 	if not _safe_is_server_call(false):
@@ -114,6 +138,9 @@ func _apply_spawn_position() -> void:
 	initial_position = spawn_position
 	velocity = Vector3.ZERO
 	_has_prediction = false
+	# Salto de posição: zera a interpolação física para não "rasgar" (flicker) do ponto
+	# antigo (ex.: 0,0,0) até o spawn. Roda em todos os peers (a property é replicada).
+	reset_physics_interpolation()
 
 
 func _setup_health_bar() -> void:
@@ -174,6 +201,9 @@ func _safe_is_server_call(default: bool = false) -> bool:
 func _physics_process(delta: float) -> void:
 	if _safe_is_server_call(false):
 		apply_input(delta)
+		# Espelha o estado real nos proxies replicados (os clientes interpolam estes valores).
+		net_transform = transform
+		net_model_transform = player_model.transform
 	elif _is_local_player:
 		_reconcile()
 		apply_input(delta)
@@ -181,17 +211,45 @@ func _physics_process(delta: float) -> void:
 		_predicted_velocity = velocity
 		_has_prediction = true
 	else:
+		# Player remoto: renderiza ~100 ms no passado interpolando os snapshots recebidos.
+		_interpolate_remote()
 		animate(current_animation, delta)
+
+
+# Aplica o transform interpolado (buffer de snapshots datados) no player remoto e no seu modelo.
+func _interpolate_remote() -> void:
+	if not _net_received:
+		return  # nada recebido ainda: fica na posição de spawn
+	var now: float = float(Time.get_ticks_msec())
+	_interp_body.push(now, net_transform)
+	_interp_model.push(now, net_model_transform)
+	if _interp_body.has_data():
+		transform = _interp_body.sample(now)
+	if _interp_model.has_data():
+		player_model.transform = _interp_model.sample(now)
+	if not _interp_seeded:
+		# 1ª aplicação: zera a interpolação física p/ não "rasgar" do spawn até a 1ª amostra.
+		_interp_seeded = true
+		reset_physics_interpolation()
 
 
 func _reconcile() -> void:
 	if not _has_prediction:
 		return
-	var drift: float = global_position.distance_to(_predicted_origin)
-	if drift < SERVER_SNAP_THRESHOLD:
-		# Servidor concorda (ou sem sync este frame): mantém predição local
+	if not _net_received:
+		# Sem verdade do servidor ainda: confia 100% na predição local.
 		global_position = _predicted_origin
 		velocity = _predicted_velocity
+		return
+	var drift: float = net_transform.origin.distance_to(_predicted_origin)
+	if drift < SERVER_SNAP_THRESHOLD:
+		# Servidor concorda o suficiente: mantém a predição local (sem solavanco).
+		global_position = _predicted_origin
+		velocity = _predicted_velocity
+	else:
+		# Divergiu demais: ressincroniza com a posição autoritativa do servidor.
+		global_position = net_transform.origin
+		_has_prediction = false
 
 
 func animate(anim: int, _delta: float) -> void:
@@ -261,11 +319,18 @@ func apply_input(delta: float) -> void:
 		else:
 			animate(Animations.JUMP_DOWN, delta)
 	elif player_input.aiming:
-		# Convert orientation to quaternions for interpolating rotation.
-		var q_from: Quaternion = orientation.basis.get_rotation_quaternion()
 		var q_to: Quaternion = player_input.get_camera_base_quaternion()
-		# Interpolate current rotation with desired one.
-		orientation.basis = Basis(q_from.slerp(q_to, delta * ROTATION_INTERPOLATE_SPEED))
+		if not _was_aiming:
+			# Aim-enter: alinha o corpo À CÂMERA IMEDIATAMENTE (sem slerp). Sem isto, num
+			# aim→tiro muito rápido o cano (shoot_from) ainda aponta para a direção antiga e a
+			# bala sai torta. Atualiza já o player_model para o shoot_from refletir a mira agora.
+			orientation.basis = Basis(q_to)
+			player_model.global_transform.basis = orientation.basis
+		else:
+			# Convert orientation to quaternions for interpolating rotation.
+			var q_from: Quaternion = orientation.basis.get_rotation_quaternion()
+			# Interpolate current rotation with desired one.
+			orientation.basis = Basis(q_from.slerp(q_to, delta * ROTATION_INTERPOLATE_SPEED))
 
 		# Change state to strafe.
 		animate(Animations.STRAFE, delta)
@@ -313,6 +378,10 @@ func apply_input(delta: float) -> void:
 	# If we're below -40, respawn (teleport to the initial position).
 	if transform.origin.y < -40.0:
 		transform.origin = initial_position
+		reset_physics_interpolation()  # teleporte: evita o rasgo de interpolação até o respawn
+
+	# Estado da mira p/ o próximo frame (detecção do aim-enter, ver branch de mira acima).
+	_was_aiming = player_input.aiming
 
 
 @rpc("call_local")
@@ -356,6 +425,7 @@ func respawn() -> void:
 	if _health_bar:
 		_health_bar.update_health(hp, MAX_HP)
 	transform.origin = initial_position
+	reset_physics_interpolation()  # teleporte de respawn: evita o rasgo de interpolação
 
 
 @rpc("call_local")

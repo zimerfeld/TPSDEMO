@@ -65,7 +65,12 @@ em terceira pessoa. Em alto nível, oferece:
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
   modelo pode usar; player e Red Robot disparam via `CannonShooter`.
 - **Várias fases** — uma arena simples (Level 1), um encontro com o bombardeiro (Level 2), uma
-  fase completa e complexa (Level Base), além do jogo online (host/conectar).
+  fase completa e complexa (Level Base), além do jogo online com três modos: **Hospedar e Conectar**
+  (hospeda e entra como player), **Hospedar Somente** (câmera livre de observação, sem colisão e sem
+  player controlado — WASD voa no plano, Espaço+W/S sobe/desce na velocidade do pulo) e **Conectar**.
+  A variante/cor escolhida por cada jogador aparece para todos online (loadout por peer via `NetSpawn`),
+  e os outros players/inimigos são suavizados por um **buffer de interpolação com snapshots datados**
+  (render ~100 ms no passado) — visão do cliente sem flicker e com FPS alto.
 - **Biblioteca + visualizador de modelos 3D** — assets 3D reutilizáveis organizados por tipo em
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
@@ -337,7 +342,7 @@ Fluxo de telas:
 ```
 menu ─┬─ Jogar Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
       ├─ Jogar Online ──► chooseplayer ─► levels ─► playonline ─► nível escolhido
-      │                                  (escolhe nível)  (host/conectar)
+      │                                  (escolhe nível)  (hospedar e conectar / hospedar somente / conectar)
       ├─ settings
       ├─ developer ──┬─ models    (visualizador de modelos 3D da library3D)
       │              └─ controls  (visualizador de controles 2D dos widgets controls2D)
@@ -374,6 +379,7 @@ ZIMARO/
 │  └─ controls2D/        # widgets de HUD reutilizáveis: crosshair, minimap_panel, vitals_panel, …
 ├─ scenes3D/             # fases e ferramentas 3D
 │  ├─ level_1/ level_2/ level_base/   # fases jogáveis
+│  ├─ spectator_camera/  # câmera livre do modo "Hospedar Somente" (voo sem colisão, WASD + Espaço)
 │  └─ models/            # visualizador/inspetor de modelos 3D da library3D
 ├─ library3D/            # biblioteca de assets 3D, organizada por tipo
 │  ├─ characters/        # players + inimigos
