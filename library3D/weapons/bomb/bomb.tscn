@@ -3,6 +3,11 @@
 [ext_resource type="Script" path="res://library3D/weapons/bomb/bomb.gd" id="1_0qv7x"]
 [ext_resource type="AudioStream" path="res://library3D/characters/player/bullet/bullet_explode.wav" id="2_psid4"]
 
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_net"]
+properties/0/path = NodePath(".:global_transform")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b6enr"]
 albedo_color = Color(0.12, 0.13, 0.16, 1)
 metallic = 0.95
@@ -67,6 +72,9 @@ height = 0.14
 collision_layer = 8
 collision_mask = 3
 script = ExtResource("1_0qv7x")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_net")
 
 [node name="Mesh" type="Node3D" parent="." unique_id=2146255694]
 

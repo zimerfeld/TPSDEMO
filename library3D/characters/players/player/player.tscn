@@ -658,23 +658,31 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="SoundEffects" type="Node" parent="."]
+[node name="SoundEffects" type="Node3D" parent="."]
 
-[node name="Step" type="AudioStreamPlayer" parent="SoundEffects"]
+[node name="Step" type="AudioStreamPlayer3D" parent="SoundEffects"]
 bus = &"SFX"
 stream = ExtResource("4")
+unit_size = 8.0
+max_distance = 30.0
 
-[node name="Jump" type="AudioStreamPlayer" parent="SoundEffects"]
+[node name="Jump" type="AudioStreamPlayer3D" parent="SoundEffects"]
 bus = &"SFX"
 stream = ExtResource("5")
+unit_size = 8.0
+max_distance = 35.0
 
-[node name="Land" type="AudioStreamPlayer" parent="SoundEffects"]
+[node name="Land" type="AudioStreamPlayer3D" parent="SoundEffects"]
 bus = &"SFX"
 stream = ExtResource("6")
+unit_size = 8.0
+max_distance = 35.0
 
-[node name="Shoot" type="AudioStreamPlayer" parent="SoundEffects"]
+[node name="Shoot" type="AudioStreamPlayer3D" parent="SoundEffects"]
 bus = &"SFX"
 stream = SubResource("35")
+unit_size = 12.0
+max_distance = 60.0
 
 [node name="FireCooldown" type="Timer" parent="."]
 wait_time = 0.4

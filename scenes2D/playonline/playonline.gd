@@ -6,11 +6,17 @@ signal quit
 const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
 # Quantos valores recentes (porta/IP) guardar para seleção.
 const HISTORY_MAX: int = 3
+# Tempo máx. de espera pela resposta de cenário do servidor (probe) antes de conectar direto.
+const PROBE_TIMEOUT: float = 3.0
 
 var loading_path: String = ""
 var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 # Diálogo de confirmação de reconexão (evita empilhar vários ao clicar Connect repetidas vezes).
 var _reconnect_dialog: ConfirmationDialog = null
+# Conexão de sondagem ("probe"): conecta brevemente só para descobrir qual cenário o servidor
+# hospeda. É descartada antes do join real, preservando a ordem de carga do nível.
+var _probe_peer: ENetMultiplayerPeer = null
+var _probing: bool = false
 
 @onready var port: SpinBox = %Port
 @onready var address: LineEdit = %Address
@@ -182,12 +188,97 @@ func _start_host() -> void:
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 
 
-# Como um cliente pode reentrar numa partida já em andamento (basta que um host esteja
-# hospedando — o servidor respawna o player no peer_connected), confirmamos a reconexão
-# antes de abrir o socket. Evita conectar por engano enquanto outra partida acontece.
+# Ao clicar Connect, primeiro fazemos uma sondagem ("probe"): conecta brevemente ao servidor
+# só para PERGUNTAR qual cenário ele está hospedando. A confirmação "reconectar à partida em
+# andamento" só aparece quando o cenário do host for o MESMO que o cliente escolheu — caso
+# contrário conecta direto. O probe é descartado antes do join real (que recarrega o nível na
+# ordem correta, sem perder os spawns já existentes).
 func _on_connect_pressed() -> void:
+	if _probing or is_instance_valid(_reconnect_dialog):
+		return
+	_remember("ports", int(port.value))
+	if address.text.strip_edges() != "":
+		_remember("addresses", address.text.strip_edges())
+
+	_probe_peer = ENetMultiplayerPeer.new()
+	var err: Error = _probe_peer.create_client(address.text, int(port.value))
+	if err != OK:
+		_probe_peer = null
+		CrashHandler.show_error(
+			"Falha ao conectar em %s:%d.\nErro: %s\n\nVerifique o endereço e a porta." % [address.text, int(port.value), error_string(err)],
+			_on_connect_pressed
+		)
+		return
+	if _probe_peer.host != null:
+		_probe_peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
+	multiplayer.multiplayer_peer = _probe_peer
+	_probing = true
+	loading.show()
+	loading_progress.value = 0.0
+	multiplayer.connected_to_server.connect(_on_probe_connected, CONNECT_ONE_SHOT)
+	multiplayer.connection_failed.connect(_on_probe_failed, CONNECT_ONE_SHOT)
+	NetSpawn.scenario_received.connect(_on_scenario_received, CONNECT_ONE_SHOT)
+	get_tree().create_timer(PROBE_TIMEOUT).timeout.connect(_on_probe_timeout)
+
+
+# Probe conectou → pergunta o cenário ao servidor (peer 1).
+func _on_probe_connected() -> void:
+	if not _probing:
+		return
+	NetSpawn.request_scenario.rpc_id(1)
+
+
+# Resposta do servidor: se for o MESMO cenário, confirma reconexão; senão, conecta direto.
+func _on_scenario_received(scenario_path: String) -> void:
+	if not _probing:
+		return
+	_end_probe()
+	if scenario_path == _selected_level():
+		_confirm_reconnect()
+	else:
+		_do_connect()
+
+
+# Não conseguiu nem conectar → mostra erro (mesmo destino que o join real teria).
+func _on_probe_failed() -> void:
+	if not _probing:
+		return
+	_end_probe()
+	loading.hide()
+	CrashHandler.show_error(
+		"Falha ao conectar em %s:%d.\n\nVerifique o endereço e a porta." % [address.text, int(port.value)],
+		_on_connect_pressed
+	)
+
+
+# Servidor não respondeu o cenário a tempo (ex.: versão antiga sem o RPC) → conecta direto.
+func _on_probe_timeout() -> void:
+	if not _probing:
+		return
+	_end_probe()
+	_do_connect()
+
+
+# Encerra o probe: desliga sinais, fecha o socket de sondagem e volta ao peer offline.
+func _end_probe() -> void:
+	_probing = false
+	if multiplayer.connected_to_server.is_connected(_on_probe_connected):
+		multiplayer.connected_to_server.disconnect(_on_probe_connected)
+	if multiplayer.connection_failed.is_connected(_on_probe_failed):
+		multiplayer.connection_failed.disconnect(_on_probe_failed)
+	if NetSpawn.scenario_received.is_connected(_on_scenario_received):
+		NetSpawn.scenario_received.disconnect(_on_scenario_received)
+	if _probe_peer != null:
+		_probe_peer.close()
+		_probe_peer = null
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+
+
+# Diálogo de confirmação de reconexão (só no caso de MESMO cenário em andamento).
+func _confirm_reconnect() -> void:
 	if is_instance_valid(_reconnect_dialog):
 		return
+	loading.hide()
 	var dlg := ConfirmationDialog.new()
 	dlg.title = Locale.tr_key("Reconectar")
 	dlg.dialog_text = Locale.tr_key("Deseja se re-conectar na partida em andamento ?")

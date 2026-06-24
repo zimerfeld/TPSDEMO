@@ -2,6 +2,11 @@
 
 [ext_resource type="Script" path="res://library3D/characters/criatura_alada/criatura_alada.gd" id="1_23tcy"]
 
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_net"]
+properties/0/path = NodePath(".:net_transform")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xm241"]
 radius = 0.4
 height = 1.6
@@ -325,6 +330,10 @@ mix_rate = 22050
 [node name="CriaturaAlada" type="CharacterBody3D" unique_id=1962082121]
 collision_layer = 2
 script = ExtResource("1_23tcy")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_interval = 0.033
+replication_config = SubResource("SceneReplicationConfig_net")
 
 [node name="Collision" type="CollisionShape3D" parent="." unique_id=1600034606]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
