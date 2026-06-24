@@ -44,10 +44,3 @@ func decide(distance: float, effective_range: float) -> Action:
 	if distance <= effective_range:
 		return Action.ENGAGE
 	return Action.APPROACH
-
-
-## O robô deve disparar quando o player está dentro do alcance da arma. Isso vale tanto na
-## faixa de engajamento (flee_distance < d <= alcance) quanto durante o recuo (d <= flee_distance),
-## de modo que ele "continua atirando" ao recuar.
-func should_shoot(distance: float, effective_range: float) -> bool:
-	return distance <= effective_range

@@ -195,11 +195,6 @@ func dismiss_emergency() -> void:
 		_overlay.visible  = false
 
 
-func force_check() -> void:
-	_timer = check_interval
-	_evaluate()
-
-
 func _build_overlay() -> void:
 	_overlay = CanvasLayer.new()
 	_overlay.layer = 128

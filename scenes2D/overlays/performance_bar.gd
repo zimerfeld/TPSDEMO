@@ -301,7 +301,14 @@ func _refresh() -> void:
 		_lbl_ram.text = "RAM: %s" % Locale.tr_key("N/D")
 
 	var proc_ms: float = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
-	var cpu_pct: float = clampf(proc_ms / 16.67 * 100.0, 0.0, 100.0)
+	var phys_ms: float = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+	# % de CPU do PROCESSO do jogo relativo ao TOTAL do sistema (todos os núcleos): o trabalho de
+	# CPU por frame (process + física) sobre o tempo de frame REAL = fração de 1 núcleo; dividido
+	# pelos núcleos = % do total (~ como o Gerenciador de Tarefas). Antes era proc_ms ÷ 16,67 fixo
+	# e clampado em 100% POR núcleo, então saturava em 100% quando a main-thread enchia um núcleo.
+	var fps_now: float = maxf(Performance.get_monitor(Performance.TIME_FPS), 1.0)
+	var cores: float = maxf(float(OS.get_processor_count()), 1.0)
+	var cpu_pct: float = clampf((proc_ms + phys_ms) / (1000.0 / fps_now) * 100.0 / cores, 0.0, 100.0)
 	_lbl_cpu.text = "CPU: %.1f%%" % cpu_pct
 	_lbl_cpu.add_theme_color_override("font_color",
 		COLOR_OK if cpu_pct < 60 else (COLOR_WARN if cpu_pct < 85 else COLOR_CRIT))
@@ -315,7 +322,6 @@ func _refresh() -> void:
 	if not _advanced:
 		return
 
-	var phys_ms: float    = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 	var node_count: float = Performance.get_monitor(Performance.OBJECT_NODE_COUNT)
 	var obj_count: float  = Performance.get_monitor(Performance.OBJECT_COUNT)
 	var phys_objs: float  = Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS)
