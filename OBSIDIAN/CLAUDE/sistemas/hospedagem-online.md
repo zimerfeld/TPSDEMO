@@ -17,8 +17,10 @@
 - **Layout da tela** (`playonline.tscn`): cada input tem um **Label à esquerda** localizado — `Port:` (PT "Porta:") e `IP Address/Domain:` (PT "Endereço IP/Domínio:"), via `Resources/playonline.*.json`. A `ButtonsRow` centralizada **abaixo** das linhas de Port/Address tem **três botões**:
   - **HostButton** ("Hospedar e Conectar") → `_on_host_pressed`: hospeda E entra no jogo como player (comportamento clássico do antigo "Host").
   - **HostOnlyButton** ("Hospedar Somente") → `_on_host_only_pressed`: hospeda mas **não** entra como player — abre uma **câmera livre de observação** (`scenes3D/spectator_camera/`) para acompanhar o level ao vivo (ver seção abaixo).
-  - **ConnectButton** ("Conectar") → `_on_connect_pressed`: cliente conecta ao host.
+  - **ConnectButton** ("Conectar") → `_on_connect_pressed`: abre antes um **`ConfirmationDialog`** ("Deseja se re-conectar na partida em andamento ?", botões Sim/Não); só ao confirmar chama `_do_connect()`, que cria o `create_client()` e conecta ao host. Cancelar não faz nada; o diálogo não empilha (guarda `_reconnect_dialog`). Strings em `Resources/playonline.*.json` (`Reconectar`, `Deseja…`, `Sim`, `Não`).
   - Os três compartilham `_start_host()` (host) — o modo é gravado em `PlayerSelection.spectator_host` (true só no "Hospedar Somente") e lido no `level_base.gd`.
+
+> **Reconexão:** como um cliente pode reentrar numa partida já em andamento enquanto houver um host (o servidor respawna o player no `peer_connected` via `NetSpawn`), o **Conectar** confirma a reconexão antes de abrir o socket — evita conectar por engano a uma partida em andamento.
 
 > ⚠️ **ngrok NÃO funciona** aqui: ngrok só faz túnel de **TCP/HTTP**, não suporta **UDP**. Sem alterar o jogo para WebSocket/TCP, não há configuração de ngrok que conecte ao host ENet.
 

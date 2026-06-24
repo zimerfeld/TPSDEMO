@@ -61,7 +61,9 @@ Português/English buttons** and each scene ships its own JSON dictionaries
 (`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load. Online play offers two host modes —
 **Host & Connect** (host and join as a player) and **Host-Only** (a free-fly spectator camera, no
 collision and no controlled player: WASD to glide, Space+W/S to rise/descend at jump speed, to watch
-the level live) — plus the client **Connect**. Each player's chosen variant/colour shows for everyone,
+the level live) — plus the client **Connect**, which pops a confirmation ("Reconnect to the match in
+progress?") before opening the socket, since a client can rejoin a running match while a host is up.
+Each player's chosen variant/colour shows for everyone,
 and other players/enemies are smoothed with a timestamped interpolation buffer (rendered ~100 ms in the
 past) for a flicker-free, high-FPS client view.
 
@@ -88,7 +90,9 @@ cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + 
 mesclados no carregamento. O jogo online tem dois modos de host — **Hospedar e Conectar** (hospeda e
 entra como player) e **Hospedar Somente** (uma câmera livre de observação, sem colisão e sem player
 controlado: WASD para voar no plano, Espaço+W/S para subir/descer na velocidade do pulo, para
-acompanhar o level ao vivo) — além do **Conectar** do cliente. A variante/cor escolhida por cada
+acompanhar o level ao vivo) — além do **Conectar** do cliente, que abre uma confirmação ("Deseja se
+re-conectar na partida em andamento?") antes de abrir o socket, já que um cliente pode reentrar numa
+partida em andamento enquanto houver um host hospedando. A variante/cor escolhida por cada
 jogador aparece para todos, e os outros players/inimigos são suavizados por um buffer de interpolação
 com snapshots datados (renderizados ~100 ms no passado) para uma visão do cliente sem flicker e com FPS alto.
 

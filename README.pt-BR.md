@@ -67,7 +67,9 @@ em terceira pessoa. Em alto nível, oferece:
 - **Várias fases** — uma arena simples (Level 1), um encontro com o bombardeiro (Level 2), uma
   fase completa e complexa (Level Base), além do jogo online com três modos: **Hospedar e Conectar**
   (hospeda e entra como player), **Hospedar Somente** (câmera livre de observação, sem colisão e sem
-  player controlado — WASD voa no plano, Espaço+W/S sobe/desce na velocidade do pulo) e **Conectar**.
+  player controlado — WASD voa no plano, Espaço+W/S sobe/desce na velocidade do pulo) e **Conectar** —
+  que abre antes um diálogo de confirmação ("Deseja se re-conectar na partida em andamento?") antes de
+  abrir o socket, já que um cliente pode reentrar numa partida em andamento enquanto houver um host.
   A variante/cor escolhida por cada jogador aparece para todos online (loadout por peer via `NetSpawn`),
   e os outros players/inimigos são suavizados por um **buffer de interpolação com snapshots datados**
   (render ~100 ms no passado) — visão do cliente sem flicker e com FPS alto.

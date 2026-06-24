@@ -9,6 +9,8 @@ const HISTORY_MAX: int = 3
 
 var loading_path: String = ""
 var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
+# Diálogo de confirmação de reconexão (evita empilhar vários ao clicar Connect repetidas vezes).
+var _reconnect_dialog: ConfirmationDialog = null
 
 @onready var port: SpinBox = %Port
 @onready var address: LineEdit = %Address
@@ -180,7 +182,32 @@ func _start_host() -> void:
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 
 
+# Como um cliente pode reentrar numa partida já em andamento (basta que um host esteja
+# hospedando — o servidor respawna o player no peer_connected), confirmamos a reconexão
+# antes de abrir o socket. Evita conectar por engano enquanto outra partida acontece.
 func _on_connect_pressed() -> void:
+	if is_instance_valid(_reconnect_dialog):
+		return
+	var dlg := ConfirmationDialog.new()
+	dlg.title = Locale.tr_key("Reconectar")
+	dlg.dialog_text = Locale.tr_key("Deseja se re-conectar na partida em andamento ?")
+	dlg.get_ok_button().text = Locale.tr_key("Sim")
+	dlg.get_cancel_button().text = Locale.tr_key("Não")
+	dlg.confirmed.connect(func() -> void:
+		dlg.queue_free()
+		_reconnect_dialog = null
+		_do_connect()
+	)
+	dlg.canceled.connect(func() -> void:
+		dlg.queue_free()
+		_reconnect_dialog = null
+	)
+	_reconnect_dialog = dlg
+	add_child(dlg)
+	dlg.popup_centered()
+
+
+func _do_connect() -> void:
 	# Cliente nunca é spectator: garante o flag limpo ao conectar.
 	PlayerSelection.spectator_host = false
 	_remember("ports", int(port.value))
@@ -191,13 +218,13 @@ func _on_connect_pressed() -> void:
 	if err != OK:
 		CrashHandler.show_error(
 			"Falha ao conectar em %s:%d.\nErro: %s\n\nVerifique o endereço e a porta." % [address.text, int(port.value), error_string(err)],
-			_on_connect_pressed
+			_do_connect
 		)
 		return
 	if peer.host == null:
 		CrashHandler.show_error(
 			"Conexão iniciada, mas host ENet é nulo.\nTente novamente.",
-			_on_connect_pressed
+			_do_connect
 		)
 		return
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)

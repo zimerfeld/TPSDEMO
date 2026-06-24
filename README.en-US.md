@@ -66,7 +66,9 @@ third-person shooter sandbox. At a high level it offers:
 - **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2), a full
   complex level (Level Base), plus online play with three modes: **Host & Connect** (host and join
   as a player), **Host-Only** (a free-fly spectator camera, no collision and no controlled player —
-  WASD glides on the plane, Space+W/S rises/descends at jump speed) and **Connect**. Each player's
+  WASD glides on the plane, Space+W/S rises/descends at jump speed) and **Connect** — which first
+  pops a confirmation dialog ("Reconnect to the match in progress?") before opening the socket, since
+  a client can rejoin a running match for as long as a host is up. Each player's
   chosen variant/colour shows for everyone online (per-peer loadout via `NetSpawn`), and other
   players/enemies are smoothed with a **timestamped interpolation buffer** (rendered ~100 ms in the
   past) for a flicker-free, high-FPS client view.
