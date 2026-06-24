@@ -14,6 +14,9 @@ extends Node
 ## (o nó do nível é renomeado para "Level" nos dois lados para o caminho casar).
 
 signal rooms_changed
+# Servidor → cliente: a sala em que o cliente jogava foi encerrada (Parar). A ClientSession
+# escuta isto para voltar ao navegador com o alerta "O Servidor foi desligado".
+signal room_closed(room_id: int)
 
 const ROOM_RESOLUTION := Vector2i(1280, 720)
 # Câmera livre p/ o host OBSERVAR cada sala (não replicada — filha do nível, fora do SpawnedNodes).
@@ -31,6 +34,15 @@ var _server_rooms: Array = []   # [{id, level_path}]
 # Definido pela playonline antes de abrir o host_session: true = esta instância é CLIENTE
 # (navega/junta-se a salas do servidor); false/omitido = SERVIDOR (cria/gerencia salas).
 var client_mode: bool = false
+
+# Fluxo "Jogar" (invertido: a sala é escolhida ANTES do ChoosePlayer). A sessão (Host/Client)
+# seta estes marcadores, navega para o ChoosePlayer e os CONSOME ao voltar (no _ready), entrando
+# em modo de jogo na sala correspondente. pending_play_return = caminho da cena de sessão.
+var pending_play_room: int = -1
+var pending_play_level: String = ""
+var pending_play_return: String = ""
+# Servidor: sala em que o player do host (peer 1) está jogando (-1 = nenhuma).
+var _host_player_room: int = -1
 
 
 func _ready() -> void:
@@ -90,6 +102,14 @@ func _instantiate_room(id: int, level_path: String, as_subviewport: bool) -> voi
 func stop_room(id: int) -> void:
 	for i in _rooms.size():
 		if int(_rooms[i]["id"]) == id:
+			# Avisa ANTES de liberar: cada cliente que jogava NESTA sala volta ao navegador
+			# (peer 1 = o próprio servidor; pula p/ não disparar o handler de cliente nele).
+			for peer_id in _peer_room.keys():
+				if int(_peer_room[peer_id]) == id and int(peer_id) != 1:
+					notify_room_closed.rpc_id(int(peer_id), id)
+			# Host jogando nesta sala? despawna o player do host e religa a câmera livre.
+			if _host_player_room == id:
+				host_leave_room()
 			var vp: SubViewport = _rooms[i]["viewport"]
 			if is_instance_valid(vp):
 				vp.queue_free()
@@ -144,6 +164,7 @@ func register_room_level(room_id: int, spawned_nodes: Node3D, spawn_points: Node
 		level.add_child(cam)
 		if is_instance_valid(spawn_points) and spawn_points.get_child_count() > 0:
 			cam.global_position = (spawn_points.get_child(0) as Node3D).global_position + Vector3(0.0, 8.0, 0.0)
+		room["spectator_cam"] = cam  # guardada p/ desligar enquanto o host JOGA nesta sala
 	# Visibilidade por-sala em tudo que já está e no que entrar (inimigos, balas, players).
 	for c in spawned_nodes.get_children():
 		_apply_room_visibility(c, room_id)
@@ -302,6 +323,105 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if is_instance_valid(spawned) and spawned.has_node(str(peer_id)):
 		spawned.get_node(str(peer_id)).queue_free()
 	_broadcast_room_list()
+
+
+# ───────────────────────────── HOST: jogar dentro de uma sala ─────────────────────────────
+
+# O host (peer 1) entra como PLAYER controlado numa das suas salas (SubViewport). Diferente de
+# observar: spawna um player de verdade e DESLIGA a câmera livre da sala — senão as duas leriam o
+# Input global (WASD/ESPAÇO) ao mesmo tempo. A câmera do player vira current no SubViewport via
+# apply_authority(). Só um player do host por vez (peer 1 é único): troca de sala despawna o anterior.
+func host_spawn_in_room(room_id: int, variant_id: int) -> void:
+	host_leave_room()  # garante um único player do host (despawna o de uma sala anterior)
+	var room := get_room(room_id)
+	if room.is_empty():
+		return
+	var spawned: Node3D = room.get("spawned_nodes")
+	if not is_instance_valid(spawned):
+		return
+	# Desliga a câmera livre desta sala enquanto o host joga (evita disputa de Input/câmera).
+	var cam: Camera3D = room.get("spectator_cam")
+	if is_instance_valid(cam):
+		cam.set_process(false)
+		cam.set_process_input(false)
+	if spawned.has_node("1"):
+		return
+	var marker: Node3D = _take_point(room)
+	var scene: PackedScene = load(PlayerSelection.variant_scene_path(variant_id)) as PackedScene
+	if scene == null:
+		return
+	var player: CharacterBody3D = scene.instantiate()
+	player.name = "1"
+	player.player_id = 1
+	if marker != null:
+		player.transform = marker.transform
+		player.spawn_position = marker.transform.origin
+	_peer_room[1] = room_id
+	spawned.add_child(player)  # child_entered_tree → aplica a visibilidade da sala
+	_host_player_room = room_id
+
+
+# Host sai da sala em que jogava: despawna seu player e religa a câmera livre (deixando a sala em
+# UPDATE_DISABLED — quem decide renderizar é a sessão). Idempotente.
+func host_leave_room() -> void:
+	if _host_player_room < 0:
+		return
+	var room := get_room(_host_player_room)
+	var spawned: Node3D = room.get("spawned_nodes")
+	if is_instance_valid(spawned) and spawned.has_node("1"):
+		spawned.get_node("1").queue_free()
+	var cam: Camera3D = room.get("spectator_cam")
+	if is_instance_valid(cam):
+		cam.set_process(true)
+		cam.set_process_input(true)
+		cam.make_current()
+	_peer_room.erase(1)
+	_host_player_room = -1
+
+
+# ───────────────────────────── CLIENTE: sair de uma sala (sem fechar o peer) ────────────────────
+
+# Cliente sai da sala em que jogava e volta ao navegador: pede ao servidor para despawnar seu
+# player e remove o espelho local. NÃO fecha o peer (segue conectado p/ entrar noutra sala).
+func client_leave_room(room_id: int) -> void:
+	leave_room.rpc_id(1, room_id)
+	_drop_local_mirror(room_id)
+	rooms_changed.emit()
+
+
+@rpc("any_peer", "reliable")
+func leave_room(room_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender: int = multiplayer.get_remote_sender_id()
+	if not _peer_room.has(sender):
+		return
+	_peer_room.erase(sender)
+	var room := get_room(room_id)
+	var spawned: Node3D = room.get("spawned_nodes")
+	if is_instance_valid(spawned) and spawned.has_node(str(sender)):
+		spawned.get_node(str(sender)).queue_free()
+	_broadcast_room_list()
+
+
+# Servidor → cliente que jogava numa sala parada: limpa o espelho local e emite room_closed
+# (a ClientSession reage voltando ao navegador com o alerta "O Servidor foi desligado").
+@rpc("authority", "reliable")
+func notify_room_closed(room_id: int) -> void:
+	_drop_local_mirror(room_id)
+	room_closed.emit(room_id)
+
+
+# Remove o espelho local (Node "Room<id>" sob este autoload) e a entrada em _rooms. Usado quando
+# o cliente sai da sala ou ela é encerrada pelo servidor.
+func _drop_local_mirror(room_id: int) -> void:
+	var container := get_node_or_null("Room%d" % room_id)
+	if is_instance_valid(container):
+		container.queue_free()
+	for i in _rooms.size():
+		if int(_rooms[i]["id"]) == room_id:
+			_rooms.remove_at(i)
+			return
 
 
 # ───────────────────────────── consultas / util ─────────────────────────
