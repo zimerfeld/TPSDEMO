@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes2D/playonline/playonline.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
@@ -16,8 +16,6 @@ sky = SubResource("Sky_po1")
 ambient_light_source = 3
 ambient_light_color = Color(0.5, 0.55, 0.6, 1)
 ambient_light_energy = 0.5
-
-[sub_resource type="ButtonGroup" id="ButtonGroup_role"]
 
 [node name="PlayOnline" type="Node"]
 script = ExtResource("1")
@@ -127,39 +125,18 @@ custom_minimum_size = Vector2(260, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
-[node name="RoleRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 60
-alignment = 1
-
-[node name="HostRadio" type="CheckBox" parent="UI/Margin/Main/FormCenter/VBox/RoleRow"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-theme_override_font_sizes/font_size = 30
-button_group = SubResource("ButtonGroup_role")
-text = "Host"
-
-[node name="ClientRadio" type="CheckBox" parent="UI/Margin/Main/FormCenter/VBox/RoleRow"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-theme_override_font_sizes/font_size = 30
-button_group = SubResource("ButtonGroup_role")
-text = "Client"
-
 [node name="ButtonsRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 60
 alignment = 1
 
 [node name="ManageRoomsButton" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ButtonsRow"]
-visible = false
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Gerenciar Salas"
 
 [node name="JoinRoomsButton" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ButtonsRow"]
-visible = false
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30

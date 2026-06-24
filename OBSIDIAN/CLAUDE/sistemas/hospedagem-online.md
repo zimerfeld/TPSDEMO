@@ -14,9 +14,9 @@
 - **Histórico de porta/IP:** ao lado de Port e Address há um `OptionButton` ("Selecione…") com os **últimos 3 valores** usados. Persistido em `Settings.config_file` seção **`online`** (chaves `ports` / `addresses`), recarregado no `_ready` (`_refresh_history`). Selecionar um item preenche o campo e o dropdown volta a "Selecione…".
   - O campo Address guarda o **texto cru** — funciona igual para **IP** (`147.185.221.26`) e **domínio** (`wharf-pos.gl.at.ply.gg`).
   - Gravado: ao clicar **Host**/**Connect** (`_remember`), ao pressionar **Enter** e ao o campo **perder o foco** (`_on_address_focus_exited` / `_on_port_focus_exited` — o Port salva pelo `get_line_edit().focus_exited` do SpinBox). Atualiza o dropdown na hora. ENet (`create_client`) resolve hostname, então domínio conecta direto.
-- **Layout da tela** (`playonline.tscn`): cada input tem um **Label à esquerda** localizado — `Port:` (PT "Porta:") e `IP Address/Domain:` (PT "Endereço IP/Domínio:"), via `Resources/playonline.*.json`. **Abaixo** de Port/Address, dois **radios Host/Client** (`RoleRow`, compartilham um `ButtonGroup`) decidem o papel da máquina e revelam só o botão correspondente:
-  - **Host** → mostra **ManageRoomsButton** ("Gerenciar Salas", `_on_manage_rooms_pressed`): cria um servidor ENet **persistente** e abre o `host_session` (gerenciador de salas). Ver [[sistemas/salas]].
-  - **Client** → mostra **JoinRoomsButton** ("Entrar em Salas", `_on_join_rooms_pressed`): conecta como cliente e, no `connected_to_server`, abre o `client_session` (navegador de salas).
+- **Layout da tela** (`playonline.tscn`): cada input tem um **Label à esquerda** localizado — `Port:` (PT "Porta:") e `IP Address/Domain:` (PT "Endereço IP/Domínio:"), via `Resources/playonline.*.json`. **Abaixo** de Port/Address há dois botões (sem radios; clicáveis direto):
+  - **ManageRoomsButton** ("Gerenciar Salas", `_on_manage_rooms_pressed`) = papel **Host**: cria um servidor ENet **persistente** e abre o `host_session` (gerenciador de salas). Ver [[sistemas/salas]].
+  - **JoinRoomsButton** ("Entrar em Salas", `_on_join_rooms_pressed`) = papel **Client**: conecta como cliente e, no `connected_to_server`, abre o `client_session` (navegador de salas).
   - Os antigos botões single-level (**Hospedar e Conectar / Hospedar Somente / Conectar**) e a sondagem de reconexão ("probe") **foram removidos** — o fluxo agora é só por salas. O **"Voltar"** do `playonline` volta ao menu; o das sessões volta ao `playonline` (derrubando o peer).
   - **Headless (servidor dedicado):** o `playonline` chama `_on_manage_rooms_pressed` e auto‑inicia uma sala com o `level_base`.
 
@@ -54,7 +54,7 @@ câmera livre, **sem colisão e sem player controlado**.
 2. Criar túnel do tipo **UDP** apontando para `127.0.0.1:4383`
 3. **Proxy Protocol:** ❌ **desativado** (o ENet do Godot não entende o cabeçalho PROXY — quebraria a conexão)
 4. O playit gera um endereço público, ex.: `wharf-pos.gl.at.ply.gg:54417`
-5. Host: abrir o jogo → radio **Host** → **Gerenciar Salas** e **Iniciar Sala**. Amigo: radio **Client**, **Address** = domínio, **Port** = porta do painel → **Entrar em Salas** → **Jogar** na sala
+5. Host: abrir o jogo → **Gerenciar Salas** e **Iniciar Sala**. Amigo: **Address** = domínio, **Port** = porta do painel → **Entrar em Salas** → **Jogar** na sala
 
 ### Por que conectar no domínio do playit e não no IP local (`192.168.x.x`)
 
@@ -75,8 +75,8 @@ wharf-pos…:54417  ─UDP►   servidor relay playit  ─►   agente playit  �
 
 | Papel | Address | Port | Como |
 |---|---|---|---|
-| **Host** | *(ignorado — pode deixar vazio)* | `4383` (a mesma do túnel) | radio **Host** → **Gerenciar Salas** |
-| **Client** | `wharf-pos.gl.at.ply.gg` (só domínio, **sem** `:porta`) | `54417` (porta **pública** do painel) | radio **Client** → **Entrar em Salas** |
+| **Host** | *(ignorado — pode deixar vazio)* | `4383` (a mesma do túnel) | **Gerenciar Salas** |
+| **Client** | `wharf-pos.gl.at.ply.gg` (só domínio, **sem** `:porta`) | `54417` (porta **pública** do painel) | **Entrar em Salas** |
 
 - **Host** (`_on_manage_rooms_pressed`): `create_server(port)` usa **só a porta**, nunca o Address. Essa porta deve ser a mesma que o túnel playit redireciona (local address `4383`).
 - **Client** (`_on_join_rooms_pressed`): `create_client(address, port)` — domínio num campo, porta no outro. O ENet resolve hostname, então **domínio = IP**. Não cole `dominio:porta` no Address: o `:porta` vai no campo **Port** separado.
@@ -97,8 +97,8 @@ wharf-pos…:54417  ─UDP►   servidor relay playit  ─►   agente playit  �
 Cria uma rede local entre as máquinas, sem mexer no roteador nem expor porta na internet.
 
 1. Host e amigo instalam o **Tailscale** (https://tailscale.com) e logam na **mesma rede** (login Google/etc.)
-2. Host abre o jogo → radio **Host** → **Gerenciar Salas** (porta 4383) e inicia uma sala
-3. Amigo: radio **Client** → **Entrar em Salas** usando o **IP Tailscale da máquina-host** (ex.: `100.x.x.x`) + porta **4383**
+2. Host abre o jogo → **Gerenciar Salas** (porta 4383) e inicia uma sala
+3. Amigo: **Entrar em Salas** usando o **IP Tailscale da máquina-host** (ex.: `100.x.x.x`) + porta **4383**
 
 - **Vantagens:** latência boa, estável, nada exposto publicamente, **sem verificação de conta**.
 - **ZeroTier** é equivalente (rede virtual com ID de rede compartilhado).

@@ -16,8 +16,6 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 @onready var address: LineEdit = %Address
 @onready var port_history: OptionButton = %PortHistory
 @onready var address_history: OptionButton = %AddressHistory
-@onready var host_radio: CheckBox = $UI/Margin/Main/FormCenter/VBox/RoleRow/HostRadio
-@onready var client_radio: CheckBox = $UI/Margin/Main/FormCenter/VBox/RoleRow/ClientRadio
 @onready var manage_rooms_button: Button = $UI/Margin/Main/FormCenter/VBox/ButtonsRow/ManageRoomsButton
 @onready var join_rooms_button: Button = $UI/Margin/Main/FormCenter/VBox/ButtonsRow/JoinRoomsButton
 @onready var loading: HBoxContainer = $UI/Loading
@@ -32,14 +30,12 @@ func _ready() -> void:
 	_refresh_history()
 	# Salva a porta ao sair do campo (o SpinBox edita por um LineEdit interno).
 	port.get_line_edit().focus_exited.connect(_on_port_focus_exited)
-	# Host/Client decidem o papel da máquina: cada radio revela só o botão correspondente.
-	host_radio.button_group.pressed.connect(_on_role_changed)
 	# Dedicated server: auto-host (servidor de salas) when running headless.
 	if DisplayServer.get_name() == "headless":
 		_on_manage_rooms_pressed.call_deferred()
 		return
 	# Foco inicial para a navegação por setas do teclado (não em headless, sem UI).
-	host_radio.grab_focus.call_deferred()
+	manage_rooms_button.grab_focus.call_deferred()
 
 
 # Histórico de porta/IP persistido em Settings.config_file (seção "online"). Mostra os
@@ -141,14 +137,6 @@ func _on_loading_done_timer_timeout() -> void:
 	emit_signal("replace_main_scene", ResourceLoader.load_threaded_get(loading_path))
 
 
-# Host/Client: revela só o botão do papel escolhido (e esconde o outro). É aqui que se decide
-# se a máquina vai operar como Host (Gerenciar Salas) ou Client (Entrar em Salas).
-func _on_role_changed(button: BaseButton) -> void:
-	var is_host: bool = button == host_radio
-	manage_rooms_button.visible = is_host
-	join_rooms_button.visible = not is_host
-
-
 # "Gerenciar Salas" (Host): hospeda um servidor PERSISTENTE e abre o painel de salas (host_session),
 # onde dá pra iniciar/parar/reiniciar, observar e JOGAR em vários levels ao mesmo tempo. O peer fica
 # aberto até "Voltar" (sair de uma sala NÃO encerra o servidor). Ver host_session.gd / RoomManager.
@@ -224,9 +212,9 @@ func _on_back_pressed() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
-		# ESC encerra primeiro o preenchimento do IP/porta (devolvendo o foco ao radio Host);
+		# ESC encerra primeiro o preenchimento do IP/porta (devolvendo o foco ao botão);
 		# só o 2º ESC sai da tela. Cobre a regra do projeto p/ campos editáveis.
-		if UINav.cancel_active_edit(get_viewport(), host_radio):
+		if UINav.cancel_active_edit(get_viewport(), manage_rooms_button):
 			get_viewport().set_input_as_handled()
 			return
 		quit.emit()

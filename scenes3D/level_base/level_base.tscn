@@ -157,10 +157,6 @@ VSync:
 Memory:"
 script = ExtResource("9")
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.671837, 0, -0.740699, 0, 1, 0, 0.740699, 0, 0.671837, -4.05309, -1.12911, 4)
-current = true
-
 [node name="LightmapProbes" type="Node3D" parent="."]
 
 [node name="LightmapProbe" type="LightmapProbe" parent="LightmapProbes"]
