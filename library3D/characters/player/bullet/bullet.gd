@@ -27,6 +27,8 @@ var ball_scale: float = 1.0
 
 
 func _ready() -> void:
+	# Projétil → grupo usado para detectar colisão projétil×projétil (aniquilação mútua).
+	add_to_group(&"projectiles")
 	# Recolore/redimensiona em TODOS os peers (o visual aparece em todo mundo).
 	_apply_visuals()
 	# Sem atirador = bullet inerte: o "BulletCache" pré-instanciado na cena do
@@ -65,6 +67,13 @@ func _physics_process(delta: float) -> void:
 	var col: KinematicCollision3D = move_and_collide(displacement)
 	if col:
 		var collided := col.get_collider() as Node
+		# Projétil × projétil (bala, bala de canhão ou bomba) → explosão ANULATIVA: ambos se
+		# destroem. Checado antes de tudo; idempotente nos dois lados (guardas hit/_done).
+		if collided != null and collided.is_in_group(&"projectiles"):
+			annihilate()
+			if collided.has_method(&"annihilate"):
+				collided.annihilate()
+			return
 		# A character's generic BODY collider (e.g. the enemy's body capsule/sphere) wraps
 		# the whole figure, so it would be struck before the per-limb colliders that hug the
 		# mesh — dealing flat 1× damage and defeating localized damage (no headshots). When the
@@ -97,6 +106,16 @@ func _apply_hit(collider: Node) -> void:
 	elif collider.has_method(&"hit") and collider != shooter:
 		_registered = true
 		collider.hit.rpc(weapon_damage)
+
+
+# Aniquilação mútua: explode e desativa a colisão (mesmo desfecho de um acerto). Idempotente.
+# Chamado pelo servidor quando dois projéteis colidem (ver _physics_process / bomb.gd).
+func annihilate() -> void:
+	if hit:
+		return
+	hit = true
+	explode.rpc()
+	collision_shape.set_deferred(&"disabled", true)
 
 
 @rpc("call_local")

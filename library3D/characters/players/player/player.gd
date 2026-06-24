@@ -284,6 +284,11 @@ func animate(anim: int, _delta: float) -> void:
 
 
 func apply_input(delta: float) -> void:
+	# apply_input roda no SERVIDOR (autoritativo) e também na PREDIÇÃO do cliente local. O
+	# movimento é previsto nos dois; mas os EFEITOS AUTORITATIVOS (spawnar a bala replicada,
+	# disparar os RPCs call_local de tiro/pulo/aterrissagem) só podem rodar no servidor — senão
+	# o cliente cria uma bala-fantasma local que nunca se move nem é destruída (fica presa no cano).
+	var authoritative: bool = _safe_is_server_call(false)
 	motion = motion.lerp(player_input.motion, MOTION_INTERPOLATE_SPEED * delta)
 
 	var camera_basis: Basis = player_input.get_camera_rotation_basis()
@@ -298,18 +303,19 @@ func apply_input(delta: float) -> void:
 	# Jump/in-air logic.
 	airborne_time += delta
 	if is_on_floor():
-		if airborne_time > 0.5:
+		if airborne_time > 0.5 and authoritative:
 			land.rpc()
 		airborne_time = 0
 
 	var on_air: bool = airborne_time > MIN_AIRBORNE_TIME
 
 	if not on_air and player_input.jumping:
-		velocity.y = JUMP_SPEED
+		velocity.y = JUMP_SPEED  # salto previsto localmente (movimento responsivo)
 		on_air = true
 		# Increase airborne time so next frame on_air is still true
 		airborne_time = MIN_AIRBORNE_TIME
-		jump.rpc()
+		if authoritative:
+			jump.rpc()
 
 	player_input.jumping = false
 
@@ -337,7 +343,10 @@ func apply_input(delta: float) -> void:
 
 		root_motion = Transform3D(animation_tree.get_root_motion_rotation(), animation_tree.get_root_motion_position())
 
-		if player_input.shooting and fire_cooldown.time_left == 0:
+		# Disparo é SERVER-AUTORITATIVO: só o servidor spawna a bala (replicada a todos via
+		# MultiplayerSpawner) e dispara o RPC do efeito de tiro. No cliente isso é pulado — senão
+		# nasceria uma bala local sem física nem replicação, presa no cano (efeito que "não some").
+		if authoritative and player_input.shooting and fire_cooldown.time_left == 0:
 			var shoot_origin: Vector3 = shoot_from.global_transform.origin
 			var shoot_dir: Vector3 = (player_input.shoot_target - shoot_origin).normalized()
 

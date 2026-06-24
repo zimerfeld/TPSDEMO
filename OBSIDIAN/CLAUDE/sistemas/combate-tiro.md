@@ -14,10 +14,20 @@
 
 ## Ciclo de Tiro
 
-1. `player_input.shooting` (Input capturado no cliente local)
+1. `player_input.shooting` (Input capturado no cliente local, replicado ao servidor)
 2. Servidor verifica `fire_cooldown.time_left == 0`
 3. Servidor instancia `bullet.tscn`, posiciona em `ShootFrom`, aplica direção
 4. `shoot.rpc()` → `call_local` → partículas + flash + som + camera shake (trauma 0.35)
+
+> 🐞 **Bug "bala-fantasma presa no cano" no cliente (corrigido 2026-06-24):** `apply_input()` roda
+> no servidor **e** na predição do cliente local. O bloco de tiro (e os RPCs `jump`/`land`/`shoot`)
+> rodava nos dois → o cliente instanciava uma `bullet.tscn` LOCAL que, por não ser servidor, tinha
+> `_physics_process` desligado e **não era replicada nem destruída** → ficava parada no cano "para
+> sempre" (efeito que "não some"). **Fix** (`player.gd`): calcula `authoritative = is_server()` no
+> topo do `apply_input` e gateia os efeitos autoritativos (spawn da bala + `shoot/jump/land.rpc()`)
+> por ele. A predição de **movimento** (velocidade, `move_and_slide`, salto) continua local/responsiva;
+> só o que é autoritativo passou a ser exclusivo do servidor. Offline (`OfflineMultiplayerPeer` =
+> servidor) atira normalmente.
 
 ### Direção do Tiro
 ```gdscript
@@ -77,6 +87,27 @@ explode.rpc()
 
 - `ShootFrom`: `Marker3D` em `Robot_Skeleton/Skeleton3D/GunBone/ShootFrom`
 - Offset: `(0, 0.4, 0)` relativo ao osso do cano
+
+---
+
+## Aniquilação mútua projétil × projétil (2026-06-24)
+
+Quando dois projéteis colidem — bala de player, bala de canhão do red_robot (ambos `bullet.tscn`)
+ou bomba da criatura (`bomb.tscn`) — **ambos se destroem** com explosão (dá pra "abater" a bala de
+canhão/bomba do inimigo no ar).
+
+- **Colisão:** todos os projéteis ficam na **layer 4** (valor 8) e nada mais usa essa layer. As
+  **máscaras** ganharam o bit 4 (bullet `51→59`, bomb `3→11`) → passam a colidir **só entre si**,
+  sem mexer na colisão com mundo/personagens.
+- **Detecção:** ambos entram no grupo `&"projectiles"` no `_ready`. No `move_and_collide` (server),
+  se o `collider` está nesse grupo → chama `annihilate()` em si e no outro e retorna (antes da
+  lógica de dano/phase). É **idempotente** (guardas `hit`/`_done`), então não importa qual detecta
+  primeiro nem se ambos detectam no mesmo frame.
+- **`annihilate()`:** na bala = explode + desativa colisão (mesmo desfecho de um acerto); na bomba =
+  `_explode(null)` (detona sem dano a player). As explosões/remoções replicam via os RPCs `call_local`
+  + despawn do `MultiplayerSpawner` já existentes → **sem tráfego de rede extra**.
+- ⚠️ Best-effort: projéteis muito rápidos e pequenos podem "tunelar" num frame; a bala de canhão
+  (maior, `ball_scale 2.5`) e a bomba são alvos fáceis.
 
 ---
 
