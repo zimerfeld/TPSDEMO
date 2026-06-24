@@ -180,15 +180,24 @@ func _on_room_child_entered(node: Node, room_id: int) -> void:
 	_apply_room_visibility(node, room_id)
 
 
-# Interest management: o nó (e seus sub-nós) só é replicado para peers QUE ESTÃO NESTA SALA.
-# (Best-effort: mesmo que a engine ainda envie o spawn, o cliente só espelha a SUA sala — os
-# caminhos das outras salas não existem nele, então o tráfego cruzado é descartado.)
+# Interest management: o nó (e seus sub-nós) só é replicado (spawn + sync) para peers QUE ESTÃO
+# NESTA SALA. Implementado com um visibility filter (veta quem NÃO está na sala).
+#
+# ⚠️ NÃO mexer em `public_visibility`. Na engine, MultiplayerSynchronizer.is_visible_to() é:
+#       for f in filters: if not f(peer): return false      # filtros só VETAM
+#       return peer_visibility.has(0) or peer_visibility.has(peer)   # has(0) = public_visibility
+# Ou seja, um filtro retornando true NÃO concede visibilidade sozinho — quem concede é o
+# public_visibility (peer 0). Se setarmos `public_visibility = false`, o synchronizer fica
+# INVISÍVEL A TODOS os peers (o filtro nunca consegue tornar visível) → nada replica para o
+# cliente: nem o player dele (sem câmera/level), nem os outros players, nem o inimigo. Deixando
+# o default (true), o filtro funciona como deveria: peer na sala = visível, fora da sala = vetado.
+# Os parts de morte do red_robot nascem com public_visibility=false de propósito (só sincronizam
+# ao explodir, via part.gd) — também preservado: ganham só o filtro e seguem ocultos até lá.
 func _apply_room_visibility(node: Node, room_id: int) -> void:
 	for sync in _synchronizers_in(node):
 		if sync.has_meta("room_filtered"):
 			continue
 		sync.set_meta("room_filtered", true)
-		sync.public_visibility = false
 		sync.add_visibility_filter(func(peer: int) -> bool:
 			return int(_peer_room.get(peer, -1)) == room_id)
 		sync.update_visibility()
