@@ -28,6 +28,31 @@
 4. O playit gera um endereço público, ex.: `wharf-pos.gl.at.ply.gg:54417`
 5. Host: abrir o jogo → **Host**. Amigo: **Address** = domínio, **Port** = porta do painel → **Connect**
 
+### Por que conectar no domínio do playit e não no IP local (`192.168.x.x`)
+
+São **duas pontas do mesmo túnel**, e só uma é alcançável pela internet:
+
+```
+Amigo (internet)            playit.gg (nuvem)          Sua máquina (LAN)
+────────────────            ─────────────────          ──────────────────
+wharf-pos…:54417  ─UDP►   servidor relay playit  ─►   agente playit  ─►  192.168.0.33:4383
+ (endereço PÚBLICO)         (IP roteável na net)       (no seu PC)         (jogo / ENet)
+```
+
+- `192.168.0.33:4383` é **IP privado de LAN** — só existe dentro da sua rede; ninguém na internet o alcança. É o destino *interno* para onde o agente entrega o tráfego.
+- `wharf-pos.gl.at.ply.gg:54417` é o **endereço público** criado nos relays do playit — esse sim é alcançável de qualquer lugar.
+- O agente no seu PC mantém o túnel aberto: pacotes p/ `…:54417` → relay → agente → `192.168.0.33:4383` (jogo). Por isso **nunca compartilhe o `192.168…`** (não significa nada fora da sua rede) e a **porta pública** (54417) é diferente da local (4383).
+
+### Valores na UI PlayOnline (`playonline.gd`)
+
+| Papel | Address | Port | Botão |
+|---|---|---|---|
+| **Host** | *(ignorado — pode deixar vazio)* | `4383` (a mesma do túnel) | **Host / Hospedar** |
+| **Conectar** | `wharf-pos.gl.at.ply.gg` (só domínio, **sem** `:porta`) | `54417` (porta **pública** do painel) | **Connect / Conectar** |
+
+- **Host** (`_on_host_pressed`): `create_server(port)` usa **só a porta**, nunca o Address. Essa porta deve ser a mesma que o túnel playit redireciona (local address `4383`).
+- **Conectar** (`_on_connect_pressed`): `create_client(address, port)` — domínio num campo, porta no outro. O ENet resolve hostname, então **domínio = IP**. Não cole `dominio:porta` no Address: o `:porta` vai no campo **Port** separado.
+
 ### Estabilidade dos valores gerados
 - **Domínio + porta** (`xxxxx.gl.at.ply.gg:PORTA`): **fixos enquanto o túnel existir**. Mudam se o túnel for **apagado e recriado** (porta aleatória no plano grátis).
 - **IP cru** (`147.185.221.26:...`): **compartilhado/anycast, pode mudar** — **não compartilhar**. Sempre passar o **domínio**.

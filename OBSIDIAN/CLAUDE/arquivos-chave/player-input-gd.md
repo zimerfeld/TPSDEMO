@@ -22,8 +22,9 @@ Roda a cada frame no `_process` (apenas no player local). Lança um raio da mira
 **rastreia** o inimigo focado (`var _focused_enemy: Node`):
 
 ```gdscript
-var col = ...intersect_ray(ray_from, ray_from + ray_dir*1000, 0b11, [self])
-var enemy = (collider tem show_health_hud) ? collider : null
+# Máscara 0b100011 = corpo (bits 1-2) + colliders de membro do inimigo (bit6=32).
+var col = ...intersect_ray(ray_from, ray_from + ray_dir*1000, 0b100011, [self])
+var enemy = _resolve_focus_enemy(col.collider)
 if enemy:
     enemy.show_health_hud()       # mostra/atualiza a boss bar
     _focused_enemy = enemy
@@ -33,8 +34,16 @@ elif _focused_enemy != null:
     _focused_enemy = null
 ```
 
-> Usa `has_method("show_health_hud")` para reagir só a inimigos (o player não tem esse método).
-> O HUD some no instante em que a mira deixa o inimigo. Ver [[arquivos-chave/enemy-health-bar-gd]]
+`_resolve_focus_enemy(collider)` aceita **dois** tipos de acerto:
+1. **Corpo do inimigo** (`CharacterBody3D`) — já tem `show_health_hud`.
+2. **Collider de MEMBRO / SUB-MEMBRO** (`StaticBody3D` passivo dos `LimbColliders`,
+   layer 32) — guarda o dono em `meta("character")`; o HUD é resolvido por ela.
+
+> A máscara inclui a **layer 32** (hitbox de membro do inimigo) além do corpo, para que mirar
+> num **sub-membro saliente** (ex.: as placas das pernas do red_robot, que escapam da silhueta
+> do corpo e antes não acusavam nada) também exiba a vida do inimigo. O player não é afetado
+> (seus membros ficam na layer 16, fora da máscara). O HUD some no instante em que a mira deixa
+> o inimigo. Ver [[arquivos-chave/enemy-health-bar-gd]] e [[arquivos-chave/limb-colliders-gd]]
 
 ---
 

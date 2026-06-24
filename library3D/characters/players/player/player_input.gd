@@ -134,20 +134,21 @@ func _input(input_event: InputEvent) -> void:
 
 
 # Lança um raio a partir da mira: mostra o HUD do inimigo sob a mira e o
-# esconde assim que a mira sai dele.
+# esconde assim que a mira sai dele. A máscara inclui a layer dos colliders de
+# membro do inimigo (bit6=32) além do corpo (0b11), para que mirar num SUB-MEMBRO
+# saliente (ex.: as placas das pernas, que escapam da silhueta do corpo) também
+# acuse o inimigo. O dono é resolvido pela meta "character" do collider de membro.
 func _update_enemy_focus() -> void:
 	var ch_pos: Vector2 = crosshair.position + crosshair.size * 0.5
 	var ray_from: Vector3 = camera_camera.project_ray_origin(ch_pos)
 	var ray_dir: Vector3 = camera_camera.project_ray_normal(ch_pos)
 
 	var col: Dictionary = get_parent().get_world_3d().direct_space_state.intersect_ray(
-			PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 1000, 0b11, Array([self], TYPE_RID, "", null)))
+			PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 1000, 0b100011, Array([self], TYPE_RID, "", null)))
 
 	var enemy: Node = null
 	if not col.is_empty():
-		var collider = col.collider
-		if collider and collider.has_method(&"show_health_hud"):
-			enemy = collider
+		enemy = _resolve_focus_enemy(col.collider)
 
 	if enemy:
 		var dist: float = get_parent().global_position.distance_to(enemy.global_position)
@@ -158,6 +159,21 @@ func _update_enemy_focus() -> void:
 		if is_instance_valid(_focused_enemy) and _focused_enemy.has_method(&"hide_health_hud"):
 			_focused_enemy.hide_health_hud()
 		_focused_enemy = null
+
+
+# Resolve o inimigo sob a mira a partir do collider atingido. Dois casos: (1) o raio
+# acertou o CORPO do inimigo, que já tem show_health_hud; (2) o raio acertou um collider
+# de MEMBRO/SUB-MEMBRO (StaticBody3D passivo), que guarda o dono em meta "character".
+func _resolve_focus_enemy(collider) -> Node:
+	if collider == null:
+		return null
+	if collider.has_method(&"show_health_hud"):
+		return collider
+	if collider.has_meta(&"character"):
+		var ch = collider.get_meta(&"character")
+		if is_instance_valid(ch) and ch.has_method(&"show_health_hud"):
+			return ch
+	return null
 
 
 func rotate_camera(move: Vector2) -> void:

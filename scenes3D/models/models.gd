@@ -31,6 +31,11 @@ const WHOLE_MODEL_VALUE: String = "__whole_model__"
 const ALL_MEMBERS_LABEL: String = "Todos os membros"
 const ALL_MEMBERS_VALUE: String = "__all_members__"
 
+# Item logo após "Selecione..." no dropdown "Sub-membro" quando "Todos os membros" está escolhido:
+# "Todos os Sub-membros" — não isola nada (mostra o modelo inteiro), serve de "voltar a ver tudo".
+const ALL_SUB_MEMBERS_LABEL: String = "Todos os Sub-membros"
+const ALL_SUB_MEMBERS_VALUE: String = "__all_sub_members__"
+
 # Item no topo do filtro "Esqueleto" (modo "Todos os membros"): realça os respectivos modelos
 # 3D de TODOS os ossos avulsos de uma vez. Sentinela estável; rótulo traduzido.
 const ALL_AUX_LABEL: String = "Todo o esqueleto"
@@ -193,6 +198,7 @@ var _show_damage_panel: bool = false
 # guarda as entradas {group,label} na MESMA ordem dos itens do combo (item index - 1).
 var _member_entries: Array = []      # membros grandes (HEAD/TORSO/ARM…), exceto PART_*
 var _sub_member_entries: Array = []  # sub-membros (PART_*) do membro atualmente escolhido
+var _skeleton_entries: Array = []  # ossos avulsos (candidatos a sub-membro) do dropdown "Esqueleto" ("Todos os membros")
 
 # AnimationPlayers of the current whole-model preview, used by the "Animação"
 # dropdown to list and play the model's clips.
@@ -271,8 +277,13 @@ var _zoom_target: float = 0.0
 @onready var cbo_members: OptionButton = %cboMembers
 @onready var sub_member_row: HBoxContainer = %SubMemberRow
 @onready var cbo_sub_members: OptionButton = %cboSubMembers
-# Rótulo da row de sub-membro: gerenciado em código (alterna "Sub-membro:" ↔ "Ossos avulsos:"),
-# por isso entra no SKIP_GROUP do Locale para o auto-tradutor não sobrescrevê-lo.
+# Dropdown "Esqueleto" (ossos avulsos), exibido SÓ no modo "Todos os membros". Fica ABAIXO do editor
+# de collider (Save) — quando um sub-membro está selecionado, o editor aparece e empurra o Esqueleto
+# para baixo dele; sem sub-membro selecionado o editor some e o Esqueleto fica logo abaixo de Submembros.
+@onready var skeleton_row: HBoxContainer = %SkeletonRow
+@onready var cbo_skeleton: OptionButton = %cboSkeleton
+# Rótulo da row de sub-membro: gerenciado em código (sempre "Sub-membro:" agora que os ossos avulsos
+# têm o dropdown próprio "Esqueleto"); fica no SKIP_GROUP do Locale, retraduzido por código.
 @onready var sub_member_label: Label = %SubMemberLabel
 # Editor de collider do membro/sub-membro focado — só visível com o toggle de collider do tipo ligado E um
 # grupo isolado. SpinBox de Afastamento (X/Y/Z) movem o StaticBody3D e de Escala (X/Y/Z) escalam a
@@ -294,7 +305,7 @@ var _zoom_target: float = 0.0
 @onready var name_check: CheckButton = %NameCheck
 @onready var id_check: CheckButton = %IdCheck
 @onready var osso_check: CheckButton = %OssoCheck
-@onready var damage_toggle: CheckButton = %DamageToggle
+@onready var damage_button: Button = %DamageButton
 @onready var aux_highlight_toggle: CheckButton = %AuxHighlightToggle
 @onready var sub_member_label_toggle: CheckButton = %SubMemberLabelToggle
 @onready var sub_collider_toggle: CheckButton = %SubColliderToggle
@@ -341,6 +352,7 @@ func _ready() -> void:
 	cbo_effects.item_selected.connect(_on_effect_selected)
 	cbo_members.item_selected.connect(_on_member_selected)
 	cbo_sub_members.item_selected.connect(_on_sub_member_selected)
+	cbo_skeleton.item_selected.connect(_on_skeleton_selected)
 	for sp in [offset_x, offset_y, offset_z, scale_x, scale_y, scale_z]:
 		sp.value_changed.connect(_on_collider_field_changed)
 	collider_save_button.pressed.connect(_on_collider_save_pressed)
@@ -385,8 +397,8 @@ func _ready() -> void:
 	id_check.toggled.connect(_on_id_toggled)
 	osso_check.button_pressed = _show_osso
 	osso_check.toggled.connect(_on_osso_toggled)
-	damage_toggle.button_pressed = _show_damage_panel
-	damage_toggle.toggled.connect(_on_damage_toggled)
+	# "Dano" virou botão de ação (ao lado do "Voltar"), não mais um toggle da lista: abre a janela.
+	damage_button.pressed.connect(_on_damage_button_pressed)
 	aux_highlight_toggle.button_pressed = _show_aux_highlight
 	aux_highlight_toggle.toggled.connect(_on_aux_highlight_toggled)
 	sub_member_label_toggle.button_pressed = _show_sub_member_label
@@ -426,7 +438,7 @@ func _on_language_changed(_lang: String) -> void:
 	for i in range(_categories.size()):
 		if i + 1 < cbo_category.item_count:
 			cbo_category.set_item_text(i + 1, Locale.tr_key(_categories[i]["label"]))
-	for combo in [cbo_prefix, cbo_models, cbo_meshes, cbo_animations, cbo_effects, cbo_members, cbo_sub_members]:
+	for combo in [cbo_prefix, cbo_models, cbo_meshes, cbo_animations, cbo_effects, cbo_members, cbo_sub_members, cbo_skeleton]:
 		if combo.item_count > 0:
 			combo.set_item_text(0, Locale.tr_key(SELECT_LABEL))
 	if cbo_meshes.item_count > 1:
@@ -437,11 +449,16 @@ func _on_language_changed(_lang: String) -> void:
 	# "Todos os membros" fica no índice 1 do dropdown Membro (quando populado).
 	if cbo_members.item_count > 1:
 		cbo_members.set_item_text(1, Locale.tr_key(ALL_MEMBERS_LABEL))
-	# Rótulo da row de sub-membro (SKIP_GROUP, dirigido por código): re-traduz conforme o modo.
-	if member_row.visible and cbo_members.selected == 1:
-		sub_member_label.text = Locale.tr_key("Esqueleto:")
-	else:
-		sub_member_label.text = Locale.tr_key("Sub-membro:")
+	# "Todos os Sub-membros": índice 1 do dropdown Sub-membro (só no modo "Todos os membros").
+	if cbo_sub_members.item_count > 1 and _sub_member_value(1) == ALL_SUB_MEMBERS_VALUE:
+		cbo_sub_members.set_item_text(1, Locale.tr_key(ALL_SUB_MEMBERS_LABEL))
+	# "Todo o esqueleto": índice 1 do dropdown Esqueleto (quando há ossos avulsos).
+	if cbo_skeleton.item_count > 1 and not _skeleton_entries.is_empty() \
+			and str(_skeleton_entries[0]["group"]) == ALL_AUX_VALUE:
+		cbo_skeleton.set_item_text(1, Locale.tr_key(ALL_AUX_LABEL))
+	# Rótulo da row de sub-membro (SKIP_GROUP, dirigido por código): agora sempre "Sub-membro:"
+	# (o filtro de ossos avulsos virou o dropdown próprio "Esqueleto", com label estático).
+	sub_member_label.text = Locale.tr_key("Sub-membro:")
 	_update_language_buttons()
 
 
@@ -887,35 +904,43 @@ func _reset_members() -> void:
 	_reset_sub_members()
 
 
-# Preenche a row de baixo de cbo_members. Com um MEMBRO específico (índices 2+): o dropdown
-# "Sub-membro" lista os PART_* daquele membro. Com "Todos os membros" (índice 1): vira o filtro
-# "Ossos avulsos" — lista os OSSOS AVULSOS (os mesmos do dropdown "Adicionar sub-membro" da janela
-# de dano: ossos que o classificador descarta e ainda NÃO são sub-membros), só para inspeção
-# (selecionar não isola nada, pois não têm collider). Esconde a row no placeholder/sem itens.
+# Preenche o dropdown "Sub-membro" (logo abaixo de "Membro"). Com um MEMBRO específico (índices 2+):
+# lista os PART_* DAQUELE membro. Com "Todos os membros" (índice 1): lista TODOS os sub-membros do
+# modelo, com a opção "Todos os Sub-membros" no topo (= mostrar tudo). Selecionar um sub-membro o
+# isola/realça. Os OSSOS AVULSOS saíram daqui para o dropdown próprio "Esqueleto" (_populate_skeleton).
+# Esconde a row no placeholder/sem sub-membros.
 func _populate_sub_members() -> void:
+	# Dropdown "Esqueleto" (ossos avulsos, só no modo "Todos os membros"): populado/escondido à parte.
+	_populate_skeleton()
 	var prev := _sub_member_value(cbo_sub_members.selected)
 	_sub_member_entries = []
 	cbo_sub_members.clear()
 	cbo_sub_members.add_item(Locale.tr_key(SELECT_LABEL))
+	sub_member_label.text = Locale.tr_key("Sub-membro:")
 	var msel := cbo_members.selected
 	if not member_row.visible or msel <= 0:
-		sub_member_label.text = Locale.tr_key("Sub-membro:")
 		cbo_sub_members.select(0)
 		cbo_sub_members.disabled = true
 		sub_member_row.visible = false
 		return
 	if msel == 1:
-		# Filtro "Ossos avulsos": os candidatos a sub-membro (group_of == "" e ainda não promovidos).
-		# Com candidatos, oferece "Todos os ossos avulsos" no topo (realça todos de uma vez).
-		sub_member_label.text = Locale.tr_key("Esqueleto:")
-		var aux := _aux_bone_candidates()
-		if not aux.is_empty():
-			_sub_member_entries.append({"group": ALL_AUX_VALUE, "label": Locale.tr_key(ALL_AUX_LABEL)})
-		for bn in aux:
-			_sub_member_entries.append({"group": bn, "label": bn})
+		# "Todos os membros": TODOS os sub-membros (PART_*) do modelo (ordenados), com a opção
+		# "Todos os Sub-membros" no topo (= não isola, mostra o modelo inteiro).
+		var subs: Array = []
+		for body in _member_bodies():
+			var g := str((body as StaticBody3D).get_meta("group"))
+			if not g.begins_with("PART_"):
+				continue
+			var lab := str((body as StaticBody3D).get_meta("member_label")) \
+				if (body as StaticBody3D).has_meta("member_label") else g.substr(len("PART_"))
+			subs.append({"group": g, "label": lab})
+		subs.sort_custom(func(a, b): return a["label"] < b["label"])
+		if not subs.is_empty():
+			_sub_member_entries.append({"group": ALL_SUB_MEMBERS_VALUE, "label": Locale.tr_key(ALL_SUB_MEMBERS_LABEL)})
+			for e in subs:
+				_sub_member_entries.append(e)
 	else:
 		# Membro específico: só os sub-membros (PART_*) DAQUELE membro.
-		sub_member_label.text = Locale.tr_key("Sub-membro:")
 		var mgroup := str(_member_entries[msel - 2]["group"])
 		var owners := _sub_member_owner_map()
 		for body in _member_bodies():
@@ -947,6 +972,73 @@ func _reset_sub_members() -> void:
 	cbo_sub_members.disabled = true
 	sub_member_row.visible = false
 	_sub_member_entries = []
+	_reset_skeleton()
+
+
+# Esconde/limpa o dropdown "Esqueleto" (modo "Todos os membros").
+func _reset_skeleton() -> void:
+	cbo_skeleton.clear()
+	cbo_skeleton.add_item(Locale.tr_key(SELECT_LABEL))
+	cbo_skeleton.select(0)
+	cbo_skeleton.disabled = true
+	skeleton_row.visible = false
+	_skeleton_entries = []
+
+
+# Dropdown "Esqueleto" (só no modo "Todos os membros", cbo_members índice 1): lista os OSSOS AVULSOS
+# — candidatos a sub-membro (group_of == "" e ainda não promovidos), os MESMOS do "Adicionar
+# sub-membro" da janela de dano. Só inspeção/realce (não têm collider, não isolam). Com candidatos,
+# oferece "Todo o esqueleto" no topo. SEMPRE visível no modo "Todos os membros" — VAZIO aparece
+# DESABILITADO (só "Selecione..."). Some em qualquer outro modo de "Membro".
+func _populate_skeleton() -> void:
+	var prev := _skeleton_value(cbo_skeleton.selected)
+	_skeleton_entries = []
+	cbo_skeleton.clear()
+	cbo_skeleton.add_item(Locale.tr_key(SELECT_LABEL))
+	if not member_row.visible or cbo_members.selected != 1:
+		cbo_skeleton.select(0)
+		cbo_skeleton.disabled = true
+		skeleton_row.visible = false
+		return
+	var aux := _aux_bone_candidates()
+	if not aux.is_empty():
+		_skeleton_entries.append({"group": ALL_AUX_VALUE, "label": Locale.tr_key(ALL_AUX_LABEL)})
+	for bn in aux:
+		_skeleton_entries.append({"group": bn, "label": bn})
+	for e in _skeleton_entries:
+		cbo_skeleton.add_item(str(e["label"]))
+	skeleton_row.visible = true   # visível mesmo vazio (fica desabilitado abaixo)
+	if _skeleton_entries.is_empty():
+		cbo_skeleton.select(0)
+		cbo_skeleton.disabled = true
+		return
+	cbo_skeleton.select(maxi(_skeleton_index_for_value(prev), 0))
+	cbo_skeleton.disabled = false
+
+
+# Valor estável (group: nome do osso avulso ou ALL_AUX_VALUE) de um índice; "" no placeholder/inválido.
+func _skeleton_value(index: int) -> String:
+	if index <= 0 or index - 1 >= _skeleton_entries.size():
+		return ""
+	return str(_skeleton_entries[index - 1]["group"])
+
+
+# Inverso: índice do combo "Esqueleto" para um group salvo (0 quando vazio/inexistente).
+func _skeleton_index_for_value(value: String) -> int:
+	if value == "":
+		return 0
+	for i in _skeleton_entries.size():
+		if str(_skeleton_entries[i]["group"]) == value:
+			return i + 1
+	return 0
+
+
+# Escolher um osso avulso no dropdown "Esqueleto" (modo "Todos os membros"): persiste e reaplica o
+# realce/rótulo de osso avulso. NÃO isola collider (esses ossos não têm) — só inspeção visual.
+func _on_skeleton_selected(index: int) -> void:
+	_save_selection("sel_skeleton", _skeleton_value(index))
+	_refresh_aux_highlight()
+	_refresh_aux_labels()
 
 
 # Escolher um membro: persiste, repopula os sub-membros daquele membro e reaplica o isolamento.
@@ -1059,9 +1151,13 @@ func _current_focus_groups():
 	var msel := cbo_members.selected
 	if msel <= 0:
 		return null
-	# "Todos os membros" (índice 1): a row de baixo vira o filtro "Ossos avulsos" (só inspeção) —
-	# nunca isola, sempre mostra TUDO. Checado ANTES do isolamento por sub-membro.
+	# "Todos os membros" (índice 1): o dropdown "Sub-membro" isola UM sub-membro (PART_*) escolhido;
+	# "Todos os Sub-membros"/"Selecione..." → não isola (mostra o modelo inteiro). O dropdown
+	# "Esqueleto" (ossos avulsos) é só inspeção/realce e NUNCA isola (esses ossos não têm collider).
 	if msel == 1:
+		var v_all := _sub_member_value(cbo_sub_members.selected)
+		if v_all.begins_with("PART_"):
+			return {v_all: true}
 		return null
 	var ssel := cbo_sub_members.selected
 	# Membro específico com sub-membro escolhido → isola SÓ aquele sub-membro.
@@ -1261,11 +1357,11 @@ func _refresh_aux_highlight() -> void:
 	if not _show_aux_highlight or not member_row.visible or cbo_members.selected != 1:
 		_clear_aux_highlights()
 		return
-	var ssel := cbo_sub_members.selected
+	var ssel := cbo_skeleton.selected
 	if ssel <= 0:
 		_clear_aux_highlights()
 		return
-	var val := _sub_member_value(ssel)
+	var val := _skeleton_value(ssel)
 	if val == ALL_AUX_VALUE:
 		_highlight_aux_bones(_aux_bone_candidates())
 	elif val != "":
@@ -1330,11 +1426,11 @@ func _refresh_aux_labels() -> void:
 	if not _show_osso or not member_row.visible or cbo_members.selected != 1:
 		_clear_aux_labels()
 		return
-	var ssel := cbo_sub_members.selected
+	var ssel := cbo_skeleton.selected
 	if ssel <= 0:
 		_clear_aux_labels()
 		return
-	var val := _sub_member_value(ssel)
+	var val := _skeleton_value(ssel)
 	if val == ALL_AUX_VALUE:
 		_label_aux_bones(_aux_bone_candidates())
 	elif val != "":
@@ -1393,8 +1489,8 @@ func _label_aux_bones(bone_names: Array) -> void:
 # ── Rótulo "Submembro: <nome>" (toggle "Submembros") ──────────────────────────
 
 # Rotula o sub-membro SELECIONADO no dropdown "Sub-membro" com um Label3D "Submembro: <nome>".
-# Só vale com um MEMBRO específico escolhido (não placeholder, não "Todos os membros") E um
-# sub-membro escolhido. Toggle off / sem seleção → sem rótulo.
+# Vale com um membro específico OU "Todos os membros" (ambos listam sub-membros) e um sub-membro
+# (PART_*) escolhido. Placeholder/"Todos os Sub-membros"/toggle off → sem rótulo.
 func _refresh_sub_member_labels() -> void:
 	if _preview_instance == null:
 		return
@@ -1402,8 +1498,9 @@ func _refresh_sub_member_labels() -> void:
 		_clear_sub_member_labels()
 		return
 	var msel := cbo_members.selected
-	# msel <= 1: placeholder (0) ou "Todos os membros" (1, modo esqueleto) — sem sub-membro.
-	if msel <= 1:
+	# msel <= 0: placeholder (sem membro). Em "Todos os membros" (1) o dropdown "Sub-membro" também
+	# lista sub-membros, então rotula o PART_* escolhido (a checagem de val.begins_with abaixo filtra).
+	if msel <= 0:
 		_clear_sub_member_labels()
 		return
 	var ssel := cbo_sub_members.selected
@@ -1623,8 +1720,10 @@ func _any_member_label() -> bool:
 
 # Abre/fecha o painel de edição de dano por membro (só popula para personagem em
 # "Modelo completo"; _refresh_damage_panel decide a visibilidade real).
-func _on_damage_toggled(pressed: bool) -> void:
-	_show_damage_panel = pressed
+# Botão "Dano" (à direita do "Voltar"): abre a JANELA de Dano. O × da janela a fecha
+# (_on_damage_close). Antes era um toggle na lista; virou botão de ação dedicado.
+func _on_damage_button_pressed() -> void:
+	_show_damage_panel = true
 	_refresh_damage_panel()
 
 
@@ -1686,11 +1785,12 @@ func _on_damage_titlebar_input(event: InputEvent) -> void:
 		damage_panel.position = target
 
 
-# Botão × (fechar): desmarca o toggle "Dano" — o handler do toggle esconde a janela e
-# limpa os campos flutuantes, mantendo o estado coerente (igual a desligar pelo toggle).
+# Botão × (fechar): esconde a janela de Dano e limpa os campos flutuantes (mesmo efeito de
+# reabrir depois pelo botão "Dano"). Mantém o estado coerente via _refresh_damage_panel.
 func _on_damage_close() -> void:
 	_damage_panel_dragging = false
-	damage_toggle.button_pressed = false
+	_show_damage_panel = false
+	_refresh_damage_panel()
 
 
 # The special-effect nodes already live in the preview (collected on build), so toggling
@@ -1756,6 +1856,7 @@ func _restore_selection_chain() -> void:
 	var v_eff: String = cfg.get_value("models", "sel_effect", "")
 	var v_member: String = cfg.get_value("models", "sel_member", "")
 	var v_submember: String = cfg.get_value("models", "sel_submember", "")
+	var v_skeleton: String = cfg.get_value("models", "sel_skeleton", "")
 
 	# Categoria — the root dropdown is always enabled. A missing/stale value falls back to
 	# the placeholder, which resets and disables the whole chain below it.
@@ -1827,6 +1928,12 @@ func _restore_selection_chain() -> void:
 		if sub_i > 0:
 			cbo_sub_members.select(sub_i)
 			_on_sub_member_selected(sub_i)
+		# "Todos os membros": restaura também o dropdown "Esqueleto" (já populado por _on_member_selected
+		# → _populate_sub_members → _populate_skeleton).
+		var skel_i := _skeleton_index_for_value(v_skeleton)
+		if skel_i > 0:
+			cbo_skeleton.select(skel_i)
+			_on_skeleton_selected(skel_i)
 
 
 # Index of the Categoria item with the given category key, or -1 if none/empty.

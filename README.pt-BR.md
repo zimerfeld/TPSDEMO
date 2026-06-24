@@ -31,6 +31,9 @@ em terceira pessoa. Em alto nível, oferece:
   enquanto continua olhando/mirando e atirando.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
+  Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo
+  quanto os **colliders de membro/sub-membro** — então apontar para um **sub-membro saliente**
+  (ex.: as placas das pernas) também exibe a vida do inimigo.
 - **Dano localizado** — colliders 3D nativos por membro dimensionados pela malha de cada
   personagem, então acertos em partes diferentes causam dano diferente (headshots causam dano
   extra). Os membros vêm do **plano corporal** do modelo, escolhido por um `body_type`
@@ -73,14 +76,17 @@ em terceira pessoa. Em alto nível, oferece:
   salvar, citando o nome do membro/sub-membro), **rótulos de membro**
   (toggle próprio do browser para as tags "Membro: …" sobre cada collider, independente da tela
   Debug 3D — com, logo abaixo do toggle **Membro**, um toggle **Esqueleto** que faz flutuar o rótulo
-  "Esqueleto: \<nome\>" do osso avulso escolhido sobre ele, e as linhas extras Tipo/Nome/ID), **Dano** (uma **janela flutuante arrastável** de fundo preto opaco — barra
-  de título "Dano" + botão × para fechar — com uma **árvore** do bônus % de cada membro/sub-membro, para
-  personagens, além de adicionar/remover colliders salientes `PART_*` — que **mantêm o nome original** do osso ao
-  serem adicionados a um membro-dono — e definir o **membro-dono** de
-  cada um), **Colisores de Esqueleto** (no modo "Todos os membros" → filtro "Esqueleto", destaca com uma
+  "Esqueleto: \<nome\>" do osso avulso escolhido sobre ele, e as linhas extras Tipo/Nome/ID), **Colisores de Esqueleto** (no modo "Todos os membros" → filtro "Esqueleto", destaca com uma
   caixa translúcida a região do osso avulso escolhido, ou de todos), **Submembros** (rótulo flutuante
   "Submembro: \<nome\>" sobre o sub-membro escolhido no dropdown) e **Colisores de Submembros** (mostra
-  só o limbcollider do sub-membro selecionado, com o mesmo editor de afastamento/escala). Cada toggle é o interruptor mestre da sua categoria (nenhum som/animação toca
+  só o limbcollider do sub-membro selecionado, com o mesmo editor de afastamento/escala). Os seletores são **três
+  dropdowns** — **Membro**, **Sub-membro** (logo abaixo, com a opção **"Todos os Sub-membros"** para ver todos de
+  uma vez) e, só no modo **"Todos os membros"**, **Esqueleto** (ossos avulsos), que fica abaixo de Sub-membro — ou
+  abaixo do botão **Salvar** quando um sub-membro está selecionado e o editor aparece. A **tela de Dano** não
+  fica na lista de toggles: é aberta pelo **botão "Dano"** (à direita do botão "Voltar") — uma **janela flutuante
+  arrastável** de fundo preto opaco (barra de título "Dano" + botão × para fechar) com uma **árvore** do bônus %
+  de cada membro/sub-membro, onde também se adicionam/removem colliders salientes `PART_*` (que **mantêm o nome
+  original** do osso ao serem adicionados a um membro-dono) e se define o **membro-dono** de cada um. Cada toggle é o interruptor mestre da sua categoria (nenhum som/animação toca
   enquanto o toggle estiver desligado, inclusive som disparado por trilhas de animação) e os estados
   dos toggles são persistidos entre visitas (exceto o painel de dano, que abre fechado — mas a
   **última posição** da janela de dano é lembrada e restaurada na reabertura). Uma
