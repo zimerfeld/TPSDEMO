@@ -125,9 +125,22 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
-Toggles atuais (ordem em 2026-06-23): **Rotação · Animação · Efeitos especiais · Audio ·
-Colisores de Membro · Membro · Colisores de Esqueleto · [Esqueleto · Colisores de Submembros ·
-Submembros · Malha · Tipo · Nome · ID · Linhas do Esqueleto] · Dano**.
+Toggles atuais (ordem/nomes em 2026-06-23): **Rotação · Animação · Efeitos especiais · Audio ·
+Colisor de Membro · Membro · Colisor de Submembro · Submembros · Colisor de Esqueleto ·
+[Esqueleto · Linhas do Esqueleto · Tipo · Nome · ID · Malha] · Dano**. (Renomeados de "Colisores
+de X" → **"Colisor de X"**; `SubColliderToggle`/`SubMemberLabelToggle` movidos para o topo, logo
+**abaixo de "Membro"**.)
+
+> [!note] Labels Tipo/Nome/Id no Esqueleto e Submembro + exclusividade (2026-06-23)
+> - **Tipo/Nome/Id** (cores rosa/verde/amarelo de `_LABEL_LINE_COLORS`) agora aparecem também sobre o
+>   rótulo do **Esqueleto** (`_label_aux_bones`) e do **Submembro** (`_label_sub_member`), via
+>   `_add_tni_lines` — descrevendo o ELEMENTO (classe do nó · nome do osso/submembro · id do nó). Os
+>   handlers Tipo/Nome/Id refrescam membro+submembro (`_refresh_member_overlays`) e esqueleto
+>   (`_refresh_aux_labels`).
+> - **Bug corrigido:** o stack "Membro:" não aparece mais sobre **submembros** — `_add_member_labels`
+>   pula corpos `PART_*` (um elemento é Membro OU Submembro, nunca os dois).
+> - **Exclusividade:** `_aux_bone_candidates` já só oferece ossos não-membros (`group_of==""`) para
+>   promover; `_on_sub_member_added` ainda bloqueia + avisa se um osso de Membro chegar lá.
 
 > [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
 > - **Malha** (`MalhaCheck`, acima de Tipo, chave `show_malha`, default LIGADO): mostra/esconde a
@@ -148,8 +161,10 @@ Submembros · Malha · Tipo · Nome · ID · Linhas do Esqueleto] · Dano**.
 >   Membro"). Os sub-membros ficam OCULTOS na visão geral (`_apply_colliders_visibility` esconde PART_*).
 >   O editor de afastamento/escala também aparece para sub-membros sob este toggle.
 > - **NOVO Submembros** (`SubMemberLabelToggle`/`_show_sub_member_label`, chave `show_sub_member_label`):
->   Label3D **"Submembro: \<nome\>"** (magenta, `_SUB_LBL_PREFIX`/`_SUB_LBL_COLOR`) preso ao corpo do
->   sub-membro selecionado (`_refresh_sub_member_labels`/`_label_sub_member`). Só no modo membro-específico.
+>   Label3D **"Submembro: \<nome\>"** preso ao corpo do sub-membro selecionado
+>   (`_refresh_sub_member_labels`/`_label_sub_member`). Só no modo membro-específico. **Cor ROXA
+>   (2026-06-23):** `_SUB_LBL_COLOR = Color(0.6,0.25,0.9)`; o toggle "Submembros" tem o **texto roxo**
+>   (`font_color` via `_apply_label_line_colors`, fundo normal — sem `modulate`).
 
 Histórico (1ª leva, 2026-06-22): "Dano por membro" virou **Dano**; "Realçar avulso" virou "Esqueleto";
 o toggle "Osso" virou "SubMembro" e foi ao topo do `LabelLinesRow` (o toggle "Rótulos" foi renomeado para
@@ -186,6 +201,12 @@ toggle é o **interruptor mestre** da sua categoria:
   também **nada roda** — **não há mais auto-play de clip default/idle**. O playback é aplicado
   **in-place** por `_apply_animation_state()` (`should_play = _play_animation and chosen != ""`;
   toca o clip escolhido em quem o tiver, para todos os outros `_preview_anim_players`).
+  **Voltar ao "Selecione..." (2026-06-23):** quando nada deve tocar, além de `stop()` (que só
+  CONGELA a pose corrente), o esqueleto é reposto na **pose de REST = estado inicial do modelo**
+  (cada osso → `get_bone_rest`, via `set_bone_pose_*`; os modelos não têm clip "RESET").
+  **Loop (2026-06-23):** o clipe escolhido fica em **loop** — ao terminar, `_on_preview_anim_finished`
+  (sinal `animation_finished`) o re-toca. Por sinal, NÃO mexe no `loop_mode` do recurso (compartilhado
+  com o jogo). Clipes de morte/explosão não dão loop.
 - **Audio** — toca **todos** os emissores do modelo (movimentação andar/correr/saltar,
   motor, tiro, explosão, vozes…); desligado, silencia. Aplicado por `_apply_audio_state()`.
   (Não há mais toggle "Falas" separado.)
@@ -195,10 +216,25 @@ toggle é o **interruptor mestre** da sua categoria:
   Armas** desenha gizmo **só dos colliders de MEMBRO** (`_is_member_collider`, meta
   `member_label`); pula o collider de corpo genérico do modelo (ex.: a cápsula de corpo do
   red_robot) e as áreas de detecção/morte, que só eram ruído envolvendo tudo (2026-06-18).
+  - **Re-encaixe em tempo real na animação (2026-06-23):** os colliders são presos aos ossos
+    (`BoneAttachment3D`), então já seguem **translação/rotação**. Enquanto uma animação toca **e** os
+    colisores estão visíveis, `_process` chama `_member_lc.refit(_member_skel)` (`limb_colliders.gd`):
+    recomputa a AABB de cada membro/sub-membro na **pose ATUAL** dos ossos e re-encaixa a forma +
+    gizmo — então os colliders **acompanham a dobra** dos membros multi-osso. Só no preview (rigs sem
+    esqueleto já seguem o nó animado).
+    - **Performance (2026-06-23):** o refit era ~150 ms/chamada porque `surface_get_arrays`
+      reconstruía os arrays da malha todo frame. Agora há um **cache** (`_build_refit_cache`): por
+      vértice guarda grupo + osso dominante + `bind_pose·vértice`; o refit só lê as poses ATUAIS dos
+      ossos → **~4 ms** (33× mais rápido). O cache é montado **ao construir os colliders**
+      (`_add_member_colliders`), movendo o custo único (~150 ms) para FORA da animação. Além disso,
+      **throttle adaptativo** no
+      `_process` (intervalo = `elapsed·30`, teto 10 Hz / piso 2 Hz) mantém o custo em ~3% → **≥ 60 FPS**,
+      com modelos mais densos re-encaixando menos vezes. (1ª chamada ainda monta o cache ~150 ms uma vez.)
   - **Editor de collider (Afastamento + Escala) X/Y/Z por membro/sub-membro (2026-06-22):** com o
     toggle **Colisores LIGADO** e **um** grupo isolado (membro ou sub-membro), aparece a
     `ColliderEditBox` logo abaixo dos dropdowns: row **"Afastamento:"/"Offset:"** (3 `SpinBox` X/Y/Z),
-    row **"Escala:"/"Scale:"** (3 `SpinBox` X/Y/Z) e um botão **"Salvar"/"Save"**. Carrega os valores
+    row **"Escala:"/"Scale:"** (3 `SpinBox` X/Y/Z) e um botão **"Salvar"/"Save"** (numa `SaveRow` com
+    espaçador, **alinhado sob a coluna Y** da Escala — 2026-06-23). Carrega os valores
     salvos (`LimbConfig.collider_offset`/`collider_scale(model_key, group)`) e, ao mudar, aplica **AO
     VIVO** no grupo (`_apply_collider_xform`: afastamento → `body.position`; escala → `scale` da forma,
     em torno do centro; gizmo/rótulo acompanham). Valores em espaço LOCAL do osso/collider.

@@ -1,23 +1,7 @@
 extends Node
 
-const _LABEL3D_META := &"_dbg_label3d"
-# Marks the 3D geometry gizmos we spawn (skeleton bone lines, mesh AABB boxes) so
-# they are skipped by the scan and removed wholesale on refresh.
-const _DBG3D_META := &"_dbg_gizmo3d"
 const _BORDER_WIDTH := 2
 const _TOOLTIP_GAP := 4.0
-
-# Screens that opt out of ALL debug overlays/tooltips — 2D control borders AND 3D
-# member labels — regardless of the debug toggles. A screen joins this group and
-# its whole subtree is skipped. Used by the menu and the start screen, whose 3D
-# robot is purely decorative (no member tooltips wanted, independent of config).
-const _NO_OVERLAY_GROUP := &"no_debug_overlay"
-
-# Subtrees whose 3D MEMBER labels are owned elsewhere: the model browser draws its own,
-# richer member labels (with head/torso/leg overrides) over its preview, so the global
-# overlay must NOT also label that subtree's skeleton — otherwise members get double tags.
-# Only the member labels are skipped; the skeleton-line and mesh-box gizmos still apply.
-const _NO_MEMBER_LABELS_GROUP := &"no_debug_member_labels"
 
 const _PALETTE := [
 	Color(1.0, 0.25, 0.25),
@@ -32,30 +16,20 @@ const _PALETTE := [
 	Color(0.95, 0.9,  0.15),
 ]
 
-# Cor de cada LINHA de label (2D em cena + 3D no modelo), iguais às da cena Models
-# (_LABEL_LINE_COLORS em models.gd) — manter em sincronia. "skeleton" (Esqueleto) = branco.
+# Cor de cada LINHA do tooltip 2D (Tipo/Nome/Id), iguais às da cena Models
+# (_LABEL_LINE_COLORS em models.gd) — manter em sincronia.
 const _LINE_COLORS := {
 	"type": Color(1.0, 0.45, 0.85),    # rosa (Tipo)
 	"name": Color(0.55, 1.0, 0.55),    # verde (Nome)
 	"id": Color(1.0, 0.92, 0.42),      # amarelo (Id)
-	"member": Color(0.45, 0.85, 1.0),  # ciano (Membro)
-	"skeleton": Color(1.0, 1.0, 1.0),  # branco (Esqueleto)
 }
 
 var _canvas_layer: CanvasLayer = null
 # inst_id → {tooltip: PanelContainer, ctrl_border: Panel, color: Color}
 var _overlay_map: Dictionary = {}
-# 3D tooltip line labels: Label3D instance_id → kind ("type"/"name"/"id"). Their
-# `visible` is synced every frame with the saved show_type/show_name/show_id.
-var _label3d_lines: Dictionary = {}
 var _fps_label: Label = null
-var _grid_mesh: MeshInstance3D = null
 var _palette_index: int = 0
 var _last_scene: Node = null
-
-# Skeleton3D instance_id → its bone-line gizmo (MeshInstance3D) instance_id. The
-# ImmediateMesh is rebuilt every frame so the lines follow the live pose.
-var _skeleton_gizmos: Dictionary = {}
 
 var _persistent_canvas: CanvasLayer = null
 var _scene_name_label: Label = null
@@ -71,8 +45,6 @@ func _ready() -> void:
 		call_deferred("_build_overlays")
 	if _is_fps_on():
 		call_deferred("_update_fps_hud")
-	if _is_show_grid_on():
-		call_deferred("_update_grid")
 
 
 # 2D (Control) overlays are shown when the "Show Debug 2D" toggle
@@ -81,22 +53,9 @@ func _is_debug_2d_on() -> bool:
 	return Settings.config_file.get_value("game", "debug_2d", false)
 
 
-# 3D (Skeleton3D bone) overlays follow the "Show Debug 3D" toggle.
-func _is_debug_3d_on() -> bool:
-	return Settings.config_file.get_value("game", "debug_3d", false)
-
-
-# The per-member body-part labels (CABEÇA/TRONCO/BRAÇO…) ride ON Debug 3D: the
-# "Membros" developer toggle only shows/hides them WHILE Debug 3D is enabled (it
-# does nothing on its own).
-func _is_show_members_on() -> bool:
-	return Settings.config_file.get_value("game", "show_members", false)
-
-
-# The overlay canvas/scan is needed whenever a debug category is enabled. Members
-# are gated by Debug 3D, so they don't activate the overlay on their own.
+# O overlay (canvas/scan) só é necessário com o Debug 2D ligado (o Debug 3D foi para a Models).
 func _is_overlay_active() -> bool:
-	return _is_debug_2d_on() or _is_debug_3d_on()
+	return _is_debug_2d_on()
 
 
 func _is_fps_on() -> bool:
@@ -114,44 +73,6 @@ func _is_show_type_on() -> bool:
 
 func _is_show_name_on() -> bool:
 	return Settings.config_file.get_value("game", "show_name", false)
-
-
-# 3D label lines (Debug 3D column) — independent from the 2D set above.
-func _is_show_id_3d_on() -> bool:
-	return Settings.config_file.get_value("game", "show_id_3d", false)
-
-
-func _is_show_type_3d_on() -> bool:
-	return Settings.config_file.get_value("game", "show_type_3d", false)
-
-
-func _is_show_name_3d_on() -> bool:
-	return Settings.config_file.get_value("game", "show_name_3d", false)
-
-
-# Skeleton bone-line and Mesh AABB visualizers — sub-switches of Debug 3D (they
-# only render while Debug 3D is also on).
-func _is_show_skeleton3d_on() -> bool:
-	return _is_debug_3d_on() and Settings.config_file.get_value("game", "show_skeleton3d", false)
-
-
-func _is_show_mesh3d_on() -> bool:
-	return _is_debug_3d_on() and Settings.config_file.get_value("game", "show_mesh3d", false)
-
-
-# Visibility of a 3D label line ("type" / "name" / "id" / "member") from the saved
-# config. Every 3D line rides on Debug 3D; each kind then has its own sub-toggle in
-# the Debug 3D column ("member" is the "Membros" sub-switch).
-func _line_visible_3d(kind: String) -> bool:
-	if not _is_debug_3d_on():
-		return false
-	match kind:
-		"type": return _is_show_type_3d_on()
-		"name": return _is_show_name_3d_on()
-		"id": return _is_show_id_3d_on()
-		"member": return _is_show_members_on()
-		"skeleton": return _is_show_members_on()  # label "Esqueleto" acompanha o de Membro
-	return false
 
 
 func _has_any_2d_line_enabled() -> bool:
@@ -172,16 +93,11 @@ func _line_visible_2d(kind: String) -> bool:
 	return false
 
 
-func _is_show_grid_on() -> bool:
-	return Settings.config_file.get_value("game", "show_grid", false)
-
-
 func refresh() -> void:
 	_clear_all()
 	if _is_overlay_active():
 		_build_overlays()
 	_update_fps_hud()
-	_update_grid()
 
 
 func _setup_scene_name_label() -> void:
@@ -232,20 +148,6 @@ func _active_screen_name() -> String:
 	return target.name if target != null else ""
 
 
-# True when the screen subtree actually contains 3D content. The loaded screens are
-# Node-rooted (main.gd swaps them as children of Main, so current_scene never changes
-# type), so we can't gate on the root type — we look for any Node3D descendant.
-func _scene_has_3d(node: Node) -> bool:
-	if node == null:
-		return false
-	if node is Node3D:
-		return true
-	for child in node.get_children():
-		if _scene_has_3d(child):
-			return true
-	return false
-
-
 func _process(_delta: float) -> void:
 	if is_instance_valid(_fps_label):
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
@@ -263,33 +165,6 @@ func _process(_delta: float) -> void:
 		# que os toggles Debug 2D/3D também valham nela — não só na tela onde foram ligados.
 		# (Antes dependia só de _on_node_added, que tinha brechas de timing no carregamento.)
 		call_deferred("refresh")
-
-	# Toggle each 3D tooltip line (TYPE / Name / ID) from the saved config,
-	# the same way the 2D overlays react to the saved configuration.
-	if not _label3d_lines.is_empty():
-		var stale_ids: Array = []
-		for lid in _label3d_lines:
-			var node := instance_from_id(lid)
-			if node is Label3D:
-				(node as Label3D).visible = _line_visible_3d(_label3d_lines[lid])
-			else:
-				stale_ids.append(lid)
-		for s in stale_ids:
-			_label3d_lines.erase(s)
-
-	# Redraw each skeleton's bone-line gizmo from the live pose so it follows the
-	# animation; drop stale entries whose skeleton or gizmo is gone.
-	if not _skeleton_gizmos.is_empty():
-		var stale_skel: Array = []
-		for sid in _skeleton_gizmos:
-			var skel := instance_from_id(sid)
-			var mi := instance_from_id(_skeleton_gizmos[sid])
-			if skel is Skeleton3D and mi is MeshInstance3D:
-				_update_skeleton_lines(skel as Skeleton3D, mi as MeshInstance3D)
-			else:
-				stale_skel.append(sid)
-		for s in stale_skel:
-			_skeleton_gizmos.erase(s)
 
 	if _canvas_layer == null:
 		return
@@ -394,24 +269,10 @@ func _clear_all() -> void:
 	_overlay_map.clear()
 	_palette_index = 0
 
-	# Varre a partir da root: player/enemy ficam fora de current_scene (o main.gd
-	# troca telas como filhas da root), então remover só de current_scene deixaria
-	# os labels órfãos e visíveis ao desligar o Debug 3D.
-	_remove_3d_labels(get_tree().root)
-	_label3d_lines.clear()
-
-	# Same reasoning for the 3D geometry gizmos (skeleton lines / mesh boxes).
-	_remove_3d_gizmos(get_tree().root)
-	_skeleton_gizmos.clear()
-
 	if is_instance_valid(_canvas_layer):
 		_canvas_layer.queue_free()
 	_canvas_layer = null
 	_fps_label = null
-
-	if is_instance_valid(_grid_mesh):
-		_grid_mesh.queue_free()
-	_grid_mesh = null
 
 
 func _update_fps_hud() -> void:
@@ -438,45 +299,6 @@ func _update_fps_hud() -> void:
 		_fps_label = null
 
 
-# "Malha no Solo": a 100 m × 100 m wireframe floor grid drawn at the origin, to gauge
-# scale/position in 3D screens (Modelos 3D, levels). Added to the active loaded screen
-# whenever it has 3D content; absent on the pure-2D screens (menu/settings/developer).
-func _update_grid() -> void:
-	if _is_show_grid_on():
-		if not is_instance_valid(_grid_mesh):
-			var target := _active_screen_root()
-			if _scene_has_3d(target):
-				_grid_mesh = _build_grid_mesh()
-				target.add_child(_grid_mesh)
-	else:
-		if is_instance_valid(_grid_mesh):
-			_grid_mesh.queue_free()
-			_grid_mesh = null
-
-
-func _build_grid_mesh() -> MeshInstance3D:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_LINES)
-	# 100m × 100m grid centered at origin, 10m cell spacing
-	for i in range(11):
-		var t := -50.0 + i * 10.0
-		st.add_vertex(Vector3(t, 0.05, -50.0))
-		st.add_vertex(Vector3(t, 0.05,  50.0))
-		st.add_vertex(Vector3(-50.0, 0.05, t))
-		st.add_vertex(Vector3( 50.0, 0.05, t))
-	var arr_mesh := st.commit()
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color.WHITE
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.no_depth_test = false
-	arr_mesh.surface_set_material(0, mat)
-	var mi := MeshInstance3D.new()
-	mi.name = "DebugGrid"
-	mi.mesh = arr_mesh
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	return mi
-
-
 func _scan(node: Node) -> void:
 	if node == null:
 		return
@@ -493,12 +315,8 @@ func _tag(node: Node) -> void:
 		return
 	if is_instance_valid(_persistent_canvas) and _persistent_canvas.is_ancestor_of(node):
 		return
-	if node.has_meta(_LABEL3D_META) or node.has_meta(_DBG3D_META):
-		return
-	# Apenas o Debug 2D (tooltips de controles) é aplicado pelo overlay global, em TODA tela.
-	# O Debug 3D (esqueleto/malha/membros/type-name-id 3D) foi MOVIDO para a tela Models, que
-	# desenha seus próprios overlays sobre o preview — então o overlay global NÃO rotula mais
-	# nenhum Skeleton3D/MeshInstance3D das telas de jogo (levels/chooseplayer).
+	# Só o Debug 2D (tooltips de controles) é aplicado pelo overlay global, em TODA tela.
+	# A inspeção 3D foi movida para a tela Models (overlays próprios sobre o preview).
 	if node is Control and not (node is CanvasLayer):
 		if _is_debug_2d_on():
 			_add_2d(node as Control)
@@ -580,208 +398,6 @@ func _next_color() -> Color:
 	var c: Color = _PALETTE[_palette_index % _PALETTE.size()]
 	_palette_index += 1
 	return c
-
-
-# True when `node` is inside a screen that opted out of all debug overlays (it or
-# any ancestor is in `_NO_OVERLAY_GROUP`).
-func _is_overlay_exempt(node: Node) -> bool:
-	return _in_group_or_ancestor(node, _NO_OVERLAY_GROUP)
-
-
-# True when `node` or any of its ancestors is in `group`.
-func _in_group_or_ancestor(node: Node, group: StringName) -> bool:
-	var n: Node = node
-	while n != null:
-		if n.is_in_group(group):
-			return true
-		n = n.get_parent()
-	return false
-
-
-# Public: mark a subtree whose 3D MEMBER labels are drawn elsewhere (the model browser
-# preview), so the global overlay skips ONLY its member labels for that subtree. The
-# skeleton-line / mesh-box gizmos (their own sub-toggles) still apply.
-func exempt_member_labels(node: Node) -> void:
-	if is_instance_valid(node):
-		node.add_to_group(_NO_MEMBER_LABELS_GROUP)
-
-
-# Rotula apenas os BONES que pertencem a um MEMBRO (CABEÇA/TRONCO/BRAÇO/PERNA);
-# ossos de controle/IK não recebem label. Cada osso rotulado recebe um
-# BoneAttachment3D (segue a pose/animação) com 1 linha Label3D:
-#   Membro: <CABEÇA…>
-# Visível/invisível conforme o toggle "Show Debug 3D". Usa o mesmo classificador
-# das hitboxes (BodyParts).
-func _bone_depth(skel: Skeleton3D, b: int) -> int:
-	var d := 0
-	var p := skel.get_bone_parent(b)
-	while p != -1:
-		d += 1
-		p = skel.get_bone_parent(p)
-	return d
-
-
-func _add_3d_skeleton(skel: Skeleton3D) -> void:
-	if skel.has_meta(_LABEL3D_META):
-		return
-	# Skip skeletons whose member labels are owned elsewhere (the model browser preview).
-	if _in_group_or_ancestor(skel, _NO_MEMBER_LABELS_GROUP):
-		return
-	# One label per MEMBER, not per bone: a limb spans several bones (shoulder,
-	# arm, hand) that all map to the same group, so anchor the single "Membro: …"
-	# tag to the shallowest bone of each group to avoid a cluttered pile of labels.
-	# Classificador por instância (BodyParts não é polimórfico via estático). O overlay
-	# roda sobre esqueletos quaisquer de fase e não sabe o body_type, então usa o plano
-	# default (bípede) — rótulos são só debug.
-	var classifier := BodyPlans.default()
-	var rep_bone := {}      # group → bone index (shallowest)
-	var rep_depth := {}
-	for i in skel.get_bone_count():
-		var g := classifier.group_of(skel.get_bone_name(i))
-		if g == "":
-			continue
-		var d := _bone_depth(skel, i)
-		if not rep_bone.has(g) or d < rep_depth[g]:
-			rep_bone[g] = i
-			rep_depth[g] = d
-
-	for g in rep_bone:
-		var i: int = rep_bone[g]
-		var member := classifier.label_of(g)
-
-		var att := BoneAttachment3D.new()
-		att.name = "DebugBoneLabel_%d" % i
-		att.set_meta(_LABEL3D_META, true)
-		skel.add_child(att)
-		att.bone_name = skel.get_bone_name(i)
-
-		# One Label3D per line. TYPE / Name / ID describe the owning Skeleton3D node
-		# (parallel to the 2D tooltips); "Membro" names the body part. Each line is
-		# shown/hidden by its own Debug 3D sub-toggle. Stacked top-down, so higher
-		# lines sit above the member tag.
-		var lines := [
-			{"kind": "skeleton", "text": "Esqueleto: %s" % skel.get_bone_name(i), "y": 0.24},
-			{"kind": "type", "text": "TYPE: %s" % skel.get_class(), "y": 0.18},
-			{"kind": "name", "text": "Name: %s" % skel.name, "y": 0.12},
-			{"kind": "id", "text": "ID: %d" % skel.get_instance_id(), "y": 0.06},
-			{"kind": "member", "text": "Membro: %s" % member, "y": 0.0},
-		]
-		for line in lines:
-			var lbl := Label3D.new()
-			lbl.name = "DebugBoneLine_" + str(line["kind"])
-			lbl.text = str(line["text"])
-			lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-			lbl.no_depth_test = true
-			lbl.pixel_size = 0.003
-			lbl.font_size = 14
-			# Cor por linha (igual à cena Models; Esqueleto = branco). Ver _LINE_COLORS.
-			lbl.modulate = _LINE_COLORS.get(str(line["kind"]), Color(0.6, 1.0, 1.0))
-			lbl.outline_size = 4
-			lbl.outline_modulate = Color(0, 0, 0, 0.8)
-			lbl.position = Vector3(0.0, line["y"], 0.0)
-			lbl.visible = _line_visible_3d(line["kind"])
-			lbl.set_meta(_LABEL3D_META, true)
-			att.add_child(lbl)
-			_label3d_lines[lbl.get_instance_id()] = line["kind"]
-
-	skel.set_meta(_LABEL3D_META, true)
-
-
-# Unshaded, depth-test-off line material so a gizmo is visible through the mesh.
-func _gizmo_line_material(color: Color) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.no_depth_test = true
-	mat.vertex_color_use_as_albedo = true
-	mat.albedo_color = color
-	return mat
-
-
-# "Show Skeleton3D": attach a line gizmo to the skeleton that draws a segment from
-# each bone to its parent. The ImmediateMesh is rebuilt every frame (in _process)
-# from the live global poses, so the lines track the animation.
-func _add_skeleton_lines(skel: Skeleton3D) -> void:
-	var mi := MeshInstance3D.new()
-	mi.name = "DebugSkeletonLines"
-	mi.set_meta(_DBG3D_META, true)
-	mi.mesh = ImmediateMesh.new()
-	mi.material_override = _gizmo_line_material(Color(1.0, 1.0, 1.0))
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	skel.add_child(mi)
-	_skeleton_gizmos[skel.get_instance_id()] = mi.get_instance_id()
-	_update_skeleton_lines(skel, mi)
-
-
-# Rebuild one skeleton's bone-line mesh from the current pose (skeleton-local space,
-# which is the gizmo's own space since it is a child of the skeleton).
-func _update_skeleton_lines(skel: Skeleton3D, mi: MeshInstance3D) -> void:
-	var im := mi.mesh as ImmediateMesh
-	im.clear_surfaces()
-	if skel.get_bone_count() == 0:
-		return
-	im.surface_begin(Mesh.PRIMITIVE_LINES)
-	for b in skel.get_bone_count():
-		var parent := skel.get_bone_parent(b)
-		if parent == -1:
-			continue
-		im.surface_add_vertex(skel.get_bone_global_pose(b).origin)
-		im.surface_add_vertex(skel.get_bone_global_pose(parent).origin)
-	im.surface_end()
-
-
-# "Show Mesh3D": draw the 12 edges of a MeshInstance3D's local AABB as a wireframe
-# box, parented to the mesh so it follows its transform. (Per the chosen option,
-# the AABB box stands in for a full wireframe — cheap and pose-stable.)
-func _add_mesh_box(mesh_instance: MeshInstance3D) -> void:
-	if mesh_instance.mesh == null or mesh_instance.has_node(NodePath("DebugMeshBox")):
-		return
-	var aabb := mesh_instance.get_aabb()
-	if aabb.size == Vector3.ZERO:
-		return
-	var im := ImmediateMesh.new()
-	im.surface_begin(Mesh.PRIMITIVE_LINES)
-	var o := aabb.position
-	var s := aabb.size
-	# 8 corners, then the 12 edges connecting them.
-	var c := [
-		o, o + Vector3(s.x, 0, 0), o + Vector3(s.x, 0, s.z), o + Vector3(0, 0, s.z),
-		o + Vector3(0, s.y, 0), o + Vector3(s.x, s.y, 0), o + Vector3(s.x, s.y, s.z), o + Vector3(0, s.y, s.z),
-	]
-	var edges := [0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]
-	for e in edges:
-		im.surface_add_vertex(c[e])
-	im.surface_end()
-	var mi := MeshInstance3D.new()
-	mi.name = "DebugMeshBox"
-	mi.set_meta(_DBG3D_META, true)
-	mi.mesh = im
-	mi.material_override = _gizmo_line_material(Color(0.2, 1.0, 0.9))
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mesh_instance.add_child(mi)
-
-
-# Free every 3D geometry gizmo (skeleton lines, mesh boxes) under `node`. Uses an
-# IMMEDIATE free (not queue_free) so a refresh that rebuilds in the same frame finds
-# a clean tree — otherwise the still-pending old gizmo collides by name with the new
-# one (renaming the skeleton lines) or trips the mesh-box `has_node` guard.
-func _remove_3d_gizmos(node: Node) -> void:
-	for child in node.get_children():
-		if child.has_meta(_DBG3D_META):
-			child.free()
-		else:
-			_remove_3d_gizmos(child)
-
-
-func _remove_3d_labels(node: Node) -> void:
-	for child in node.get_children():
-		# Os labels de bone ficam sob um BoneAttachment3D criado por nós; remover o
-		# wrapper já leva junto as linhas Label3D filhas.
-		if (child is BoneAttachment3D or child is Label3D) and child.has_meta(_LABEL3D_META):
-			child.queue_free()
-		else:
-			_remove_3d_labels(child)
-	if node.has_meta(_LABEL3D_META):
-		node.remove_meta(_LABEL3D_META)
 
 
 func _ensure_canvas() -> void:

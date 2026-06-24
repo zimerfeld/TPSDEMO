@@ -312,7 +312,15 @@ value = 1.0
 allow_greater = true
 allow_lesser = true
 
-[node name="SaveButton" type="Button" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
+[node name="SaveRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SaveSpacer" type="Control" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/SaveRow"]
+custom_minimum_size = Vector2(262, 0)
+layout_mode = 2
+
+[node name="SaveButton" type="Button" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/SaveRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 44)
 layout_mode = 2
@@ -353,7 +361,7 @@ text = "Audio"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Colisores de Membro"
+text = "Colisor de Membro"
 
 [node name="LabelsToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
@@ -361,11 +369,23 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "Membro"
 
+[node name="SubColliderToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Colisor de Submembro"
+
+[node name="SubMemberLabelToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+text = "Submembros"
+
 [node name="AuxHighlightToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Colisores de Esqueleto"
+text = "Colisor de Esqueleto"
 
 [node name="LabelLinesRow" type="VBoxContainer" parent="UI/Margin/Main/Body/Toggles"]
 layout_mode = 2
@@ -378,23 +398,11 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "Esqueleto"
 
-[node name="SubColliderToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="SkeletonLinesCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Colisores de Submembros"
-
-[node name="SubMemberLabelToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 8
-text = "Submembros"
-
-[node name="MalhaCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 8
-text = "Malha"
+text = "Linhas do Esqueleto"
 
 [node name="TypeCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
@@ -415,11 +423,11 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "ID"
 
-[node name="SkeletonLinesCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="MalhaCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
-text = "Linhas do Esqueleto"
+text = "Malha"
 
 [node name="DamageToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true

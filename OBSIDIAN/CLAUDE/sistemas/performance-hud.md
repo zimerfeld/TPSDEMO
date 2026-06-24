@@ -50,7 +50,11 @@ Performance** na tela `developer`). É **click-through** (mouse só na barra do 
 `_process` é pulado quando oculto (`is_visible_in_tree`).
 
 - **Básico** (32 px): `FPS | NET | RAM | CPU% | GPU% | ● badge do StabilityGuard`.
-  - `CPU%` = `TIME_PROCESS / 16.67ms`; `GPU%` = proxy por `RENDER_TOTAL_DRAW_CALLS_IN_FRAME`.
+  - `CPU%` **(2026-06-23)** = `(TIME_PROCESS + TIME_PHYSICS_PROCESS) / tempo_de_frame_real ÷ núcleos`
+    (`OS.get_processor_count`) → % do PROCESSO relativo ao **total do sistema** (~ Gerenciador de
+    Tarefas), no lugar do antigo `TIME_PROCESS / 16,67` fixo que **saturava em 100%** por núcleo.
+    Ainda é proxy (só main-thread process+física; não conta a render-thread) — subconta vs o CPU real
+    do processo, mas não satura mais. `GPU%` = proxy por `RENDER_TOTAL_DRAW_CALLS_IN_FRAME`.
   - **NET** depende de um `NetworkManager.get_total_bps()` OPCIONAL; o ZIMARO não tem um, então
     degrada para **"N/D"** (lookup gracioso por `get_node_or_null("/root/NetworkManager")`).
   - **RAM** (2026-06-21) = memória do **SISTEMA** via `OS.get_memory_info()`, formato **"usado/total GB"**

@@ -385,6 +385,133 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	_bodies.append(body)
 
 
+# ── Refit em tempo real (preview da Models) ───────────────────────────────────
+# Cache de skinning, montado UMA vez (o caro `surface_get_arrays` roda só aqui): por vértice
+# guardamos o grupo, o osso DOMINANTE e `bind_pose * vértice` (mesh→skel, fixo). O refit depois
+# só lê as poses ATUAIS dos ossos — sem reconstruir arrays de malha — então fica barato.
+var _rc_ready := false
+var _rc_group := PackedInt32Array()    # índice do grupo por vértice
+var _rc_bone := PackedInt32Array()     # osso do esqueleto por vértice
+var _rc_bv := PackedVector3Array()     # bind_pose * vértice (fixo)
+var _rc_names: Array[String] = []      # índice do grupo → nome
+var _rc_root := PackedInt32Array()     # índice do grupo → osso-raiz
+
+
+func _build_refit_cache(skel: Skeleton3D) -> void:
+	_rc_group = PackedInt32Array(); _rc_bone = PackedInt32Array(); _rc_bv = PackedVector3Array()
+	_rc_names = []; _rc_root = PackedInt32Array()
+	var group_bones := {}
+	for b in skel.get_bone_count():
+		var g := _classify(skel.get_bone_name(b))
+		if g == "":
+			continue
+		if not group_bones.has(g):
+			group_bones[g] = []
+		group_bones[g].append(b)
+	var gidx := {}
+	for g in group_bones:
+		var best: int = group_bones[g][0]
+		var bd := _bone_depth(skel, best)
+		for b in group_bones[g]:
+			var d := _bone_depth(skel, b)
+			if d < bd:
+				bd = d; best = b
+		gidx[g] = _rc_names.size()
+		_rc_names.append(g)
+		_rc_root.append(best)
+	for mi in _skinned_meshes(skel):
+		var skin: Skin = mi.skin
+		if skin == null:
+			continue
+		var idx_to_bone := PackedInt32Array(); idx_to_bone.resize(skin.get_bind_count())
+		var bind_pose: Array[Transform3D] = []; bind_pose.resize(skin.get_bind_count())
+		for i in skin.get_bind_count():
+			var bb := skin.get_bind_bone(i)
+			idx_to_bone[i] = bb if bb >= 0 else skel.find_bone(skin.get_bind_name(i))
+			bind_pose[i] = skin.get_bind_pose(i)
+		for s in mi.mesh.get_surface_count():
+			var arr := mi.mesh.surface_get_arrays(s)
+			var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+			var bones: PackedInt32Array = arr[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = arr[Mesh.ARRAY_WEIGHTS]
+			if verts.is_empty() or bones.is_empty() or weights.is_empty():
+				continue
+			@warning_ignore("integer_division")
+			var per := bones.size() / verts.size()
+			for vi in verts.size():
+				var best_w := 0.0
+				var best_i := -1
+				for k in per:
+					var w := weights[vi * per + k]
+					if w > best_w:
+						best_w = w; best_i = bones[vi * per + k]
+				if best_i < 0 or best_i >= idx_to_bone.size():
+					continue
+				var skb := idx_to_bone[best_i]
+				if skb < 0:
+					continue
+				var g := _classify(skel.get_bone_name(skb))
+				if g == "":
+					continue
+				_rc_group.append(gidx[g])
+				_rc_bone.append(skb)
+				_rc_bv.append(bind_pose[best_i] * verts[vi])
+	_rc_ready = true
+
+
+# Re-encaixa cada collider de membro/sub-membro à pose ANIMADA atual (acompanham movimentos/dobra),
+# usando o cache acima — barato, sem `surface_get_arrays`. Preview da tela Models. A 1ª chamada monta
+# o cache (custo único). Mantém offset/escala editados e atualiza o gizmo "_ColliderGizmo".
+func refit(skel: Skeleton3D) -> void:
+	if skel == null:
+		return
+	if not _rc_ready:
+		_build_refit_cache(skel)
+	if _rc_names.is_empty():
+		return
+	var ng := _rc_names.size()
+	var gpose: Array[Transform3D] = []; gpose.resize(skel.get_bone_count())
+	for b in skel.get_bone_count():
+		gpose[b] = skel.get_bone_global_pose(b)
+	var root_inv: Array[Transform3D] = []; root_inv.resize(ng)
+	for gi in ng:
+		root_inv[gi] = gpose[_rc_root[gi]].affine_inverse()
+	var has := PackedByteArray(); has.resize(ng)
+	var mn: Array[Vector3] = []; mn.resize(ng)
+	var mx: Array[Vector3] = []; mx.resize(ng)
+	var n := _rc_bv.size()
+	for i in n:
+		var gi := _rc_group[i]
+		var p: Vector3 = root_inv[gi] * (gpose[_rc_bone[i]] * _rc_bv[i])
+		if has[gi] == 0:
+			mn[gi] = p; mx[gi] = p; has[gi] = 1
+		else:
+			mn[gi] = mn[gi].min(p); mx[gi] = mx[gi].max(p)
+	var pad := Vector3(padding, padding, padding)
+	var boxes := {}
+	for gi in ng:
+		if has[gi] == 1:
+			boxes[_rc_names[gi]] = AABB(mn[gi] - pad, (mx[gi] - mn[gi]) + pad * 2.0)
+	for body in _bodies:
+		if not is_instance_valid(body) or not body.has_meta("group"):
+			continue
+		var g := str(body.get_meta("group"))
+		if not boxes.has(g):
+			continue
+		var sns := body.find_children("*", "CollisionShape3D", false, false)
+		if sns.is_empty():
+			continue
+		var sn := sns[0] as CollisionShape3D
+		var fresh := make_member_shape(g, boxes[g], head_shape, torso_shape, head_scale)
+		sn.shape = fresh.shape
+		sn.transform = fresh.transform
+		sn.scale = LimbConfig.collider_scale(model_key, g)
+		fresh.free()
+		var giz := sn.get_node_or_null(NodePath("_ColliderGizmo"))
+		if giz is MeshInstance3D and sn.shape != null:
+			(giz as MeshInstance3D).mesh = sn.shape.get_debug_mesh()
+
+
 # How tightly the wrapped geometry hugs the body. The raw AABB (already padded)
 # tends to float a little loose around the limb, so we pull the cross-section
 # (radius / box width+depth) in and trim the length slightly — the colliders sit

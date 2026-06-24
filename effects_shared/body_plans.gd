@@ -6,10 +6,6 @@ extends RefCounted
 ## precisar classificar ossos polimorficamente (limb_colliders.gd, models.gd,
 ## debug_overlay.gd) — `BodyParts.group_of(...)` estático NÃO é polimórfico.
 
-## Tipos válidos para o @export `body_type` (LimbColliders) e o mapa do browser.
-const TYPES: Array[String] = ["biped", "quadruped", "crawler"]
-
-
 ## Instância do plano para um `body_type`; default BÍPEDE para valor vazio/desconhecido.
 static func for_type(body_type: String) -> BodyParts:
 	match body_type:
