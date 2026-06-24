@@ -64,12 +64,22 @@ comum (uma sala só, renderiza na janela principal). O caminho-string é o mesmo
 
 ## Isolamento por sala (interest management)
 
-`RoomManager._apply_room_visibility` põe `public_visibility = false` + um *visibility filter* em cada
-`MultiplayerSynchronizer` de tudo que entra no `SpawnedNodes` da sala (inimigos, balas, players): só
-replica para peers cujo `_peer_room[peer] == room_id`. Ao um peer entrar, `_refresh_room_visibility`
-chama `update_visibility()` → os spawns já existentes (inimigos) são (re)enviados a ele. Mesmo que a
-engine ainda envie algo cruzado, o cliente só espelha a SUA sala (os caminhos das outras não existem
-nele) → tráfego cruzado é descartado.
+`RoomManager._apply_room_visibility` adiciona **só um *visibility filter*** (veta quem não está na
+sala) em cada `MultiplayerSynchronizer` de tudo que entra no `SpawnedNodes` da sala (inimigos, balas,
+players): só replica para peers cujo `_peer_room[peer] == room_id`. Ao um peer entrar,
+`_refresh_room_visibility` chama `update_visibility()` → os spawns já existentes (inimigos) são
+(re)enviados a ele.
+
+> ⚠️ **NÃO setar `public_visibility = false`.** Na engine,
+> `MultiplayerSynchronizer.is_visible_to(peer)` é: `todos os filtros passam?` **E**
+> `peer_visibility.has(0) ou peer_visibility.has(peer)` — onde `has(0)` é o `public_visibility`.
+> Filtros **só VETAM** (retornar `true` não concede visibilidade sozinho). Com
+> `public_visibility = false` o synchronizer fica **invisível a TODOS** → **nada replica para o
+> cliente** (player dele sem câmera/level, outros players e inimigo não aparecem). Mantendo o default
+> (`true`) o filtro funciona: na sala = visível, fora = vetado. **Bug corrigido em 2026-06-24**
+> (`feature/spawnplayer2`): era a causa de "o level não aparece no `client_session`" e de players/
+> inimigo não sincronizarem. Os *parts* de morte do `red_robot` nascem `public_visibility=false` de
+> propósito (só sincronizam ao explodir, via `part.gd`) — preservado: ganham só o filtro.
 
 ## Modos de render do host (questão do usuário)
 
@@ -91,8 +101,12 @@ nele) → tráfego cruzado é descartado.
   `pending_play_*`); **host joga dentro da sala** (`host_spawn_in_room`, câmera livre desligada);
   **ESC** com confirmação para desconectar; **Parar** avisa os clientes da sala (`notify_room_closed`)
   e os manda à `client_session`; **Voltar** das sessões derruba o peer e volta ao `playonline`.
-- ⏳ **Pendências:** testar o **host jogando** numa sala (câmera/mira/tiro no SubViewport) e validar a
-  replicação real entre 2 PCs (join/leave de cliente, kick do Parar, spawn por sala, interest
-  management). `enemy_health_bar.get_shared(get_tree().current_scene)` (HUD do inimigo) ainda é global —
+- ✅ **Interest management corrigido (2026-06-24, `feature/spawnplayer2`):** o `_apply_room_visibility`
+  setava `public_visibility = false`, o que tornava TUDO invisível a todos os peers (filtros só vetam) —
+  por isso o `client_session` não via o level/câmera e players/inimigo não sincronizavam. Agora só
+  adiciona o filtro (mantém `public_visibility` no default `true`). Ver a seção *Isolamento por sala*.
+- ⏳ **Pendências:** validar em rede REAL entre 2 PCs (join/leave de cliente, kick do Parar, spawn por
+  sala, interest management) e o **host jogando** numa sala (câmera/mira/tiro no SubViewport).
+  `enemy_health_bar.get_shared(get_tree().current_scene)` (HUD do inimigo) ainda é global —
   no cliente com 1 sala fullscreen funciona; no host observando/jogando pode aparecer no lugar errado.
   Ver [[sistemas/multiplayer]].
