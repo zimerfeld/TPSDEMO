@@ -39,7 +39,7 @@ const ALL_SUB_MEMBERS_VALUE: String = "__all_sub_members__"
 
 # Item no topo do filtro "Esqueleto" (modo "Todos os membros"): realça os respectivos modelos
 # 3D de TODOS os ossos avulsos de uma vez. Sentinela estável; rótulo traduzido.
-const ALL_AUX_LABEL: String = "Todo o esqueleto"
+const ALL_AUX_LABEL: String = "Todos os Esqueletos"
 const ALL_AUX_VALUE: String = "__all_aux__"
 
 # Prefixo dos nós de REALCE (caixa translúcida sobre a região de um osso avulso) e a cor do realce.
@@ -1319,20 +1319,12 @@ func _prompt_save_offset_if_dirty() -> void:
 	var model_key := _current_model_key()
 	var label := _group_label(grp)
 	_offset_dirty = false
-	var dlg := ConfirmationDialog.new()
-	dlg.title = Locale.tr_key("Colisores")
-	dlg.dialog_text = "Deseja salvar modificações para colisores de \"%s\" ?" % label
-	add_child(dlg)
+	var dlg := FloatingDialog.confirm(self, "Colisores", "Deseja salvar modificações para colisores de \"%s\" ?" % label, "Sim", "Não")
 	dlg.confirmed.connect(func():
 		LimbConfig.set_collider_offset(model_key, grp, new_off)
-		LimbConfig.set_collider_scale(model_key, grp, new_scale)
-		dlg.queue_free()
-	)
+		LimbConfig.set_collider_scale(model_key, grp, new_scale))
 	dlg.canceled.connect(func():
-		_apply_collider_xform(grp, old_off, old_scale)   # descarta: reverte o corpo vivo ao salvo
-		dlg.queue_free()
-	)
-	dlg.popup_centered()
+		_apply_collider_xform(grp, old_off, old_scale))   # descarta: reverte o corpo vivo ao salvo
 
 
 func _on_rotate_toggled(pressed: bool) -> void:
@@ -1746,6 +1738,11 @@ func _any_member_label() -> bool:
 # Botão "Dano" (à direita do "Voltar"): abre a JANELA de Dano. O × da janela a fecha
 # (_on_damage_close). Antes era um toggle na lista; virou botão de ação dedicado.
 func _on_damage_button_pressed() -> void:
+	# Toggle: se a janela de Dano JÁ está aberta, o mesmo botão a fecha.
+	if damage_panel.visible:
+		_show_damage_panel = false
+		_refresh_damage_panel()
+		return
 	# Sem bloqueio: o Dano abre para QUALQUER modelo (em "Modelo completo"). Abrir o Dano fecha a IA
 	# (só UMA janela flutuante por vez, mas o botão nunca é bloqueado pela outra).
 	_show_ai_panel = false
@@ -1781,6 +1778,7 @@ func _setup_damage_window() -> void:
 	damage_titlebar.mouse_default_cursor_shape = Control.CURSOR_MOVE
 	damage_titlebar.gui_input.connect(_on_damage_titlebar_input)
 	damage_close_button.tooltip_text = Locale.tr_key("Fechar")
+	FloatingWindow.style_close_button(damage_close_button)
 	damage_close_button.pressed.connect(_on_damage_close)
 	# Restaura a ÚLTIMA posição salva da janela (default = posição do .tscn). Presa à viewport
 	# para nunca abrir fora da tela caso o valor salvo tenha ficado além da borda.
@@ -1856,6 +1854,11 @@ func _refresh_ai_actions() -> void:
 
 
 func _on_ai_button_pressed() -> void:
+	# Toggle: se a janela de IA JÁ está aberta, o mesmo botão a fecha.
+	if ai_panel.visible:
+		_show_ai_panel = false
+		_refresh_ai_panel()
+		return
 	# IA SÓ para personagens (modelos com comportamentos definidos). Sem bloqueio mútuo: abrir a IA
 	# fecha o Dano (só UMA janela por vez), mas o botão nunca é bloqueado pela janela de Dano.
 	if not _supports_ai_editor():
@@ -1887,6 +1890,7 @@ func _setup_ai_window() -> void:
 	ai_titlebar.mouse_default_cursor_shape = Control.CURSOR_MOVE
 	ai_titlebar.gui_input.connect(_on_ai_titlebar_input)
 	ai_close_button.tooltip_text = Locale.tr_key("Fechar")
+	FloatingWindow.style_close_button(ai_close_button)
 	ai_close_button.pressed.connect(_on_ai_close)
 	var saved_pos = Settings.config_file.get_value("models", "ai_panel_pos", ai_panel.position)
 	if saved_pos is Vector2:
@@ -1945,7 +1949,7 @@ func _refresh_ai_panel() -> void:
 		panel.add_theme_stylebox_override("panel", panel_style)
 		ai_list.add_child(panel)
 		var content := VBoxContainer.new()
-		content.theme_override_constants.separation = 6
+		content.add_theme_constant_override("separation", 6)
 		panel.add_child(content)
 		var toggle := CheckButton.new()
 		toggle.text = str(def.get("label", ""))
@@ -2672,26 +2676,43 @@ const _LBL_FONT_SIZE := 14
 const _LBL_LINE_STEP := 0.06
 
 
+# True quando o dropdown está em "Todos os membros" + "Todos os Sub-membros" E o toggle "Colisores de
+# Submembros" está ligado: nesse caso TODOS os gizmos de sub-membro (PART_*) aparecem de uma vez, sem
+# isolar a malha e independentemente do toggle "Colisores de Membro". A opção "Todos os Sub-membros" só
+# existe no dropdown "Sub-membro" quando "Membro" está em "Todos os membros" (cbo_members índice 1).
+func _should_show_all_sub_colliders() -> bool:
+	return _show_sub_colliders \
+		and member_row.visible \
+		and cbo_members.selected == 1 \
+		and _sub_member_value(cbo_sub_members.selected) == ALL_SUB_MEMBERS_VALUE
+
+
 # Apply the "Colisores de Membro" toggle to the live preview in place: build the member colliders
 # on first use, then add or remove the wireframe gizmos — no rebuild, so the camera and rotation are
-# untouched. SUB-MEMBROS (PART_*) ficam OCULTOS nesta visão geral: só aparecem isolados, via o toggle
-# "Colisores de Submembros" (ramo de foco em _refresh_member_overlays) quando selecionados no dropdown.
+# untouched. SUB-MEMBROS (PART_*) ficam OCULTOS nesta visão geral, com UMA exceção: o modo "Todos os
+# Sub-membros" + "Colisores de Submembros" ligado (_should_show_all_sub_colliders) mostra TODOS os
+# gizmos de sub-membro de uma vez, independente do toggle "Colisores de Membro". Fora disso, o
+# sub-membro só aparece isolado (ramo de foco em _refresh_member_overlays) quando escolhido no dropdown.
 func _apply_colliders_visibility() -> void:
 	if _preview_instance == null:
 		return
-	if not _show_colliders:
+	var show_all_sub: bool = _should_show_all_sub_colliders()
+	# Nada para mostrar (nem membro, nem "todos os sub-membros") → limpa os gizmos e sai.
+	if not _show_colliders and not show_all_sub:
 		for gizmo in _preview_instance.find_children(_GIZMO_NAME, "MeshInstance3D", true, false):
 			gizmo.queue_free()
 		return
 	_ensure_member_colliders()
 	_add_collider_gizmos(_preview_instance)
-	# Reaplica a visibilidade EXPLICITAMENTE (não confia no default), para gizmos de membro escondidos
-	# por um foco anterior voltarem a aparecer ao sair do isolamento: MEMBRO visível, SUB-MEMBRO (PART_*)
-	# oculto (só aparece isolado, via "Colisores de Submembros"). _member_bodies() = corpos com "group".
+	# Reaplica a visibilidade EXPLICITAMENTE (não confia no default), para gizmos escondidos por um foco
+	# anterior voltarem ao estado certo ao sair do isolamento: MEMBRO segue "Colisores de Membro";
+	# SUB-MEMBRO (PART_*) fica oculto, EXCETO no modo "Todos os Sub-membros" (show_all_sub), que mostra
+	# todos. _member_bodies() = corpos com "group".
 	for body in _member_bodies():
 		var is_part: bool = str((body as StaticBody3D).get_meta("group")).begins_with("PART_")
+		var vis: bool = show_all_sub if is_part else _show_colliders
 		for giz in body.find_children(_GIZMO_NAME, "MeshInstance3D", true, false):
-			(giz as MeshInstance3D).visible = not is_part
+			(giz as MeshInstance3D).visible = vis
 
 
 # Build the per-member colliders once for the current preview (idempotent), so the
@@ -2939,24 +2960,16 @@ func _on_tree_owner_edited(model_key: String, item: TreeItem, bone: String, prev
 	var new_group := str(choices[idx]["group"])
 	if new_group == prev_owner:
 		return
-	var dlg := ConfirmationDialog.new()
-	dlg.title = Locale.tr_key("Reassociar sub-membro")
-	dlg.dialog_text = "Mudar o dono de \"%s\" para \"%s\"?\nSó muda o agrupamento/dano (herança) — não altera a malha." % [bone, str(choices[idx]["label"])]
-	add_child(dlg)
+	var dlg := FloatingDialog.confirm(self, "Reassociar sub-membro", "Mudar o dono de \"%s\" para \"%s\"?\nSó muda o agrupamento/dano (herança) — não altera a malha." % [bone, str(choices[idx]["label"])], "Sim", "Não")
 	dlg.confirmed.connect(func():
 		LimbConfig.set_sub_member_owner(model_key, bone, new_group)
-		dlg.queue_free()
-		_rebuild_member_colliders()
-	)
+		_rebuild_member_colliders())
 	dlg.canceled.connect(func():
 		var prev_idx := 0
 		for i in choices.size():
 			if str(choices[i]["group"]) == prev_owner:
 				prev_idx = i
-		item.set_range(3, prev_idx)
-		dlg.queue_free()
-	)
-	dlg.popup_centered()
+		item.set_range(3, prev_idx))
 
 
 # Clique num botão de célula da árvore: o ícone de lixeira (à direita do nome de um sub-membro)
@@ -2973,16 +2986,9 @@ func _on_damage_tree_button(item: TreeItem, _column: int, id: int, _mouse_button
 	# Nome exibido do sub-membro (sem o prefixo "↳ " da árvore) para a frase da confirmação.
 	var sub_name := item.get_text(0).trim_prefix("↳ ").strip_edges()
 	var model_key := _current_model_key()
-	var dlg := ConfirmationDialog.new()
-	dlg.title = Locale.tr_key("Remover sub-membro")
-	dlg.dialog_text = "Deseja realmente remover associação do sub-membro: %s ?" % sub_name
-	add_child(dlg)
+	var dlg := FloatingDialog.confirm(self, "Remover sub-membro", "Deseja realmente remover associação do sub-membro: %s ?" % sub_name, "Sim", "Não")
 	dlg.confirmed.connect(func():
-		dlg.queue_free()
-		_on_sub_member_removed(model_key, bone)
-	)
-	dlg.canceled.connect(func(): dlg.queue_free())
-	dlg.popup_centered()
+		_on_sub_member_removed(model_key, bone))
 
 
 # Footer abaixo da árvore: só a linha "Adicionar sub-membro" (osso avulso + dono explícito +
@@ -3719,6 +3725,17 @@ func _input(input_event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+# True quando o ponteiro está sobre a janela flutuante de Dano ou IA (visível). A roda do mouse
+# leva esse evento ao _unhandled_input quando o scroll interno da janela está no limite (ou sobre
+# uma área sem rolagem); aqui a usamos para NÃO aplicar o zoom do 3D nesse caso.
+func _pointer_over_model_window() -> bool:
+	for panel in [damage_panel, ai_panel]:
+		if is_instance_valid(panel) and panel.visible \
+				and panel.get_global_rect().has_point(panel.get_global_mouse_position()):
+			return true
+	return false
+
+
 # Hold the left mouse button over the render area and drag to hand-rotate the
 # mesh on the two orthogonal axes (horizontal -> yaw, vertical -> pitch). Clicks
 # that land on a dropdown or button are consumed by those controls first, so only
@@ -3728,10 +3745,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		_dragging = event.pressed
 	elif event is InputEventMouseButton and event.pressed and \
 			event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		# Roda do mouse SOBRE a janela Dano/IA rola só o conteúdo dela, nunca o zoom do 3D.
+		if _pointer_over_model_window():
+			return
 		# Wheel forward -> approach the model (smaller distance).
 		_zoom_target = clampf(_zoom_target - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	elif event is InputEventMouseButton and event.pressed and \
 			event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		if _pointer_over_model_window():
+			return
 		# Wheel backward -> pull away from the model (larger distance).
 		_zoom_target = clampf(_zoom_target + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	elif event is InputEventMouseMotion and _dragging:

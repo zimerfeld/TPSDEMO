@@ -22,8 +22,9 @@ third-person shooter sandbox. At a high level it offers:
 - **Screen visuals & dialogs** — each 2D screen carries its own lightweight **animated shader
   background** evoking its purpose: a receding **stage grid** (Levels), a **connecting-nodes
   network** (Play Online), an **equalizer** (Settings) and a **dev blueprint** with a scan sweep
-  (Developer). All **confirmation/alert windows share one standard style** — the game theme's
-  buttons, a larger window and larger fonts — applied via a single `UIDialogs` helper.
+  (Developer). All **confirmation/alert windows are built on one reusable floating-window control**
+  (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a standard × close and a
+  modal backdrop — created by the `FloatingDialog` helper; the same base other floating windows can reuse.
 - **Playable characters** — selectable player variants that move, aim, jump and shoot,
   with first-person camera control and a local health HUD.
 - **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon

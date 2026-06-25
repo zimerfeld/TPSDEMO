@@ -14,7 +14,7 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 
 # Diálogo "Deseja sair do Zimaro ?" enquanto aberto, para não empilhar dois ao apertar
 # Sair/ESC repetidamente.
-var _quit_dialog: ConfirmationDialog = null
+var _quit_dialog: FloatingWindow = null
 
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 
@@ -104,22 +104,13 @@ func _on_settings_pressed() -> void:
 func _on_quit_pressed() -> void:
 	if is_instance_valid(_quit_dialog):
 		return
-	var dlg := ConfirmationDialog.new()
-	dlg.title = Locale.tr_key("Sair do jogo")
-	dlg.dialog_text = Locale.tr_key("Deseja sair do Zimaro ?")
-	dlg.get_ok_button().text = Locale.tr_key("Sim")
-	dlg.get_cancel_button().text = Locale.tr_key("Não")
-	UIDialogs.style(dlg)
+	# `closed` cobre o botão "Não", o × e o ESC (a janela se autolibera e devolve o foco).
+	var dlg := FloatingDialog.confirm(self, "Sair do jogo", "Deseja sair do Zimaro ?", "Sim", "Não")
 	dlg.confirmed.connect(get_tree().quit)
-	# `canceled` cobre o botão "Não", o X de fechar e o ESC dentro do diálogo.
-	dlg.canceled.connect(func() -> void:
-		dlg.queue_free()
+	dlg.closed.connect(func() -> void:
 		_quit_dialog = null
-		play_button.grab_focus()
-	)
+		play_button.grab_focus())
 	_quit_dialog = dlg
-	add_child(dlg)
-	dlg.popup_centered()
 
 
 func _on_play_online_pressed() -> void:

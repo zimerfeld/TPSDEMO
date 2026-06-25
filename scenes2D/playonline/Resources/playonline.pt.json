@@ -11,5 +11,10 @@
 	"Sim": "Sim",
 	"Não": "Não",
 	"O nível foi parado pelo host": "O nível foi parado pelo host",
-	"O nível foi reiniciado pelo host": "O nível foi reiniciado pelo host"
+	"O nível foi reiniciado pelo host": "O nível foi reiniciado pelo host",
+	"Aviso": "Aviso",
+	"OK": "OK",
+	"Desconectar": "Desconectar",
+	"Desconectar e voltar para a lista de salas ?": "Desconectar e voltar para a lista de salas ?",
+	"Desconectar e voltar para a gerência de salas ?": "Desconectar e voltar para a gerência de salas ?"
 }

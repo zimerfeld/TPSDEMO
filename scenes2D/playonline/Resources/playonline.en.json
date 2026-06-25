@@ -24,5 +24,10 @@
 	"Equilibrado": "Balanced",
 	"Responsivo": "Responsive",
 	"O nível foi parado pelo host": "The level was stopped by the host",
-	"O nível foi reiniciado pelo host": "The level was restarted by the host"
+	"O nível foi reiniciado pelo host": "The level was restarted by the host",
+	"Aviso": "Notice",
+	"OK": "OK",
+	"Desconectar": "Disconnect",
+	"Desconectar e voltar para a lista de salas ?": "Disconnect and return to the room list ?",
+	"Desconectar e voltar para a gerência de salas ?": "Disconnect and return to the room manager ?"
 }

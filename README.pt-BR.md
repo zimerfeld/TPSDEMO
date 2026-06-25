@@ -22,8 +22,10 @@ em terceira pessoa. Em alto nível, oferece:
 - **Visuais das telas & diálogos** — cada tela 2D tem seu próprio **fundo animado por shader** (leve)
   que remete à sua função: uma **grade de fase** em perspectiva (Níveis), uma **rede de nós conectando**
   (Jogar Online), um **equalizador** (Configurações) e um **blueprint de dev** com varredura (Developer).
-  Todas as **janelas de confirmação/aviso compartilham um estilo padrão** — botões do tema do jogo,
-  janela maior e fontes maiores — aplicado por um único helper `UIDialogs`.
+  Todas as **janelas de confirmação/aviso são montadas sobre um controle de janela flutuante
+  reutilizável** (`FloatingWindow`, uma cena `controls2D`) — texto centralizado, botões de largura
+  uniforme, × de fechar padrão e fundo modal —, criadas pelo helper `FloatingDialog`; a mesma base
+  serve de fundação para outras janelas flutuantes.
 - **Personagens jogáveis** — variações de player selecionáveis que se movem, miram, pulam e
   atiram, com câmera em primeira pessoa e um HUD de vida local.
 - **Inimigos** — um inimigo terrestre (Red Robot) que se aproxima, mira e dispara uma **bala de

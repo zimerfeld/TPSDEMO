@@ -28,7 +28,7 @@ var _level_picker: OptionButton
 var _template_picker: OptionButton
 var _rooms_list: VBoxContainer
 var _hint: Label
-var _confirm_dialog: ConfirmationDialog = null
+var _confirm_dialog: FloatingWindow = null
 var _template_dialog: Window = null
 
 
@@ -298,25 +298,16 @@ func _confirm_disconnect() -> void:
 	if is_instance_valid(_confirm_dialog):
 		return
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	var dlg := ConfirmationDialog.new()
-	dlg.title = Locale.tr_key("Desconectar")
-	dlg.dialog_text = Locale.tr_key("Desconectar e voltar para a gerência de salas ?")
-	dlg.get_ok_button().text = Locale.tr_key("Sim")
-	dlg.get_cancel_button().text = Locale.tr_key("Não")
-	UIDialogs.style(dlg)
+	var dlg := FloatingDialog.confirm(self, "Desconectar", "Desconectar e voltar para a gerência de salas ?", "Sim", "Não")
 	dlg.confirmed.connect(func() -> void:
-		dlg.queue_free()
-		_confirm_dialog = null
 		RoomManager.host_leave_room()
 		_set_observing(-1))
 	dlg.canceled.connect(func() -> void:
-		dlg.queue_free()
-		_confirm_dialog = null
 		if _playing_id >= 0:  # cancelou: continua jogando (recaptura o mouse)
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED))
+	dlg.closed.connect(func() -> void:
+		_confirm_dialog = null)
 	_confirm_dialog = dlg
-	add_child(dlg)
-	dlg.popup_centered()
 
 
 func _input(event: InputEvent) -> void:
