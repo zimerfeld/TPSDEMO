@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://d28e31aodcsf7"
+path="res://.godot/imported/Anikdote - Turn It Up  Trap  NCS - Copyright Free Music.mp3-e5ed114cb33d3d2cb4437833147e8b57.mp3str"
+
+[deps]
+
+source_file="res://audios/Anikdote - Turn It Up  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Anikdote - Turn It Up  Trap  NCS - Copyright Free Music.mp3-e5ed114cb33d3d2cb4437833147e8b57.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

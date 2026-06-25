@@ -357,7 +357,11 @@ toggle é o **interruptor mestre** da sua categoria:
     (Dano/IA) com a janela já aberta a **fecha** (`_on_*_button_pressed` checa `panel.visible` e fecha).
     **Scroll sobre a janela Dano/IA NÃO dá zoom no 3D (2026-06-25):** o `_unhandled_input` ignora a roda
     do mouse quando `_pointer_over_model_window()` (ponteiro sobre o `damage_panel`/`ai_panel` visível) —
-    a roda só rola o conteúdo da janela; sobre o 3D, continua dando zoom. **Dano vale para QUALQUER modelo** em "Modelo completo"
+    a roda só rola o conteúdo da janela; sobre o 3D, continua dando zoom. **Arraste tb congela sobre
+    a janela (2026-06-25):** a rotação por arraste do mouse também respeita `_pointer_over_model_window()`
+    — a câmera para de girar assim que o ponteiro entra na janela e volta a operar ao sair dela ou
+    fechá-la; o helper passou a incluir `FloatingWindow.pointer_over_any_window()` (qualquer janela
+    flutuante, não só Dano/IA). **Dano vale para QUALQUER modelo** em "Modelo completo"
     (`_supports_damage_editor` substituiu `_preview_is_whole_character`: não exige mais categoria
     "characters" — armas/rigs usam os colliders de membro). **IA só para personagens** com
     comportamentos definidos (`_supports_ai_editor` = `AIConfigLib.has_behavior_definitions` — hoje

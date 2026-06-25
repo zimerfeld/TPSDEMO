@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://mgbdx783l4ba"
+path="res://.godot/imported/Aero Chord feat. DDARK - Shootin Stars  Trap  NCS - Copyright Free Music.mp3-f906ad38733319d13eb8ba9fd2d34eec.mp3str"
+
+[deps]
+
+source_file="res://audios/Aero Chord feat. DDARK - Shootin Stars  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Aero Chord feat. DDARK - Shootin Stars  Trap  NCS - Copyright Free Music.mp3-f906ad38733319d13eb8ba9fd2d34eec.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -8,6 +8,9 @@ const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn
 const CLIENT_SESSION_PATH: String = "res://scenes2D/client_session/client_session.tscn"
 # Quantos valores recentes (porta/IP) guardar para seleção.
 const HISTORY_MAX: int = 3
+# Domínios completos (FQDN) ficam num histórico PRÓPRIO e persistente (não rolam junto com os IPs
+# recentes), para o jogador reusá-los pelo dropdown depois. Cap só p/ a lista não crescer sem fim.
+const DOMAIN_MAX: int = 12
 
 var loading_path: String = ""
 var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
@@ -53,7 +56,7 @@ func _ready() -> void:
 # últimos HISTORY_MAX valores num OptionButton (item 0 = "Selecione...", convenção do projeto).
 func _refresh_history() -> void:
 	_fill_history(port_history, "ports", str(int(port.value)))
-	_fill_history(address_history, "addresses", address.text.strip_edges())
+	_fill_address_history()
 
 
 func _fill_history(option: OptionButton, key: String, current: String) -> void:
@@ -64,6 +67,26 @@ func _fill_history(option: OptionButton, key: String, current: String) -> void:
 	# Deixa SELECIONADO o item igual ao valor atual do campo → o dropdown auto-preenche com o valor
 	# armazenado. Se o valor não estiver no histórico, cai em "Selecione..." (índice 0).
 	_select_in_history(option, current)
+
+
+# O dropdown de IP/Domínio mostra os ENDEREÇOS recentes (IP ou domínio, rolando em HISTORY_MAX) E
+# TAMBÉM os DOMÍNIOS COMPLETOS salvos (lista própria e persistente), deduplicados → um domínio
+# digitado uma vez fica disponível para seleção depois, mesmo que os IPs recentes rolem por cima.
+func _fill_address_history() -> void:
+	address_history.clear()
+	address_history.add_item("Selecione...")
+	var seen := {}
+	for value in Settings.config_file.get_value("online", "addresses", []):
+		var s := str(value)
+		if s != "" and not seen.has(s):
+			seen[s] = true
+			address_history.add_item(s)
+	for value in Settings.config_file.get_value("online", "domains", []):
+		var s := str(value)
+		if s != "" and not seen.has(s):
+			seen[s] = true
+			address_history.add_item(s)
+	_select_in_history(address_history, address.text.strip_edges())
 
 
 # Seleciona no dropdown o item cujo texto bate com `current` (o valor atual do campo); senão,
@@ -97,15 +120,34 @@ func _prefill_last_used() -> void:
 		address.text = String(addrs[0])
 
 
-# Insere `value` no topo do histórico (sem duplicar), mantém só os HISTORY_MAX mais recentes.
-func _remember(key: String, value) -> void:
+# Insere `value` no topo do histórico `key` (sem duplicar), mantém só os `max_items` mais recentes.
+func _remember(key: String, value, max_items: int = HISTORY_MAX) -> void:
 	var arr: Array = (Settings.config_file.get_value("online", key, []) as Array).duplicate()
 	arr.erase(value)
 	arr.push_front(value)
-	while arr.size() > HISTORY_MAX:
+	while arr.size() > max_items:
 		arr.pop_back()
 	Settings.config_file.set_value("online", key, arr)
 	Settings.save_settings()
+
+
+# Salva um endereço no histórico recente e, se for um DOMÍNIO COMPLETO (tem letra e ponto, ao
+# contrário de um IP), também na lista persistente de domínios → fica disponível no dropdown depois.
+func _remember_address(value: String) -> void:
+	_remember("addresses", value)
+	if _is_full_domain(value):
+		_remember("domains", value, DOMAIN_MAX)
+
+
+# Heurística: tem ponto E alguma letra → nome de domínio (IPs são só dígitos/pontos/dois-pontos).
+func _is_full_domain(value: String) -> bool:
+	var t := value.strip_edges()
+	if t == "" or not t.contains("."):
+		return false
+	for c in t:
+		if (c >= "a" and c <= "z") or (c >= "A" and c <= "Z"):
+			return true
+	return false
 
 
 func _on_port_history_item_selected(index: int) -> void:
@@ -127,7 +169,7 @@ func _on_address_history_item_selected(index: int) -> void:
 func _on_address_text_submitted(new_text: String) -> void:
 	if new_text.strip_edges() == "":
 		return
-	_remember("addresses", new_text.strip_edges())
+	_remember_address(new_text.strip_edges())
 	_refresh_history()
 
 
@@ -135,7 +177,7 @@ func _on_address_text_submitted(new_text: String) -> void:
 func _on_address_focus_exited() -> void:
 	if address.text.strip_edges() == "":
 		return
-	_remember("addresses", address.text.strip_edges())
+	_remember_address(address.text.strip_edges())
 	_refresh_history()
 
 
@@ -231,7 +273,7 @@ func _on_join_rooms_pressed() -> void:
 	PlayerSelection.spectator_host = false
 	_remember("ports", int(port.value))
 	if address.text.strip_edges() != "":
-		_remember("addresses", address.text.strip_edges())
+		_remember_address(address.text.strip_edges())
 	peer = ENetMultiplayerPeer.new()
 	var err: Error = peer.create_client(address.text, int(port.value))
 	if err != OK:

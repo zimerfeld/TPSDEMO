@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://f33q6odgwmgs"
+path="res://.godot/imported/Axol & The Tech Thieves - Bleed  Trap  NCS - Copyright Free Music.mp3-07cfa44ff22a2604009fff847851ded1.mp3str"
+
+[deps]
+
+source_file="res://audios/Axol & The Tech Thieves - Bleed  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Axol & The Tech Thieves - Bleed  Trap  NCS - Copyright Free Music.mp3-07cfa44ff22a2604009fff847851ded1.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -14,13 +14,59 @@ buses/default_bus_layout`) e os controles na aba **Audio** das settings.
 | 3 | `Music` | `Master` | música de fundo |
 | 4 | `SFX` | `Master` | todo som que **não** é música |
 
-`Music` carrega só a música de fundo (players `Music` em `menu`, `chooseplayer`,
-`level_base`, todos com `bus = &"Music"`). `SFX` (criado em 2026-06-16) carrega
+`Music` carrega só a música de fundo, agora centralizada no autoload **MusicManager** (ver
+seção abaixo) num único player com `bus = &"Music"` — os antigos nós `Music` embutidos em
+`menu`/`chooseplayer`/`level_base` foram removidos. `SFX` (criado em 2026-06-16) carrega
 **todo o resto**: cada `AudioStreamPlayer/3D` de gameplay (passos/tiro/explosão do
 player, `Shot` da pistola, `Boom` da bomba, `sound` da porta, `Sound`/`Motor` dos
 personagens, `Cannon`/`Explosion`/`Hit`/`Walk` do red_robot, etc.) recebeu
 `bus = &"SFX"`, e os buses de reverb `Outside`/`Reactor` foram religados para mandar
 em `SFX` em vez de `Master`. Assim mutar `SFX` silencia todo efeito sem tocar na música.
+
+## Música por cena/level — `MusicManager` (2026-06-25)
+
+Trilha de fundo por **nome de cena**, em **loop infinito**. O autoload `MusicManager`
+(`res://autoload/music_manager.gd`) mantém um único `AudioStreamPlayer` no bus `Music`; a cada
+troca de tela o roteador `main.gd` chama `MusicManager.play_for_scene(node)`:
+
+- **Resolução por nome:** toca `res://Audios/<nome-da-cena>.<ext>` (1ª de `.ogg`/`.mp3`/`.wav` que
+  existir). Ex.: `menu.tscn` → `Audios/menu.ogg`; `level_1.tscn` → `Audios/level_1.ogg`.
+- **Sem arquivo → silêncio.** Mesma faixa da cena anterior → continua sem reiniciar (transição
+  suave). `ALIASES` faz `chooseplayer` herdar a trilha do `menu`.
+- **Loop forçado em runtime** (`_ensure_loop`): vale para qualquer arquivo solto em `Audios/`,
+  mesmo que o import venha com `loop=false`.
+- **Online:** nas salas a cena raiz é `host_session`/`client_session`, então a música delas vem de
+  `Audios/host_session.ogg`/`client_session.ogg`. Trocar a trilha pelo level observado dentro de uma
+  sala (SubViewport próprio) está fora do escopo deste autoload.
+
+Para definir a música de uma cena/level, basta colocar o arquivo em `res://Audios/` com o nome da
+cena. Faixas inclusas: `Audios/menu.ogg`, `Audios/level_base.ogg`. Ver `Audios/README.md` e
+[[fluxos/fluxo-de-cenas]].
+
+### Gerenciador de Música (Settings → Música → Enabled)
+
+Clicar em **Música: Enabled** na aba Audio abre o **Gerenciador de Música**
+(`scenes2D/music_manager/music_manager_window.gd`, um `Window` montado em código como a janela de
+Templates de Level). Permite:
+
+- **Ouvir** qualquer faixa de `Audios/` (player de pré-escuta separado; pausa o fundo enquanto toca).
+- **Atribuir/remover** a trilha de cada cena/level: "Padrão" (resolve pelo nome), "Sem música"
+  (silêncio) ou um arquivo específico.
+
+As atribuições viram **overrides** persistidos em `Settings` (seção `[music]`: `scene_key = arquivo`,
+ou `""` = silêncio) e têm **prioridade** sobre a resolução por nome em `_resolve()`. Mudar a
+atribuição reaplica **na hora** se for a cena tocando. `MusicManager` expõe `list_tracks()`,
+`scene_list()`, `assignment_of()`, `set_assignment()`, `effective_track()`, `preview()`,
+`stop_preview()`. Abre via `button_down` do botão Enabled (abre mesmo com a música já ligada).
+A janela usa `FloatingWindow.pointer_over_any_window()`? Não — é um `Window` nativo; quem usa esse
+helper são as cenas 3D (ver [[sistemas/biblioteca-de-modelos]]).
+
+**Sortear + persistência de estado (2026-06-25):** o rodapé tem um botão **"🎲 Sortear faixas"**
+(no lugar do 2º "Parar" — já há um em "Ouvir faixa") que atribui uma faixa **aleatória** de
+`Audios/` a CADA cena/level (`set_assignment`, que persiste) e atualiza a tela → as escolhas
+recarregam na próxima abertura. Todo controle da janela **persiste ao mudar**: as atribuições por
+cena já gravam via `set_assignment`; a faixa escolhida no "Ouvir faixa" agora grava em
+`[music_ui] listen` e é restaurada no `_refresh` (`_restore_listen_choice`).
 
 ## Sons do player posicionais (3D) — 2026-06-24
 
@@ -53,7 +99,23 @@ cada uma um par de botões `Disabled`/`Enabled` em `ButtonGroup` (ver `_make_but
 `apply_audio_settings()`: muta/desmuta os buses `Music` e `SFX` via
 `AudioServer.set_bus_mute(get_bus_index(...), not valor)`. Defaults em `DEFAULTS.audio`
 (`music = true`, `sfx = true`); `apply_audio_settings()` roda no `_ready` do autoload
-e a cada `Aplicar`.
+e a cada mudança de opção.
+
+### Volume por bus — VolumeBar (2026-06-25)
+
+À direita de cada linha (Música/SFX) há um **`VolumeBar`** (`scenes2D/controls2D/volume_bar/`,
+`class_name VolumeBar`), controle de volume **reutilizável** desenhado como **equalizador** (10
+segmentos, gradiente verde→amarelo→vermelho) que o usuário **clica/arrasta** para ajustar de
+**1 a 100** (emite `value_changed`). `settings.gd` cria os dois em código (`_add_volume_bar`),
+liga/desliga conforme o toggle (`enabled`, volume só ajustável com o áudio ligado) e grava em
+`[audio] music_volume` / `sfx_volume`. `apply_audio_settings()` converte o % em dB
+(`_volume_to_db` → `linear_to_db`; 100% = 0 dB) e aplica via `AudioServer.set_bus_volume_db`.
+Defaults `music_volume = 100` / `sfx_volume = 100`. O controle também aparece sozinho na tela
+**Controles** (o scanner de `controls2D/` acha `volume_bar/volume_bar.tscn`).
+
+> **Botões ativos "acesos" (2026-06-25):** `scenes2D/menu/button_pressed.tres` (estado pressed/ativo
+> do tema, usado pelos radios das settings) passou de fundo escuro (recuado) para **fundo claro +
+> borda branca + brilho** → o botão selecionado se destaca como "aceso".
 
 ## Preview de modelos
 

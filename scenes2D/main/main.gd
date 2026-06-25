@@ -13,6 +13,10 @@ func _ready() -> void:
 		Engine.max_fps = 60
 	randomize()
 	get_window().mode = Settings.config_file.get_value("video", "display_mode")
+	# Em modo Janela, dá à janela um tamanho/posição sãos (senão ela nasceria do tamanho da tela
+	# inteira, sem barra de título alcançável). Assim o modo janela é uma janela normal, movível.
+	if get_window().mode == Window.MODE_WINDOWED:
+		Settings.apply_window_resolution(get_window())
 	go_to_main_menu()
 
 
@@ -37,6 +41,8 @@ func change_scene_to_packed(resource: PackedScene) -> void:
 		remove_child(child)
 		child.queue_free()
 	add_child(node)
+	# Toca a trilha de fundo da nova tela em loop (pelo nome da cena; silêncio se não houver arquivo).
+	MusicManager.play_for_scene(node)
 	if node.has_signal(&"quit"):
 		node.quit.connect(go_to_main_menu)
 	if node.has_signal(&"replace_main_scene"):

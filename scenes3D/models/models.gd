@@ -3733,6 +3733,8 @@ func _input(input_event: InputEvent) -> void:
 # leva esse evento ao _unhandled_input quando o scroll interno da janela está no limite (ou sobre
 # uma área sem rolagem); aqui a usamos para NÃO aplicar o zoom do 3D nesse caso.
 func _pointer_over_model_window() -> bool:
+	if FloatingWindow.pointer_over_any_window():
+		return true
 	for panel in [damage_panel, ai_panel]:
 		if is_instance_valid(panel) and panel.visible \
 				and panel.get_global_rect().has_point(panel.get_global_mouse_position()):
@@ -3746,7 +3748,8 @@ func _pointer_over_model_window() -> bool:
 # drags over the empty 3D view reach here.
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		_dragging = event.pressed
+		# Não inicia o arraste se o clique caiu sobre uma janela flutuante (Dano/IA ou outra).
+		_dragging = event.pressed and not _pointer_over_model_window()
 	elif event is InputEventMouseButton and event.pressed and \
 			event.button_index == MOUSE_BUTTON_WHEEL_UP:
 		# Roda do mouse SOBRE a janela Dano/IA rola só o conteúdo dela, nunca o zoom do 3D.
@@ -3761,6 +3764,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Wheel backward -> pull away from the model (larger distance).
 		_zoom_target = clampf(_zoom_target + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	elif event is InputEventMouseMotion and _dragging:
+		# Congela a rotação enquanto o ponteiro está sobre uma janela flutuante: a câmera só volta a
+		# responder ao mouse quando o cursor sai da janela (ou ela fecha). Pedido do usuário.
+		if _pointer_over_model_window():
+			return
 		var motion := event as InputEventMouseMotion
 		# Both axes swing up to 180 degrees each side: yaw (left/right) turns the model
 		# all the way around to its back, and pitch (up/down) tilts it all the way over.

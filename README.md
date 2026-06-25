@@ -28,7 +28,7 @@ shooter sandbox: a menu-driven flow (character selection, level picker, settings
 online play), playable characters that move/aim/jump/shoot, ground and flying enemies (the Red
 Robot has a reactive AI that reloads faster, opens fire in range and flees when you close in),
 per-limb localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD
-widgets, debug tooling, EN/PT localization and live (no-Apply) settings.
+widgets, per-scene looping background music, debug tooling, EN/PT localization and live (no-Apply) settings.
 
 ![PT](screenshots/screenshotBR.png) Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro em
 terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, configurações, tela de
@@ -36,7 +36,7 @@ desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atir
 terrestres e voadores (o Red Robot tem uma IA reativa que recarrega mais rápido, abre fogo no
 alcance e recua quando você se aproxima), dano localizado por membro, várias fases, biblioteca de
 modelos 3D navegável,
-widgets de HUD cyberpunk reutilizáveis, ferramentas de debug, localização EN/PT e configurações ao
+widgets de HUD cyberpunk reutilizáveis, música de fundo por cena em loop, ferramentas de debug, localização EN/PT e configurações ao
 vivo (sem botão Aplicar).
 
 ## Features · Funcionalidades
