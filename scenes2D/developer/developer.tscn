@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://c2wr6pr5xqa5i"]
 
 [ext_resource type="Script" uid="uid://ddst33p6uenw6" path="res://scenes2D/developer/developer.gd" id="1"]
-[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
+[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://themes/ui_theme.tres" id="2"]
 
 [sub_resource type="Environment" id="1"]
 background_mode = 1

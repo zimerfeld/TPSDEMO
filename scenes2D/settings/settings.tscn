@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://er6ung1hi5fm"]
 
 [ext_resource type="Script" uid="uid://cblcs6ji5p7mh" path="res://scenes2D/settings/settings.gd" id="1"]
-[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
+[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://themes/ui_theme.tres" id="2"]
 
 [node name="Settings" type="Node" unique_id=683111983]
 script = ExtResource("1")

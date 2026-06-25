@@ -22,7 +22,7 @@ var _observing_id: int = -1        # sala observada (-1 = grade)
 var _playing_id: int = -1          # sala em que o host JOGA (-1 = não joga)
 
 var _room_view: TextureRect
-var _panel: PanelContainer
+var _panel: Control
 var _level_picker: OptionButton
 var _rooms_list: VBoxContainer
 var _hint: Label
@@ -31,6 +31,9 @@ var _confirm_dialog: ConfirmationDialog = null
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Tema do projeto (mesmo da playonline/menu) → botões/labels/dropdowns/painéis com o visual
+	# cyberpunk consistente. Propaga p/ toda a UI montada em código (filhos herdam o theme da raiz).
+	theme = load("res://themes/ui_theme.tres")
 	# A raiz não captura mouse (o painel/botões sim); ao esconder o painel, o jogo recebe o input.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
@@ -61,6 +64,7 @@ func _build_ui() -> void:
 
 	var start_row := HBoxContainer.new()
 	start_row.add_theme_constant_override("separation", 12)
+	start_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	inner.add_child(start_row)
 	_level_picker = OptionButton.new()
 	_level_picker.add_item("Selecione...")  # item 0 = sentinela (sem metadata; convenção do projeto)
@@ -77,7 +81,6 @@ func _build_ui() -> void:
 
 	inner.add_child(HSeparator.new())
 	_rooms_list = _make_rooms_list(inner, "Salas em execução:")
-	_make_back_button(inner)
 
 	_hint = _make_hint("")
 
@@ -125,13 +128,16 @@ func _set_playing(id: int) -> void:
 	_refresh_rooms()
 
 
-# Só a sala `id` renderiza (UPDATE_ALWAYS); as demais apenas simulam (otimização de GPU).
+# Só a sala `id` renderiza (UPDATE_ALWAYS); as demais apenas simulam (otimização de GPU). No modo
+# "servidor puro" (NetConfig.host_render_observed=false) NENHUMA sala renderiza → GPU ociosa, ideal
+# para hospedar muitas salas sem custo de vídeo (a simulação/rede seguem normais nos clientes).
 func _render_only(id: int) -> void:
 	for room in RoomManager.get_rooms():
 		var vp: Variant = room["viewport"]
 		if vp is SubViewport:
+			var render_this: bool = NetConfig.host_render_observed and int(room["id"]) == id
 			(vp as SubViewport).render_target_update_mode = (SubViewport.UPDATE_ALWAYS
-					if int(room["id"]) == id else SubViewport.UPDATE_DISABLED)
+					if render_this else SubViewport.UPDATE_DISABLED)
 
 
 func _show_room_view(id: int) -> void:
@@ -173,13 +179,21 @@ func _make_server_row(room: Dictionary) -> Control:
 	lbl.text = "Sala #%d — %s" % [id, RoomManager.level_label(String(room["level_path"]))]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
+	# Modo "servidor puro" (render do host desligado): não há o que ver, então Jogar/Observar ficam
+	# desabilitados (o host só gerencia as salas; iniciar/parar/reiniciar seguem funcionando).
+	var render_off: bool = not NetConfig.host_render_observed
 	var play_btn := Button.new()
 	play_btn.text = "Jogar"
+	play_btn.disabled = render_off
+	if render_off:
+		play_btn.tooltip_text = Locale.tr_key("Render do host desativado (servidor puro)")
 	play_btn.pressed.connect(_on_play_room.bind(id))
 	row.add_child(play_btn)
 	var observe_btn := Button.new()
 	observe_btn.text = "Observando" if id == _observing_id else "Observar"
-	observe_btn.disabled = id == _observing_id
+	observe_btn.disabled = (id == _observing_id) or render_off
+	if render_off:
+		observe_btn.tooltip_text = Locale.tr_key("Render do host desativado (servidor puro)")
 	observe_btn.pressed.connect(_set_observing.bind(id))
 	row.add_child(observe_btn)
 	var restart_btn := Button.new()
@@ -263,22 +277,62 @@ func _input(event: InputEvent) -> void:
 
 # ───────────────────────────── helpers de UI ─────────────────────────────
 
+# Monta a tela de gerência inteira (tela cheia) e devolve a VBox CENTRALIZADA onde vão as listas.
+# Escondida enquanto o host OBSERVA/JOGA (aí o SubViewport ocupa a tela). Fundo na MESMA cor navy das
+# outras telas — o ui_theme só estiliza Button/Label, não dá fundo; sem isto sobrava o cinza padrão
+# do PanelContainer (era o "estilo de cores não aplicado"). Conteúdo centralizado (largura máx. 900)
+# e botão Voltar de tamanho normal e centralizado, no padrão da playonline/menu.
 func _make_panel(title_text: String) -> VBoxContainer:
-	_panel = PanelContainer.new()
-	_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	_panel.custom_minimum_size = Vector2(540, 0)
+	_panel = Control.new()
+	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_panel)
+	# Fundo no MESMO estilo do menu/chooseplayer: textura cyberpunk + véu escuro por cima (o flat navy
+	# ficava "sem cor"). O ui_theme só estiliza Button/Label, então o fundo é montado aqui. mouse_filter
+	# IGNORE p/ os cliques chegarem aos botões.
+	var bg_tex := TextureRect.new()
+	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_tex.texture = load("res://scenes2D/menu/menu_surreal_training_bg.png")
+	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg_tex.modulate = Color(0.92, 0.97, 1, 0.98)
+	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(bg_tex)
+	var veil := ColorRect.new()
+	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	veil.color = Color(0.0156863, 0.0313726, 0.0588235, 0.62)
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(veil)
 	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 24)
+		margin.add_theme_constant_override("margin_" + side, 40)
 	_panel.add_child(margin)
-	var inner := VBoxContainer.new()
-	inner.add_theme_constant_override("separation", 14)
-	margin.add_child(inner)
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 14)
+	margin.add_child(outer)
 	var title := Label.new()
 	title.text = title_text
 	title.add_theme_font_size_override("font_size", 28)
-	inner.add_child(title)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	outer.add_child(title)
+	# Área central: VBox de largura máx. 900, centralizada horizontalmente (as listas ficam aqui).
+	var center := HBoxContainer.new()
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	center.alignment = BoxContainer.ALIGNMENT_CENTER
+	outer.add_child(center)
+	var inner := VBoxContainer.new()
+	inner.custom_minimum_size = Vector2(900, 0)
+	inner.add_theme_constant_override("separation", 14)
+	center.add_child(inner)
+	# Voltar: tamanho fixo e centralizado embaixo (não mais full-width), como nas outras telas.
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	outer.add_child(actions)
+	var back_btn := Button.new()
+	back_btn.text = "Voltar"
+	back_btn.custom_minimum_size = Vector2(200, 50)
+	back_btn.pressed.connect(_go_back)
+	actions.add_child(back_btn)
 	return inner
 
 
@@ -297,14 +351,6 @@ func _make_rooms_list(parent: VBoxContainer, header: String) -> VBoxContainer:
 	list.add_theme_constant_override("separation", 8)
 	scroll.add_child(list)
 	return list
-
-
-func _make_back_button(parent: VBoxContainer) -> void:
-	var back_btn := Button.new()
-	back_btn.text = "Voltar"
-	back_btn.custom_minimum_size = Vector2(0, 44)
-	back_btn.pressed.connect(_go_back)
-	parent.add_child(back_btn)
 
 
 func _make_hint(text: String) -> Label:

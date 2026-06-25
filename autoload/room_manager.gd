@@ -195,6 +195,10 @@ func _on_room_child_entered(node: Node, room_id: int) -> void:
 # ao explodir, via part.gd) — também preservado: ganham só o filtro e seguem ocultos até lá.
 func _apply_room_visibility(node: Node, room_id: int) -> void:
 	for sync in _synchronizers_in(node):
+		# Taxa de replicação escolhida pelo jogador (30/60 Hz). Roda só no servidor (autoridade das
+		# entidades), então isto controla a frequência de envio servidor→clientes. Reaplicado a cada
+		# synchronizer que entra (inimigos/players/balas) → vale para a sala inteira.
+		sync.replication_interval = NetConfig.sync_interval()
 		if sync.has_meta("room_filtered"):
 			continue
 		sync.set_meta("room_filtered", true)

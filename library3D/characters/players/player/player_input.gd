@@ -56,6 +56,12 @@ func apply_authority() -> void:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		set_process(true)
 		set_process_input(true)
+		# Taxa de envio do INPUT deste peer (o dono) = a "Taxa de sincronização" que ELE escolheu no
+		# NetConfig. O servidor já controla a taxa do ESTADO das entidades (ServerSynchronizer) pelo
+		# RoomManager; aqui o dono controla a taxa do PRÓPRIO input → o controle vale dos dois lados
+		# (host = broadcast das entidades; cliente = upload do seu input). Sem isto a escolha do
+		# cliente ficaria inerte (só a do host valia).
+		replication_interval = NetConfig.sync_interval()
 	else:
 		set_process(false)
 		set_process_input(false)

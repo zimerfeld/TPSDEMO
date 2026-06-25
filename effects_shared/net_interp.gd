@@ -11,9 +11,11 @@ extends RefCounted
 ##
 ## Barato (uma busca linear curta + um interpolate_with por frame) → não pesa no FPS.
 
-# Atraso de render (ms). ~100 ms cobre o jitter de UDP entre dois pacotes de sync (~33 ms)
-# com folga, sem custo perceptível de "lag visual" dos outros jogadores.
-const RENDER_DELAY_MS: float = 100.0
+# Atraso de render (ms). ~100 ms cobre o jitter de UDP entre dois pacotes de sync (~33 ms) com
+# folga (movimento suave), mas adiciona "lag visual" das entidades remotas. Menor = mais
+# responsivo, porém mais sensível a jitter. Configurável pelo jogador (Suave/Equilibrado/Responsivo)
+# via NetConfig (tela playonline) — `static` para valer em TODAS as instâncias sem lookup por frame.
+static var render_delay_ms: float = 100.0
 # Histórico máximo de amostras (a ~30/s, cobre ~0,8 s — muito além do atraso de render).
 const MAX_SAMPLES: int = 24
 
@@ -43,7 +45,7 @@ func sample(now_ms: float) -> Transform3D:
 	var n: int = _xforms.size()
 	if n == 1:
 		return _xforms[0]
-	var rt: float = now_ms - RENDER_DELAY_MS
+	var rt: float = now_ms - render_delay_ms
 	if rt <= _times[0]:
 		return _xforms[0]
 	if rt >= _times[n - 1]:

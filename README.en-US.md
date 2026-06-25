@@ -72,8 +72,14 @@ third-person shooter sandbox. At a high level it offers:
   **Join Rooms** opens the room browser (`client_session`), which lists the running rooms with a **Play**
   button (shown only while a room exists) that drops you into the chosen room after the character
   picker. Each player's chosen variant/colour shows for everyone online (per-peer loadout), and other
-  players/enemies are smoothed with a **timestamped interpolation buffer** (rendered ~100 ms in the
-  past) for a flicker-free, high-FPS client view.
+  players/enemies are smoothed with a **timestamped interpolation buffer** for a flicker-free, high-FPS
+  client view. The Play Online screen also has an **Optimization** selector applied before you host/join:
+  interpolation **Smooth / Balanced / Responsive** (render delay 100 / 60 / 35 ms — smoothness vs.
+  responsiveness), **sync rate 30 / 60 Hz** (server→client updates per second), and **host render
+  Window / Pure-server** (skip room rendering to free the GPU). All dynamic models (players, enemies,
+  bullets, bombs) replicate from the host server. The Play Online screen persists every option (last
+  Port/IP, interpolation, sync rate, host render) and restores them next time; the Host/Client screens
+  are full-screen, matching the rest of the UI.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
   browsable in-game through the Models screen (category → model → part) with toggles, in
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
@@ -340,7 +346,7 @@ asset library under `library3D/`:
   `locale.gd`, `stability_guard.gd`, `performance_hud.gd`. `Settings` lives in `scenes2D/settings/config.gd`.
 - `<scene>/Resources/*.pt.json` + `*.en.json` — per-scene UI language dictionaries, scanned and
   merged by the `Locale` autoload.
-- `ui/`, `themes/` — shared theme resources. `tools/` — headless helper scripts.
+- `themes/` — shared theme resources.
 - `OBSIDIAN/` — project documentation vault (mirrors this README).
 
 Screen flow:
@@ -402,8 +408,7 @@ ZIMARO/
 ├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud
 │                        #   (Settings lives in scenes2D/settings/config.gd)
 │                        # UI dictionaries live per scene: <scene>/Resources/*.pt.json + *.en.json (read by Locale)
-├─ ui/  themes/          # shared Theme resources (ui_theme.tres, cyberpunk.tres)
-├─ tools/  _gen/         # headless GDScript generators for 3D assets (gen_*.gd)
+├─ themes/               # shared Theme resources (ui_theme.tres, cyberpunk.tres)
 ├─ addons/               # Godot editor plugins (godot_ai — the MCP server)
 ├─ OBSIDIAN/             # project documentation vault (mirrors this README)
 ├─ screenshots/          # captured preview images

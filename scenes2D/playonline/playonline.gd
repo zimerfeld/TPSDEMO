@@ -11,6 +11,9 @@ const HISTORY_MAX: int = 3
 
 var loading_path: String = ""
 var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
+# OptionButtons de otimização (com meta "_item_keys") — re-traduzidos no language_changed, já que
+# o auto-localizer do Locale pula OptionButton (seus itens são geridos em código).
+var _opt_buttons: Array[OptionButton] = []
 
 @onready var port: SpinBox = %Port
 @onready var address: LineEdit = %Address
@@ -28,8 +31,14 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 func _ready() -> void:
 	_update_language_buttons()
 	_refresh_history()
+	_prefill_last_used()
+	_build_optimization_options()
 	# Salva a porta ao sair do campo (o SpinBox edita por um LineEdit interno).
 	port.get_line_edit().focus_exited.connect(_on_port_focus_exited)
+	# Persiste o valor ATUAL a cada mudança (não só no commit/foco) → o último nunca se perde,
+	# mesmo fechando o jogo logo após digitar. Grava em chaves dedicadas (não polui o histórico).
+	port.value_changed.connect(_on_port_changed)
+	address.text_changed.connect(_on_address_changed)
 	# Dedicated server: auto-host (servidor de salas) when running headless.
 	if DisplayServer.get_name() == "headless":
 		_on_manage_rooms_pressed.call_deferred()
@@ -51,6 +60,26 @@ func _fill_history(option: OptionButton, key: String) -> void:
 	for value in Settings.config_file.get_value("online", key, []):
 		option.add_item(str(value))
 	option.selected = 0
+
+
+# Pré-preenche Porta e IP/Domínio com o ÚLTIMO valor válido usado (histórico guarda o mais recente
+# em [0], via _remember/push_front). Sem histórico, mantém os defaults do .tscn (4383 / 127.0.0.1).
+# Assim o jogador não precisa redigitar a cada vez — basta confirmar o último que funcionou.
+func _prefill_last_used() -> void:
+	# Preferimos o "último valor" dedicado (gravado em qualquer mudança, mesmo sem commit); se não
+	# houver, caímos no topo do histórico (último commit); senão, o default do .tscn.
+	var last_port: int = int(Settings.config_file.get_value("online", "last_port", 0))
+	var ports: Array = Settings.config_file.get_value("online", "ports", [])
+	if last_port > 0:
+		port.value = float(last_port)
+	elif not ports.is_empty():
+		port.value = float(ports[0])
+	var last_addr: String = String(Settings.config_file.get_value("online", "last_address", ""))
+	var addrs: Array = Settings.config_file.get_value("online", "addresses", [])
+	if last_addr != "":
+		address.text = last_addr
+	elif not addrs.is_empty():
+		address.text = String(addrs[0])
 
 
 # Insere `value` no topo do histórico (sem duplicar), mantém só os HISTORY_MAX mais recentes.
@@ -98,6 +127,18 @@ func _on_address_focus_exited() -> void:
 func _on_port_focus_exited() -> void:
 	_remember("ports", int(port.value))
 	_refresh_history()
+
+
+# Grava o valor ATUAL em chave dedicada a cada mudança (sem mexer no histórico/dropdown). É a tela
+# de configuração (sem jogo rodando), então o custo de salvar é irrelevante para o FPS.
+func _on_port_changed(_value: float) -> void:
+	Settings.config_file.set_value("online", "last_port", int(port.value))
+	Settings.save_settings()
+
+
+func _on_address_changed(new_text: String) -> void:
+	Settings.config_file.set_value("online", "last_address", new_text.strip_edges())
+	Settings.save_settings()
 
 
 # Grey out the button for the language already active (same pattern as the menu).
@@ -204,6 +245,118 @@ func _on_rooms_connect_failed() -> void:
 		"Falha ao conectar em %s:%d.\n\nVerifique o endereço e a porta." % [address.text, int(port.value)],
 		_on_join_rooms_pressed
 	)
+
+
+# ───────────────────────────── Otimização (escolhida ANTES de hospedar/entrar) ─────────────────
+# Seletor de otimização de rede/render aplicado à sessão online. Construído em código e inserido
+# ANTES da linha de botões Host/Client. Lê/grava no autoload NetConfig (persiste em Settings).
+# Regra do projeto: priorizar resposta/FPS sem comprometer a experiência — daí os trade-offs
+# ficarem explícitos para o jogador. Ver [[net_config]] / [[sistemas/salas]].
+func _build_optimization_options() -> void:
+	var vbox: VBoxContainer = $UI/Margin/Main/FormCenter/VBox
+	var anchor: Node = vbox.get_node_or_null("ButtonsRow")
+	if anchor == null:
+		return
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+	vbox.move_child(sep, anchor.get_index())
+
+	var title := Label.new()
+	# Texto CANÔNICO (pt). O auto-localizer do Locale traduz Labels ao entrarem na árvore e re-traduz
+	# no troca-idioma (guarda o canônico em meta). Passar tr_key aqui gravaria o canônico ERRADO
+	# quando a cena nasce em EN → não voltaria p/ pt. Vale p/ title/hint/escopo/nome do controle.
+	title.text = "Otimização"
+	title.add_theme_font_size_override("font_size", 24)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+	vbox.move_child(title, anchor.get_index())
+
+	# Dica do trade-off interpolação×taxa (as duas se combinam para qualidade).
+	var hint := Label.new()
+	hint.text = "Cada opção atua no lado indicado. Responsivo combina melhor com 60 Hz."
+	hint.add_theme_font_size_override("font_size", 14)
+	hint.modulate = Color(1, 1, 1, 0.7)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(hint)
+	vbox.move_child(hint, anchor.get_index())
+
+	# 3 colunas que deixam o ESCOPO explícito e batem com os botões abaixo: HOST à esquerda (sobre
+	# "Gerenciar Salas"), HOST+CLIENTE no meio, CLIENTE à direita (sobre "Entrar em Salas").
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 24)
+	cols.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(cols)
+	vbox.move_child(cols, anchor.get_index())
+
+	# SÓ HOST (esquerda): Render do host — só o host renderiza salas.
+	var render_opt := _make_opt_column(cols, "SÓ NO HOST", Color(1.0, 0.7, 0.25), "Render do host",
+			["Janela", "Servidor puro"], 0 if NetConfig.host_render_observed else 1)
+	render_opt.item_selected.connect(func(i: int) -> void: NetConfig.set_host_render(i == 0))
+
+	# HOST + CLIENTE (meio): Taxa de sync — host = broadcast das entidades; cliente = upload do input.
+	var sync_opt := _make_opt_column(cols, "HOST + CLIENTE", Color(0.5, 1.0, 0.6), "Taxa de sincronização",
+			["30 Hz", "60 Hz"], 1 if NetConfig.sync_hz >= 60 else 0)
+	sync_opt.item_selected.connect(func(i: int) -> void: NetConfig.set_sync_hz(60 if i == 1 else 30))
+
+	# SÓ CLIENTE (direita): Suavização ↔ Resposta — interpolação local; só o cliente interpola.
+	var interp_opt := _make_opt_column(cols, "SÓ NO CLIENTE", Color(0.45, 0.8, 1.0), "Suavização ↔ Resposta",
+			NetConfig.INTERP_LABELS, NetConfig.interp_index())
+	interp_opt.item_selected.connect(func(i: int) -> void: NetConfig.set_interp_index(i))
+
+	# Mudou o idioma → re-traduz os ITENS dos dropdowns (o Locale só auto-traduz Button/Label).
+	if not Locale.language_changed.is_connected(_relocalize_options):
+		Locale.language_changed.connect(_relocalize_options)
+
+
+# Cria uma COLUNA (badge de escopo colorido + nome do controle + OptionButton) e a adiciona ao HBox
+# `parent`. O badge deixa explícito de que lado a opção atua (host / cliente / ambos).
+func _make_opt_column(parent: HBoxContainer, scope_key: String, scope_color: Color, label_key: String, items: Array, selected: int) -> OptionButton:
+	var col := VBoxContainer.new()
+	col.custom_minimum_size = Vector2(300, 0)
+	col.add_theme_constant_override("separation", 6)
+
+	var scope := Label.new()
+	scope.text = scope_key   # canônico (pt) — Locale auto-traduz/re-traduz (ver nota em _build_...)
+	scope.add_theme_font_size_override("font_size", 16)
+	scope.add_theme_color_override("font_color", scope_color)
+	scope.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(scope)
+
+	var lbl := Label.new()
+	lbl.text = label_key   # canônico (pt) — Locale auto-traduz/re-traduz
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(lbl)
+
+	var opt := OptionButton.new()
+	opt.custom_minimum_size = Vector2(0, 48)
+	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for it in items:
+		opt.add_item(Locale.tr_key(String(it)))
+	opt.selected = clampi(selected, 0, items.size() - 1)
+	opt.set_meta(&"_item_keys", items)   # chaves-fonte p/ re-traduzir no language_changed
+	_opt_buttons.append(opt)
+	col.add_child(opt)
+
+	parent.add_child(col)
+	return opt
+
+
+# Re-traduz os ITENS dos OptionButton de otimização quando o idioma muda (o Locale pula OptionButton:
+# o `text` deles é a seleção viva). Preserva o índice selecionado.
+func _relocalize_options(_lang: String) -> void:
+	for opt in _opt_buttons:
+		if not is_instance_valid(opt):
+			continue
+		var keys: Array = opt.get_meta(&"_item_keys", [])
+		var sel: int = opt.selected
+		opt.clear()
+		for k in keys:
+			opt.add_item(Locale.tr_key(String(k)))
+		opt.selected = clampi(sel, 0, maxi(keys.size() - 1, 0))
 
 
 func _on_back_pressed() -> void:
