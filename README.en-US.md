@@ -22,7 +22,9 @@ third-person shooter sandbox. At a high level it offers:
 - **Screen visuals & dialogs** — each 2D screen carries its own lightweight **animated shader
   background** evoking its purpose: a receding **stage grid** (Levels), a **connecting-nodes
   network** (Play Online), an **equalizer** (Settings) and a **dev blueprint** with a scan sweep
-  (Developer). All **confirmation/alert windows are built on one reusable floating-window control**
+  (Developer). The **Play Online** screen also frames its border (inset margin) with a **thick
+  braided-metal wire** that **electric energy** slowly loops in alternating directions. All
+  **confirmation/alert windows are built on one reusable floating-window control**
   (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a standard × close and a
   modal backdrop — created by the `FloatingDialog` helper; the same base other floating windows can reuse.
 - **Playable characters** — selectable player variants that move, aim, jump and shoot,
@@ -244,7 +246,8 @@ The UI language switches between **Português** and **English** via the **Locale
   the live selection), and the first time it sees a node it stores the original text in a meta
   key, so language switches translate from the original rather than already-translated text.
 - **Every screen carries the language buttons.** A bottom-right `LangBar` with **Português** /
-  **English** buttons (the same pattern as the menu) is present on menu, chooseplayer,
+  **English** buttons (the same pattern as the menu), aligned at the **Back (Voltar) button's
+  height**, is present on menu, chooseplayer,
   settings, developer, levels, playonline, controls and models. Pressing one calls
   `Locale.set_language(...)`, which persists the choice and re-localizes the live tree in
   place (the active language's button is greyed out).
@@ -261,7 +264,8 @@ by the source text, changing the scene without updating the key breaks the trans
 ## Settings
 
 The settings screen has tabs — in order **`Resolution`, `Display`**, `Antialiasing`,
-`Lighting`, `Effects`, `Audio` — with a consistent vertical rhythm (row/section spacing of 8).
+`Lighting`, `Effects`, `Audio` — with a **compact half-height tab strip** (tab font size 15) and a
+consistent vertical rhythm (row/section spacing of 8).
 Tab titles are themselves localized (they come from the child node names, so Locale translates
 them in code). Most rows are a set of toggle buttons sharing a green → yellow → orange → red
 color gradient that reads as cheap → expensive (e.g. performance vs. quality), with the green
