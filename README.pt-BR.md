@@ -23,7 +23,10 @@ em terceira pessoa. Em alto nível, oferece:
   que remete à sua função: uma **grade de fase** em perspectiva (Níveis), uma **rede de nós conectando**
   (Jogar Online), um **equalizador** (Configurações) e um **blueprint de dev** com varredura (Developer).
   A tela **Jogar Online** ainda emoldura a borda (com margem para dentro) com um **fio de metal
-  trançado grosso** por onde uma **energia elétrica** passa devagar, em sentidos alternados.
+  trançado grosso** por onde **dois pulsos de energia elétrica intensa** (núcleo branco-quente,
+  bloom pulsante e faíscas ramificadas) correm devagar, **espelhados no
+  eixo vertical** (saem juntos do topo e se reencontram embaixo), com **faíscas tipo raio/trovão**
+  crepitando no fio.
   Todas as **janelas de confirmação/aviso são montadas sobre um controle de janela flutuante
   reutilizável** (`FloatingWindow`, uma cena `controls2D`) — texto centralizado, botões de largura
   uniforme, × de fechar padrão e fundo modal —, criadas pelo helper `FloatingDialog`; a mesma base
@@ -96,7 +99,9 @@ em terceira pessoa. Em alto nível, oferece:
   (updates servidor→cliente por segundo) e **render do host Janela / Servidor puro** (sem renderizar as
   salas, libera a GPU). Todos os modelos dinâmicos (players, inimigos, balas, bombas) sincronizam a
   partir do servidor host. A tela Jogar Online persiste todas as opções (última Porta/IP, interpolação,
-  taxa de sync, render do host) e as recarrega na próxima vez; as telas Host/Client são em tela cheia,
+  taxa de sync, render do host) e as recarrega na próxima vez; o dropdown de **IP/Domínio** lista os
+  endereços recentes **e os domínios completos salvos** (FQDN guardados à parte, sem rolarem com os
+  IPs recentes) para reusar pela seleção; as telas Host/Client são em tela cheia,
   no padrão do resto da UI.
 - **Biblioteca + visualizador de modelos 3D** — assets 3D reutilizáveis organizados por tipo em
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
@@ -134,7 +139,8 @@ em terceira pessoa. Em alto nível, oferece:
   pronto para continuar; se uma escolha salva não existir mais na biblioteca, esse seletor (e os
   abaixo) ficam desabilitados. A navegação é guiada apenas pelo gating sequencial dos dropdowns
   (sem linha de status). Arraste para girar o modelo à mão em
-  até 180° nos dois eixos. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
+  até 180° nos dois eixos (a rotação **congela** enquanto o ponteiro está sobre uma janela
+  flutuante — Dano/IA ou outra — e volta a responder ao sair dela ou fechá-la). Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
   o modelo nem altera a câmera/rotação. Para Personagens e Armas, uma **pilha de tooltips de membro**
   flutua sobre o collider de cada membro: cada linha tem **cor própria** (Membro = azul-ciano, Tipo =
   laranja, Nome = verde, ID = amarelo), **a mesma cor aplicada ao toggle** que a liga, e as pilhas de
@@ -270,19 +276,29 @@ A tela de configurações tem abas — na ordem **`Resolution`, `Display`**, `An
 e um ritmo vertical consistente (espaçamento de linhas/seções igual a 8). Os títulos das abas também são localizados (vêm dos nomes dos nós-filhos, então o Locale
 os traduz em código). A maioria das linhas é um conjunto de botões toggle que compartilham um
 gradiente verde → amarelo → laranja → vermelho lido como barato → caro (ex.: performance vs.
-qualidade), com o botão verde sendo a opção segura/leve.
+qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (selecionado) fica
+**aceso** — fundo claro com borda branca e brilho — destacando-se nitidamente dos inativos.
 
 - **Resolution** — um dropdown de resolução de vídeo (tingido de ciano claro para marcá-lo como
   seletor), escala de resolução e o filtro de escala (Bilinear / FSR / MetalFX…).
 - **Display** — Modo de exibição (Window / Fullscreen / Exclusive Fullscreen), Sincronização
   Vertical e Limite de FPS (30…144 / Unlimited). Os botões de modo e de limite de FPS são coloridos
-  pelo mesmo gradiente (limite maior = mais exigente = cor mais quente).
+  pelo mesmo gradiente (limite maior = mais exigente = cor mais quente). No modo **Window** a janela
+  é uma **janela normal do SO**: ao entrar nela, é redimensionada para a resolução salva e
+  centralizada, ficando arrastável pela barra de título (não mais presa do tamanho da tela cheia).
 - **Antialiasing** — TAA, MSAA e FXAA.
 - **Lighting** — Shadow Mapping, Tipo/Qualidade de GI, SSAO e SSIL.
 - **Effects** — Bloom e Volumetric Fog.
 - **Audio** — controles independentes para **Música** de fundo (o bus `Music`) e **Efeitos de Som**
   (o bus `SFX`, para onde os buses de gameplay `Outside`/`Reactor` são roteados), cada um salvo e
-  aplicado globalmente.
+  aplicado globalmente. A **música de fundo é por cena/level**: o autoload **MusicManager** toca em
+  **loop infinito** a faixa `Audios/<nome-da-cena>.ogg` correspondente, trocando a cada tela (ver
+  `Audios/README.md`). Ao clicar em **Música → Enabled** abre o **Gerenciador de Música**: ouça
+  qualquer faixa e **atribua ou remova** a trilha de cada cena/level (atribuições persistidas, com
+  prioridade sobre a faixa padrão pelo nome); um botão **🎲 Sortear faixas** sorteia uma faixa
+  aleatória para cada cena/level e salva para a próxima abertura. À direita de cada linha (**Música** e **Efeitos de
+  Som**) há um **controle de volume tipo equalizador** (`VolumeBar`, 10 segmentos coloridos em
+  gradiente): com o áudio ligado, clique/arraste para ajustar o volume daquele bus de **1 a 100**.
 
 **Configurações ao vivo** — não há botão "Apply": cada opção salva e aplica no instante em que muda.
 O dropdown de resolução de vídeo é a exceção: pede confirmação, aplicando (e travando em modo
@@ -360,7 +376,8 @@ reutilizáveis em `library3D/`:
   `body_parts_biped/quadruped/crawler.gd`, classificação osso → membro) e `body_plans.gd` (factory
   `BodyPlans`), e assets de blast/sombra compartilhados.
 - `autoload/` — singletons globais: `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`,
-  `locale.gd`, `stability_guard.gd`, `performance_hud.gd`. O `Settings` fica em `scenes2D/settings/config.gd`.
+  `locale.gd`, `stability_guard.gd`, `performance_hud.gd`, `music_manager.gd` (música de fundo por
+  cena/level, em loop infinito). O `Settings` fica em `scenes2D/settings/config.gd`.
 - `<cena>/Resources/*.pt.json` + `*.en.json` — dicionários de idioma da UI por cena, varridos e
   mesclados pelo autoload `Locale`.
 - `themes/` — recursos de tema compartilhados.
@@ -409,7 +426,7 @@ ZIMARO/
 │  ├─ host_session/      # servidor: gerenciador de salas (inicia + Jogar/Observar/Reiniciar/Parar por sala)
 │  ├─ client_session/    # cliente: navegador de salas (Jogar numa sala em execução)
 │  ├─ controls/          # visualizador de widgets 2D (análogo da tela Models)
-│  └─ controls2D/        # widgets de HUD reutilizáveis: crosshair, minimap_panel, vitals_panel, …
+│  └─ controls2D/        # widgets de HUD reutilizáveis: crosshair, minimap_panel, vitals_panel, volume_bar, …
 ├─ scenes3D/             # fases e ferramentas 3D
 │  ├─ level_1/ level_2/ level_base/   # fases jogáveis
 │  ├─ spectator_camera/  # câmera livre sem colisão para Observar uma sala (host) — WASD + Espaço
@@ -421,8 +438,9 @@ ZIMARO/
 │  ├─ weapons/           # armas (pistola_infantil, bomb)
 │  ├─ geometry/          # malhas/materiais compartilhados (.tres)
 │  └─ textures/          # texturas compartilhadas
+├─ Audios/               # trilhas de fundo por cena/level (loop infinito; ver Audios/README.md)
 ├─ effects_shared/       # helpers entre personagens: limb_colliders.gd, body_parts.gd, …
-├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud
+├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud, music_manager
 │                        #   (Settings fica em scenes2D/settings/config.gd)
 │                        # dicionários da UI por cena: <cena>/Resources/*.pt.json + *.en.json (lidos pelo Locale)
 ├─ themes/               # recursos de Theme compartilhados (ui_theme.tres, cyberpunk.tres)

@@ -45,6 +45,9 @@ var DEFAULTS := {
 	audio = {
 		music = true,
 		sfx = true,
+		# Volume 1–100 (%) de cada bus, ajustável pelo VolumeBar na aba Audio. 100 = 0 dB.
+		music_volume = 100,
+		sfx_volume = 100,
 	},
 	models = {
 		auto_rotate = false,
@@ -97,9 +100,17 @@ func apply_audio_settings() -> void:
 	var music_bus := AudioServer.get_bus_index("Music")
 	if music_bus != -1:
 		AudioServer.set_bus_mute(music_bus, not config_file.get_value("audio", "music", true))
+		AudioServer.set_bus_volume_db(music_bus, _volume_to_db(config_file.get_value("audio", "music_volume", 100)))
 	var sfx_bus := AudioServer.get_bus_index("SFX")
 	if sfx_bus != -1:
 		AudioServer.set_bus_mute(sfx_bus, not config_file.get_value("audio", "sfx", true))
+		AudioServer.set_bus_volume_db(sfx_bus, _volume_to_db(config_file.get_value("audio", "sfx_volume", 100)))
+
+
+# Converte volume 1–100 (%) em dB para o bus. 100% = 0 dB; abaixo disso atenua em escala log
+# (linear→dB), espelhando como o ouvido percebe volume. Piso de 0.0001 evita -inf dB.
+func _volume_to_db(percent: int) -> float:
+	return linear_to_db(clampf(float(percent) / 100.0, 0.0001, 1.0))
 
 
 # Resize the window to the saved video resolution, but only while windowed — a fixed

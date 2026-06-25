@@ -40,6 +40,12 @@ var _drag_offset: Vector2 = Vector2.ZERO
 var _prev_focus: Control = null
 var _closing: bool = false
 
+# Quantas janelas flutuantes têm o ponteiro DENTRO agora (somado entre todas as instâncias). Uma
+# cena 3D atrás de uma janela consulta pointer_over_any_window() para CONGELAR a câmera enquanto o
+# mouse está sobre a janela (volta a girar ao sair/fechar). Ver scenes3D/models/models.gd.
+static var _hover_count: int = 0
+var _pointer_inside: bool = false
+
 @onready var _backdrop: ColorRect = %Backdrop
 @onready var _window: PanelContainer = %Window
 @onready var _titlebar: PanelContainer = %TitleBar
@@ -240,6 +246,27 @@ func _process(_delta: float) -> void:
 		_dragging = false
 		if remember_position_key != "":
 			_save_position()
+	# Atualiza o contador global de "ponteiro sobre janela flutuante" (testamos o retângulo da
+	# janela direto, então é robusto a qualquer mouse_filter dos filhos).
+	_set_pointer_inside(visible and is_inside_tree() \
+			and _window.get_global_rect().has_point(_window.get_global_mouse_position()))
+
+
+func _set_pointer_inside(inside: bool) -> void:
+	if inside == _pointer_inside:
+		return
+	_pointer_inside = inside
+	_hover_count = maxi(0, _hover_count + (1 if inside else -1))
+
+
+func _exit_tree() -> void:
+	_set_pointer_inside(false)
+
+
+# True se o ponteiro está sobre QUALQUER janela flutuante aberta. Cenas 3D consultam isto para
+# congelar a câmera enquanto o mouse está sobre uma janela (ver models.gd).
+static func pointer_over_any_window() -> bool:
+	return _hover_count > 0
 
 
 # ── Foco / teclado ───────────────────────────────────────────────────────────

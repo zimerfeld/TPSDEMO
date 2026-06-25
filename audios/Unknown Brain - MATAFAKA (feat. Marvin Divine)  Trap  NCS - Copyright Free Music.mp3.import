@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bbcev0tmocpdr"
+path="res://.godot/imported/Unknown Brain - MATAFAKA (feat. Marvin Divine)  Trap  NCS - Copyright Free Music.mp3-e1717b28d653beed0f4321109c678128.mp3str"
+
+[deps]
+
+source_file="res://audios/Unknown Brain - MATAFAKA (feat. Marvin Divine)  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Unknown Brain - MATAFAKA (feat. Marvin Divine)  Trap  NCS - Copyright Free Music.mp3-e1717b28d653beed0f4321109c678128.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

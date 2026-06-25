@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bi1w5d2w57vl8"
+path="res://.godot/imported/Unknown Brain x Rival - Control (feat. Jex)  Trap  NCS - Copyright Free Music.mp3-e4f8970409d7730372b6fd29615a24ba.mp3str"
+
+[deps]
+
+source_file="res://audios/Unknown Brain x Rival - Control (feat. Jex)  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Unknown Brain x Rival - Control (feat. Jex)  Trap  NCS - Copyright Free Music.mp3-e4f8970409d7730372b6fd29615a24ba.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bmeguitb54afm"
+path="res://.godot/imported/3rd Prototype - Dancefloor  Future House  NCS - Copyright Free Music.mp3-7e01cc3922928a01a1511ba2828df20a.mp3str"
+
+[deps]
+
+source_file="res://audios/3rd Prototype - Dancefloor  Future House  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/3rd Prototype - Dancefloor  Future House  NCS - Copyright Free Music.mp3-7e01cc3922928a01a1511ba2828df20a.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://lfkdekhooog"
+path="res://.godot/imported/NIVIRO - The Ghost  House  NCS - Copyright Free Music.mp3-7a96d01d39f98daa48edf25d21179497.mp3str"
+
+[deps]
+
+source_file="res://audios/NIVIRO - The Ghost  House  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/NIVIRO - The Ghost  House  NCS - Copyright Free Music.mp3-7a96d01d39f98daa48edf25d21179497.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

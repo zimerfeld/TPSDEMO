@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://crw5dto4m033e"
+path="res://.godot/imported/Spektrum & Sara Skinner - Keep You  Trap  NCS - Copyright Free Music.mp3-856a9c9439d8631a3f07f34ee474cc55.mp3str"
+
+[deps]
+
+source_file="res://audios/Spektrum & Sara Skinner - Keep You  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Spektrum & Sara Skinner - Keep You  Trap  NCS - Copyright Free Music.mp3-856a9c9439d8631a3f07f34ee474cc55.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

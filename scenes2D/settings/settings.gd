@@ -117,6 +117,13 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 # if the user cancels the confirmation popup.
 var _current_resolution_index: int = 0
 
+# Janela do Gerenciador de Música (aberta ao habilitar "Música"); reusada se já estiver aberta.
+var _music_manager_window: Window = null
+
+# VolumeBars (equalizador) à direita das linhas Música / Efeitos de Som na aba Audio.
+var _music_volume: VolumeBar = null
+var _sfx_volume: VolumeBar = null
+
 
 func _ready() -> void:
 	_rows = [
@@ -146,6 +153,11 @@ func _ready() -> void:
 	for row in _rows:
 		_make_button_group(row)
 
+	# VolumeBar (equalizador) à direita de cada linha de áudio. Criadas ANTES de _load_current_settings
+	# (que ajusta valor/estado) e conectadas DEPOIS (para o load não disparar apply à toa).
+	_music_volume = _add_volume_bar(%MusicRow)
+	_sfx_volume = _add_volume_bar(%SFXRow)
+
 	_populate_video_resolutions()
 
 	_load_current_settings()
@@ -158,6 +170,15 @@ func _ready() -> void:
 		var group := _group_of(row)
 		if group != null:
 			group.pressed.connect(_on_setting_changed)
+
+	# Ao clicar em "Música: Enabled", abre o Gerenciador de Música (ouvir/atribuir trilhas por
+	# cena/level). Usamos button_down (e não o `pressed` do grupo) para que ele abra MESMO quando a
+	# música já está habilitada — senão, clicar no radio já ativo não dispararia nada. Só ação do
+	# usuário dispara button_down (não o button_pressed programático do load acima).
+	music_enabled.button_down.connect(_open_music_manager)
+
+	_music_volume.value_changed.connect(_on_music_volume_changed)
+	_sfx_volume.value_changed.connect(_on_sfx_volume_changed)
 
 	# Tab titles come from the child node names (not Button/Label text), so the automatic
 	# localizer can't reach them — translate them here and on every language change.
@@ -339,9 +360,13 @@ func _load_current_settings() -> void:
 
 	music_disabled.button_pressed = not Settings.config_file.get_value("audio", "music")
 	music_enabled.button_pressed = Settings.config_file.get_value("audio", "music")
+	_music_volume.value = int(Settings.config_file.get_value("audio", "music_volume", 100))
+	_music_volume.enabled = music_enabled.button_pressed
 
 	sfx_disabled.button_pressed = not Settings.config_file.get_value("audio", "sfx")
 	sfx_enabled.button_pressed = Settings.config_file.get_value("audio", "sfx")
+	_sfx_volume.value = int(Settings.config_file.get_value("audio", "sfx_volume", 100))
+	_sfx_volume.enabled = sfx_enabled.button_pressed
 
 
 # Persist + apply EVERY option to the live window at once. Called immediately whenever
@@ -453,11 +478,25 @@ func _apply_settings() -> void:
 
 	Settings.config_file.set_value("audio", "music", music_enabled.button_pressed)
 	Settings.config_file.set_value("audio", "sfx", sfx_enabled.button_pressed)
+	# Liga/desliga os VolumeBars conforme o toggle (volume só ajustável com o áudio ligado).
+	if _music_volume != null:
+		_music_volume.enabled = music_enabled.button_pressed
+	if _sfx_volume != null:
+		_sfx_volume.enabled = sfx_enabled.button_pressed
 
 	Settings.save_settings()
 	Settings.apply_audio_settings()
 
-	get_window().mode = Settings.config_file.get_value("video", "display_mode")
+	# Ao ENTRAR no modo Janela vindo de tela cheia (exclusiva)/maximizada, a janela ficaria do
+	# tamanho da tela inteira — com a barra de título fora de alcance, parecendo "presa". Damos a
+	# ela um tamanho/posição sãos (resolução salva, centralizada) para virar uma janela normal,
+	# arrastável pela barra de título. Só ao transicionar (prev != Janela) para não atropelar um
+	# redimensionamento manual do usuário quando ele só muda outras opções já em modo Janela.
+	var prev_mode := get_window().mode
+	var new_mode: int = Settings.config_file.get_value("video", "display_mode")
+	get_window().mode = new_mode
+	if new_mode == Window.MODE_WINDOWED and prev_mode != Window.MODE_WINDOWED:
+		Settings.apply_window_resolution(get_window())
 	DisplayServer.window_set_vsync_mode(Settings.config_file.get_value("video", "vsync"))
 	Engine.max_fps = Settings.config_file.get_value("video", "max_fps")
 	get_window().scaling_3d_scale = Settings.config_file.get_value("video", "resolution_scale")
@@ -538,6 +577,38 @@ func _on_reset_pressed() -> void:
 		_apply_settings()
 		Settings.apply_window_resolution(get_window())
 	)
+
+
+# Abre (ou traz à frente) o Gerenciador de Música: ouvir faixas e atribuir/remover a trilha de cada
+# cena/level. Disparado ao habilitar "Música" na aba Audio.
+func _open_music_manager() -> void:
+	if _music_manager_window != null and is_instance_valid(_music_manager_window):
+		_music_manager_window.grab_focus()
+		return
+	_music_manager_window = MusicManagerWindow.new()
+	add_child(_music_manager_window)
+	_music_manager_window.popup_centered()
+
+
+# Cria um VolumeBar (equalizador) e o anexa à direita da linha de áudio `row` (HFlowContainer).
+func _add_volume_bar(row: Node) -> VolumeBar:
+	var vb := VolumeBar.new()
+	vb.custom_minimum_size = Vector2(260, 50)
+	vb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(vb)
+	return vb
+
+
+func _on_music_volume_changed(volume: int) -> void:
+	Settings.config_file.set_value("audio", "music_volume", volume)
+	Settings.save_settings()
+	Settings.apply_audio_settings()
+
+
+func _on_sfx_volume_changed(volume: int) -> void:
+	Settings.config_file.set_value("audio", "sfx_volume", volume)
+	Settings.save_settings()
+	Settings.apply_audio_settings()
 
 
 func _on_back_pressed() -> void:
