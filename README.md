@@ -69,8 +69,9 @@ high-FPS client view. A pre-session **Optimization** selector picks interpolatio
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
 Each 2D screen (Levels, Play Online, Settings, Developer) carries its own lightweight **animated shader
-background** that evokes its purpose, and every **confirmation window** shares one standard, larger style
-(game-theme buttons, bigger window and fonts).
+background** that evokes its purpose, and every **confirmation window** is built on one reusable
+floating-window control (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a
+standard × close and a modal backdrop — the same base other floating windows can reuse.
 
 ![PT](screenshots/screenshotBR.png) Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
@@ -104,8 +105,9 @@ pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync
 (Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
 telas Host/Client são em tela cheia, no padrão do resto da UI.
 Cada tela 2D (Níveis, Jogar Online, Configurações, Developer) tem seu próprio **fundo animado por shader**
-(leve) que remete à sua função, e toda **janela de confirmação** compartilha um estilo padrão maior
-(botões do tema do jogo, janela e fontes maiores).
+(leve) que remete à sua função, e toda **janela de confirmação** é montada sobre um controle de janela
+flutuante reutilizável (`FloatingWindow`, uma cena `controls2D`) — texto centralizado, botões de largura
+uniforme, um × de fechar padrão e fundo modal — a mesma base que outras janelas flutuantes podem reusar.
 
 > ![EN](screenshots/screenshotGB.png) **On the per-limb hitboxes:** you didn't reinvent Godot's physics; you automated the authoring
 > of hitboxes that would be unfeasible to maintain at scale by hand.

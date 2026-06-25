@@ -84,7 +84,7 @@ Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas*
   do `playonline`), devolvendo o foco ao `fallback`. **Só o 2º ESC** (sem campo em edição) navega de
   volta. O dropdown de `OptionButton` já fecha no ESC nativamente (popup próprio).
 - **Confirmação de saída no menu** — `menu._on_quit_pressed` (botão Sair **e** ESC) abre um
-  `ConfirmationDialog` central **"Deseja sair do Zimaro ?"** (Sim/Não); só fecha o jogo no "Sim". As
+  janela `FloatingDialog.confirm` central **"Deseja sair do Zimaro ?"** (Sim/Não); só fecha o jogo no "Sim". As
   strings ficam em `menu.*.json` (`"Deseja sair do Zimaro ?"`, `"Sair do jogo"`); Sim/Não reusam a
   tabela global do `Locale` (de `settings.*.json`).
 

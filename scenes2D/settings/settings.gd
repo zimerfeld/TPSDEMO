@@ -484,12 +484,7 @@ func _on_video_resolution_selected(index: int) -> void:
 		return
 	# Ask for confirmation in a centered floating window before changing the
 	# resolution; the dropdown reverts to the previous choice if the user cancels.
-	var dlg := ConfirmationDialog.new()
-	dlg.title = Locale.tr_key("Resolução de vídeo")
-	dlg.dialog_text = Locale.tr_key("Confirma resolução de video escolhida ?")
-	dlg.get_ok_button().text = Locale.tr_key("Sim")
-	dlg.get_cancel_button().text = Locale.tr_key("Não")
-	UIDialogs.style(dlg)
+	var dlg := FloatingDialog.confirm(self, "Resolução de vídeo", "Confirma resolução de video escolhida ?", "Sim", "Não")
 	dlg.confirmed.connect(func() -> void:
 		_apply_video_resolution(res_index)
 		_current_resolution_index = index
@@ -503,15 +498,11 @@ func _on_video_resolution_selected(index: int) -> void:
 		Settings.config_file.set_value("video", "display_mode", Window.MODE_WINDOWED)
 		display_mode_windowed.button_pressed = true
 		Settings.save_settings()
-		dlg.queue_free()
 	)
-	# `canceled` covers the "Não" button, the close (X) button and Escape.
+	# `canceled` cobre o botão "Não", o × e o ESC (a janela se autolibera).
 	dlg.canceled.connect(func() -> void:
 		video_resolution_dropdown.selected = _current_resolution_index
-		dlg.queue_free()
 	)
-	add_child(dlg)
-	dlg.popup_centered()
 
 
 func _apply_video_resolution(index: int) -> void:
@@ -539,26 +530,14 @@ func _apply_video_resolution(index: int) -> void:
 # On "Sim", restore the common-hardware defaults, refresh the controls to match and
 # apply everything to the live window/audio immediately; on "Não", do nothing.
 func _on_reset_pressed() -> void:
-	var dlg := ConfirmationDialog.new()
-	dlg.title = Locale.tr_key("Restaurar padrões")
-	dlg.dialog_text = Locale.tr_key("Restaurar todas as configurações para o padrão?")
-	dlg.get_ok_button().text = Locale.tr_key("Sim")
-	dlg.get_cancel_button().text = Locale.tr_key("Não")
-	UIDialogs.style(dlg)
+	var dlg := FloatingDialog.confirm(self, "Restaurar padrões", "Restaurar todas as configurações para o padrão?", "Sim", "Não")
 	dlg.confirmed.connect(func() -> void:
 		Settings.reset_to_defaults()
 		_load_current_settings()
 		_select_saved_resolution()
 		_apply_settings()
 		Settings.apply_window_resolution(get_window())
-		dlg.queue_free()
 	)
-	# `canceled` covers the "Não" button, the close (X) button and Escape.
-	dlg.canceled.connect(func() -> void:
-		dlg.queue_free()
-	)
-	add_child(dlg)
-	dlg.popup_centered()
 
 
 func _on_back_pressed() -> void:

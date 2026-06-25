@@ -47,7 +47,7 @@ mouse). Durante o jogo a **sessão continua sendo a cena raiz** (só esconde o p
   - **Jogar:** `chooseplayer` → `host_spawn_in_room` spawna um player do **host (peer 1)** na sala e
     **desliga a câmera livre** dela (senão as duas leriam o `Input` global); a câmera do player vira
     `current` no SubViewport (renderizado em tela cheia, só o mouse é empurrado). **ESC** abre um
-    `ConfirmationDialog` ("Desconectar e voltar para a gerência ?") → `host_leave_room` e volta à grade.
+    janela `FloatingDialog.confirm` ("Desconectar e voltar para a gerência ?") → `host_leave_room` e volta à grade.
   - **Parar:** encerra **só aquela sala**; os clientes que jogavam nela recebem `notify_room_closed`,
     veem **"O nível foi parado pelo host"** e voltam ao navegador da `client_session`. Outras salas seguem.
   - **Reiniciar:** recria o nível do zero (`restart_room` = `_close_room(RESTARTED)` + `start_room`); os
@@ -149,12 +149,29 @@ abandonado.
 
 ## Janelas de confirmação padronizadas + fundos animados das telas (2026-06-24)
 
-**Diálogos:** novo helper **`UIDialogs`** (`themes/ui_dialogs.gd`, `static func style(dlg)`) padroniza
-TODAS as janelas de confirmação/aviso (Sair, Resolução, Restaurar, Desconectar host/cliente, avisos das
-sessões e erros do `CrashHandler`): aplica o **tema do jogo** no próprio diálogo (**botões padrão** mesmo
-quando ele é filho de um Node sem tema — menu/settings/crash adicionavam ao root sem tema → antes saíam
-botões cinza), **`min_size` 720×340** (janela maior) e **fontes maiores** (texto/título/botões). Cada
-site chama `UIDialogs.style(dlg)` após definir os textos, antes do `popup_centered()`.
+**Diálogos (reescrito 2026-06-25):** TODAS as janelas de confirmação/aviso (Sair, Resolução, Restaurar,
+Desconectar host/cliente, avisos das sessões, salvar/reassociar/remover na tela Models e erros do
+`CrashHandler`) são montadas sobre o **controle2D reutilizável `FloatingWindow`**
+(`scenes2D/controls2D/floating_window/`, `class_name FloatingWindow`) pelo helper **`FloatingDialog`**
+(`themes/floating_dialog.gd`, `confirm()/alert()`). É um `Control` (não o `Window`/`ConfirmationDialog`
+nativo): **título centralizado** (espaçador esquerdo espelha o ×), **botões de largura uniforme**, **× de
+fechar padrão** (mesmo visual preto opaco dos painéis Dano/IA), **fundo modal** que escurece e bloqueia o
+resto da UI, **ESC = cancela**, **Enter = confirma** (botão OK em foco), **foco devolvido** ao controle
+anterior ao fechar e **arraste pela barra de título**. Vai num `CanvasLayer` (layer 128) no topo — cobre
+2D e 3D — e se autolibera ao fechar. Textos passados CRUS (chaves canônicas): a janela traduz via Locale
+(SKIP_GROUP + meta `loc_key`) e **atualiza ao trocar idioma**. ESC é consumido pela janela (descendente
+adicionada por último) antes do `_input` da tela, então o fundo não navega junto. O antigo `UIDialogs`
+(`themes/ui_dialogs.gd`, que só estilizava os diálogos nativos) foi **REMOVIDO**. A mesma base serve para
+qualquer janela flutuante futura (export `remember_position_key` salva/restaura a posição em Settings).
+
+**Cores dos botões (padrão do tema, 2026-06-25):** os styleboxes compartilhados (`scenes2D/menu/button_*.tres`,
+usados via `ui_theme.tres` em todas as telas) foram padronizados — botão **sem foco = fundo CINZA**
+(`button_normal`), **com foco = fundo PRETO** (`button_focus`, overlay opaco), texto **branco opaco** em todos
+os estados (hover = cinza claro, pressionado = quase preto). **Hover e foco** recuperam o efeito **neon**:
+**borda branca** + **sombra esfumaçada branca** (`shadow_size`), dando o brilho de luz neon ao redor do
+controle. Os **botões × de fechar janela** seguem regra própria, `FloatingWindow.style_close_button(btn)`
+(aplicada ao × da FloatingWindow E aos painéis Dano/IA): **sem foco = CINZA, com foco/hover = VERMELHO MEIO
+ESCURO**, texto branco.
 
 **Fundos animados:** cada tela 2D ganhou um shader `canvas_item` próprio (em `themes/backgrounds/`,
 aplicado como `ShaderMaterial` no nó `Background/Bg` da cena, sobre a base navy) que **remete à função
