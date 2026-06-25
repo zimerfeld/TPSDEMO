@@ -28,7 +28,7 @@ shooter sandbox: a menu-driven flow (character selection, level picker, settings
 online play), playable characters that move/aim/jump/shoot, ground and flying enemies (the Red
 Robot has a reactive AI that reloads faster, opens fire in range and flees when you close in),
 per-limb localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD
-widgets, debug tooling, EN/PT localization and live (no-Apply) settings.
+widgets, per-scene looping background music, debug tooling, EN/PT localization and live (no-Apply) settings.
 
 ![PT](screenshots/screenshotBR.png) Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro em
 terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, configurações, tela de
@@ -36,7 +36,7 @@ desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atir
 terrestres e voadores (o Red Robot tem uma IA reativa que recarrega mais rápido, abre fogo no
 alcance e recua quando você se aproxima), dano localizado por membro, várias fases, biblioteca de
 modelos 3D navegável,
-widgets de HUD cyberpunk reutilizáveis, ferramentas de debug, localização EN/PT e configurações ao
+widgets de HUD cyberpunk reutilizáveis, música de fundo por cena em loop, ferramentas de debug, localização EN/PT e configurações ao
 vivo (sem botão Aplicar).
 
 ## Features · Funcionalidades
@@ -69,8 +69,10 @@ high-FPS client view. A pre-session **Optimization** selector picks interpolatio
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
 Each 2D screen (Levels, Play Online, Settings, Developer) carries its own lightweight **animated shader
-background** that evokes its purpose, and every **confirmation window** shares one standard, larger style
-(game-theme buttons, bigger window and fonts).
+background** that evokes its purpose (Play Online also frames its border with a **braided-metal wire**
+looped by slow, alternating **electric energy**), and every **confirmation window** is built on one reusable
+floating-window control (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a
+standard × close and a modal backdrop — the same base other floating windows can reuse.
 
 ![PT](screenshots/screenshotBR.png) Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
@@ -104,8 +106,10 @@ pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync
 (Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
 telas Host/Client são em tela cheia, no padrão do resto da UI.
 Cada tela 2D (Níveis, Jogar Online, Configurações, Developer) tem seu próprio **fundo animado por shader**
-(leve) que remete à sua função, e toda **janela de confirmação** compartilha um estilo padrão maior
-(botões do tema do jogo, janela e fontes maiores).
+(leve) que remete à sua função (a Jogar Online ainda emoldura a borda com um **fio de metal trançado**
+percorrido por uma **energia elétrica** lenta e alternada), e toda **janela de confirmação** é montada sobre um controle de janela
+flutuante reutilizável (`FloatingWindow`, uma cena `controls2D`) — texto centralizado, botões de largura
+uniforme, um × de fechar padrão e fundo modal — a mesma base que outras janelas flutuantes podem reusar.
 
 > ![EN](screenshots/screenshotGB.png) **On the per-limb hitboxes:** you didn't reinvent Godot's physics; you automated the authoring
 > of hitboxes that would be unfeasible to maintain at scale by hand.

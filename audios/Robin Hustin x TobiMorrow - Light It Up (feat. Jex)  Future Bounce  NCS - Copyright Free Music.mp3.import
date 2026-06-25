@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bb5r7i6he5gpv"
+path="res://.godot/imported/Robin Hustin x TobiMorrow - Light It Up (feat. Jex)  Future Bounce  NCS - Copyright Free Music.mp3-c3e2594a2ee33f393a2ad09676395387.mp3str"
+
+[deps]
+
+source_file="res://audios/Robin Hustin x TobiMorrow - Light It Up (feat. Jex)  Future Bounce  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Robin Hustin x TobiMorrow - Light It Up (feat. Jex)  Future Bounce  NCS - Copyright Free Music.mp3-c3e2594a2ee33f393a2ad09676395387.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://did57misxrimp"
+path="res://.godot/imported/Warriyo - Mortals (feat. Laura Brehm)  Future Trap  NCS - Copyright Free Music.mp3-74d91c60ed11d1c49aadeae6a73dbc16.mp3str"
+
+[deps]
+
+source_file="res://audios/Warriyo - Mortals (feat. Laura Brehm)  Future Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Warriyo - Mortals (feat. Laura Brehm)  Future Trap  NCS - Copyright Free Music.mp3-74d91c60ed11d1c49aadeae6a73dbc16.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://d4cs25q40c7xk"
+path="res://.godot/imported/Prismo - Weakness  Future Bass  NCS - Copyright Free Music.mp3-bb1cd29afa73611852b3621f56d2a27e.mp3str"
+
+[deps]
+
+source_file="res://audios/Prismo - Weakness  Future Bass  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Prismo - Weakness  Future Bass  NCS - Copyright Free Music.mp3-bb1cd29afa73611852b3621f56d2a27e.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

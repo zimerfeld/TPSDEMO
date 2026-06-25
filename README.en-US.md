@@ -22,8 +22,14 @@ third-person shooter sandbox. At a high level it offers:
 - **Screen visuals & dialogs** — each 2D screen carries its own lightweight **animated shader
   background** evoking its purpose: a receding **stage grid** (Levels), a **connecting-nodes
   network** (Play Online), an **equalizer** (Settings) and a **dev blueprint** with a scan sweep
-  (Developer). All **confirmation/alert windows share one standard style** — the game theme's
-  buttons, a larger window and larger fonts — applied via a single `UIDialogs` helper.
+  (Developer). The **Play Online** screen also frames its border (inset margin) with a **thick
+  braided-metal wire** that **two pulses of intense electric energy** (white-hot core, pulsing bloom
+  and branching sparks) slowly run, **mirrored across the
+  vertical axis** (they split at the top and meet again at the bottom), with **lightning/thunder
+  sparks** crackling along it. All
+  **confirmation/alert windows are built on one reusable floating-window control**
+  (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a standard × close and a
+  modal backdrop — created by the `FloatingDialog` helper; the same base other floating windows can reuse.
 - **Playable characters** — selectable player variants that move, aim, jump and shoot,
   with first-person camera control and a local health HUD.
 - **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
@@ -89,7 +95,9 @@ third-person shooter sandbox. At a high level it offers:
   responsiveness), **sync rate 30 / 60 Hz** (server→client updates per second), and **host render
   Window / Pure-server** (skip room rendering to free the GPU). All dynamic models (players, enemies,
   bullets, bombs) replicate from the host server. The Play Online screen persists every option (last
-  Port/IP, interpolation, sync rate, host render) and restores them next time; the Host/Client screens
+  Port/IP, interpolation, sync rate, host render) and restores them next time; the **IP/Domain**
+  dropdown lists recent addresses **and saved full domains** (FQDNs kept apart, not rolled out by
+  recent IPs) to reselect later; the Host/Client screens
   are full-screen, matching the rest of the UI.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
   browsable in-game through the Models screen (category → model → part) with toggles, in
@@ -127,7 +135,8 @@ third-person shooter sandbox. At a high level it offers:
   choice sits on "Selecione…" ready to continue, and if a saved choice no longer exists in the
   library that selector (and the ones below it) are disabled. Navigation is guided purely by the
   sequential dropdown gating (no status line). Drag to hand-rotate the
-  model up to 180° on both axes. Toggling any option acts on the live preview in place — it
+  model up to 180° on both axes (rotation **freezes** while the pointer is over a floating window —
+  Damage/AI or any other — and resumes when it leaves or the window closes). Toggling any option acts on the live preview in place — it
   never reloads the model nor changes the camera/rotation. For Personagens and Armas, a
   **member tooltip stack** floats over each member's collider: each line has its **own color**
   (Membro = cyan-blue, Tipo = orange, Nome = green, ID = yellow), **the same color applied to the
@@ -243,7 +252,8 @@ The UI language switches between **Português** and **English** via the **Locale
   the live selection), and the first time it sees a node it stores the original text in a meta
   key, so language switches translate from the original rather than already-translated text.
 - **Every screen carries the language buttons.** A bottom-right `LangBar` with **Português** /
-  **English** buttons (the same pattern as the menu) is present on menu, chooseplayer,
+  **English** buttons (the same pattern as the menu), aligned at the **Back (Voltar) button's
+  height**, is present on menu, chooseplayer,
   settings, developer, levels, playonline, controls and models. Pressing one calls
   `Locale.set_language(...)`, which persists the choice and re-localizes the live tree in
   place (the active language's button is greyed out).
@@ -260,23 +270,34 @@ by the source text, changing the scene without updating the key breaks the trans
 ## Settings
 
 The settings screen has tabs — in order **`Resolution`, `Display`**, `Antialiasing`,
-`Lighting`, `Effects`, `Audio` — with a consistent vertical rhythm (row/section spacing of 8).
+`Lighting`, `Effects`, `Audio` — with a **compact half-height tab strip** (tab font size 15) and a
+consistent vertical rhythm (row/section spacing of 8).
 Tab titles are themselves localized (they come from the child node names, so Locale translates
 them in code). Most rows are a set of toggle buttons sharing a green → yellow → orange → red
 color gradient that reads as cheap → expensive (e.g. performance vs. quality), with the green
-button being the safe/low option.
+button being the safe/low option. The **active** (selected) button appears **lit** — a bright fill
+with a white glowing border — clearly standing out from the inactive ones.
 
 - **Resolution** — a video-resolution dropdown (tinted light cyan to mark it as a selector),
   resolution scale, and the scale filter (Bilinear / FSR / MetalFX…).
 - **Display** — Display Mode (Window / Fullscreen / Exclusive Fullscreen), Vertical
   Synchronization, and FPS Limit (30…144 / Unlimited). The mode and FPS-limit buttons are
-  colored along the same gradient (higher cap = more demanding = warmer color).
+  colored along the same gradient (higher cap = more demanding = warmer color). In **Window** mode
+  the game runs as a **normal OS window**: on entering it, the window is resized to the saved
+  resolution and centered, so it can be dragged by its title bar (no longer stuck at full-screen size).
 - **Antialiasing** — TAA, MSAA and FXAA.
 - **Lighting** — Shadow Mapping, GI Type/Quality, SSAO and SSIL.
 - **Effects** — Bloom and Volumetric Fog.
 - **Audio** — independent controls for background **Música** (the `Music` bus) and **Efeitos
   de Som** (the `SFX` bus, into which the `Outside`/`Reactor` gameplay buses route), each
-  saved and applied globally.
+  saved and applied globally. The **background music is per scene/level**: the **MusicManager**
+  autoload plays the matching `Audios/<scene-name>.ogg` track in an **infinite loop**, switching on
+  every screen (see `Audios/README.md`). Clicking **Música → Enabled** opens the **Music Manager**:
+  listen to any track and **assign or remove** the track of each scene/level (assignments are
+  persisted and take priority over the default name-based track); a **🎲 Shuffle** button assigns a
+  random track to every scene/level and saves it for next time. To the right of each row
+  (**Música** and **Efeitos de Som**) sits an **equalizer-style volume control** (`VolumeBar`, 10
+  gradient-colored segments): with audio on, click/drag to set that bus's volume from **1 to 100**.
 
 **Live settings** — there is no "Apply" button: every option saves and applies the instant it
 changes. The video-resolution dropdown is the exception: it asks for confirmation, applying
@@ -354,7 +375,8 @@ asset library under `library3D/`:
   `body_parts_biped/quadruped/crawler.gd` subclasses, bone → member classification) and
   `body_plans.gd` (`BodyPlans` factory), and shared blast/shadow assets.
 - `autoload/` — global singletons: `crash_handler.gd`, `player_selection.gd`, `debug_overlay.gd`,
-  `locale.gd`, `stability_guard.gd`, `performance_hud.gd`. `Settings` lives in `scenes2D/settings/config.gd`.
+  `locale.gd`, `stability_guard.gd`, `performance_hud.gd`, `music_manager.gd` (per-scene/level
+  background music, looping). `Settings` lives in `scenes2D/settings/config.gd`.
 - `<scene>/Resources/*.pt.json` + `*.en.json` — per-scene UI language dictionaries, scanned and
   merged by the `Locale` autoload.
 - `themes/` — shared theme resources.
@@ -403,7 +425,7 @@ ZIMARO/
 │  ├─ host_session/      # server: room manager (start + Play/Observe/Restart/Stop per room)
 │  ├─ client_session/    # client: room browser (Play into a running room)
 │  ├─ controls/          # 2D widget viewer (analog of the Models screen)
-│  └─ controls2D/        # reusable HUD widgets: crosshair, minimap_panel, vitals_panel, …
+│  └─ controls2D/        # reusable HUD widgets: crosshair, minimap_panel, vitals_panel, volume_bar, …
 ├─ scenes3D/             # 3D levels and tools
 │  ├─ level_1/ level_2/ level_base/   # playable levels
 │  ├─ spectator_camera/  # free-fly no-collision camera to Observe a room (host) — WASD + Space
@@ -415,8 +437,9 @@ ZIMARO/
 │  ├─ weapons/           # weapons (pistola_infantil, bomb)
 │  ├─ geometry/          # shared meshes/materials (.tres)
 │  └─ textures/          # shared textures
+├─ Audios/               # per-scene/level background tracks (infinite loop; see Audios/README.md)
 ├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd, …
-├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud
+├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud, music_manager
 │                        #   (Settings lives in scenes2D/settings/config.gd)
 │                        # UI dictionaries live per scene: <scene>/Resources/*.pt.json + *.en.json (read by Locale)
 ├─ themes/               # shared Theme resources (ui_theme.tres, cyberpunk.tres)

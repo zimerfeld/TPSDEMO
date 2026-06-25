@@ -143,6 +143,15 @@ virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 > - **Exclusividade:** `_aux_bone_candidates` já só oferece ossos não-membros (`group_of==""`) para
 >   promover; `_on_sub_member_added` ainda bloqueia + avisa se um osso de Membro chegar lá.
 
+> [!note] Prefixos dos rótulos 3D LOCALIZADOS (2026-06-25)
+> Os prefixos dos `Label3D` — **"Membro:" / "Sub-membro:" / "Esqueleto:" / "Tipo:" / "Nome:"** (e "ID:") —
+> passam por `Locale.tr_key(...)` na construção (`_add_member_labels`, `_label_aux_bones`,
+> `_label_sub_member`, `_add_tni_lines`), então aparecem traduzidos nos DOIS idiomas (antes "Membro/
+> Esqueleto/Submembro" ficavam em PT no EN, e "TYPE/Name" em EN no PT; "Submembro:" virou "Sub-membro:").
+> Como `Label3D` NÃO passa pelo auto-tradutor do Locale, `_on_language_changed` agora chama
+> `_refresh_member_overlays()` + `_refresh_aux_labels()` para reconstruir as pilhas no idioma novo.
+> Chaves novas em `models.{pt,en}.json`: `Tipo:`/`Nome:` (prefixos) + os toggles `Tipo`/`Nome`/`Linhas do Esqueleto`.
+
 > [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
 > - **Malha** (`MalhaCheck`, **1º toggle da lista** desde 2026-06-23, chave `show_malha`, default LIGADO):
 >   mostra/esconde a malha (`MeshInstance3D`) do modelo do preview (pula gizmos com nome `_…`). `_apply_malha_visibility`.
@@ -156,12 +165,17 @@ virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 > - **Esqueleto** (o realce laranja, `AuxHighlightToggle`/`_show_aux_highlight`) → **Colisores de Esqueleto**.
 > - **SubMembro** (`OssoCheck`/`osso_check`/`_show_osso`, topo do `LabelLinesRow`) → **Esqueleto**; o
 >   Label3D agora exibe **"Esqueleto: \<nome\>"** (antes só o nome do osso).
-> - **NOVO Colisores de Submembros** (`SubColliderToggle`/`_show_sub_colliders`, chave `show_sub_colliders`):
+> - **NOVO Colisores de Submembros** (`SubColliderToggle`/`_show_sub_colliders`, chave `show_sub_colliders`;
+>   rótulo exibido **"Colisor de Sub-membro"/"Sub-member collider"** desde 2026-06-25):
 >   mostra/oculta SÓ o gizmo do limbcollider do sub-membro selecionado no dropdown (ramo de FOCO de
 >   `_refresh_member_overlays`; gizmo de PART_* segue ESTE toggle, gizmo de membro segue "Colisores de
->   Membro"). Os sub-membros ficam OCULTOS na visão geral (`_apply_colliders_visibility` esconde PART_*).
+>   Membro"). Os sub-membros ficam OCULTOS na visão geral (`_apply_colliders_visibility` esconde PART_*),
+>   **com uma exceção (2026-06-25):** com **"Todos os membros" + "Todos os Sub-membros"** nos dropdowns e
+>   este toggle LIGADO, `_apply_colliders_visibility` mostra **TODOS** os gizmos de sub-membro de uma vez,
+>   independente de "Colisores de Membro" (helper `_should_show_all_sub_colliders`).
 >   O editor de afastamento/escala também aparece para sub-membros sob este toggle.
-> - **NOVO Submembros** (`SubMemberLabelToggle`/`_show_sub_member_label`, chave `show_sub_member_label`):
+> - **NOVO Submembros** (`SubMemberLabelToggle`/`_show_sub_member_label`, chave `show_sub_member_label`;
+>   rótulo exibido **"Sub-membro"/"Sub-member"** desde 2026-06-25):
 >   Label3D **"Submembro: \<nome\>"** preso ao corpo do sub-membro selecionado
 >   (`_refresh_sub_member_labels`/`_label_sub_member`). Só no modo membro-específico. **Cor ROXA
 >   (2026-06-23):** `_SUB_LBL_COLOR = Color(0.6,0.25,0.9)`; o toggle "Submembros" tem o **texto roxo**
@@ -175,7 +189,10 @@ toggle é o **interruptor mestre** da sua categoria:
 
 > [!note] Cores dos rótulos 3D (`_LABEL_LINE_COLORS`)
 > Membro = ciano · **Tipo = ROSA (2026-06-23, antes laranja)** · Nome = verde · Id = amarelo ·
-> Osso/Esqueleto = laranja. O toggle **Tipo** (`TypeCheck`) também ficou **rosa** (`modulate`).
+> Osso/Esqueleto = laranja. O toggle **Tipo** (`TypeCheck`) tem o **texto rosa** via `font_color`
+> (`_apply_label_line_colors`, todos os estados); o **`modulate` foi REMOVIDO (2026-06-25)** para o
+> **fundo do toggle bater com os demais** (antes o `modulate` tingia o controle inteiro de rosa) —
+> mesmo padrão do toggle "Submembros".
 > O `DebugOverlay` da tela developer reusa as mesmas cores (Tipo/Nome/Id/Membro) + Esqueleto branco.
 
 > [!important] Cena Models 100% desacoplada do Debug 3D (2026-06-21)
@@ -242,7 +259,7 @@ toggle é o **interruptor mestre** da sua categoria:
     Visibilidade/carga em `_refresh_collider_offset_inputs` (só recarrega quando o GRUPO focado muda,
     preservando uma edição em andamento). **Salvar** (`_on_collider_save_pressed`) persiste afastamento
     + escala. Ao iniciar **uma nova seleção de dropdown** (categoria/prefixo/modelo/parte/membro/
-    sub-membro) com edição pendente, `_prompt_save_offset_if_dirty` abre um `ConfirmationDialog`
+    sub-membro) com edição pendente, `_prompt_save_offset_if_dirty` abre uma janela `FloatingDialog.confirm`
     **"Deseja salvar modificações para colisores de \"&lt;nome do membro/sub-membro&gt;\" ?"** — confirmar
     grava, cancelar reverte o corpo aos valores salvos. Ambos são aplicados no build
     (`LimbColliders._build_member_shape` e `_add_mesh_member_colliders` setam `body.position` e
@@ -279,7 +296,7 @@ toggle é o **interruptor mestre** da sua categoria:
     **Independente** do "Colisores de Esqueleto" (ex-"Realçar avulso"; pode-se ver só o nome, só a caixa, ou ambos) — segue a MESMA
     seleção. `_refresh_aux_labels` (chamado nos handlers de membro/sub-membro, em `_populate_members` e
     `_rebuild_member_colliders`) decide; `_label_aux_bones` desenha (nós `_AuxLbl_*`); `_clear_aux_labels`
-    remove. Persistido em `[models]` (`show_osso`). "Todo o esqueleto" rotula todos de uma vez.
+    remove. Persistido em `[models]` (`show_osso`). "Todos os Esqueletos" rotula todos de uma vez.
   - **Anti-colisão entre membros (2026-06-20):** as 4 linhas de cada membro ficam sob um **pivô**
     (`_MdlLbl_Pivot`, filho do collider) para deslocarem juntas. A cada frame `_layout_member_labels`
     projeta a pilha de cada membro num retângulo de tela e, processando de cima para baixo, **empurra
@@ -319,7 +336,7 @@ toggle é o **interruptor mestre** da sua categoria:
     explícito + Adicionar → `_on_sub_member_added`). A **remoção é por linha (2026-06-22):** cada folha
     de sub-membro tem um **botão de LIXEIRA à direita do nome** (col 0; ícone vermelho gerado em código
     por `_make_trash_icon` → `ImageTexture`; `TreeItem.add_button` com id `_TRASH_BTN_ID`), e
-    `_on_damage_tree_button` (sinal `Tree.button_clicked`) **pede confirmação** (`ConfirmationDialog`:
+    `_on_damage_tree_button` (sinal `Tree.button_clicked`) **pede confirmação** (`FloatingDialog.confirm`:
     "Deseja realmente remover associação do sub-membro: &lt;nome&gt; ?") e então remove aquele sub-membro
     (2026-06-22) — substituiu o antigo
     botão grande "Remover sub-membro" do footer (e o `_on_damage_tree_selected`/`_damage_remove_btn`,
@@ -336,11 +353,25 @@ toggle é o **interruptor mestre** da sua categoria:
     novos) para o conteúdo (árvore de 4 colunas / lista de IA) não ficar apertado.
   - **Botões sem bloqueio mútuo + escopo por modelo (2026-06-25):** `_has_active_model_window()` foi
     **removido** — nenhum dos dois botões é bloqueado pela janela do outro. Abrir um **fecha o outro**
-    (só UMA janela flutuante por vez, "switch"). **Dano vale para QUALQUER modelo** em "Modelo completo"
+    (só UMA janela flutuante por vez, "switch"). **TOGGLE (2026-06-25):** clicar de novo no MESMO botão
+    (Dano/IA) com a janela já aberta a **fecha** (`_on_*_button_pressed` checa `panel.visible` e fecha).
+    **Scroll sobre a janela Dano/IA NÃO dá zoom no 3D (2026-06-25):** o `_unhandled_input` ignora a roda
+    do mouse quando `_pointer_over_model_window()` (ponteiro sobre o `damage_panel`/`ai_panel` visível) —
+    a roda só rola o conteúdo da janela; sobre o 3D, continua dando zoom. **Arraste tb congela sobre
+    a janela (2026-06-25):** a rotação por arraste do mouse também respeita `_pointer_over_model_window()`
+    — a câmera para de girar assim que o ponteiro entra na janela e volta a operar ao sair dela ou
+    fechá-la; o helper passou a incluir `FloatingWindow.pointer_over_any_window()` (qualquer janela
+    flutuante, não só Dano/IA). **Dano vale para QUALQUER modelo** em "Modelo completo"
     (`_supports_damage_editor` substituiu `_preview_is_whole_character`: não exige mais categoria
     "characters" — armas/rigs usam os colliders de membro). **IA só para personagens** com
-    comportamentos definidos (`_supports_ai_editor` = `AIConfigLib.has_behavior_definitions`; o
-    `ai_button` fica `disabled` fora disso). Ver `_on_damage_button_pressed`/`_on_ai_button_pressed`.
+    comportamentos definidos (`_supports_ai_editor` = `AIConfigLib.has_behavior_definitions` — hoje
+    `red_robot`, `player`, `criatura_alada`; o `ai_button` fica `disabled` fora disso). O botão tem
+    **texto "Inteligência Artificial"/"Artificial Intelligence"** (canônico PT desde 2026-06-25 — antes
+    o `.tscn` trazia o nome só em inglês e o `models.pt.json` mapeava para si mesmo, sem traduzir).
+    **Fix 2026-06-25:** `_refresh_ai_panel` abortava num override de tema inválido
+    (`content.theme_override_constants.separation = 6`, acesso por ponto que não existe em GDScript),
+    então a janela de IA NUNCA abria (erro em runtime antes de `ai_panel.visible = true`); trocado por
+    `add_theme_constant_override("separation", 6)`. Ver `_on_damage_button_pressed`/`_on_ai_button_pressed`.
   Aparece para **QUALQUER modelo em "Modelo completo"**
   (`_supports_damage_editor`); `_refresh_damage_panel` repopula ao trocar de modelo e some em mesh
   isolada. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta
@@ -395,11 +426,13 @@ toggle é o **interruptor mestre** da sua categoria:
     nunca mais o filtro de ossos avulsos. Com **membro específico** lista os `PART_*` daquele membro;
     com **"Todos os membros"** lista **TODOS os `PART_*` do modelo** (ordenados) e ganha, no topo, a
     opção **"Todos os Sub-membros"** (`ALL_SUB_MEMBERS_LABEL`/`ALL_SUB_MEMBERS_VALUE`) = não isola,
-    mostra o modelo inteiro. Os **ossos avulsos** saíram para um dropdown PRÓPRIO **"Esqueleto"**
+    mostra o modelo inteiro — **e, com "Colisores de Submembros" LIGADO (2026-06-25), exibe os gizmos de
+    TODOS os sub-membros de uma vez** (`_should_show_all_sub_colliders`), independente do toggle de membro.
+    Os **ossos avulsos** saíram para um dropdown PRÓPRIO **"Esqueleto"**
     (`SkeletonRow` → `cboSkeleton`, label estático "Esqueleto:" auto-traduzido), exibido **só no modo
     "Todos os membros"** e **sempre visível nesse modo** — quando o modelo não tem ossos avulsos
     candidatos, aparece **desabilitado** (só "Selecione..."). Ele lista `_aux_bone_candidates`
-    (`group_of == ""`, não promovidos), com **"Todo o esqueleto"** (`ALL_AUX_VALUE`) no topo; só
+    (`group_of == ""`, não promovidos), com **"Todos os Esqueletos"** (`ALL_AUX_VALUE`) no topo; só
     inspeção/realce (não isola). `_populate_sub_members` (sub-membros) e `_populate_skeleton` (ossos
     avulsos, chamado no topo daquele) populam; `_reset_skeleton` limpa. **Posição do "Esqueleto":** a
     `SkeletonRow` fica APÓS o `ColliderEditBox` na árvore, então quando um sub-membro está selecionado
@@ -425,7 +458,9 @@ toggle é o **interruptor mestre** da sua categoria:
     MEMBRO → **"Colisores de Membro"** (`_show_colliders`); SUB-MEMBRO (PART_*) → **"Colisores de
     Submembros"** (`_show_sub_colliders`) — `giz_on = in_focus and (_show_sub_colliders if PART_ else
     _show_colliders)`. Na visão GERAL (sem foco), `_apply_colliders_visibility` mostra só membros e
-    **esconde os PART_***; o sub-membro só aparece isolado, via seu toggle. O isolamento dos **rótulos**
+    **esconde os PART_***; o sub-membro só aparece isolado, via seu toggle — **exceto** no modo "Todos os
+    Sub-membros" + "Colisores de Submembros" on, que mostra TODOS os sub-membros de uma vez (2026-06-25,
+    `_should_show_all_sub_colliders`). O isolamento dos **rótulos**
     continua independente dos toggles de collider. Obs.: ossos que já são MEMBRO (ex.:
     `shoulder.L/.R` → BRAÇO) **não** entram na lista "Adicionar sub-membro" (que só oferece os
     auxiliares, `group_of == ""`); o "ombro" como sub-membro é a placa `shoulderpad-adjust` (exibida com

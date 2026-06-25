@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://7cmbgsnw8b15"
+path="res://.godot/imported/Unknown Brain - Inspiration (feat. Aviella)  Future Trap  NCS - Copyright Free Music.mp3-f945d17a0954362ccb4ba45f0553f011.mp3str"
+
+[deps]
+
+source_file="res://audios/Unknown Brain - Inspiration (feat. Aviella)  Future Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Unknown Brain - Inspiration (feat. Aviella)  Future Trap  NCS - Copyright Free Music.mp3-f945d17a0954362ccb4ba45f0553f011.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

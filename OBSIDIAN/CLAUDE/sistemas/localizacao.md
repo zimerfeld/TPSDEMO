@@ -33,6 +33,8 @@ A `UI/LangBar` (HBox no canto inferior direito com botões "Português" / "Engli
 menu) está em **menu, chooseplayer, settings, developer, levels, playonline, controls e models**.
 Cada script chama `Locale.set_language(...)` e acinzenta o botão do idioma ativo
 (`_update_language_buttons`). Como a re-localização é in-place, a tela atualiza na hora.
+**Alinhamento (2026-06-25):** a `LangBar` fica na **mesma faixa vertical do botão "Voltar"** (offsets
+do rodapé `−100`/`−50`) em todas essas telas.
 
 ## Textos vindos de código (SKIP_GROUP)
 
@@ -42,6 +44,10 @@ entram no grupo `Locale.SKIP_GROUP` e reaplicam `Locale.tr_key(...)` sozinhos no
 `language_changed`. As chaves do HUD/Guard ficam em `scenes2D/overlays/Resources/overlays.{pt,en}.json`.
 (As telas
 `models` e `controls` **não têm mais** `StatusLabel` — removidas em 2026-06-18.)
+
+Os **prefixos dos `Label3D`** da cena Models (`Membro:`/`Sub-membro:`/`Esqueleto:`/`Tipo:`/`Nome:`)
+também não são alcançados pelo auto-tradutor: vão por `Locale.tr_key` e são reconstruídos no
+`language_changed` (`_refresh_member_overlays`/`_refresh_aux_labels`) — ver [[sistemas/biblioteca-de-modelos]].
 
 ## Regra — mudou texto, atualize as chaves
 

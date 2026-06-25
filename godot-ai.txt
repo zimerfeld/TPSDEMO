@@ -13,5 +13,3 @@ irm https://claude.ai/install.ps1 | iex
 Or download the latest release ZIP and extract addons/godot_ai into your project's addons/ folder.
 
 https://github.com/hi-godot/godot-ai/releases/latest
-
-

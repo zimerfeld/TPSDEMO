@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://crdiq0dtltd5i"
+path="res://.godot/imported/Asketa & Natan Chaim x Requenze x M.I.M.E - Warriors  Trap  NCS - Copyright Free Music.mp3-c5edfdc9133584c2a91a6a2bb52651f9.mp3str"
+
+[deps]
+
+source_file="res://audios/Asketa & Natan Chaim x Requenze x M.I.M.E - Warriors  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Asketa & Natan Chaim x Requenze x M.I.M.E - Warriors  Trap  NCS - Copyright Free Music.mp3-c5edfdc9133584c2a91a6a2bb52651f9.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

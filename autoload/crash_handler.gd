@@ -7,25 +7,15 @@ func show_error(message: String, retry_callback: Callable = Callable()) -> void:
 		push_error("CrashHandler.show_error() called before entering tree: " + message)
 		return
 
-	var dlg := ConfirmationDialog.new()
-	dlg.title = "Erro / Error"
-	dlg.dialog_text = message
-
+	# Mesmo visual padrão das demais janelas (FloatingWindow: tema do jogo, × padrão, modal). COM retry
+	# = confirmação (Tentar Novamente / Fechar Jogo); SEM retry = aviso de um botão (Fechar Jogo). Em
+	# ambos, fechar pelo × ou ESC encerra o jogo (não dá para seguir num estado quebrado).
+	var root := get_tree().root
 	if retry_callback.is_valid():
-		dlg.get_ok_button().text = "Tentar Novamente"
-		dlg.get_cancel_button().text = "Fechar Jogo"
-		dlg.confirmed.connect(func():
-			dlg.queue_free()
-			retry_callback.call()
-		)
+		var dlg := FloatingDialog.confirm(root, "Erro / Error", message, "Tentar Novamente", "Fechar Jogo")
+		dlg.confirmed.connect(func(): retry_callback.call())
 		dlg.canceled.connect(func(): get_tree().quit())
 	else:
-		dlg.get_ok_button().text = "Fechar Jogo"
-		dlg.get_cancel_button().hide()
+		var dlg := FloatingDialog.alert(root, "Erro / Error", message, "Fechar Jogo")
 		dlg.confirmed.connect(func(): get_tree().quit())
-
-	# Mesmo visual padrão das demais janelas (tema do jogo, janela e fontes maiores). Aplicado
-	# depois de configurar os botões — o estilo só ajusta tamanho/fonte, não recria os botões.
-	UIDialogs.style(dlg)
-	get_tree().root.add_child(dlg)
-	dlg.popup_centered()
+		dlg.canceled.connect(func(): get_tree().quit())

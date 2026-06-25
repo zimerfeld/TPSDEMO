@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://ccxbls23ev7u3" path="res://scenes3D/level_base/level_base.gd" id="1"]
 [ext_resource type="PackedScene" path="res://library3D/geometry/scenes/props.tscn" id="2"]
 [ext_resource type="VoxelGIData" uid="uid://bw86lhn5p1ovp" path="res://library3D/geometry/giprobe_data.res" id="5"]
-[ext_resource type="AudioStream" uid="uid://bqfjtqyo6pdu3" path="res://scenes3D/level_base/level_base_music.ogg" id="8"]
 [ext_resource type="PackedScene" path="res://library3D/propulsores/forklift/flying_forklift.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://library3D/geometry/scenes/lights.tscn" id="13"]
 [ext_resource type="PackedScene" path="res://library3D/geometry/scenes/core.tscn" id="14"]
@@ -107,11 +106,6 @@ box_projection = true
 [node name="ReflectionProbe3" type="ReflectionProbe" parent="ReflectionProbes"]
 transform = Transform3D(0.999799, 0, -0.0200534, 0, 1, 0, 0.0200534, 0, 0.999799, -0.204299, -8.98325, 0.0613261)
 size = Vector3(77.8268, 100, 74.2464)
-
-[node name="Music" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("8")
-autoplay = true
-bus = &"Music"
 
 [node name="SoundOutside" type="Area3D" parent="."]
 collision_mask = 0
