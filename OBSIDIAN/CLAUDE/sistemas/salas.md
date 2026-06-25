@@ -106,10 +106,12 @@ poucos pairs) nunca disparava → só ele funcionava.
 **Polimento de UI (2026-06-24):** `host_session`/`client_session` agora aplicam o **tema do projeto**
 (`res://themes/ui_theme.tres`, mesmo da playonline/menu) na raiz → botões/labels/dropdowns com o visual
 cyberpunk. ⚠️ O `ui_theme.tres` só estiliza **Button/Label** (não dá fundo), então o `_make_panel` foi
-reescrito (`_panel` virou `Control`, não mais `PanelContainer`): **fundo igual ao menu/chooseplayer** —
-`TextureRect` com `res://scenes2D/menu/menu_surreal_training_bg.png` (cyberpunk) + `ColorRect` véu escuro
-`Color(0.0157,0.0314,0.0588,0.62)` por cima. Um flat navy `ColorRect` (igual settings/playonline) ficava
-"sem cor" para o usuário — daí usar a textura rica. Também: **tela cheia** (margens + título centralizado);
+reescrito (`_panel` virou `Control`, não mais `PanelContainer`): **fundo com a textura cyberpunk do menu**
+(`menu_surreal_training_bg.png`) + véu escuro, mas com IDENTIDADE própria por cena (fator decisivo host ×
+cliente): **HOST = graduação QUENTE (âmbar)** + anéis de "radar" EXPANDINDO p/ fora (o servidor transmite /
+é a fonte); **CLIENTE = graduação FRIA (ciano)** + anéis CONTRAINDO p/ dentro (conecta-se ao servidor). Os
+anéis vêm do shader `res://themes/session_signal_bg.gdshader` (uniforms `ring_color` + `dir` ±1 + `aspect`),
+montado pelo helper `_make_signal_layer(cor, dir)`. Um flat navy ficava "sem cor" — daí a textura rica. Também: **tela cheia** (margens + título centralizado);
 **conteúdo/listas numa VBox centralizada de largura máx. 900** (HBox `ALIGNMENT_CENTER`); **botão Voltar
 200×50 centralizado embaixo** (não mais full-width). Tudo dentro de `_panel`, escondido enquanto observa/
 joga (aí o SubViewport/nível ocupa a tela). `_make_back_button` removido (o Voltar é montado no `_make_panel`).

@@ -193,22 +193,23 @@ func _make_panel(title_text: String) -> VBoxContainer:
 	_panel = Control.new()
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_panel)
-	# Fundo no MESMO estilo do menu/chooseplayer: textura cyberpunk + véu escuro por cima (o flat navy
-	# ficava "sem cor"). O ui_theme só estiliza Button/Label, então o fundo é montado aqui. mouse_filter
-	# IGNORE p/ os cliques chegarem aos botões.
+	# Fundo: MESMA textura cyberpunk do menu, porém com IDENTIDADE de CLIENTE — graduação FRIA (ciano)
+	# + anéis de "radar" CONTRAINDO para dentro (CONECTA-SE ao servidor). Contrasta com o host
+	# (quente + anéis expandindo). mouse_filter IGNORE p/ os cliques chegarem aos botões.
 	var bg_tex := TextureRect.new()
 	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg_tex.texture = load("res://scenes2D/menu/menu_surreal_training_bg.png")
 	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg_tex.modulate = Color(0.92, 0.97, 1, 0.98)
+	bg_tex.modulate = Color(0.55, 0.86, 1.0, 0.98)   # graduação FRIA (ciano) = CLIENTE
 	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(bg_tex)
 	var veil := ColorRect.new()
 	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	veil.color = Color(0.0156863, 0.0313726, 0.0588235, 0.62)
+	veil.color = Color(0.008, 0.03, 0.06, 0.62)      # véu escuro frio
 	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(veil)
+	_panel.add_child(_make_signal_layer(Color(0.2, 0.72, 1.0, 1.0), -1.0))  # anéis ciano CONTRAINDO
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
@@ -241,6 +242,22 @@ func _make_panel(title_text: String) -> VBoxContainer:
 	back_btn.pressed.connect(_go_back)
 	actions.add_child(back_btn)
 	return inner
+
+
+# Camada de "radar/sinal": ColorRect em tela cheia com o shader de anéis concêntricos. `dir` = +1
+# expande (host transmite) / -1 contrai (cliente conecta). `aspect` mantém os anéis circulares.
+func _make_signal_layer(color: Color, dir: float) -> ColorRect:
+	var rect := ColorRect.new()
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://themes/session_signal_bg.gdshader")
+	mat.set_shader_parameter("ring_color", color)
+	mat.set_shader_parameter("dir", dir)
+	var sz: Vector2 = get_viewport().get_visible_rect().size
+	mat.set_shader_parameter("aspect", sz.x / maxf(sz.y, 1.0))
+	rect.material = mat
+	return rect
 
 
 func _make_rooms_list(parent: VBoxContainer) -> VBoxContainer:
