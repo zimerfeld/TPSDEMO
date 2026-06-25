@@ -1,0 +1,10 @@
+{
+	"behaviors": {
+		"predictive_aim": true,
+		"adaptive_accuracy": true,
+		"reactive_strafe": true,
+		"adaptive_spacing": true,
+		"geometry_probe": true,
+		"pressure_reposition": true
+	}
+}

@@ -30,8 +30,10 @@ var _opt_buttons: Array[OptionButton] = []
 
 func _ready() -> void:
 	_update_language_buttons()
-	_refresh_history()
+	# Preenche os campos Porta/IP com o último valor ANTES de montar os dropdowns, para que cada
+	# dropdown já nasça com esse valor SELECIONADO (não mais preso em "Selecione...").
 	_prefill_last_used()
+	_refresh_history()
 	_build_optimization_options()
 	# Salva a porta ao sair do campo (o SpinBox edita por um LineEdit interno).
 	port.get_line_edit().focus_exited.connect(_on_port_focus_exited)
@@ -50,15 +52,28 @@ func _ready() -> void:
 # Histórico de porta/IP persistido em Settings.config_file (seção "online"). Mostra os
 # últimos HISTORY_MAX valores num OptionButton (item 0 = "Selecione...", convenção do projeto).
 func _refresh_history() -> void:
-	_fill_history(port_history, "ports")
-	_fill_history(address_history, "addresses")
+	_fill_history(port_history, "ports", str(int(port.value)))
+	_fill_history(address_history, "addresses", address.text.strip_edges())
 
 
-func _fill_history(option: OptionButton, key: String) -> void:
+func _fill_history(option: OptionButton, key: String, current: String) -> void:
 	option.clear()
 	option.add_item("Selecione...")
 	for value in Settings.config_file.get_value("online", key, []):
 		option.add_item(str(value))
+	# Deixa SELECIONADO o item igual ao valor atual do campo → o dropdown auto-preenche com o valor
+	# armazenado. Se o valor não estiver no histórico, cai em "Selecione..." (índice 0).
+	_select_in_history(option, current)
+
+
+# Seleciona no dropdown o item cujo texto bate com `current` (o valor atual do campo); senão,
+# "Selecione..." (0). Setar `.selected` por código NÃO dispara `item_selected` → sem recursão com
+# os handlers de seleção / _on_*_changed.
+func _select_in_history(option: OptionButton, current: String) -> void:
+	for i in range(option.item_count):
+		if option.get_item_text(i) == current:
+			option.selected = i
+			return
 	option.selected = 0
 
 
@@ -96,15 +111,15 @@ func _remember(key: String, value) -> void:
 func _on_port_history_item_selected(index: int) -> void:
 	if index <= 0:  # item 0 = "Selecione..."
 		return
+	# Copia o valor para o campo e MANTÉM o item selecionado no dropdown (antes resetava p/
+	# "Selecione...", então a escolha não "ficava"). A mudança do campo persiste via _on_port_changed.
 	port.value = float(port_history.get_item_text(index))
-	port_history.selected = 0
 
 
 func _on_address_history_item_selected(index: int) -> void:
 	if index <= 0:
 		return
 	address.text = address_history.get_item_text(index)
-	address_history.selected = 0
 
 
 # Salva o que foi digitado no campo (IP OU domínio) ao pressionar Enter e atualiza o
@@ -134,11 +149,15 @@ func _on_port_focus_exited() -> void:
 func _on_port_changed(_value: float) -> void:
 	Settings.config_file.set_value("online", "last_port", int(port.value))
 	Settings.save_settings()
+	# Mantém o dropdown refletindo o valor atual digitado (seleciona o item igual, ou "Selecione...").
+	_select_in_history(port_history, str(int(port.value)))
 
 
 func _on_address_changed(new_text: String) -> void:
-	Settings.config_file.set_value("online", "last_address", new_text.strip_edges())
+	var stripped := new_text.strip_edges()
+	Settings.config_file.set_value("online", "last_address", stripped)
 	Settings.save_settings()
+	_select_in_history(address_history, stripped)
 
 
 # Grey out the button for the language already active (same pattern as the menu).

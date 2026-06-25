@@ -327,9 +327,23 @@ toggle é o **interruptor mestre** da sua categoria:
     `_rebuild_member_colliders` → `_refresh_damage_panel`). **Espaçamento das linhas (2026-06-22):**
     `_setup_damage_tree` aplica overrides de tema (`v_separation`/`inner_item_margin_top`/`_bottom`) para
     o ícone de lixeira não encostar na linha vizinha. Ver [[sistemas/dano-localizado]].
-  Só aparece para **personagem em "Modelo completo"**
-  (`_preview_is_whole_character`); `_refresh_damage_panel` repopula ao trocar de modelo e some no
-  resto. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta
+  - **Janelas abriam FORA da tela — correção (2026-06-25):** os botões "não abriam" porque
+    `DamagePanel`/`AIPanel` tinham offsets fixos no `.tscn` (`offset_left` 1300/1220, p/ telas largas)
+    → em resoluções menores (ex.: 1280×720) a janela abria (`visible=true`) **fora da viewport, à
+    direita** (invisível); o clamp do `_setup_*_window` rodava só no `_ready` com `size=0`, prendendo a
+    posição na borda. **Fix:** `_clamp_window_to_viewport(panel)` chamado **deferido ao abrir** (já com
+    size real) reposiciona a janela p/ caber inteira na tela. Painéis **ampliados p/ 760×620** (offsets
+    novos) para o conteúdo (árvore de 4 colunas / lista de IA) não ficar apertado.
+  - **Botões sem bloqueio mútuo + escopo por modelo (2026-06-25):** `_has_active_model_window()` foi
+    **removido** — nenhum dos dois botões é bloqueado pela janela do outro. Abrir um **fecha o outro**
+    (só UMA janela flutuante por vez, "switch"). **Dano vale para QUALQUER modelo** em "Modelo completo"
+    (`_supports_damage_editor` substituiu `_preview_is_whole_character`: não exige mais categoria
+    "characters" — armas/rigs usam os colliders de membro). **IA só para personagens** com
+    comportamentos definidos (`_supports_ai_editor` = `AIConfigLib.has_behavior_definitions`; o
+    `ai_button` fica `disabled` fora disso). Ver `_on_damage_button_pressed`/`_on_ai_button_pressed`.
+  Aparece para **QUALQUER modelo em "Modelo completo"**
+  (`_supports_damage_editor`); `_refresh_damage_panel` repopula ao trocar de modelo e some em mesh
+  isolada. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta
   (`_current_model_key`), igual ao `model_key` do gameplay. Os MEMBROS listados vêm do plano
   corporal do modelo: como o preview remove scripts (e não tem o `@export body_type`), a tela
   espelha o tipo na const `_MODEL_BODY_TYPE := {"red_robot":"biped","player":"biped"}` e resolve o

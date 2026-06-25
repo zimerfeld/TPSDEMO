@@ -109,6 +109,7 @@ func _on_quit_pressed() -> void:
 	dlg.dialog_text = Locale.tr_key("Deseja sair do Zimaro ?")
 	dlg.get_ok_button().text = Locale.tr_key("Sim")
 	dlg.get_cancel_button().text = Locale.tr_key("Não")
+	UIDialogs.style(dlg)
 	dlg.confirmed.connect(get_tree().quit)
 	# `canceled` cobre o botão "Não", o X de fechar e o ESC dentro do diálogo.
 	dlg.canceled.connect(func() -> void:

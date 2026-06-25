@@ -61,12 +61,16 @@ a floor grid for 3D screens; and an EN/PT localization system where **every scre
 Português/English buttons** and each scene ships its own JSON dictionaries
 (`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load. Online play is **rooms-based**: pick **Host** or **Client** on the Play Online screen. **Host** opens a
 room manager to start levels as isolated rooms and, per room, **Play** into it, **Observe** with a
-free-fly no-collision camera, **Restart** or **Stop** it; **Client** opens a room browser that lists the
+free-fly no-collision camera, **Restart** or **Stop** it (both warn the room's clients with a distinct
+"level stopped/restarted by host" notice); **Client** opens a room browser that lists the
 running rooms with a **Play** button. Each player's chosen variant/colour shows for everyone,
 and other players/enemies are smoothed with a timestamped interpolation buffer for a flicker-free,
 high-FPS client view. A pre-session **Optimization** selector picks interpolation (Smooth/Balanced/
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
+Each 2D screen (Levels, Play Online, Settings, Developer) carries its own lightweight **animated shader
+background** that evokes its purpose, and every **confirmation window** shares one standard, larger style
+(game-theme buttons, bigger window and fonts).
 
 ![PT](screenshots/screenshotBR.png) Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
@@ -91,13 +95,17 @@ para telas 3D; e um sistema de localização EN/PT em que **toda tela tem botõe
 cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json`),
 mesclados no carregamento. O jogo online é **por salas**: escolha **Host** ou **Client** na tela Jogar
 Online. **Host** abre um gerenciador de salas para iniciar levels como salas isoladas e, por sala,
-**Jogar** nela, **Observar** com uma câmera livre sem colisão, **Reiniciar** ou **Parar**; **Client**
+**Jogar** nela, **Observar** com uma câmera livre sem colisão, **Reiniciar** ou **Parar** (ambos avisam
+os clientes daquela sala com um aviso distinto "nível parado/reiniciado pelo host"); **Client**
 abre um navegador que lista as salas em execução com um botão **Jogar**. A variante/cor escolhida por cada
 jogador aparece para todos, e os outros players/inimigos são suavizados por um buffer de interpolação
 com snapshots datados para uma visão do cliente sem flicker e com FPS alto. Um seletor de **Otimização**
 pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync (30/60 Hz) e render do host
 (Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
 telas Host/Client são em tela cheia, no padrão do resto da UI.
+Cada tela 2D (Níveis, Jogar Online, Configurações, Developer) tem seu próprio **fundo animado por shader**
+(leve) que remete à sua função, e toda **janela de confirmação** compartilha um estilo padrão maior
+(botões do tema do jogo, janela e fontes maiores).
 
 > ![EN](screenshots/screenshotGB.png) **On the per-limb hitboxes:** you didn't reinvent Godot's physics; you automated the authoring
 > of hitboxes that would be unfeasible to maintain at scale by hand.

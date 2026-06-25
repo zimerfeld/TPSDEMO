@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" uid="uid://cblcs6ji5p7mh" path="res://scenes2D/settings/settings.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://themes/ui_theme.tres" id="2"]
+[ext_resource type="Shader" path="res://themes/backgrounds/settings_bg.gdshader" id="3"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg"]
+shader = ExtResource("3")
 
 [node name="Settings" type="Node" unique_id=683111983]
 script = ExtResource("1")
@@ -10,6 +14,7 @@ script = ExtResource("1")
 layer = -2
 
 [node name="Bg" type="ColorRect" parent="Background"]
+material = SubResource("ShaderMaterial_bg")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

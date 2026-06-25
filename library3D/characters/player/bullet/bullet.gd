@@ -12,6 +12,7 @@ var weapon_damage: int = 50
 var shooter: Node = null
 # Garante que o dano seja aplicado uma única vez (área ou fallback).
 var _registered: bool = false
+var _feedback_reported: bool = false
 
 # Aparência configurável (CannonShooter passa estes ao disparar), para o MESMO bullet
 # servir vários modelos. Alpha <= 0 = sentinela "não mexer" (mantém o visual da cena, o
@@ -60,6 +61,7 @@ func _physics_process(delta: float) -> void:
 		return
 	time_alive -= delta
 	if time_alive < 0.0:
+		_report_feedback(null)
 		hit = true
 		explode.rpc()
 		return
@@ -70,6 +72,7 @@ func _physics_process(delta: float) -> void:
 		# Projétil × projétil (bala, bala de canhão ou bomba) → explosão ANULATIVA: ambos se
 		# destroem. Checado antes de tudo; idempotente nos dois lados (guardas hit/_done).
 		if collided != null and collided.is_in_group(&"projectiles"):
+			_report_feedback(null)
 			annihilate()
 			if collided.has_method(&"annihilate"):
 				collided.annihilate()
@@ -84,6 +87,7 @@ func _physics_process(delta: float) -> void:
 			add_collision_exception_with(collided)
 			return
 		_apply_hit(collided)
+		_report_feedback(_resolve_feedback_target(collided))
 		hit = true
 		explode.rpc()
 		collision_shape.set_deferred(&"disabled", true)
@@ -113,6 +117,7 @@ func _apply_hit(collider: Node) -> void:
 func annihilate() -> void:
 	if hit:
 		return
+	_report_feedback(null)
 	hit = true
 	explode.rpc()
 	collision_shape.set_deferred(&"disabled", true)
@@ -132,3 +137,19 @@ func destroy() -> void:
 	if not multiplayer.is_server():
 		return
 	queue_free()
+
+
+func _resolve_feedback_target(collider: Node) -> Node:
+	if collider == null:
+		return null
+	if collider.has_meta("character"):
+		return collider.get_meta("character") as Node
+	return collider
+
+
+func _report_feedback(target: Node) -> void:
+	if _feedback_reported or not multiplayer.is_server() or shooter == null:
+		return
+	_feedback_reported = true
+	if shooter.has_method(&"notify_projectile_feedback"):
+		shooter.notify_projectile_feedback(target)

@@ -450,10 +450,10 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchors_preset = 0
-offset_left = 1300.0
-offset_top = 140.0
-offset_right = 1900.0
-offset_bottom = 800.0
+offset_left = 840.0
+offset_top = 90.0
+offset_right = 1600.0
+offset_bottom = 710.0
 
 [node name="Main" type="VBoxContainer" parent="UI/DamagePanel"]
 layout_mode = 2
@@ -503,6 +503,62 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
 
+[node name="AIPanel" type="PanelContainer" parent="UI"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 0
+offset_left = 840.0
+offset_top = 90.0
+offset_right = 1600.0
+offset_bottom = 710.0
+
+[node name="Main" type="VBoxContainer" parent="UI/AIPanel"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="AITitleBar" type="PanelContainer" parent="UI/AIPanel/Main"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TitleRow" type="HBoxContainer" parent="UI/AIPanel/Main/AITitleBar"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="UI/AIPanel/Main/AITitleBar/TitleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+text = "Artificial Intelligence"
+theme_override_font_sizes/font_size = 16
+
+[node name="AICloseButton" type="Button" parent="UI/AIPanel/Main/AITitleBar/TitleRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(34, 28)
+layout_mode = 2
+text = "×"
+theme_override_font_sizes/font_size = 20
+
+[node name="Margin" type="MarginContainer" parent="UI/AIPanel/Main"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="AIScroll" type="ScrollContainer" parent="UI/AIPanel/Main/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+
+[node name="AIList" type="VBoxContainer" parent="UI/AIPanel/Main/Margin/AIScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 12
@@ -531,6 +587,14 @@ custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Dano"
+
+[node name="AIButton" type="Button" parent="UI/Actions"]
+unique_name_in_owner = true
+disabled = true
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Artificial Intelligence"
 
 [node name="LangBar" type="HBoxContainer" parent="UI"]
 layout_mode = 1
