@@ -6,6 +6,7 @@ const LEVEL_1_PATH: String = "res://scenes3D/level_1/level_1.tscn"
 const LEVEL_2_PATH: String = "res://scenes3D/level_2/level_2.tscn"
 const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
+const LevelTemplateDialogScene := preload("res://scenes2D/level_templates/level_template_dialog.gd")
 
 var loading_path: String = ""
 
@@ -19,9 +20,13 @@ var loading_path: String = ""
 @onready var portuguese_button: Button = %PortugueseButton
 @onready var english_button: Button = %EnglishButton
 
+var _template_dialog: Window = null
+var _template_buttons: Dictionary = {}
+
 
 func _ready() -> void:
 	_update_language_buttons()
+	_add_template_buttons()
 	# Foco inicial para a navegação por setas do teclado.
 	UINav.focus_first.call_deferred(self)
 
@@ -92,6 +97,41 @@ func _select_level(level_path: String) -> void:
 
 func _on_back_pressed() -> void:
 	emit_signal("replace_main_scene", load(CHOOSEPLAYER_PATH))
+
+
+func _add_template_buttons() -> void:
+	var rows := {
+		LEVEL_1_PATH: %Level1Button.get_parent(),
+		LEVEL_2_PATH: %Level2Button.get_parent(),
+		LEVEL_BASE_PATH: %LevelBaseButton.get_parent(),
+	}
+	for level_path in rows:
+		var btn := Button.new()
+		btn.text = _template_button_text(level_path)
+		btn.custom_minimum_size = Vector2(220, 50)
+		btn.pressed.connect(_open_template_dialog.bind(level_path))
+		rows[level_path].add_child(btn)
+		_template_buttons[level_path] = btn
+
+
+func _open_template_dialog(level_path: String) -> void:
+	if _template_dialog == null:
+		_template_dialog = LevelTemplateDialogScene.new()
+		_template_dialog.templates_changed.connect(_refresh_template_buttons)
+		add_child(_template_dialog)
+	_template_dialog.popup_for_level(level_path)
+
+
+func _refresh_template_buttons() -> void:
+	for level_path in _template_buttons:
+		(_template_buttons[level_path] as Button).text = _template_button_text(level_path)
+
+
+func _template_button_text(level_path: String) -> String:
+	var active := LevelTemplateManager.active_template(level_path)
+	if active.is_empty():
+		return "Templates: padrão"
+	return "Template: %s" % String(active.get("name", "ativo"))
 
 
 func _input(input_event: InputEvent) -> void:

@@ -1,0 +1,10 @@
+{
+	"behaviors": {
+		"ally_follow": true,
+		"enemy_prioritization": true,
+		"predictive_assist_aim": true,
+		"combat_spacing": true,
+		"friendly_fire_guard": true,
+		"pressure_flank": true
+	}
+}

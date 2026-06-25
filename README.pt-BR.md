@@ -19,6 +19,11 @@ em terceira pessoa. Em alto nível, oferece:
 
 - **Fluxo por menus** — um menu principal leva à seleção de personagem, ao seletor de fases, à
   tela de configurações, à tela de desenvolvedor e ao jogo online.
+- **Visuais das telas & diálogos** — cada tela 2D tem seu próprio **fundo animado por shader** (leve)
+  que remete à sua função: uma **grade de fase** em perspectiva (Níveis), uma **rede de nós conectando**
+  (Jogar Online), um **equalizador** (Configurações) e um **blueprint de dev** com varredura (Developer).
+  Todas as **janelas de confirmação/aviso compartilham um estilo padrão** — botões do tema do jogo,
+  janela maior e fontes maiores — aplicado por um único helper `UIDialogs`.
 - **Personagens jogáveis** — variações de player selecionáveis que se movem, miram, pulam e
   atiram, com câmera em primeira pessoa e um HUD de vida local.
 - **Inimigos** — um inimigo terrestre (Red Robot) que se aproxima, mira e dispara uma **bala de
@@ -63,14 +68,21 @@ em terceira pessoa. Em alto nível, oferece:
   volume maior** (`torso_shape`/`head_scale` em `LimbColliders`).
 - **Tiro reutilizável** — o disparo de bala de canhão e o de laser hitscan foram isolados em
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
-  modelo pode usar; player e Red Robot disparam via `CannonShooter`.
+  modelo pode usar; player e Red Robot disparam via `CannonShooter`. O transform do cano da bala é
+  fixado **antes** de ela entrar na árvore, então o spawn replicado nasce exatamente na arma nos
+  clientes remotos (sem deslocamento para fora do cano); e a raycast de mira agora **exclui o próprio
+  corpo/membros do atirador** e ignora acertos colados, então mirar-e-atirar rápido não manda mais
+  o tiro para o céu.
 - **Várias fases** — uma arena simples (Level 1), um encontro com o bombardeiro (Level 2), uma
   fase completa e complexa (Level Base), além do **jogo online por salas**: a tela **Jogar Online** tem
   dois botões que escolhem o papel. **Gerenciar Salas** abre o gerenciador de salas
   (`host_session`), onde inicia um ou mais levels como salas isoladas e, por sala, **Jogar** (após o
   seletor de personagem, nasce nela como player), **Observar** (câmera livre sem colisão), **Reiniciar**
-  ou **Parar** (encerra aquela sala e manda os clientes dela de volta ao navegador com o alerta "O
-  Servidor foi desligado"). **Entrar em Salas** abre o navegador de salas (`client_session`), que lista as salas
+  ou **Parar** — ambos mandam um **aviso DISTINTO aos clientes daquela sala**: **Parar** encerra a sala e
+  os manda de volta ao navegador com "O nível foi parado pelo host"; **Reiniciar** recarrega o nível do
+  zero e avisa "O nível foi reiniciado pelo host" (a sala recriada reaparece na lista para reentrar).
+  Após um reinício o host fica na grade de gerência com o mouse livre (igual a iniciar um level).
+  **Entrar em Salas** abre o navegador de salas (`client_session`), que lista as salas
   em execução com um botão **Jogar** (só aparece enquanto houver sala) que leva à sala escolhida após o
   seletor de personagem. A variante/cor escolhida por cada jogador aparece para todos online (loadout
   por peer), e os outros players/inimigos são suavizados por um **buffer de interpolação com snapshots

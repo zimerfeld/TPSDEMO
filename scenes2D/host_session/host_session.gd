@@ -17,6 +17,7 @@ const LEVELS := [
 const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn"
+const LevelTemplateDialogScene := preload("res://scenes2D/level_templates/level_template_dialog.gd")
 
 var _observing_id: int = -1        # sala observada (-1 = grade)
 var _playing_id: int = -1          # sala em que o host JOGA (-1 = não joga)
@@ -24,9 +25,11 @@ var _playing_id: int = -1          # sala em que o host JOGA (-1 = não joga)
 var _room_view: TextureRect
 var _panel: Control
 var _level_picker: OptionButton
+var _template_picker: OptionButton
 var _rooms_list: VBoxContainer
 var _hint: Label
 var _confirm_dialog: ConfirmationDialog = null
+var _template_dialog: Window = null
 
 
 func _ready() -> void:
@@ -72,12 +75,22 @@ func _build_ui() -> void:
 		_level_picker.add_item(String(lv["label"]))
 		_level_picker.set_item_metadata(_level_picker.item_count - 1, String(lv["path"]))
 	_level_picker.custom_minimum_size = Vector2(220, 44)
+	_level_picker.item_selected.connect(func(_idx: int) -> void: _refresh_template_picker())
 	start_row.add_child(_level_picker)
+	_template_picker = OptionButton.new()
+	_template_picker.custom_minimum_size = Vector2(260, 44)
+	start_row.add_child(_template_picker)
+	var manage_templates_btn := Button.new()
+	manage_templates_btn.text = "Templates"
+	manage_templates_btn.custom_minimum_size = Vector2(130, 44)
+	manage_templates_btn.pressed.connect(_open_template_dialog_for_selected_level)
+	start_row.add_child(manage_templates_btn)
 	var start_btn := Button.new()
 	start_btn.text = "Iniciar Sala"
 	start_btn.custom_minimum_size = Vector2(160, 44)
 	start_btn.pressed.connect(_on_start_pressed)
 	start_row.add_child(start_btn)
+	_refresh_template_picker()
 
 	inner.add_child(HSeparator.new())
 	_rooms_list = _make_rooms_list(inner, "Salas em execução:")
@@ -89,8 +102,61 @@ func _on_start_pressed() -> void:
 	var idx: int = _level_picker.selected
 	if idx <= 0:  # item 0 = "Selecione..."
 		return
-	RoomManager.start_room(String(_level_picker.get_item_metadata(idx)))
+	var level_path := String(_level_picker.get_item_metadata(idx))
+	if _template_picker.selected > 0:
+		LevelTemplateManager.set_active_template(level_path, String(_template_picker.get_item_metadata(_template_picker.selected)))
+	else:
+		LevelTemplateManager.set_active_template(level_path, "")
+	RoomManager.start_room(level_path)
 	_apply_mouse_mode()
+
+
+func _refresh_template_picker() -> void:
+	if not is_instance_valid(_template_picker):
+		return
+	_template_picker.clear()
+	_template_picker.add_item("Template: padrão do level")
+	var idx: int = _level_picker.selected
+	if idx <= 0:
+		return
+	var level_path := String(_level_picker.get_item_metadata(idx))
+	var active_id := LevelTemplateManager.active_template_id(level_path)
+	for t in LevelTemplateManager.templates_for_level(level_path):
+		_template_picker.add_item(String(t.get("name", "Template")))
+		_template_picker.set_item_metadata(_template_picker.item_count - 1, String(t.get("id", "")))
+		if String(t.get("id", "")) == active_id:
+			_template_picker.select(_template_picker.item_count - 1)
+
+
+func _open_template_dialog_for_selected_level() -> void:
+	var idx: int = _level_picker.selected
+	if idx <= 0:
+		return
+	if _template_dialog == null:
+		_template_dialog = LevelTemplateDialogScene.new()
+		_template_dialog.templates_changed.connect(_refresh_template_picker)
+		add_child(_template_dialog)
+	_template_dialog.popup_for_level(String(_level_picker.get_item_metadata(idx)))
+
+
+# Botão "Reiniciar" de uma sala: recria o nível do zero (e avisa os clientes dela — ver
+# RoomManager.restart_room). O restart é acionado pela GRADE de gerência, então depois dele
+# normalizamos para a grade com o MOUSE VISÍVEL (estado idêntico ao de "Iniciar Sala": a sala
+# recriada aparece fresquinha na lista, sem capturar o mouse nem deixar a tela num estado morto).
+# Robustez: se por algum fluxo o host estivesse observando/jogando ESTA sala, reentra na recriada.
+func _on_restart_room(id: int) -> void:
+	var was_playing: bool = _playing_id == id
+	var was_observing: bool = _observing_id == id
+	var new_id: int = RoomManager.restart_room(id)
+	if new_id < 0:
+		return
+	if was_playing:
+		RoomManager.host_spawn_in_room(new_id, PlayerSelection.variant_id)
+		_set_playing(new_id)
+	elif was_observing:
+		_set_observing(new_id)
+	else:
+		_set_observing(-1)
 
 
 # ───────────────────────────── observar / jogar ─────────────────────────────
@@ -198,11 +264,7 @@ func _make_server_row(room: Dictionary) -> Control:
 	row.add_child(observe_btn)
 	var restart_btn := Button.new()
 	restart_btn.text = "Reiniciar"
-	restart_btn.pressed.connect(func() -> void:
-		var was_obs := _observing_id == id
-		var new_id := RoomManager.restart_room(id)
-		if was_obs and new_id >= 0:
-			_set_observing(new_id))
+	restart_btn.pressed.connect(_on_restart_room.bind(id))
 	row.add_child(restart_btn)
 	var stop_btn := Button.new()
 	stop_btn.text = "Parar"
@@ -241,6 +303,7 @@ func _confirm_disconnect() -> void:
 	dlg.dialog_text = Locale.tr_key("Desconectar e voltar para a gerência de salas ?")
 	dlg.get_ok_button().text = Locale.tr_key("Sim")
 	dlg.get_cancel_button().text = Locale.tr_key("Não")
+	UIDialogs.style(dlg)
 	dlg.confirmed.connect(func() -> void:
 		dlg.queue_free()
 		_confirm_dialog = null

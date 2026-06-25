@@ -30,6 +30,7 @@ func _ready() -> void:
 	_build_ui()
 	RoomManager.rooms_changed.connect(_refresh_rooms)
 	RoomManager.room_closed.connect(_on_room_closed)
+	RoomManager.room_restarted.connect(_on_room_restarted)
 	RoomManager.request_room_list.rpc_id(1)  # pede a lista de salas ao servidor
 	# Voltou do ChoosePlayer para ENTRAR numa sala? espelha a sala e spawna o player.
 	if RoomManager.pending_play_room >= 0:
@@ -115,18 +116,28 @@ func _exit_play() -> void:
 	_refresh_rooms()
 
 
-# Servidor encerrou (Parar) a sala em que eu jogava → volta ao navegador com o alerta.
+# Servidor PAROU (botão Parar) a sala em que eu jogava → volta ao navegador com o aviso.
 func _on_room_closed(room_id: int) -> void:
 	if room_id != _playing_room:
 		return
 	_exit_play()
-	_alert("O Servidor foi desligado")
+	_alert("O nível foi parado pelo host")
+
+
+# Servidor REINICIOU (botão Reiniciar) a sala em que eu jogava → volta ao navegador com o aviso.
+# A sala recriada reaparece na lista (a _exit_play já pede a lista atualizada) para reentrar.
+func _on_room_restarted(room_id: int) -> void:
+	if room_id != _playing_room:
+		return
+	_exit_play()
+	_alert("O nível foi reiniciado pelo host")
 
 
 func _alert(message: String) -> void:
 	var dlg := AcceptDialog.new()
 	dlg.dialog_text = Locale.tr_key(message)
 	dlg.get_ok_button().text = Locale.tr_key("OK")
+	UIDialogs.style(dlg)
 	dlg.confirmed.connect(dlg.queue_free)
 	dlg.canceled.connect(dlg.queue_free)
 	add_child(dlg)
@@ -156,6 +167,7 @@ func _confirm_disconnect() -> void:
 	dlg.dialog_text = Locale.tr_key("Desconectar e voltar para a lista de salas ?")
 	dlg.get_ok_button().text = Locale.tr_key("Sim")
 	dlg.get_cancel_button().text = Locale.tr_key("Não")
+	UIDialogs.style(dlg)
 	dlg.confirmed.connect(func() -> void:
 		dlg.queue_free()
 		_confirm_dialog = null

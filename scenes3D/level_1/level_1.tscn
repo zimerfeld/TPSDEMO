@@ -50,7 +50,7 @@ shape = SubResource("5")
 [node name="SpawnedNodes" type="Node3D" parent="." unique_id=1971470717]
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
-_spawnable_scenes = PackedStringArray("res://library3D/characters/players/player/player.tscn", "res://library3D/characters/players/playera/playera.tscn", "res://library3D/characters/red_robot/red_robot.tscn", "res://library3D/characters/player/bullet/bullet.tscn")
+_spawnable_scenes = PackedStringArray("res://library3D/characters/players/player/player.tscn", "res://library3D/characters/players/playera/playera.tscn", "res://library3D/characters/red_robot/red_robot.tscn", "res://library3D/characters/criatura_alada/criatura_alada.tscn", "res://library3D/characters/player/bullet/bullet.tscn", "res://library3D/weapons/bomb/bomb.tscn", "res://library3D/structures/core/core.tscn", "res://library3D/structures/core_out_light/core_out_light.tscn", "res://library3D/structures/door/door.tscn", "res://library3D/structures/lights/lights.tscn", "res://library3D/structures/props/props.tscn", "res://library3D/structures/structure/structure.tscn")
 spawn_path = NodePath("../SpawnedNodes")
 
 [node name="PlayerSpawnpoints" type="Node3D" parent="."]

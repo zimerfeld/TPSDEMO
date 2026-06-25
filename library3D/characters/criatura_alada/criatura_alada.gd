@@ -7,6 +7,7 @@ extends CharacterBody3D
 ## Pode ser abatida a tiros (tem vida própria). Lógica server-autoritária.
 
 const Bomb: PackedScene = preload("res://library3D/weapons/bomb/bomb.tscn")
+const CriaturaAladaAILib := preload("res://library3D/characters/criatura_alada/IA/criatura_alada_ai.gd")
 const BOMB_GRAVITY := 18.0   # deve casar com bomb.gd (fall_gravity)
 
 @export var auto_fly := true
@@ -39,6 +40,7 @@ var _bomb_cd := 0.0
 var _scan_cd := 0.0
 var _player: Node3D = null
 var _dead := false
+var ai: Node = null
 
 ## Proxy replicado NO LUGAR de global_transform: o servidor o espelha a cada frame; o cliente
 ## o bufferiza (NetInterp) e renderiza ~100 ms no passado, suavizando o voo (anti-flicker).
@@ -60,6 +62,9 @@ var _interp_seeded := false
 func _ready() -> void:
 	_yaw = rotation.y
 	_bomb_cd = bomb_interval
+	ai = CriaturaAladaAILib.new()
+	ai.name = "IA"
+	add_child(ai)
 	if _anim and _anim.has_animation("voar"):
 		_anim.play("voar")
 	# Semeia o proxy de rede com a pose inicial APENAS no servidor (assim o spawn property já
@@ -112,26 +117,23 @@ func _physics_process(delta: float) -> void:
 		net_transform = global_transform  # espelha p/ replicação (clientes interpolam)
 		return
 
-	# ---- direção horizontal: orbitar o player no raio desejado
-	var to_self := global_position - _player.global_position
-	to_self.y = 0.0
-	var dist := to_self.length()
-	var radial := to_self.normalized() if dist > 0.01 else Vector3.BACK
-	var tangent := Vector3(-radial.z, 0.0, radial.x)             # perpendicular (sentido da órbita)
-	var radial_err := dist - orbit_radius
-	var horiz := tangent * cruise_speed - radial * clampf(radial_err, -cruise_speed, cruise_speed)
+	# ---- direção/altitude: a IA aérea escolhe órbita, raio e camada vertical.
+	var move_plan: Dictionary = ai.movement_plan(global_position, _player.global_position, orbit_radius,
+		cruise_speed, cruise_altitude, _t, get_world_3d().direct_space_state, [self, _player], delta)
+	var horiz: Vector3 = move_plan.get("horiz", Vector3.ZERO)
+	var desired_altitude := float(move_plan.get("altitude", cruise_altitude))
 
 	# ---- vertical: subir até a altitude de cruzeiro, depois oscilar suave
 	var vy := 0.0
 	if _phase == Phase.CLIMB:
-		var dy := cruise_altitude - global_position.y
+		var dy := desired_altitude - global_position.y
 		if dy <= 0.4:
 			_phase = Phase.PATROL
 			_t = 0.0
 		vy = clampf(dy * 2.0, -climb_speed, climb_speed)
 		horiz *= 0.6   # sobe mais reto
 	else:
-		vy = bob_amplitude * bob_freq * cos(_t * bob_freq) + (cruise_altitude - global_position.y) * 0.6
+		vy = bob_amplitude * bob_freq * cos(_t * bob_freq) + (desired_altitude - global_position.y) * 0.6
 
 	# ---- orientação (frente -Z aponta para onde voa) + banking ao curvar
 	if horiz.length() > 0.05:
@@ -140,7 +142,8 @@ func _physics_process(delta: float) -> void:
 	var dyaw := wrapf(heading - _yaw, -PI, PI)
 	_yaw = heading
 	if _rig:
-		var tb := clampf(-dyaw / maxf(delta, 0.0001) / 2.0, -1.0, 1.0) * bank_max
+		var bank_boost := float(move_plan.get("bank_boost", 1.0))
+		var tb := clampf(-dyaw / maxf(delta, 0.0001) / 2.0, -1.0, 1.0) * bank_max * bank_boost
 		_rig.rotation.z = lerpf(_rig.rotation.z, tb, delta * 2.5)
 
 	velocity = horiz + Vector3.UP * vy
@@ -185,13 +188,17 @@ func _drop_bomb() -> void:
 	# (limitada para o player conseguir desviar durante a queda).
 	var horiz := Vector3.ZERO
 	if _player != null:
-		var h: float = maxf(origin.y - _player.global_position.y, 1.0)
-		var t: float = sqrt(2.0 * h / BOMB_GRAVITY)
-		var disp: Vector3 = _player.global_position - origin
-		disp.y = 0.0
-		horiz = (disp / t).limit_length(bomb_lead_max)
+		var target_velocity := _player_velocity()
+		horiz = ai.compute_bomb_velocity(origin, _player.global_position, target_velocity,
+			BOMB_GRAVITY, bomb_lead_max)
+		ai.note_bomb_dropped(origin.distance_to(_player.global_position), target_velocity.length())
 	if bomb.has_method("set_initial_velocity"):
 		bomb.set_initial_velocity(horiz + Vector3.DOWN * 1.0)
+
+
+func notify_projectile_feedback(hit_target: Node) -> void:
+	if ai != null and ai.has_method(&"report_bomb_result"):
+		ai.report_bomb_result(hit_target != null and hit_target == _player)
 
 
 @rpc("call_local")
@@ -225,10 +232,24 @@ func hide_health_hud() -> void:
 func _find_player(n: Node) -> Node3D:
 	if n == null:
 		return null
-	if n is Player:
-		return n
+	if n is Node3D and _is_player_candidate(n as Node3D):
+		return n as Node3D
 	for c in n.get_children():
 		var r := _find_player(c)
 		if r != null:
 			return r
 	return null
+
+
+func _is_player_candidate(body: Node3D) -> bool:
+	return body != null and (body.name == "Target" \
+		or (body.has_method(&"add_camera_shake_trauma") and body.has_method(&"hit")))
+
+
+func _player_velocity() -> Vector3:
+	if _player == null:
+		return Vector3.ZERO
+	if _player is CharacterBody3D:
+		return (_player as CharacterBody3D).velocity
+	var raw: Variant = _player.get("velocity")
+	return raw if raw is Vector3 else Vector3.ZERO

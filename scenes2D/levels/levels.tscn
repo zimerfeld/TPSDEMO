@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" uid="uid://drnu7yflp4xg4" path="res://scenes2D/levels/levels.gd" id="1"]
 [ext_resource type="Theme" uid="uid://buithemedemo1" path="res://themes/ui_theme.tres" id="2"]
+[ext_resource type="Shader" path="res://themes/backgrounds/levels_bg.gdshader" id="3"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg"]
+shader = ExtResource("3")
 
 [sub_resource type="Environment" id="1"]
 background_mode = 1
@@ -16,6 +20,7 @@ script = ExtResource("1")
 layer = -2
 
 [node name="Bg" type="ColorRect" parent="Background"]
+material = SubResource("ShaderMaterial_bg")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

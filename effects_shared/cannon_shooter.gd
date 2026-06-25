@@ -30,11 +30,19 @@ static func fire(parent: Node, origin: Vector3, dir: Vector3, damage: int, shoot
 	bullet.tint = tint
 	bullet.ball_color = ball_color
 	bullet.ball_scale = ball_scale
+	# Posição+orientação do cano DEFINIDAS ANTES do add_child. O `global_transform` da bala é uma
+	# spawn property (ver bullet.tscn); o MultiplayerSpawner tira o snapshot de spawn NO add_child.
+	# Setar o transform DEPOIS (como era) fazia o pacote de spawn carregar a origem PADRÃO da cena
+	# → no cliente a bala nascia fora do cano (deslocada) até o 1º sync corrigir. Montamos o
+	# transform no mundo e convertemos para o espaço do `parent` (SpawnedNodes), cobrindo o caso
+	# de o pai não estar na origem.
+	var n_dir: Vector3 = dir.normalized()
+	# `up` não-paralelo à direção (tiro vertical pro alto/baixo quebraria o looking_at com Y).
+	var up: Vector3 = Vector3.UP if absf(n_dir.dot(Vector3.UP)) < 0.99 else Vector3.FORWARD
+	var world: Transform3D = Transform3D(Basis(), origin).looking_at(origin + n_dir, up)
+	bullet.transform = parent.global_transform.affine_inverse() * world
 	# add_child(..., true) gives a stable name for the MultiplayerSynchronizer.
 	parent.add_child(bullet, true)
-	bullet.global_transform.origin = origin
-	# Orient the bullet down its travel direction so its trail/particles align.
-	bullet.look_at(origin + dir.normalized())
 	# Never collide with the shooter or its own limb hitboxes (the bullet is born inside it).
 	if shooter is PhysicsBody3D:
 		bullet.add_collision_exception_with(shooter)
