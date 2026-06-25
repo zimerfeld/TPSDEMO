@@ -428,7 +428,6 @@ text = "Linhas do Esqueleto"
 
 [node name="TypeCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
-modulate = Color(1, 0.45, 0.85, 1)
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Tipo"
@@ -604,9 +603,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -298.0
-offset_top = -68.0
+offset_top = -100.0
 offset_right = -16.0
-offset_bottom = -16.0
+offset_bottom = -50.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_constants/separation = 12

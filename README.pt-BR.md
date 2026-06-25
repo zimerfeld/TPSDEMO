@@ -22,6 +22,8 @@ em terceira pessoa. Em alto nível, oferece:
 - **Visuais das telas & diálogos** — cada tela 2D tem seu próprio **fundo animado por shader** (leve)
   que remete à sua função: uma **grade de fase** em perspectiva (Níveis), uma **rede de nós conectando**
   (Jogar Online), um **equalizador** (Configurações) e um **blueprint de dev** com varredura (Developer).
+  A tela **Jogar Online** ainda emoldura a borda (com margem para dentro) com um **fio de metal
+  trançado grosso** por onde uma **energia elétrica** passa devagar, em sentidos alternados.
   Todas as **janelas de confirmação/aviso são montadas sobre um controle de janela flutuante
   reutilizável** (`FloatingWindow`, uma cena `controls2D`) — texto centralizado, botões de largura
   uniforme, × de fechar padrão e fundo modal —, criadas pelo helper `FloatingDialog`; a mesma base
@@ -246,7 +248,8 @@ O idioma da UI alterna entre **Português** e **English** pelo autoload **Locale
   seleção viva) e, na primeira vez que vê um nó, guarda o texto original em um meta, para que trocas
   de idioma traduzam a partir do original e não de um texto já traduzido.
 - **Toda tela tem os botões de idioma.** Uma `LangBar` no canto inferior direito com botões
-  **Português** / **English** (o mesmo padrão do menu) está presente em menu, chooseplayer,
+  **Português** / **English** (o mesmo padrão do menu), **alinhada à altura do botão "Voltar"**,
+  está presente em menu, chooseplayer,
   settings, developer, levels, playonline, controls e models. Pressionar um chama
   `Locale.set_language(...)`, que persiste a escolha e re-localiza a árvore viva no lugar (o botão do
   idioma ativo fica acinzentado).
@@ -263,8 +266,8 @@ texto-fonte, mudar a cena sem atualizar a chave quebra a tradução.
 ## Configurações
 
 A tela de configurações tem abas — na ordem **`Resolution`, `Display`**, `Antialiasing`,
-`Lighting`, `Effects`, `Audio` — com um ritmo vertical consistente (espaçamento de linhas/seções
-igual a 8). Os títulos das abas também são localizados (vêm dos nomes dos nós-filhos, então o Locale
+`Lighting`, `Effects`, `Audio` — com uma **faixa de abas com metade da altura** (fonte das abas 15)
+e um ritmo vertical consistente (espaçamento de linhas/seções igual a 8). Os títulos das abas também são localizados (vêm dos nomes dos nós-filhos, então o Locale
 os traduz em código). A maioria das linhas é um conjunto de botões toggle que compartilham um
 gradiente verde → amarelo → laranja → vermelho lido como barato → caro (ex.: performance vs.
 qualidade), com o botão verde sendo a opção segura/leve.

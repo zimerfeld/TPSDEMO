@@ -143,6 +143,15 @@ virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 > - **Exclusividade:** `_aux_bone_candidates` já só oferece ossos não-membros (`group_of==""`) para
 >   promover; `_on_sub_member_added` ainda bloqueia + avisa se um osso de Membro chegar lá.
 
+> [!note] Prefixos dos rótulos 3D LOCALIZADOS (2026-06-25)
+> Os prefixos dos `Label3D` — **"Membro:" / "Sub-membro:" / "Esqueleto:" / "Tipo:" / "Nome:"** (e "ID:") —
+> passam por `Locale.tr_key(...)` na construção (`_add_member_labels`, `_label_aux_bones`,
+> `_label_sub_member`, `_add_tni_lines`), então aparecem traduzidos nos DOIS idiomas (antes "Membro/
+> Esqueleto/Submembro" ficavam em PT no EN, e "TYPE/Name" em EN no PT; "Submembro:" virou "Sub-membro:").
+> Como `Label3D` NÃO passa pelo auto-tradutor do Locale, `_on_language_changed` agora chama
+> `_refresh_member_overlays()` + `_refresh_aux_labels()` para reconstruir as pilhas no idioma novo.
+> Chaves novas em `models.{pt,en}.json`: `Tipo:`/`Nome:` (prefixos) + os toggles `Tipo`/`Nome`/`Linhas do Esqueleto`.
+
 > [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
 > - **Malha** (`MalhaCheck`, **1º toggle da lista** desde 2026-06-23, chave `show_malha`, default LIGADO):
 >   mostra/esconde a malha (`MeshInstance3D`) do modelo do preview (pula gizmos com nome `_…`). `_apply_malha_visibility`.
@@ -180,7 +189,10 @@ toggle é o **interruptor mestre** da sua categoria:
 
 > [!note] Cores dos rótulos 3D (`_LABEL_LINE_COLORS`)
 > Membro = ciano · **Tipo = ROSA (2026-06-23, antes laranja)** · Nome = verde · Id = amarelo ·
-> Osso/Esqueleto = laranja. O toggle **Tipo** (`TypeCheck`) também ficou **rosa** (`modulate`).
+> Osso/Esqueleto = laranja. O toggle **Tipo** (`TypeCheck`) tem o **texto rosa** via `font_color`
+> (`_apply_label_line_colors`, todos os estados); o **`modulate` foi REMOVIDO (2026-06-25)** para o
+> **fundo do toggle bater com os demais** (antes o `modulate` tingia o controle inteiro de rosa) —
+> mesmo padrão do toggle "Submembros".
 > O `DebugOverlay` da tela developer reusa as mesmas cores (Tipo/Nome/Id/Membro) + Esqueleto branco.
 
 > [!important] Cena Models 100% desacoplada do Debug 3D (2026-06-21)

@@ -476,6 +476,10 @@ func _on_language_changed(_lang: String) -> void:
 	if _show_ai_panel:
 		_refresh_ai_panel()
 	_refresh_ai_actions()
+	# Re-traduz os PREFIXOS dos rótulos 3D (Membro:/Sub-membro:/Esqueleto:/Tipo:/Nome:): os Label3D não
+	# passam pelo auto-tradutor do Locale, então reconstruímos as pilhas com o idioma atual.
+	_refresh_member_overlays()
+	_refresh_aux_labels()
 	_update_language_buttons()
 
 
@@ -1481,7 +1485,7 @@ func _label_aux_bones(bone_names: Array) -> void:
 		skel.add_child(att)
 		att.bone_name = str(bn)
 		var lbl := Label3D.new()
-		lbl.text = "Esqueleto: %s" % str(bn)
+		lbl.text = "%s %s" % [Locale.tr_key("Esqueleto:"), str(bn)]
 		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		lbl.no_depth_test = true
 		# Acima do realce/colliders e dos rótulos de membro, para o nome nunca ser engolido.
@@ -1550,7 +1554,7 @@ func _label_sub_member(group: String) -> void:
 		var name_txt := str(body.get_meta("member_label")) if body.has_meta("member_label") else group.substr(len("PART_"))
 		var lbl := Label3D.new()
 		lbl.name = _SUB_LBL_PREFIX + group
-		lbl.text = "Submembro: %s" % name_txt
+		lbl.text = "%s %s" % [Locale.tr_key("Sub-membro:"), name_txt]
 		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		lbl.no_depth_test = true
 		lbl.render_priority = 5
@@ -1577,9 +1581,9 @@ func _label_sub_member(group: String) -> void:
 # toggle (_show_type/_show_name/_show_id) estiver ligado. `name_txt` = nome do osso/submembro.
 func _add_tni_lines(parent: Node3D, node: Object, name_txt: String, base_pos: Vector3, prefix: String) -> void:
 	var lines := [
-		{"id": "Type", "on": _show_type, "text": "TYPE: %s" % node.get_class()},
-		{"id": "Name", "on": _show_name, "text": "Name: %s" % name_txt},
-		{"id": "Id", "on": _show_id, "text": "ID: %d" % node.get_instance_id()},
+		{"id": "Type", "on": _show_type, "text": "%s %s" % [Locale.tr_key("Tipo:"), node.get_class()]},
+		{"id": "Name", "on": _show_name, "text": "%s %s" % [Locale.tr_key("Nome:"), name_txt]},
+		{"id": "Id", "on": _show_id, "text": "%s %d" % [Locale.tr_key("ID:"), node.get_instance_id()]},
 	]
 	var y := base_pos.y
 	for line in lines:
@@ -3272,10 +3276,10 @@ func _add_member_labels(instance: Node) -> void:
 		var center: Vector3 = (shapes[0] as CollisionShape3D).position
 		# Cada linha: id (p/ recriar in-place + cor), visibilidade pelo toggle local, e offset Y.
 		var lines := [
-			{"id": "Type", "on": _show_type, "text": "TYPE: %s" % owner_node.get_class(), "y": 0.18},
-			{"id": "Name", "on": _show_name, "text": "Name: %s" % owner_node.name, "y": 0.12},
-			{"id": "Id", "on": _show_id, "text": "ID: %d" % owner_node.get_instance_id(), "y": 0.06},
-			{"id": "Member", "on": _show_member_labels, "text": "Membro: %s" % text, "y": 0.0},
+			{"id": "Type", "on": _show_type, "text": "%s %s" % [Locale.tr_key("Tipo:"), owner_node.get_class()], "y": 0.18},
+			{"id": "Name", "on": _show_name, "text": "%s %s" % [Locale.tr_key("Nome:"), owner_node.name], "y": 0.12},
+			{"id": "Id", "on": _show_id, "text": "%s %d" % [Locale.tr_key("ID:"), owner_node.get_instance_id()], "y": 0.06},
+			{"id": "Member", "on": _show_member_labels, "text": "%s %s" % [Locale.tr_key("Membro:"), text], "y": 0.0},
 		]
 		# Um pivô por membro agrupa as 4 linhas, de modo que o anti-colisão desloque a pilha
 		# inteira de uma vez (sem desalinhar as linhas entre si). Posicionado no topo do bloco.

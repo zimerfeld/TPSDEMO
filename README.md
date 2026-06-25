@@ -69,7 +69,8 @@ high-FPS client view. A pre-session **Optimization** selector picks interpolatio
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
 Each 2D screen (Levels, Play Online, Settings, Developer) carries its own lightweight **animated shader
-background** that evokes its purpose, and every **confirmation window** is built on one reusable
+background** that evokes its purpose (Play Online also frames its border with a **braided-metal wire**
+looped by slow, alternating **electric energy**), and every **confirmation window** is built on one reusable
 floating-window control (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a
 standard × close and a modal backdrop — the same base other floating windows can reuse.
 
@@ -105,7 +106,8 @@ pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync
 (Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
 telas Host/Client são em tela cheia, no padrão do resto da UI.
 Cada tela 2D (Níveis, Jogar Online, Configurações, Developer) tem seu próprio **fundo animado por shader**
-(leve) que remete à sua função, e toda **janela de confirmação** é montada sobre um controle de janela
+(leve) que remete à sua função (a Jogar Online ainda emoldura a borda com um **fio de metal trançado**
+percorrido por uma **energia elétrica** lenta e alternada), e toda **janela de confirmação** é montada sobre um controle de janela
 flutuante reutilizável (`FloatingWindow`, uma cena `controls2D`) — texto centralizado, botões de largura
 uniforme, um × de fechar padrão e fundo modal — a mesma base que outras janelas flutuantes podem reusar.
 
