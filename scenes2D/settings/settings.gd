@@ -489,6 +489,7 @@ func _on_video_resolution_selected(index: int) -> void:
 	dlg.dialog_text = Locale.tr_key("Confirma resolução de video escolhida ?")
 	dlg.get_ok_button().text = Locale.tr_key("Sim")
 	dlg.get_cancel_button().text = Locale.tr_key("Não")
+	UIDialogs.style(dlg)
 	dlg.confirmed.connect(func() -> void:
 		_apply_video_resolution(res_index)
 		_current_resolution_index = index
@@ -543,6 +544,7 @@ func _on_reset_pressed() -> void:
 	dlg.dialog_text = Locale.tr_key("Restaurar todas as configurações para o padrão?")
 	dlg.get_ok_button().text = Locale.tr_key("Sim")
 	dlg.get_cancel_button().text = Locale.tr_key("Não")
+	UIDialogs.style(dlg)
 	dlg.confirmed.connect(func() -> void:
 		Settings.reset_to_defaults()
 		_load_current_settings()

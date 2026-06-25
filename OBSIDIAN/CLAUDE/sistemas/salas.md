@@ -20,10 +20,13 @@
 - **Render sob demanda (otimização):** os SubViewports ficam em `UPDATE_DISABLED`; só a sala
   **observada/jogada** vira `UPDATE_ALWAYS`. A **simulação dos inimigos roda em TODAS** as salas,
   independente do render → não se paga GPU por salas que ninguém está vendo.
-- API: `start_room(level_path) -> id`, `stop_room(id)` (avisa os clientes da sala via
-  `notify_room_closed` antes de liberar), `restart_room(id) -> novo_id`, `get_rooms()`, `stop_all()`;
-  **host joga:** `host_spawn_in_room(id, variant_id)` / `host_leave_room()`; **cliente sai:**
-  `client_leave_room(id)` (+ RPC `leave_room`); sinais `rooms_changed` e `room_closed(id)`. Marcadores
+- API: `start_room(level_path) -> id`, `stop_room(id)`, `restart_room(id) -> novo_id`, `get_rooms()`,
+  `stop_all()`. **`stop_room` e `restart_room` chamam o mesmo `_close_room(id, reason)`** (enum
+  `CloseReason.{STOPPED, RESTARTED, SILENT}`), que avisa os clientes da sala ANTES de liberar com o
+  RPC adequado ao motivo: **STOPPED → `notify_room_closed`** ("O nível foi parado pelo host"),
+  **RESTARTED → `notify_room_restarted`** ("O nível foi reiniciado pelo host"). **host joga:**
+  `host_spawn_in_room(id, variant_id)` / `host_leave_room()`; **cliente sai:** `client_leave_room(id)`
+  (+ RPC `leave_room`); sinais `rooms_changed`, `room_closed(id)` e **`room_restarted(id)`**. Marcadores
   do fluxo "Jogar" (invertido): `pending_play_room` / `pending_play_level` / `pending_play_return`.
 
 ## Fluxo e telas — papel escolhido no `playonline`
@@ -46,7 +49,12 @@ mouse). Durante o jogo a **sessão continua sendo a cena raiz** (só esconde o p
     `current` no SubViewport (renderizado em tela cheia, só o mouse é empurrado). **ESC** abre um
     `ConfirmationDialog` ("Desconectar e voltar para a gerência ?") → `host_leave_room` e volta à grade.
   - **Parar:** encerra **só aquela sala**; os clientes que jogavam nela recebem `notify_room_closed`,
-    veem **"O Servidor foi desligado"** e voltam ao navegador da `client_session`. Outras salas seguem.
+    veem **"O nível foi parado pelo host"** e voltam ao navegador da `client_session`. Outras salas seguem.
+  - **Reiniciar:** recria o nível do zero (`restart_room` = `_close_room(RESTARTED)` + `start_room`); os
+    clientes da sala recebem `notify_room_restarted`, veem **"O nível foi reiniciado pelo host"** e voltam
+    ao navegador (a sala recriada reaparece na lista p/ reentrar). O **host volta à grade com o mouse
+    VISÍVEL** (estado idêntico ao de "Iniciar Sala") — `_on_restart_room` reentra na sala recriada só se
+    estava observando/jogando ESTA sala. Antes o restart podia deixar a tela num estado sem mouse/respawn.
 - **CLIENTE (`scenes2D/client_session/`, client-only — NOVO)** — `_on_join_rooms_pressed` conecta e,
   no `connected_to_server`, abre `client_session.tscn`. Pede `request_room_list` e lista
   **#id — level (N jogadores) + Jogar** (o botão **só aparece se houver sala**). **Jogar:**
@@ -122,11 +130,40 @@ joga (aí o SubViewport/nível ocupa a tela). `_make_back_button` removido (o Vo
 depois o default); interpolação/taxa/render do host (`NetConfig`, seção `netopt`); idioma (`Locale`,
 `game/language`).
 
+**Dropdowns de histórico (Porta/IP) — correção 2026-06-25:** os `OptionButton` `PortHistory`/
+`AddressHistory` **refletem o valor atual do campo** e **mantêm a seleção** — antes `_fill_history`
+forçava `selected = 0` ("Selecione...") e os handlers de seleção também resetavam para 0, então o
+dropdown nunca mostrava nem guardava o valor armazenado. Agora: `_ready` chama `_prefill_last_used()`
+**antes** de `_refresh_history()`; `_fill_history(option, key, current)` chama `_select_in_history` p/
+deixar selecionado o item igual ao valor atual (ou "Selecione..." se não estiver no histórico); os
+`_on_*_history_item_selected` **não resetam mais** p/ 0; e `_on_port_changed`/`_on_address_changed`
+re-sincronizam o dropdown ao digitar. (Setar `.selected` por código não dispara `item_selected` → sem
+recursão.) O valor em si já persistia em `online/last_port|last_address` — o que faltava era o dropdown
+**espelhar** esse valor.
+
 **HUD de debug do level_base (REMOVIDO):** o `Label` "Debug" (script `debug.gd`, mostrava FPS/VSync/
 Memória/Online/Multiplayer ID) era legado do `level_base.tscn` (não existia no level_1/2), aparecia por
 padrão e era redundante com o **Performance HUD**. Foi **deletado** do `level_base.tscn` (nó +
 ext_resource) e os arquivos `debug.gd`/`debug.gd.uid` apagados. Não foi gerado por mim — era código
 abandonado.
+
+## Janelas de confirmação padronizadas + fundos animados das telas (2026-06-24)
+
+**Diálogos:** novo helper **`UIDialogs`** (`themes/ui_dialogs.gd`, `static func style(dlg)`) padroniza
+TODAS as janelas de confirmação/aviso (Sair, Resolução, Restaurar, Desconectar host/cliente, avisos das
+sessões e erros do `CrashHandler`): aplica o **tema do jogo** no próprio diálogo (**botões padrão** mesmo
+quando ele é filho de um Node sem tema — menu/settings/crash adicionavam ao root sem tema → antes saíam
+botões cinza), **`min_size` 720×340** (janela maior) e **fontes maiores** (texto/título/botões). Cada
+site chama `UIDialogs.style(dlg)` após definir os textos, antes do `popup_centered()`.
+
+**Fundos animados:** cada tela 2D ganhou um shader `canvas_item` próprio (em `themes/backgrounds/`,
+aplicado como `ShaderMaterial` no nó `Background/Bg` da cena, sobre a base navy) que **remete à função
+da tela** — `levels_bg` (grade de fase em perspectiva), `playonline_bg` (rede de nós SUTIL, só nas bordas — o
+centro fica calmo/navy p/ os textos do formulário ficarem LEGÍVEIS; reescrito 2026-06-25 porque a 1ª
+versão acendia o centro e dificultava a leitura), `settings_bg` (equalizador + sliders),
+`developer_bg` (blueprint + varredura horizontal). Barato (math
+por pixel, sem texturas) → sem custo relevante numa tela de menu. As sessões host/cliente seguem com o
+`session_signal_bg` (anéis de radar) — ver *Polimento de UI*.
 
 ## Otimização escolhível antes da sala — `NetConfig` (2026-06-24)
 

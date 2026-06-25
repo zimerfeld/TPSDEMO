@@ -3,6 +3,7 @@ extends Node
 signal replace_main_scene(resource: PackedScene)
 
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
+const AIConfigLib := preload("res://effects_shared/ai_config.gd")
 
 # Placeholder shown as the first, default-selected option of every dropdown.
 # Picking it means "nothing chosen yet": dependent dropdowns reset to this same
@@ -192,6 +193,8 @@ var _refit_interval := _REFIT_MIN_INTERVAL
 # Editor de dano por membro (painel com um input de bônus % por membro). Só faz sentido
 # para personagens em "Modelo completo"; não é persistido (abre fechado a cada visita).
 var _show_damage_panel: bool = false
+# Editor de IA por modelo. Por enquanto só o red_robot expõe opções configuráveis.
+var _show_ai_panel: bool = false
 
 # Dropdowns Membro/Sub-membro (só "Modelo completo", personagens/armas): isolam o collider
 # de um membro e, opcionalmente, de um de seus sub-membros, na visualização. Cada array
@@ -249,6 +252,9 @@ const _TRASH_BTN_ID := 0
 # Arraste da janela flutuante de dano (clique e arraste na barra de título).
 var _damage_panel_dragging: bool = false
 var _damage_panel_drag_offset: Vector2 = Vector2.ZERO
+# Arraste da janela flutuante de IA.
+var _ai_panel_dragging: bool = false
+var _ai_panel_drag_offset: Vector2 = Vector2.ZERO
 
 # Edição ao vivo do afastamento (offset) do collider do grupo focado. _offset_group é o grupo
 # carregado nos SpinBox; _offset_saved é o valor salvo no momento da carga; _offset_dirty marca que
@@ -306,6 +312,7 @@ var _zoom_target: float = 0.0
 @onready var id_check: CheckButton = %IdCheck
 @onready var osso_check: CheckButton = %OssoCheck
 @onready var damage_button: Button = %DamageButton
+@onready var ai_button: Button = %AIButton
 @onready var aux_highlight_toggle: CheckButton = %AuxHighlightToggle
 @onready var sub_member_label_toggle: CheckButton = %SubMemberLabelToggle
 @onready var sub_collider_toggle: CheckButton = %SubColliderToggle
@@ -313,6 +320,7 @@ var _zoom_target: float = 0.0
 @onready var skeleton_lines_check: CheckButton = %SkeletonLinesCheck
 @onready var effects_toggle: CheckButton = %EffectsToggle
 @onready var damage_panel: PanelContainer = %DamagePanel
+@onready var ai_panel: PanelContainer = %AIPanel
 # Editor de dano em ÁRVORE (Tree): galhos = membros, folhas = sub-membros sob seu dono. Colunas:
 # Nome | Definir (check) | Bônus % (range) | Dono (dropdown, só sub-membros). Footer abaixo da
 # árvore = linha "Adicionar sub-membro" + botão "Remover sub-membro".
@@ -321,6 +329,9 @@ var _zoom_target: float = 0.0
 # Barra de título (área de arraste) e botão fechar (×, estilo Windows) da janela flutuante de dano.
 @onready var damage_titlebar: PanelContainer = %TitleBar
 @onready var damage_close_button: Button = %CloseButton
+@onready var ai_list: VBoxContainer = %AIList
+@onready var ai_titlebar: PanelContainer = %AITitleBar
+@onready var ai_close_button: Button = %AICloseButton
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
 @onready var english_button: Button = $UI/LangBar/EnglishButton
 # Watermark do nome da cena no canto inferior esquerdo (mesma faixa do botão "Voltar"),
@@ -399,6 +410,7 @@ func _ready() -> void:
 	osso_check.toggled.connect(_on_osso_toggled)
 	# "Dano" virou botão de ação (ao lado do "Voltar"), não mais um toggle da lista: abre a janela.
 	damage_button.pressed.connect(_on_damage_button_pressed)
+	ai_button.pressed.connect(_on_ai_button_pressed)
 	aux_highlight_toggle.button_pressed = _show_aux_highlight
 	aux_highlight_toggle.toggled.connect(_on_aux_highlight_toggled)
 	sub_member_label_toggle.button_pressed = _show_sub_member_label
@@ -416,6 +428,7 @@ func _ready() -> void:
 	sub_member_label.add_to_group(Locale.SKIP_GROUP)
 	_setup_damage_window()
 	_setup_damage_tree()
+	_setup_ai_window()
 
 	# Pinta o texto de cada toggle de linha com a mesma cor do rótulo 3D que ele controla.
 	_apply_label_line_colors()
@@ -428,6 +441,7 @@ func _ready() -> void:
 	# every dropdown shows "Selecione..." and nothing is previewed — identical to a first
 	# visit, and no real item is ever auto-selected.
 	_restore_selection_chain()
+	_refresh_ai_actions()
 
 
 func _on_language_changed(_lang: String) -> void:
@@ -459,6 +473,9 @@ func _on_language_changed(_lang: String) -> void:
 	# Rótulo da row de sub-membro (SKIP_GROUP, dirigido por código): agora sempre "Sub-membro:"
 	# (o filtro de ossos avulsos virou o dropdown próprio "Esqueleto", com label estático).
 	sub_member_label.text = Locale.tr_key("Sub-membro:")
+	if _show_ai_panel:
+		_refresh_ai_panel()
+	_refresh_ai_actions()
 	_update_language_buttons()
 
 
@@ -519,6 +536,9 @@ func _process(delta: float) -> void:
 	if _damage_panel_dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_damage_panel_dragging = false
 		_save_damage_panel_pos()
+	if _ai_panel_dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_ai_panel_dragging = false
+		_save_ai_panel_pos()
 
 
 # Sequential gating: each dropdown below Categoria stays DISABLED until the one
@@ -626,6 +646,7 @@ func _reset_models() -> void:
 # cascades a "Selecione..." reset all the way down.
 func _reset_meshes_and_preview() -> void:
 	_front_yaw_base = DEFAULT_FRONT_YAW
+	_current_model_path = ""
 	_model_scene = null
 	_display_scene = null
 	_mesh_catalog = []
@@ -637,6 +658,7 @@ func _reset_meshes_and_preview() -> void:
 	_reset_effects()
 	_reset_members()
 	_clear_preview()
+	_refresh_ai_actions()
 
 
 # Model dropdown index 0 is the "Selecione..." placeholder; real models start at
@@ -674,6 +696,7 @@ func _on_model_selected(index: int) -> void:
 	_reset_effects()
 	_reset_members()
 	_clear_preview()
+	_refresh_ai_actions()
 
 
 # Part dropdown index 0 is the "Selecione..." placeholder (nothing previewed),
@@ -1723,8 +1746,16 @@ func _any_member_label() -> bool:
 # Botão "Dano" (à direita do "Voltar"): abre a JANELA de Dano. O × da janela a fecha
 # (_on_damage_close). Antes era um toggle na lista; virou botão de ação dedicado.
 func _on_damage_button_pressed() -> void:
+	# Sem bloqueio: o Dano abre para QUALQUER modelo (em "Modelo completo"). Abrir o Dano fecha a IA
+	# (só UMA janela flutuante por vez, mas o botão nunca é bloqueado pela outra).
+	_show_ai_panel = false
 	_show_damage_panel = true
+	_refresh_ai_panel()
 	_refresh_damage_panel()
+	# Reposiciona para dentro da tela (offsets default/salvos podem cair fora). Deferido: o painel
+	# só ganha size real após o layout desta troca de visibilidade.
+	if damage_panel.visible:
+		_clamp_window_to_viewport.call_deferred(damage_panel)
 
 
 # Transforma o painel de dano numa JANELA FLUTUANTE estilo Windows: barra de título com fundo
@@ -1791,6 +1822,150 @@ func _on_damage_close() -> void:
 	_damage_panel_dragging = false
 	_show_damage_panel = false
 	_refresh_damage_panel()
+
+
+# Garante que a janela flutuante caiba INTEIRA na viewport ao abrir. As posições default do .tscn
+# (offsets ~1300/1220, pensados p/ telas largas) e posições salvas de uma resolução maior caem FORA
+# da tela em resoluções menores (ex.: 1280×720) → a janela "abria" (visible=true) mas ficava invisível
+# à direita. Chamado DEFERIDO no open: a essa altura o layout já deu size real ao painel.
+func _clamp_window_to_viewport(panel: Control) -> void:
+	if not is_instance_valid(panel):
+		return
+	var vp := get_viewport().get_visible_rect().size
+	var sz := panel.size
+	if sz.x <= 0.0 or sz.y <= 0.0:
+		sz = panel.get_combined_minimum_size()
+	var pos := panel.position
+	pos.x = clampf(pos.x, 0.0, maxf(0.0, vp.x - sz.x))
+	pos.y = clampf(pos.y, 0.0, maxf(0.0, vp.y - sz.y))
+	panel.position = pos
+
+
+func _supports_ai_editor() -> bool:
+	return AIConfigLib.has_behavior_definitions(_current_model_key())
+
+
+func _refresh_ai_actions() -> void:
+	var supported := _supports_ai_editor()
+	ai_button.visible = true
+	ai_button.disabled = not supported
+	if not supported:
+		_show_ai_panel = false
+	if is_instance_valid(ai_panel):
+		ai_panel.visible = supported and _show_ai_panel
+
+
+func _on_ai_button_pressed() -> void:
+	# IA SÓ para personagens (modelos com comportamentos definidos). Sem bloqueio mútuo: abrir a IA
+	# fecha o Dano (só UMA janela por vez), mas o botão nunca é bloqueado pela janela de Dano.
+	if not _supports_ai_editor():
+		return
+	_show_damage_panel = false
+	_show_ai_panel = true
+	_refresh_damage_panel()
+	_refresh_ai_panel()
+	if ai_panel.visible:
+		_clamp_window_to_viewport.call_deferred(ai_panel)
+
+
+func _setup_ai_window() -> void:
+	var win_style := StyleBoxFlat.new()
+	win_style.bg_color = Color(0, 0, 0, 1)
+	win_style.border_color = Color(1, 1, 1, 0.18)
+	win_style.set_border_width_all(1)
+	win_style.set_corner_radius_all(4)
+	ai_panel.add_theme_stylebox_override("panel", win_style)
+	var tb_style := StyleBoxFlat.new()
+	tb_style.bg_color = Color(0.16, 0.16, 0.2, 1)
+	tb_style.border_color = Color(1, 1, 1, 0.12)
+	tb_style.border_width_bottom = 1
+	tb_style.content_margin_left = 10
+	tb_style.content_margin_right = 6
+	tb_style.content_margin_top = 4
+	tb_style.content_margin_bottom = 4
+	ai_titlebar.add_theme_stylebox_override("panel", tb_style)
+	ai_titlebar.mouse_default_cursor_shape = Control.CURSOR_MOVE
+	ai_titlebar.gui_input.connect(_on_ai_titlebar_input)
+	ai_close_button.tooltip_text = Locale.tr_key("Fechar")
+	ai_close_button.pressed.connect(_on_ai_close)
+	var saved_pos = Settings.config_file.get_value("models", "ai_panel_pos", ai_panel.position)
+	if saved_pos is Vector2:
+		var vp := get_viewport().get_visible_rect().size
+		var sz: Vector2 = ai_panel.size if ai_panel.size.x > 0 else ai_panel.get_rect().size
+		saved_pos.x = clampf(saved_pos.x, 0.0, maxf(0.0, vp.x - sz.x))
+		saved_pos.y = clampf(saved_pos.y, 0.0, maxf(0.0, vp.y - sz.y))
+		ai_panel.position = saved_pos
+
+
+func _save_ai_panel_pos() -> void:
+	Settings.config_file.set_value("models", "ai_panel_pos", ai_panel.position)
+	Settings.save_settings()
+
+
+func _on_ai_titlebar_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		_ai_panel_dragging = event.pressed
+		if event.pressed:
+			_ai_panel_drag_offset = ai_panel.position - ai_panel.get_global_mouse_position()
+		else:
+			_save_ai_panel_pos()
+	elif event is InputEventMouseMotion and _ai_panel_dragging:
+		var target := ai_panel.get_global_mouse_position() + _ai_panel_drag_offset
+		var vp := get_viewport().get_visible_rect().size
+		target.x = clampf(target.x, 0.0, maxf(0.0, vp.x - ai_panel.size.x))
+		target.y = clampf(target.y, 0.0, maxf(0.0, vp.y - ai_panel.size.y))
+		ai_panel.position = target
+
+
+func _on_ai_close() -> void:
+	_ai_panel_dragging = false
+	_show_ai_panel = false
+	_refresh_ai_panel()
+
+
+func _refresh_ai_panel() -> void:
+	for child in ai_list.get_children():
+		child.queue_free()
+	if not _show_ai_panel or not _supports_ai_editor():
+		ai_panel.visible = false
+		return
+	var model_key := _current_model_key()
+	for def in AIConfigLib.behavior_definitions(model_key):
+		var panel := PanelContainer.new()
+		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var panel_style := StyleBoxFlat.new()
+		panel_style.bg_color = Color(1, 1, 1, 0.03)
+		panel_style.border_color = Color(1, 1, 1, 0.08)
+		panel_style.set_border_width_all(1)
+		panel_style.set_corner_radius_all(4)
+		panel_style.content_margin_left = 10
+		panel_style.content_margin_top = 8
+		panel_style.content_margin_right = 10
+		panel_style.content_margin_bottom = 8
+		panel.add_theme_stylebox_override("panel", panel_style)
+		ai_list.add_child(panel)
+		var content := VBoxContainer.new()
+		content.theme_override_constants.separation = 6
+		panel.add_child(content)
+		var toggle := CheckButton.new()
+		toggle.text = str(def.get("label", ""))
+		toggle.button_pressed = AIConfigLib.behavior_enabled(model_key, str(def.get("key", "")))
+		toggle.tooltip_text = Locale.tr_key(str(def.get("description", "")))
+		toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		toggle.toggled.connect(_on_ai_behavior_toggled.bind(model_key, str(def.get("key", ""))))
+		content.add_child(toggle)
+		var desc := Label.new()
+		desc.text = str(def.get("description", ""))
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc.tooltip_text = Locale.tr_key(str(def.get("description", "")))
+		desc.add_theme_color_override("font_color", Color(1, 1, 1, 0.72))
+		desc.add_theme_font_size_override("font_size", 14)
+		content.add_child(desc)
+	ai_panel.visible = true
+
+
+func _on_ai_behavior_toggled(pressed: bool, model_key: String, behavior_key: String) -> void:
+	AIConfigLib.set_behavior(model_key, behavior_key, pressed)
 
 
 # The special-effect nodes already live in the preview (collected on build), so toggling
@@ -2569,8 +2744,12 @@ func _current_classifier() -> BodyParts:
 
 # True quando o preview é um PERSONAGEM em "Modelo completo" — a única situação em que o
 # editor de dano por membro faz sentido (precisa do dono e dos membros completos).
-func _preview_is_whole_character() -> bool:
-	return _current_category_key() == "characters" \
+# O editor de Dano vale para QUALQUER modelo em "Modelo completo" (não só personagens): personagens
+# usam o plano corporal; armas/rigs usam os colliders de membro (WeaponParts/BodyParts via
+# _add_mesh_member_colliders). Em mesh ISOLADA não há "modelo" para editar membros, então gateia só
+# em "Modelo completo" + preview existente.
+func _supports_damage_editor() -> bool:
+	return _preview_instance != null \
 		and _part_value(cbo_meshes.selected) == WHOLE_MODEL_VALUE
 
 
@@ -2585,7 +2764,7 @@ func _refresh_damage_panel() -> void:
 	damage_tree.clear()
 	for c in damage_footer.get_children():
 		c.queue_free()
-	if not _show_damage_panel or not _preview_is_whole_character() or _preview_instance == null:
+	if not _show_damage_panel or not _supports_damage_editor():
 		damage_panel.visible = false
 		return
 	_ensure_member_colliders()

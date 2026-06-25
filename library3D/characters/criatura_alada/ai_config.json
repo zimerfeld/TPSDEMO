@@ -1,0 +1,10 @@
+{
+	"behaviors": {
+		"aerial_predictive_bombing": true,
+		"adaptive_altitude": true,
+		"reactive_orbit": true,
+		"vertical_evasion": true,
+		"airspace_probe": true,
+		"pressure_bomb_run": true
+	}
+}

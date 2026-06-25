@@ -31,12 +31,14 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 ## Dano-base do laser do enemy por acerto em MEMBRO do player (cabeça aplica
 ## +50% via multiplicador 1.5 da hitbox). Só há dano se acertar um membro.
 @export var weapon_damage: int = 10
-## Precisão de mira: 1.0 = 100% (acerta sempre que dispara).
-@export_range(0.0, 1.0) var aim_accuracy: float = 1.0
+## Precisão-base antes da adaptação da IA. O red_robot pode melhorar esse valor ao longo
+## do duelo se os comportamentos adaptativos estiverem ligados.
+@export_range(0.0, 1.0) var aim_accuracy: float = 0.78
 ## Só dispara quando o player estiver dentro deste alcance (mira precisa).
 @export var effective_range: float = 30.0
 
 @export var target_position := Vector3()
+@export var aim_target_position := Vector3.ZERO
 @export var health: int = 200
 @export var state: State = State.APPROACH
 @export var dead: bool = false
@@ -149,10 +151,10 @@ func _setup_limb_colliders() -> void:
 	lc.build_for(skel)
 
 
-func resume_approach() -> void:
+func resume_approach(reset_reload: bool = true) -> void:
 	state = State.APPROACH
 	aim_preparing = AIM_PREPARE_TIME
-	shoot_countdown = shoot_reload
+	shoot_countdown = shoot_reload if reset_reload else ai.retry_delay()
 
 
 @rpc("call_local")
@@ -208,6 +210,28 @@ func hide_health_hud() -> void:
 	hud.hide_now()
 
 
+func _player_velocity() -> Vector3:
+	if player is CharacterBody3D:
+		return (player as CharacterBody3D).velocity
+	return Vector3.ZERO
+
+
+func _aim_point_from(origin: Vector3) -> Vector3:
+	if not is_instance_valid(player):
+		return Vector3.ZERO
+	return ai.compute_aim_point(origin, player.global_transform.origin, _player_velocity())
+
+
+func _ray_hits_player(ray_origin: Vector3, ray_to: Vector3) -> bool:
+	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_to, 0xFFFFFFFF, [self])
+	var col: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	if col.is_empty():
+		return false
+	if col.collider == player:
+		return true
+	return col.collider != null and col.collider.has_meta("character") and col.collider.get_meta("character") == player
+
+
 # Dispara uma BALA DE CANHÃO (preta, com rastro/flash vermelho) pelo cano, via o
 # componente reutilizável CannonShooter (mesmo bullet do player, recolorido). A bala voa
 # e aplica DANO LOCALIZADO ao acertar os colliders de membro do player (LimbColliders);
@@ -218,14 +242,24 @@ func shoot() -> void:
 	var origin: Vector3 = ray_from.global_transform.origin
 	var dir: Vector3 = -ray_from.global_transform.basis.z
 	if is_instance_valid(player):
-		dir = ((player.global_transform.origin + Vector3.UP) - origin).normalized()
-		# Precisão de mira: com accuracy < 1, adiciona dispersão (pode errar).
-		if aim_accuracy < 1.0:
-			var spread := (1.0 - aim_accuracy) * 0.15
+		var aim_point := aim_target_position if aim_target_position != Vector3.ZERO else _aim_point_from(origin)
+		dir = (aim_point - origin).normalized()
+		var target_speed := _player_velocity().length()
+		var distance := origin.distance_to(player.global_transform.origin)
+		var accuracy := ai.dynamic_accuracy(aim_accuracy, distance, target_speed)
+		if accuracy < 1.0:
+			var spread := (1.0 - accuracy) * 0.15
 			dir = (dir + Vector3(randf_range(-spread, spread), randf_range(-spread, spread),
 				randf_range(-spread, spread))).normalized()
+		ai.note_shot_fired(distance, target_speed)
 	CannonShooter.fire(get_parent(), origin, dir, weapon_damage, self,
 		BULLET_TINT, BULLET_BALL_COLOR, BULLET_BALL_SCALE)
+
+
+func notify_projectile_feedback(hit_target: Node) -> void:
+	if ai == null:
+		return
+	ai.report_shot_result(hit_target == player)
 
 
 func animate(delta: float) -> void:
@@ -248,7 +282,8 @@ func animate(delta: float) -> void:
 	if target_position != Vector3.ZERO:
 		animation_tree["parameters/aiming/blend_amount"] = clamp(aim_preparing / AIM_PREPARE_TIME, 0, 1)
 
-		var to_cannon_local: Vector3 = (target_position + Vector3.UP) * ray_mesh.global_transform
+		var live_aim_target := aim_target_position if aim_target_position != Vector3.ZERO else (target_position + Vector3.UP)
+		var to_cannon_local: Vector3 = live_aim_target * ray_mesh.global_transform
 		var h_angle: float = rad_to_deg(atan2( to_cannon_local.x, -to_cannon_local.z))
 		var v_angle: float = rad_to_deg(atan2( to_cannon_local.y, -to_cannon_local.z))
 		var blend_pos: Vector2 = animation_tree.get("parameters/aim/blend_position")
@@ -280,6 +315,7 @@ func _physics_process(delta: float) -> void:
 
 	if not player:
 		target_position = Vector3()
+		aim_target_position = Vector3.ZERO
 		animate(delta)
 		set_velocity(get_gravity() * delta)
 		set_up_direction(Vector3.UP)
@@ -288,12 +324,12 @@ func _physics_process(delta: float) -> void:
 		return
 
 	target_position = player.global_transform.origin
-
-	# Decisão da IA neste quadro a partir da distância ao player e do alcance da arma.
-	# FLEE: player perto demais (<= flee_distance) → corre no sentido oposto, olhando p/ ele.
-	# O tiro continua acontecendo via a lógica abaixo (player está dentro do alcance).
+	aim_target_position = _aim_point_from(ray_from.global_transform.origin)
 	var dist_to_player: float = global_transform.origin.distance_to(player.global_transform.origin)
-	var fleeing: bool = ai.decide(dist_to_player, effective_range) == RedRobotAI.Action.FLEE
+	var has_los: bool = _ray_hits_player(ray_from.global_transform.origin, aim_target_position)
+	ai.note_line_of_sight(has_los, delta)
+	var move_plan: Dictionary = ai.movement_plan(global_transform.origin, player.global_transform.origin,
+		effective_range, get_world_3d().direct_space_state, [self, player], delta, has_los)
 
 	if state == State.APPROACH:
 		if aim_preparing > 0:
@@ -308,23 +344,16 @@ func _physics_process(delta: float) -> void:
 			# Facing player, try to shoot.
 			shoot_countdown -= delta
 			if shoot_countdown < 0.0:
-				var ray_origin = ray_from.global_transform.origin
 				# Só dispara quando a mira é precisa (player dentro do alcance efetivo).
-				if ray_origin.distance_to(player.global_transform.origin) > effective_range:
+				if dist_to_player > effective_range:
 					# Muito longe — aguarda aproximar antes de mirar.
 					shoot_countdown = 0.0
+				elif has_los:
+					state = State.AIM
+					aim_countdown = AIM_TIME
+					aim_preparing = 0.0
 				else:
-					# See if player can be killed because in they're sight.
-					var ray_to = player.global_transform.origin + Vector3.UP # Above middle of player.
-					var col = get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_origin, ray_to, 0xFFFFFFFF, [self]))
-
-					if not col.is_empty() and col.collider == player:
-						state = State.AIM
-						aim_countdown = AIM_TIME
-						aim_preparing = 0.0
-					else:
-						# Player not in sight, do nothing.
-						shoot_countdown = shoot_reload
+					shoot_countdown = ai.retry_delay()
 
 	elif state == State.AIM or state == State.SHOOTING:
 		if aim_preparing < AIM_PREPARE_TIME:
@@ -334,22 +363,18 @@ func _physics_process(delta: float) -> void:
 
 		aim_countdown -= delta
 		if aim_countdown < 0.0 and state == State.AIM:
-			var ray_origin: Vector3 = ray_from.global_transform.origin
-			var ray_to: Vector3 = target_position + Vector3.UP
-			var col: Dictionary = get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_origin, ray_to, 0xFFFFFFFF, [self]))
-			if not col.is_empty() and col.collider == player:
+			if has_los:
 				state = State.SHOOTING
 				shoot_countdown = shoot_reload
 				play_shoot.rpc()
 			else:
-				resume_approach()
+				resume_approach(false)
 
 	animate(delta)
-	if fleeing:
-		# Recuo: pernas correndo (walk) enquanto o corpo encara o player e desliza para
-		# longe. Sobrepõe o root motion deste quadro com a velocidade de fuga.
+	if bool(move_plan.get("manual", false)):
 		animation_tree["parameters/state/transition_request"] = "walk"
-		_flee_movement()
+		_apply_direct_movement(player.global_transform.origin, move_plan.get("direction", Vector3.ZERO),
+			float(move_plan.get("speed", 0.0)))
 	else:
 		# Apply root motion to orientation.
 		orientation *= Transform3D(animation_tree.get_root_motion_rotation(), animation_tree.get_root_motion_position())
@@ -383,21 +408,20 @@ func _interpolate_remote() -> void:
 		reset_physics_interpolation()
 
 
-# Recuo (IA → Action.FLEE): orienta o corpo para ENCARAR o player (frente do robô é +Z) e
-# define a velocidade horizontal no sentido OPOSTO, fazendo-o correr para longe sem deixar
-# de olhar/mirar no player. O canhão segue mirando via o blend de "aim" em animate().
-func _flee_movement() -> void:
-	var to_player: Vector3 = player.global_transform.origin - global_transform.origin
-	to_player.y = 0.0
-	if to_player.length() < 0.001:
+# Movimento manual sobreposto ao root motion. O corpo continua ENCARANDO o alvo enquanto a
+# IA controla a direção horizontal (strafe, reposicionamento, recuo).
+func _apply_direct_movement(face_target: Vector3, move_dir: Vector3, speed: float) -> void:
+	var to_target: Vector3 = face_target - global_transform.origin
+	to_target.y = 0.0
+	if to_target.length() < 0.001:
 		return
-	var fwd: Vector3 = to_player.normalized()             # frente (+Z) aponta para o player
+	var fwd: Vector3 = to_target.normalized()
 	var x_axis: Vector3 = Vector3.UP.cross(fwd).normalized()
 	var y_axis: Vector3 = fwd.cross(x_axis).normalized()
 	orientation.basis = Basis(x_axis, y_axis, fwd)
-	var away: Vector3 = -fwd                              # corre no sentido oposto ao player
-	velocity.x = away.x * ai.flee_speed
-	velocity.z = away.z * ai.flee_speed
+	var motion := move_dir.normalized() if move_dir.length() > 0.001 else Vector3.ZERO
+	velocity.x = motion.x * speed
+	velocity.z = motion.z * speed
 
 
 @rpc("call_local")
@@ -409,11 +433,16 @@ func shoot_check() -> void:
 	test_shoot = true
 
 
+func _is_player_candidate(body: Node3D) -> bool:
+	return body != null and (body.name == "Target" \
+		or (body.has_method(&"add_camera_shake_trauma") and body.has_method(&"hit")))
+
+
 func _on_area_body_entered(body: Node3D) -> void:
-	if body is Player or body.name == "Target":
+	if _is_player_candidate(body):
 		player = body
 
 
 func _on_area_body_exited(body: Node3D) -> void:
-	if body is Player:
+	if body == player:
 		player = null

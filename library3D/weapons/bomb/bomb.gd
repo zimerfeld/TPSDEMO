@@ -10,6 +10,7 @@ extends CharacterBody3D
 
 var dropper: Node = null
 var _done := false
+var _feedback_reported := false
 
 @onready var _mesh: Node3D = $Mesh
 @onready var _col: CollisionShape3D = $CollisionShape3D
@@ -60,9 +61,11 @@ func _explode(collider: Node) -> void:
 	if _done:
 		return
 	_done = true
+	var target := _resolve_feedback_target(collider)
+	_report_feedback(target)
 	# Dano ao player (o servidor decide).
-	if _is_server() and collider != null and collider is Player and collider.has_method(&"hit"):
-		collider.hit.rpc(damage)
+	if _is_server() and _is_player_target(target) and target.has_method(&"hit"):
+		target.hit.rpc(damage)
 	_detonate.rpc()
 
 
@@ -88,3 +91,24 @@ func _is_server() -> bool:
 	if multiplayer == null:
 		return true
 	return multiplayer.is_server()
+
+
+func _resolve_feedback_target(collider: Node) -> Node:
+	if collider == null:
+		return null
+	if collider.has_meta("character"):
+		return collider.get_meta("character") as Node
+	return collider
+
+
+func _is_player_target(target: Node) -> bool:
+	return target != null and target != dropper and (target.name == "Target" \
+		or (target.has_method(&"add_camera_shake_trauma") and target.has_method(&"hit")))
+
+
+func _report_feedback(target: Node) -> void:
+	if _feedback_reported or not _is_server() or dropper == null:
+		return
+	_feedback_reported = true
+	if dropper.has_method(&"notify_projectile_feedback"):
+		dropper.notify_projectile_feedback(target)

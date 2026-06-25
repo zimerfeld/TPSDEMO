@@ -14,9 +14,16 @@ extends Node
 ## (o nó do nível é renomeado para "Level" nos dois lados para o caminho casar).
 
 signal rooms_changed
-# Servidor → cliente: a sala em que o cliente jogava foi encerrada (Parar). A ClientSession
-# escuta isto para voltar ao navegador com o alerta "O Servidor foi desligado".
+# Servidor → cliente: a sala em que o cliente jogava foi PARADA (botão Parar). A ClientSession
+# escuta isto para voltar ao navegador com o aviso "O nível foi parado pelo host".
 signal room_closed(room_id: int)
+# Servidor → cliente: a sala em que o cliente jogava foi REINICIADA (botão Reiniciar). A
+# ClientSession volta ao navegador com o aviso "O nível foi reiniciado pelo host" (a sala recriada
+# reaparece na lista para reentrar). Distinto de room_closed só pela mensagem mostrada ao jogador.
+signal room_restarted(room_id: int)
+
+# Motivo do encerramento de uma sala, escolhe qual aviso o cliente recebe (ver _close_room).
+enum CloseReason { SILENT, STOPPED, RESTARTED }
 
 const ROOM_RESOLUTION := Vector2i(1280, 720)
 # Câmera livre p/ o host OBSERVAR cada sala (não replicada — filha do nível, fora do SpawnedNodes).
@@ -103,14 +110,26 @@ func _instantiate_room(id: int, level_path: String, as_subviewport: bool) -> voi
 	PlayerSelection.spectator_host = prev_spectator
 
 
+# Botão "Parar": encerra a sala e avisa os clientes dela ("O nível foi parado pelo host").
 func stop_room(id: int) -> void:
+	_close_room(id, CloseReason.STOPPED)
+
+
+# Encerra uma sala. `reason` decide o aviso enviado a cada cliente que jogava nela:
+#   STOPPED   → notify_room_closed   (cliente: "O nível foi parado pelo host")
+#   RESTARTED → notify_room_restarted (cliente: "O nível foi reiniciado pelo host")
+#   SILENT    → sem aviso (uso interno, ex.: stop_all derruba tudo)
+func _close_room(id: int, reason: CloseReason) -> void:
 	for i in _rooms.size():
 		if int(_rooms[i]["id"]) == id:
 			# Avisa ANTES de liberar: cada cliente que jogava NESTA sala volta ao navegador
 			# (peer 1 = o próprio servidor; pula p/ não disparar o handler de cliente nele).
 			for peer_id in _peer_room.keys():
 				if int(_peer_room[peer_id]) == id and int(peer_id) != 1:
-					notify_room_closed.rpc_id(int(peer_id), id)
+					if reason == CloseReason.RESTARTED:
+						notify_room_restarted.rpc_id(int(peer_id), id)
+					elif reason == CloseReason.STOPPED:
+						notify_room_closed.rpc_id(int(peer_id), id)
 			# Host jogando nesta sala? despawna o player do host e religa a câmera livre.
 			if _host_player_room == id:
 				host_leave_room()
@@ -127,6 +146,8 @@ func stop_room(id: int) -> void:
 			return
 
 
+# Botão "Reiniciar": encerra a sala (avisando os clientes que foi REINICIADA, não parada) e
+# recria o nível do zero. Devolve o id da sala nova (-1 se a sala não existia).
 func restart_room(id: int) -> int:
 	var path: String = ""
 	for r in _rooms:
@@ -135,7 +156,7 @@ func restart_room(id: int) -> int:
 			break
 	if path == "":
 		return -1
-	stop_room(id)
+	_close_room(id, CloseReason.RESTARTED)
 	return start_room(path)
 
 
@@ -437,12 +458,21 @@ func leave_room(room_id: int) -> void:
 	_broadcast_room_list()
 
 
-# Servidor → cliente que jogava numa sala parada: limpa o espelho local e emite room_closed
-# (a ClientSession reage voltando ao navegador com o alerta "O Servidor foi desligado").
+# Servidor → cliente que jogava numa sala PARADA: limpa o espelho local e emite room_closed
+# (a ClientSession volta ao navegador com o aviso "O nível foi parado pelo host").
 @rpc("authority", "reliable")
 func notify_room_closed(room_id: int) -> void:
 	_drop_local_mirror(room_id)
 	room_closed.emit(room_id)
+
+
+# Servidor → cliente que jogava numa sala REINICIADA: limpa o espelho local e emite room_restarted
+# (a ClientSession volta ao navegador com o aviso "O nível foi reiniciado pelo host"; a sala
+# recriada reaparece na lista para reentrar).
+@rpc("authority", "reliable")
+func notify_room_restarted(room_id: int) -> void:
+	_drop_local_mirror(room_id)
+	room_restarted.emit(room_id)
 
 
 # Remove o espelho local (Node "Room<id>" sob este autoload) e a entrada em _rooms. Usado quando

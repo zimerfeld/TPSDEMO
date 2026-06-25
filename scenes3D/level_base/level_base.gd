@@ -31,9 +31,10 @@ func _ready() -> void:
 		return
 
 	if multiplayer.is_server():
-		# Server will spawn the red robots
-		for child in robot_spawn_points.get_children():
-			spawn_robot(child)
+		if not LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points):
+			# Server will spawn the red robots
+			for child in robot_spawn_points.get_children():
+				spawn_robot(child)
 		randomize()
 
 	# Modo-sala (servidor multi-level) usa spawn POR-SALA (RoomManager); senão, NetSpawn single-level.

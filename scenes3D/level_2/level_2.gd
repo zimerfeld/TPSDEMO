@@ -25,9 +25,10 @@ func _ready() -> void:
 	# Offline (OfflineMultiplayerPeer) e host (ENet) entram aqui como servidor; o cliente
 	# recebe criatura/players via MultiplayerSpawner. Mesmo padrão do level_base.
 	if multiplayer.is_server():
-		var criatura: CharacterBody3D = CriaturaAlada.instantiate()
-		criatura.position = Vector3(SPAWN_DISTANCE, 1, 0)
-		spawned_nodes.add_child(criatura, true)
+		if not LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points):
+			var criatura: CharacterBody3D = CriaturaAlada.instantiate()
+			criatura.position = Vector3(SPAWN_DISTANCE, 1, 0)
+			spawned_nodes.add_child(criatura, true)
 		randomize()
 
 	# Modo-sala (servidor multi-level) usa spawn POR-SALA (RoomManager); senão, NetSpawn single-level.

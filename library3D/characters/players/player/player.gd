@@ -11,6 +11,7 @@ enum Animations {
 
 const MOTION_INTERPOLATE_SPEED: float = 10.0
 const ROTATION_INTERPOLATE_SPEED: float = 10.0
+const PlayerBotAILib := preload("res://library3D/characters/players/player/IA/player_bot_ai.gd")
 
 const MIN_AIRBORNE_TIME: float = 0.1
 const JUMP_SPEED: float = 5.0
@@ -97,6 +98,13 @@ var _health_bar = null
 
 # SkeletonModifier3D que faz a mira vertical procedural (gira o torso pelo pitch da câmera).
 var _aim_modifier = null
+var ai: Node = null
+
+@export var bot_controlled: bool = false:
+	set(value):
+		bot_controlled = value
+		if is_inside_tree():
+			_apply_bot_controlled()
 
 
 func _ready() -> void:
@@ -126,6 +134,25 @@ func _ready() -> void:
 	# Mira vertical procedural (gira o torso conforme o pitch da câmera). Substitui o
 	# blend additive AIM-Up/AIM-Down, que não conseguia abaixar o braço.
 	_setup_aim_modifier.call_deferred()
+	_apply_bot_controlled.call_deferred()
+
+
+func _apply_bot_controlled() -> void:
+	if player_input == null:
+		return
+	player_input.ai_controlled = bot_controlled
+	if bot_controlled:
+		_is_local_player = false
+		if ai == null:
+			ai = PlayerBotAILib.new()
+			ai.name = "IA"
+			add_child(ai)
+	else:
+		if ai != null:
+			ai.queue_free()
+			ai = null
+		if is_inside_tree() and not _safe_is_server_call(false):
+			_is_local_player = player_id == multiplayer.get_unique_id()
 
 
 # Coloca o player na posição de spawn enviada pelo servidor e zera a queda/predição local.
@@ -152,6 +179,8 @@ func _setup_health_bar() -> void:
 	# Mostra o HUD apenas para o player controlado localmente.
 	# Usa $InputSynchronizer (não o onready) pois o setter pode rodar antes do _ready.
 	if $InputSynchronizer.get_multiplayer_authority() != multiplayer.get_unique_id():
+		return
+	if bot_controlled:
 		return
 	_health_bar = preload("res://library3D/characters/players/player/health_bar.gd").new()
 	_health_bar.name = "HealthBar"
@@ -200,6 +229,8 @@ func _safe_is_server_call(default: bool = false) -> bool:
 
 func _physics_process(delta: float) -> void:
 	if _safe_is_server_call(false):
+		if bot_controlled and ai != null and ai.has_method(&"update_input"):
+			ai.update_input(self, player_input, delta)
 		apply_input(delta)
 		# Espelha o estado real nos proxies replicados (os clientes interpolam estes valores).
 		net_transform = transform
@@ -348,11 +379,23 @@ func apply_input(delta: float) -> void:
 		# nasceria uma bala local sem física nem replicação, presa no cano (efeito que "não some").
 		if authoritative and player_input.shooting and fire_cooldown.time_left == 0:
 			var shoot_origin: Vector3 = shoot_from.global_transform.origin
-			var shoot_dir: Vector3 = (player_input.shoot_target - shoot_origin).normalized()
+			var to_target: Vector3 = player_input.shoot_target - shoot_origin
+			# Guarda contra alvo degenerado (perto/atrás do cano, ex.: shoot_target ainda em
+			# 0,0,0 ou um acerto colado): em vez de uma direção absurda (tiro vertical), usa a
+			# direção que o modelo encara. A correção principal está na mira (player_input).
+			var shoot_dir: Vector3 = -player_model.global_transform.basis.z
+			if to_target.length() > 0.5:
+				shoot_dir = to_target.normalized()
 
 			# Reusable cannon shooter spawns + configures the bullet (default blue look)
 			# and excludes the shooter's own body/limb colliders.
 			CannonShooter.fire(get_parent(), shoot_origin, shoot_dir, weapon_damage, self)
+			if bot_controlled and ai != null and ai.has_method(&"note_shot_fired"):
+				var target_speed := 0.0
+				if ai.has_method(&"current_target_speed"):
+					target_speed = float(ai.current_target_speed())
+				ai.note_shot_fired(shoot_origin.distance_to(player_input.shoot_target),
+					target_speed)
 			shoot.rpc()
 
 	else: # Not in air or aiming, idle.
@@ -415,7 +458,8 @@ func shoot() -> void:
 	muzzle_particle.emitting = true
 	fire_cooldown.start()
 	sound_effect_shoot.play()
-	add_camera_shake_trauma(0.35)
+	if not bot_controlled:
+		add_camera_shake_trauma(0.35)
 
 
 @rpc("call_local")
@@ -425,7 +469,8 @@ func hit(amount: int = 25) -> void:
 		_health_bar.update_health(hp, MAX_HP)
 	if hp <= 0 and _safe_is_server_call(false):
 		respawn.rpc()
-	add_camera_shake_trauma(0.75)
+	if not bot_controlled:
+		add_camera_shake_trauma(0.75)
 
 
 @rpc("call_local")
@@ -440,3 +485,9 @@ func respawn() -> void:
 @rpc("call_local")
 func add_camera_shake_trauma(amount: float) -> void:
 	player_input.camera_camera.add_trauma(amount)
+
+
+func notify_projectile_feedback(hit_target: Node) -> void:
+	if not bot_controlled or ai == null or not ai.has_method(&"report_shot_result"):
+		return
+	ai.report_shot_result(hit_target != null and hit_target.has_method(&"show_health_hud"))

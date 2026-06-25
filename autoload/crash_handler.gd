@@ -10,7 +10,6 @@ func show_error(message: String, retry_callback: Callable = Callable()) -> void:
 	var dlg := ConfirmationDialog.new()
 	dlg.title = "Erro / Error"
 	dlg.dialog_text = message
-	dlg.min_size = Vector2i(520, 180)
 
 	if retry_callback.is_valid():
 		dlg.get_ok_button().text = "Tentar Novamente"
@@ -25,5 +24,8 @@ func show_error(message: String, retry_callback: Callable = Callable()) -> void:
 		dlg.get_cancel_button().hide()
 		dlg.confirmed.connect(func(): get_tree().quit())
 
+	# Mesmo visual padrão das demais janelas (tema do jogo, janela e fontes maiores). Aplicado
+	# depois de configurar os botões — o estilo só ajusta tamanho/fonte, não recria os botões.
+	UIDialogs.style(dlg)
 	get_tree().root.add_child(dlg)
 	dlg.popup_centered()

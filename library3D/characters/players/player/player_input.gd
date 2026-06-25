@@ -12,6 +12,12 @@ const CAMERA_X_ROT_MAX: float = deg_to_rad(70.0)
 # If the aiming button was held for less than 0.4 seconds, keep aiming until the aiming button is pressed again.
 const AIM_HOLD_THRESHOLD: float = 0.4
 
+# Distância mínima (m) de um acerto da mira para valer como alvo. Acertos colados na câmera
+# (o próprio corpo durante a transição de mira, uma parede encostada) jogariam o alvo logo
+# ACIMA do cano → o tiro saía quase vertical ("pro céu"). Abaixo disto usamos o ponto distante
+# na direção da câmera, mantendo o tiro alinhado com a mira.
+const MIN_AIM_DISTANCE: float = 3.0
+
 # If `true`, the aim button was toggled checked by a short press (instead of being held down).
 var toggled_aim: bool = false
 
@@ -36,6 +42,11 @@ var _focused_enemy: Node = null
 @export var camera_rot: Node3D
 @export var camera_camera: Camera3D
 @export var color_rect: ColorRect
+@export var ai_controlled: bool = false:
+	set(value):
+		ai_controlled = value
+		if is_inside_tree():
+			apply_authority()
 
 
 func _ready() -> void:
@@ -50,6 +61,16 @@ func _ready() -> void:
 # de player_id em player.gd.
 func apply_authority() -> void:
 	if not is_inside_tree():
+		return
+	var parent := get_parent()
+	var parent_bot_flag: Variant = parent.get("bot_controlled") if parent != null else false
+	if ai_controlled or (parent_bot_flag is bool and bool(parent_bot_flag)):
+		set_process(false)
+		set_process_input(false)
+		if crosshair != null:
+			crosshair.hide()
+		if color_rect != null:
+			color_rect.hide()
 		return
 	if get_multiplayer_authority() == multiplayer.get_unique_id():
 		camera_camera.make_current()
@@ -111,8 +132,12 @@ func _process(delta: float) -> void:
 		var ray_from = camera_camera.project_ray_origin(ch_pos)
 		var ray_dir = camera_camera.project_ray_normal(ch_pos)
 
-		var col = get_parent().get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 1000, 0b11, Array([self], TYPE_RID, "", null)))
-		if col.is_empty():
+		var query := PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 1000.0, 0b11, _aim_ray_exclude())
+		var col = get_parent().get_world_3d().direct_space_state.intersect_ray(query)
+		# Descarta acertos colados na câmera (corpo próprio/parede durante a transição de mira):
+		# eles jogariam o alvo logo acima do cano → tiro vertical. Nesses casos mira no ponto
+		# distante ao longo da câmera, alinhando o tiro com a mira.
+		if col.is_empty() or ray_from.distance_to(col.position) < MIN_AIM_DISTANCE:
 			shoot_target = ray_from + ray_dir * 1000.0
 		else:
 			shoot_target = col.position
@@ -150,7 +175,7 @@ func _update_enemy_focus() -> void:
 	var ray_dir: Vector3 = camera_camera.project_ray_normal(ch_pos)
 
 	var col: Dictionary = get_parent().get_world_3d().direct_space_state.intersect_ray(
-			PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 1000, 0b100011, Array([self], TYPE_RID, "", null)))
+			PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 1000, 0b100011, _aim_ray_exclude()))
 
 	var enemy: Node = null
 	if not col.is_empty():
@@ -180,6 +205,23 @@ func _resolve_focus_enemy(collider) -> Node:
 		if is_instance_valid(ch) and ch.has_method(&"show_health_hud"):
 			return ch
 	return null
+
+
+# RIDs a excluir das raycasts de mira/foco: o CORPO do próprio atirador e seus colliders de
+# MEMBRO. Sem isto o raio (que parte de trás do ombro) acertava o próprio jogador — pondo o
+# alvo logo acima do cano (tiro pro céu) e fazendo a mira "focar" o próprio corpo. O `[self]`
+# antigo era o synchronizer (nem é corpo físico), então não excluía nada.
+func _aim_ray_exclude() -> Array[RID]:
+	var ex: Array[RID] = []
+	var body := get_parent()
+	if body is CollisionObject3D:
+		ex.append((body as CollisionObject3D).get_rid())
+	var lc := body.get_node_or_null(^"LimbColliders")
+	if lc != null and lc.has_method(&"get_limb_bodies"):
+		for limb in lc.get_limb_bodies():
+			if limb is CollisionObject3D:
+				ex.append((limb as CollisionObject3D).get_rid())
+	return ex
 
 
 func rotate_camera(move: Vector2) -> void:

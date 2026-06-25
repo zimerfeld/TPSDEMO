@@ -22,5 +22,7 @@
 	"Servidor puro": "Pure server",
 	"Suave": "Smooth",
 	"Equilibrado": "Balanced",
-	"Responsivo": "Responsive"
+	"Responsivo": "Responsive",
+	"O nível foi parado pelo host": "The level was stopped by the host",
+	"O nível foi reiniciado pelo host": "The level was restarted by the host"
 }

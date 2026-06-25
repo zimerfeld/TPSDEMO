@@ -19,6 +19,11 @@ third-person shooter sandbox. At a high level it offers:
 
 - **Menu-driven flow** — a main menu leads to character selection, a level picker, a
   settings screen, a developer screen, and online play.
+- **Screen visuals & dialogs** — each 2D screen carries its own lightweight **animated shader
+  background** evoking its purpose: a receding **stage grid** (Levels), a **connecting-nodes
+  network** (Play Online), an **equalizer** (Settings) and a **dev blueprint** with a scan sweep
+  (Developer). All **confirmation/alert windows share one standard style** — the game theme's
+  buttons, a larger window and larger fonts — applied via a single `UIDialogs` helper.
 - **Playable characters** — selectable player variants that move, aim, jump and shoot,
   with first-person camera control and a local health HUD.
 - **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
@@ -62,13 +67,19 @@ third-person shooter sandbox. At a high level it offers:
   `LimbColliders`).
 - **Reusable shooting** — the cannon-bullet and hitscan-laser firing are isolated into
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
-  can use; the player and Red Robot both fire via `CannonShooter`.
+  can use; the player and Red Robot both fire via `CannonShooter`. The bullet's muzzle transform is
+  baked **before** it enters the tree, so its networked spawn lands exactly at the gun on remote
+  clients (no off-the-barrel offset); and the aim ray now **excludes the shooter's own body/limbs**
+  and ignores point-blank hits, so rapid aim-and-fire no longer sends a shot to the sky.
 - **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2), a full
   complex level (Level Base), plus **rooms-based online play**: the **Play Online** screen has two
   buttons that choose the role. **Manage Rooms** opens the room manager (`host_session`), where
   you start one or more levels as isolated rooms and, per room, **Play** (after the character picker,
-  spawn into it as a player), **Observe** (free-fly no-collision camera), **Restart** or **Stop**
-  (ends that room and sends its clients back to the browser with a "server shut down" alert).
+  spawn into it as a player), **Observe** (free-fly no-collision camera), **Restart** or **Stop**.
+  Both send a **distinct notice to the room's clients**: **Stop** ends the room and sends them back to
+  the browser with "The level was stopped by the host"; **Restart** reloads the level fresh and sends
+  "The level was restarted by the host" (the rebuilt room reappears in the list to re-join). After a
+  restart the host stays on the management grid with the mouse free (just like starting a level).
   **Join Rooms** opens the room browser (`client_session`), which lists the running rooms with a **Play**
   button (shown only while a room exists) that drops you into the chosen room after the character
   picker. Each player's chosen variant/colour shows for everyone online (per-peer loadout), and other

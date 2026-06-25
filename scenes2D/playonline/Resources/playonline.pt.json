@@ -9,5 +9,7 @@
 	"Reconectar": "Reconectar",
 	"Deseja se re-conectar na partida em andamento ?": "Deseja se re-conectar na partida em andamento ?",
 	"Sim": "Sim",
-	"Não": "Não"
+	"Não": "Não",
+	"O nível foi parado pelo host": "O nível foi parado pelo host",
+	"O nível foi reiniciado pelo host": "O nível foi reiniciado pelo host"
 }
