@@ -3,8 +3,7 @@
 > Documentado em 2026-06-20. Levantamento de **quais nós e recursos NATIVOS do
 > Godot** o jogo usa diretamente (ex.: `StaticBody3D`, `CollisionShape3D`,
 > `MeshInstance3D`). Apurado dos `extends` dos `.gd` e dos `type=` dos `.tscn`,
-> **excluindo** o addon `godot_ai` (plugin MCP de terceiros) e a pasta `_gen/`
-> (ferramentas de geração) — o recorte abaixo é o do **jogo**.
+> **excluindo** o addon `godot_ai` (plugin MCP de terceiros) — o recorte abaixo é o do **jogo**.
 
 O projeto **não tem nó custom em C++/GDExtension**: toda classe é nativa do Godot.
 As únicas abstrações próprias são scripts `RefCounted` de **lógica pura sem nó**

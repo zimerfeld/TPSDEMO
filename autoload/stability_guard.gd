@@ -33,12 +33,22 @@ signal recovered()
 # crítico em qualquer máquina). Ajustáveis no Inspector do autoload.
 @export var ram_free_warn_mb:   float = 1024.0
 @export var ram_free_crit_mb:   float = 512.0
-@export var vram_warn_mb:       float = 512.0
-@export var vram_crit_mb:       float = 800.0
-@export var col_pairs_warn:     float = 300.0
-@export var col_pairs_crit:     float = 600.0
-@export var node_warn:          float = 3000.0
-@export var node_crit:          float = 6000.0
+# VRAM: o level_base sozinho usa ~1.2 GB (texturas + lightmaps + VoxelGI/reflection probes), normal
+# para um nível 3D real — várias salas COMPARTILHAM esses recursos (cache por path), então não
+# multiplica. Limites antigos (warn 512 / crit 800) disparavam THROTTLE/EMERGENCY no level_base
+# (estrangulando a física do servidor a 30 tps → jogo lento p/ todos). Subidos p/ acima do uso real.
+@export var vram_warn_mb:       float = 2560.0
+@export var vram_crit_mb:       float = 5120.0
+# ⚠️ Limiares calibrados para os níveis 3D REAIS. O level_base sozinho já tem ~3066 collision pairs
+# de geometria estática (Core/Structure/colliders radiais) — NÃO é uma "explosão" de física, é o
+# normal. Com salas múltiplas isso soma (N × ~3k). Valores antigos (warn 300 / crit 600, nodes
+# 3000/6000) disparavam EMERGENCY no level_base e PAUSAVAM a árvore → no multiplayer isso congela
+# spawn/sync de TODOS os peers (tela preta no cliente). Subidos p/ acima do uso normal multi-sala,
+# mantendo a rede de segurança só p/ runaway de verdade (dezenas de milhares).
+@export var col_pairs_warn:     float = 8000.0
+@export var col_pairs_crit:     float = 25000.0
+@export var node_warn:          float = 12000.0
+@export var node_crit:          float = 30000.0
 @export var fps_crit:           float = 5.0
 @export var fps_crit_frames:    int   = 10
 @export var physics_normal_tps:   int = 60
@@ -167,8 +177,22 @@ func _apply_throttle(reason: String) -> void:
 	push_warning("[StabilityGuard] THROTTLE: " + reason)
 
 
+# Sessão online ativa = peer de rede que NÃO é o OfflineMultiplayerPeer (host ENet ou cliente).
+func _is_online_session() -> bool:
+	return multiplayer != null and multiplayer.multiplayer_peer != null \
+		and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer)
+
+
 func _apply_emergency(reason: String) -> void:
 	Engine.physics_ticks_per_second = physics_throttle_tps
+	# Em sessão ONLINE nunca pausamos a árvore: get_tree().paused congela o MultiplayerSpawner/
+	# Synchronizer e os RPCs → o player do cliente não nasce (sem câmera = tela preta) e nada
+	# sincroniza em NENHUMA sala. Estrangula a física e avisa, sem pausar. O pause (com overlay)
+	# fica só p/ single-player/offline, onde não há netcode para quebrar.
+	if _is_online_session():
+		emergency_activated.emit(reason)
+		push_error("[StabilityGuard] EMERGENCY (online — física estrangulada, sem pausar): " + reason)
+		return
 	get_tree().paused = true
 	_show_overlay(reason)
 	emergency_activated.emit(reason)

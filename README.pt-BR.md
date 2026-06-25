@@ -74,7 +74,14 @@ em terceira pessoa. Em alto nível, oferece:
   em execução com um botão **Jogar** (só aparece enquanto houver sala) que leva à sala escolhida após o
   seletor de personagem. A variante/cor escolhida por cada jogador aparece para todos online (loadout
   por peer), e os outros players/inimigos são suavizados por um **buffer de interpolação com snapshots
-  datados** (render ~100 ms no passado) — visão do cliente sem flicker e com FPS alto.
+  datados** — visão do cliente sem flicker e com FPS alto. A tela Jogar Online tem ainda um seletor de
+  **Otimização** aplicado antes de hospedar/entrar: interpolação **Suave / Equilibrado / Responsivo**
+  (atraso de render 100 / 60 / 35 ms — suavidade × resposta), **taxa de sincronização 30 / 60 Hz**
+  (updates servidor→cliente por segundo) e **render do host Janela / Servidor puro** (sem renderizar as
+  salas, libera a GPU). Todos os modelos dinâmicos (players, inimigos, balas, bombas) sincronizam a
+  partir do servidor host. A tela Jogar Online persiste todas as opções (última Porta/IP, interpolação,
+  taxa de sync, render do host) e as recarrega na próxima vez; as telas Host/Client são em tela cheia,
+  no padrão do resto da UI.
 - **Biblioteca + visualizador de modelos 3D** — assets 3D reutilizáveis organizados por tipo em
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
@@ -339,7 +346,7 @@ reutilizáveis em `library3D/`:
   `locale.gd`, `stability_guard.gd`, `performance_hud.gd`. O `Settings` fica em `scenes2D/settings/config.gd`.
 - `<cena>/Resources/*.pt.json` + `*.en.json` — dicionários de idioma da UI por cena, varridos e
   mesclados pelo autoload `Locale`.
-- `ui/`, `themes/` — recursos de tema compartilhados. `tools/` — scripts helper headless.
+- `themes/` — recursos de tema compartilhados.
 - `OBSIDIAN/` — cofre de documentação do projeto (espelha este README).
 
 Fluxo de telas:
@@ -401,8 +408,7 @@ ZIMARO/
 ├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud
 │                        #   (Settings fica em scenes2D/settings/config.gd)
 │                        # dicionários da UI por cena: <cena>/Resources/*.pt.json + *.en.json (lidos pelo Locale)
-├─ ui/  themes/          # recursos de Theme compartilhados (ui_theme.tres, cyberpunk.tres)
-├─ tools/  _gen/         # geradores GDScript headless de assets 3D (gen_*.gd)
+├─ themes/               # recursos de Theme compartilhados (ui_theme.tres, cyberpunk.tres)
 ├─ addons/               # plugins do editor Godot (godot_ai — o servidor MCP)
 ├─ OBSIDIAN/             # cofre de documentação do projeto (espelha este README)
 ├─ screenshots/          # imagens de preview capturadas

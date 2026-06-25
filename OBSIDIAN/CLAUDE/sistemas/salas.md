@@ -81,6 +81,76 @@ players): só replica para peers cujo `_peer_room[peer] == room_id`. Ao um peer 
 > inimigo não sincronizarem. Os *parts* de morte do `red_robot` nascem `public_visibility=false` de
 > propósito (só sincronizam ao explodir, via `part.gd`) — preservado: ganham só o filtro.
 
+## Tela preta no cliente (level_base/level_2) — StabilityGuard (2026-06-24, `feature/spawnplayer2`)
+
+Sintoma: ao entrar como CLIENTE numa sala de **Level Base** (e, com uma sala dessas rodando no servidor,
+também **Level 2**), a tela ficava **preta** — nem o cenário aparecia. **Causa:** o `StabilityGuard`
+(autoload sempre-ligado) entrava em **EMERGENCY** porque o level_base tem **~3066 collision pairs** de
+geometria estática e o limite crítico era **600**; `_apply_emergency` fazia `get_tree().paused = true`,
+que num servidor/cliente **congela o MultiplayerSpawner/Synchronizer e os RPCs** → o player do cliente
+não nasce (sem câmera = tela preta) e nada sincroniza. No SERVIDOR, pausar congela TODAS as salas → por
+isso o Level 2 (simples) também quebrava quando havia um Level Base rodando junto. O Level 1 (chão plano,
+poucos pairs) nunca disparava → só ele funcionava.
+
+**Correções:**
+- `stability_guard.gd`: limites recalibrados para valores reais de jogo 3D (o level_base usa ~3066
+  collision pairs E ~1198 MB de VRAM — ambos NORMAIS e que disparavam o guard): `col_pairs` 8000/25000,
+  `node` 12000/30000, **`vram` 2560/5120 MB**. E `_apply_emergency` **nunca pausa em sessão ONLINE**
+  (só estrangula a física + loga) — pausar quebra o netcode de todos os peers. O pause + overlay seguem
+  valendo no solo/offline (onde não há rede a quebrar). ⚠️ Mesmo SEM pausar, o EMERGENCY/THROTTLE baixa
+  a física p/ 30 tps no servidor (jogo lento p/ todos), então os limites PRECISAM não disparar em jogo
+  normal — daí a recalibração. Validado: host iniciando/observando uma sala de level_base fica **NORMAL**.
+- `level_base.tscn`: `_spawnable_scenes` convertido de UIDs → **caminhos explícitos** (igual ao level_1),
+  eliminando o risco de um UID não resolver no MultiplayerSpawner (que silenciaria o spawn).
+
+**Polimento de UI (2026-06-24):** `host_session`/`client_session` agora aplicam o **tema do projeto**
+(`res://themes/ui_theme.tres`, mesmo da playonline/menu) na raiz → botões/labels/dropdowns com o visual
+cyberpunk. ⚠️ O `ui_theme.tres` só estiliza **Button/Label** (não dá fundo), então o `_make_panel` foi
+reescrito (`_panel` virou `Control`, não mais `PanelContainer`): **fundo igual ao menu/chooseplayer** —
+`TextureRect` com `res://scenes2D/menu/menu_surreal_training_bg.png` (cyberpunk) + `ColorRect` véu escuro
+`Color(0.0157,0.0314,0.0588,0.62)` por cima. Um flat navy `ColorRect` (igual settings/playonline) ficava
+"sem cor" para o usuário — daí usar a textura rica. Também: **tela cheia** (margens + título centralizado);
+**conteúdo/listas numa VBox centralizada de largura máx. 900** (HBox `ALIGNMENT_CENTER`); **botão Voltar
+200×50 centralizado embaixo** (não mais full-width). Tudo dentro de `_panel`, escondido enquanto observa/
+joga (aí o SubViewport/nível ocupa a tela). `_make_back_button` removido (o Voltar é montado no `_make_panel`).
+
+**Persistência da playonline:** TODAS as opções persistem e recarregam — Porta e IP/Domínio
+(`_prefill_last_used`: lê `online/last_port|last_address`, gravados em QUALQUER mudança via
+`_on_port_changed`/`_on_address_changed`, sem poluir o histórico; fallback p/ o topo do histórico,
+depois o default); interpolação/taxa/render do host (`NetConfig`, seção `netopt`); idioma (`Locale`,
+`game/language`).
+
+**HUD de debug do level_base (REMOVIDO):** o `Label` "Debug" (script `debug.gd`, mostrava FPS/VSync/
+Memória/Online/Multiplayer ID) era legado do `level_base.tscn` (não existia no level_1/2), aparecia por
+padrão e era redundante com o **Performance HUD**. Foi **deletado** do `level_base.tscn` (nó +
+ext_resource) e os arquivos `debug.gd`/`debug.gd.uid` apagados. Não foi gerado por mim — era código
+abandonado.
+
+## Otimização escolhível antes da sala — `NetConfig` (2026-06-24)
+
+Autoload **`NetConfig`** (`autoload/net_config.gd`, persiste em `Settings`/seção `netopt`) + seletor na
+tela **playonline** (3 dropdowns, montados em código antes dos botões Host/Client). São prefs LOCAIS
+(não replicadas) — cada lado ajusta o que controla:
+- **Suavização ↔ Resposta** — atraso de interpolação dos modelos remotos: Suave 100 ms / **Equilibrado
+  60 ms (default)** / Responsivo 35 ms. Aplicado em `NetInterp.render_delay_ms` (agora `static var`).
+- **Taxa de sincronização** — 30 / 60 Hz. Vale dos DOIS lados, cada um na direção que envia: o
+  SERVIDOR seta `replication_interval = 1/Hz` nos synchronizers das entidades (`_apply_room_visibility`,
+  broadcast servidor→clientes); o CLIENTE dono seta no próprio `InputSynchronizer` (`apply_authority`,
+  upload do seu input). Não precisam casar — controlam fluxos diferentes.
+- **Render do host** — Janela (observa salas) / **Servidor puro** (nenhuma sala renderiza → libera GPU;
+  Observar/Jogar do host ficam desabilitados). Lido por `host_session._render_only`.
+Regra do projeto ([[optimize-when-adding-scene-elements]]): trade-offs explícitos (resposta × suavidade/
+banda/FPS) sem comprometer a experiência; o default Equilibrado já é mais rápido que o antigo 100 ms fixo.
+
+**Escopo explícito na tela (2026-06-24):** o seletor é montado em **3 colunas** alinhadas com os botões
+abaixo, com badge colorido de escopo: **SÓ NO HOST** (Render do host, esq./laranja, sobre "Gerenciar
+Salas"), **HOST + CLIENTE** (Taxa de sync, meio/verde) e **SÓ NO CLIENTE** (Suavização↔Resposta,
+dir./ciano, sobre "Entrar em Salas") + uma dica do trade-off interpolação×Hz. Localizado PT/EN: os
+**Labels** usam texto canônico (pt) e o auto-localizer do [[locale]] traduz/re-traduz; os **itens dos
+OptionButton** (que o Locale pula) são re-traduzidos por `_relocalize_options` no `language_changed`.
+⚠️ Não passar `tr_key()` ao setar texto de Label que o auto-localizer cobre — grava o canônico errado
+se a cena nascer em EN (o idioma é persistido) e o label não volta para pt.
+
 ## Modos de render do host (questão do usuário)
 
 - **Headless** (`--headless`): GPU ociosa — ideal para muitas salas; só CPU/RAM. (A placa AMD de

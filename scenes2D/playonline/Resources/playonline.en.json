@@ -9,5 +9,18 @@
 	"Reconectar": "Reconnect",
 	"Deseja se re-conectar na partida em andamento ?": "Reconnect to the match in progress ?",
 	"Sim": "Yes",
-	"Não": "No"
+	"Não": "No",
+	"Otimização": "Optimization",
+	"Cada opção atua no lado indicado. Responsivo combina melhor com 60 Hz.": "Each option applies on the side shown. Responsive pairs best with 60 Hz.",
+	"SÓ NO HOST": "HOST ONLY",
+	"HOST + CLIENTE": "HOST + CLIENT",
+	"SÓ NO CLIENTE": "CLIENT ONLY",
+	"Render do host": "Host render",
+	"Taxa de sincronização": "Sync rate",
+	"Suavização ↔ Resposta": "Smoothing ↔ Response",
+	"Janela": "Window",
+	"Servidor puro": "Pure server",
+	"Suave": "Smooth",
+	"Equilibrado": "Balanced",
+	"Responsivo": "Responsive"
 }

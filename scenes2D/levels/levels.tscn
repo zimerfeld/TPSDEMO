@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dpjad5gbcyb2v"]
 
 [ext_resource type="Script" uid="uid://drnu7yflp4xg4" path="res://scenes2D/levels/levels.gd" id="1"]
-[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://ui/ui_theme.tres" id="2"]
+[ext_resource type="Theme" uid="uid://buithemedemo1" path="res://themes/ui_theme.tres" id="2"]
 
 [sub_resource type="Environment" id="1"]
 background_mode = 1

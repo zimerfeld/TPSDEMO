@@ -14,7 +14,7 @@ const CLIENT_SESSION_PATH: String = "res://scenes2D/client_session/client_sessio
 
 var _playing_room: int = -1            # sala em que o cliente está jogando (-1 = navegando)
 
-var _panel: PanelContainer
+var _panel: Control
 var _rooms_list: VBoxContainer
 var _empty_hint: Label
 var _confirm_dialog: ConfirmationDialog = null
@@ -22,6 +22,9 @@ var _confirm_dialog: ConfirmationDialog = null
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Tema do projeto (mesmo da playonline/menu) → botões/labels/dropdowns/painéis com o visual
+	# cyberpunk consistente. Propaga p/ toda a UI montada em código (filhos herdam o theme da raiz).
+	theme = load("res://themes/ui_theme.tres")
 	# A raiz não captura mouse (o painel/botões sim); ao esconder o painel, o jogo recebe o input.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
@@ -53,7 +56,6 @@ func _build_ui() -> void:
 	_empty_hint.text = "Nenhuma sala em execução."
 	_empty_hint.add_theme_font_size_override("font_size", 16)
 	inner.add_child(_empty_hint)
-	_make_back_button(inner)
 
 
 func _refresh_rooms() -> void:
@@ -182,22 +184,62 @@ func _input(event: InputEvent) -> void:
 
 # ───────────────────────────── helpers de UI ─────────────────────────────
 
+# Monta o navegador inteiro (tela cheia) e devolve a VBox CENTRALIZADA onde vai a lista de salas.
+# Escondido enquanto o cliente JOGA (o nível ocupa a janela principal). Fundo na MESMA cor navy das
+# outras telas — o ui_theme só estiliza Button/Label, não dá fundo; sem isto sobrava o cinza padrão
+# do PanelContainer (era o "estilo de cores não aplicado"). Conteúdo centralizado (largura máx. 900)
+# e botão Voltar de tamanho normal e centralizado, no padrão da playonline/menu.
 func _make_panel(title_text: String) -> VBoxContainer:
-	_panel = PanelContainer.new()
-	_panel.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	_panel.custom_minimum_size = Vector2(540, 0)
+	_panel = Control.new()
+	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_panel)
+	# Fundo no MESMO estilo do menu/chooseplayer: textura cyberpunk + véu escuro por cima (o flat navy
+	# ficava "sem cor"). O ui_theme só estiliza Button/Label, então o fundo é montado aqui. mouse_filter
+	# IGNORE p/ os cliques chegarem aos botões.
+	var bg_tex := TextureRect.new()
+	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg_tex.texture = load("res://scenes2D/menu/menu_surreal_training_bg.png")
+	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg_tex.modulate = Color(0.92, 0.97, 1, 0.98)
+	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(bg_tex)
+	var veil := ColorRect.new()
+	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	veil.color = Color(0.0156863, 0.0313726, 0.0588235, 0.62)
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(veil)
 	var margin := MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 24)
+		margin.add_theme_constant_override("margin_" + side, 40)
 	_panel.add_child(margin)
-	var inner := VBoxContainer.new()
-	inner.add_theme_constant_override("separation", 14)
-	margin.add_child(inner)
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 14)
+	margin.add_child(outer)
 	var title := Label.new()
 	title.text = title_text
 	title.add_theme_font_size_override("font_size", 28)
-	inner.add_child(title)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	outer.add_child(title)
+	# Área central: VBox de largura máx. 900, centralizada horizontalmente (a lista fica aqui).
+	var center := HBoxContainer.new()
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	center.alignment = BoxContainer.ALIGNMENT_CENTER
+	outer.add_child(center)
+	var inner := VBoxContainer.new()
+	inner.custom_minimum_size = Vector2(900, 0)
+	inner.add_theme_constant_override("separation", 14)
+	center.add_child(inner)
+	# Voltar: tamanho fixo e centralizado embaixo (não mais full-width), como nas outras telas.
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	outer.add_child(actions)
+	var back_btn := Button.new()
+	back_btn.text = "Voltar"
+	back_btn.custom_minimum_size = Vector2(200, 50)
+	back_btn.pressed.connect(_go_back)
+	actions.add_child(back_btn)
 	return inner
 
 
@@ -213,9 +255,3 @@ func _make_rooms_list(parent: VBoxContainer) -> VBoxContainer:
 	return list
 
 
-func _make_back_button(parent: VBoxContainer) -> void:
-	var back_btn := Button.new()
-	back_btn.text = "Voltar"
-	back_btn.custom_minimum_size = Vector2(0, 44)
-	back_btn.pressed.connect(_go_back)
-	parent.add_child(back_btn)

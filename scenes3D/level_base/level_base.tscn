@@ -4,7 +4,6 @@
 [ext_resource type="PackedScene" path="res://library3D/geometry/scenes/props.tscn" id="2"]
 [ext_resource type="VoxelGIData" uid="uid://bw86lhn5p1ovp" path="res://library3D/geometry/giprobe_data.res" id="5"]
 [ext_resource type="AudioStream" uid="uid://bqfjtqyo6pdu3" path="res://scenes3D/level_base/level_base_music.ogg" id="8"]
-[ext_resource type="Script" uid="uid://6ec6m14rhsxi" path="res://scenes3D/level_base/debug.gd" id="9"]
 [ext_resource type="PackedScene" path="res://library3D/propulsores/forklift/flying_forklift.tscn" id="12"]
 [ext_resource type="PackedScene" path="res://library3D/geometry/scenes/lights.tscn" id="13"]
 [ext_resource type="PackedScene" path="res://library3D/geometry/scenes/core.tscn" id="14"]
@@ -71,7 +70,7 @@ transform = Transform3D(-0.575826, 0, -0.817573, 0, 1, 0, 0.817573, 0, -0.575826
 transform = Transform3D(-0.575826, 0, -0.817573, 0, 1, 0, 0.817573, 0, -0.575826, 64.818, -1.077, 74.764)
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
-_spawnable_scenes = PackedStringArray("uid://cs1k22tdf04k4", "res://library3D/characters/players/playera/playera.tscn", "uid://byi6b08jpb2iw", "uid://jphgr3qep5")
+_spawnable_scenes = PackedStringArray("res://library3D/characters/players/player/player.tscn", "res://library3D/characters/players/playera/playera.tscn", "res://library3D/characters/red_robot/red_robot.tscn", "res://library3D/characters/player/bullet/bullet.tscn")
 spawn_path = NodePath("../SpawnedNodes")
 
 [node name="Core" parent="." instance=ExtResource("14")]
@@ -146,16 +145,6 @@ libraries = {
 &"": SubResource("AnimationLibrary_35gwb")
 }
 autoplay = "mawaru"
-
-[node name="Debug" type="Label" parent="."]
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 40.0
-offset_bottom = 14.0
-text = "FPS: 0
-VSync:
-Memory:"
-script = ExtResource("9")
 
 [node name="LightmapProbes" type="Node3D" parent="."]
 

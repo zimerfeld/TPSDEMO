@@ -54,16 +54,19 @@ yellow) and **Debug 3D** (light cyan) columns — a master alone shows nothing, 
 must also be selected — with a live **player-model preview** beside the Debug 3D column (a rotating
 robot in its own viewport) that reflects the enabled/disabled toggles in real time; performance indicators built on Godot's `Performance` singleton — a toggleable
 **Performance HUD** top bar (FPS/NET/RAM/CPU/GPU + a basic/advanced view) plus an always-on
-**StabilityGuard** that throttles physics and force-pauses with a full-screen overlay before RAM/VRAM/
-collision-pairs/node-count/FPS can freeze or crash the machine;
+**StabilityGuard** that throttles physics and (in single-player) force-pauses with a full-screen overlay
+before RAM/VRAM/collision-pairs/node-count/FPS can freeze or crash the machine — limits calibrated for
+real 3D levels, and during an online session it only throttles (never pauses, to avoid breaking netcode);
 a floor grid for 3D screens; and an EN/PT localization system where **every screen carries
 Português/English buttons** and each scene ships its own JSON dictionaries
 (`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load. Online play is **rooms-based**: pick **Host** or **Client** on the Play Online screen. **Host** opens a
 room manager to start levels as isolated rooms and, per room, **Play** into it, **Observe** with a
 free-fly no-collision camera, **Restart** or **Stop** it; **Client** opens a room browser that lists the
 running rooms with a **Play** button. Each player's chosen variant/colour shows for everyone,
-and other players/enemies are smoothed with a timestamped interpolation buffer (rendered ~100 ms in the
-past) for a flicker-free, high-FPS client view.
+and other players/enemies are smoothed with a timestamped interpolation buffer for a flicker-free,
+high-FPS client view. A pre-session **Optimization** selector picks interpolation (Smooth/Balanced/
+Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
+Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
 
 ![PT](screenshots/screenshotBR.png) Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
@@ -79,9 +82,10 @@ nada, cada linha dependente também precisa ser selecionada — com uma **pré-v
 player** ao lado da coluna Debug 3D (um robô girando no próprio viewport) que reflete os botões
 ativado/desativado em tempo real; indicadores de performance sobre o
 singleton `Performance` do Godot — uma barra **Performance HUD** opcional (FPS/NET/RAM/CPU/GPU + visão
-básica/avançada) mais um **StabilityGuard** sempre-ligado, que reduz a física e pausa à força com um
+básica/avançada) mais um **StabilityGuard** sempre-ligado, que reduz a física e (em jogo solo) pausa à força com um
 overlay de tela cheia antes que RAM/VRAM/collision pairs/contagem de nós/FPS congelem ou travem a
-máquina; uma
+máquina — com limites calibrados para os níveis 3D reais e, em sessão online, só estrangulando a física
+(nunca pausa, p/ não quebrar o netcode); uma
 malha no solo
 para telas 3D; e um sistema de localização EN/PT em que **toda tela tem botões Português/English** e
 cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json`),
@@ -90,7 +94,10 @@ Online. **Host** abre um gerenciador de salas para iniciar levels como salas iso
 **Jogar** nela, **Observar** com uma câmera livre sem colisão, **Reiniciar** ou **Parar**; **Client**
 abre um navegador que lista as salas em execução com um botão **Jogar**. A variante/cor escolhida por cada
 jogador aparece para todos, e os outros players/inimigos são suavizados por um buffer de interpolação
-com snapshots datados (renderizados ~100 ms no passado) para uma visão do cliente sem flicker e com FPS alto.
+com snapshots datados para uma visão do cliente sem flicker e com FPS alto. Um seletor de **Otimização**
+pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync (30/60 Hz) e render do host
+(Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
+telas Host/Client são em tela cheia, no padrão do resto da UI.
 
 > ![EN](screenshots/screenshotGB.png) **On the per-limb hitboxes:** you didn't reinvent Godot's physics; you automated the authoring
 > of hitboxes that would be unfeasible to maintain at scale by hand.
