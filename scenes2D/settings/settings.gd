@@ -4,6 +4,10 @@ signal replace_main_scene
 
 const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
 
+# Modulação das opções NÃO selecionadas de cada linha (radio): bem menos iluminadas que a escolhida
+# (que fica em branco pleno), destacando visualmente a opção ativa. Ver _refresh_option_dimming.
+const OPTION_DIM_MODULATE: Color = Color(0.45, 0.45, 0.48, 1.0)
+
 # Placeholder shown as the first, default-selected option of the resolution
 # dropdown. Picking it leaves the window untouched; it stays the default until a
 # saved resolution matches a preset, in which case that preset is selected instead.
@@ -152,6 +156,12 @@ func _ready() -> void:
 
 	for row in _rows:
 		_make_button_group(row)
+		# Cada botão de opção atualiza seu próprio brilho ao (des)selecionar: o radio selecionado emite
+		# toggled(true) e o anterior toggled(false), então conectar `toggled` em cada um mantém o realce
+		# da opção ativa em sincronia sem varrer tudo a cada clique.
+		for btn in row.get_children():
+			if btn is BaseButton:
+				(btn as BaseButton).toggled.connect(_on_option_toggled.bind(btn as BaseButton))
 
 	# VolumeBar (equalizador) à direita de cada linha de áudio. Criadas ANTES de _load_current_settings
 	# (que ajusta valor/estado) e conectadas DEPOIS (para o load não disparar apply à toa).
@@ -161,6 +171,9 @@ func _ready() -> void:
 	_populate_video_resolutions()
 
 	_load_current_settings()
+	# Pinta o brilho inicial de TODAS as opções (as não selecionadas nunca disparam `toggled` no load,
+	# então um passe explícito garante que comecem escurecidas).
+	_refresh_option_dimming()
 
 	# There is no "Aplicar" button: every option saves + applies the moment it changes.
 	# Connect AFTER _load_current_settings so programmatically setting the initial state
@@ -257,6 +270,22 @@ func _group_of(row: Node) -> ButtonGroup:
 		if btn is BaseButton:
 			return btn.button_group
 	return null
+
+
+# Mantém o realce das opções: a SELECIONADA de cada linha fica em branco pleno e as demais bem menos
+# iluminadas (OPTION_DIM_MODULATE). Conectado em `toggled` de cada botão (o radio anterior apaga e o
+# novo acende). `btn` vem do bind feito em _ready.
+func _on_option_toggled(pressed: bool, btn: BaseButton) -> void:
+	btn.modulate = Color.WHITE if pressed else OPTION_DIM_MODULATE
+
+
+# Passe completo do realce sobre todas as linhas (usado no load e após Reset, quando opções que
+# permanecem não selecionadas não emitem `toggled`).
+func _refresh_option_dimming() -> void:
+	for row in _rows:
+		for btn in row.get_children():
+			if btn is BaseButton:
+				_on_option_toggled((btn as BaseButton).button_pressed, btn as BaseButton)
 
 
 # A button in one of the option rows was clicked: persist + apply every setting now
@@ -573,6 +602,7 @@ func _on_reset_pressed() -> void:
 	dlg.confirmed.connect(func() -> void:
 		Settings.reset_to_defaults()
 		_load_current_settings()
+		_refresh_option_dimming()
 		_select_saved_resolution()
 		_apply_settings()
 		Settings.apply_window_resolution(get_window())

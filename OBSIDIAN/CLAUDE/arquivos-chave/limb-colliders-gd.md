@@ -76,6 +76,16 @@ lc.build_for(skel)   # resolve _classifier (body_type) + _sub_member_set (3 font
 ```
 Construídos em todos os peers (só o servidor simula os tiros). `get_limb_bodies()` lista os `StaticBody3D` criados (usado para excluir os próprios da colisão do projétil disparado).
 
+> [!note] Override de FORMA + supressão por grupo (2026-06-25)
+> `make_member_shape(group, aabb, head_kind, torso_kind, head_scale, shape_override="")` ganhou o
+> param **`shape_override`**: `"sphere"/"box"/"capsule"` FORÇA a forma daquele grupo sobre a automática
+> (a CABEÇA em cápsula mantém o raio cheio). `build_for`/`_build_member_shape`/`refit` leem
+> `LimbConfig.collider_shape(model_key, group)` e passam o override; e `build_for` **pula** os grupos
+> cujo `collider_shape == LimbConfig.SHAPE_NONE` (`"none"`) → o MEMBRO fica **sem collider**. Tudo
+> escolhido na tela Models (dropdown de geometria à direita de Membro/Sub-membro/Esqueleto) e relido
+> aqui no spawn. O caminho sem-esqueleto (`models.gd._add_mesh_member_colliders`) honra os mesmos
+> dois. Ver [[sistemas/biblioteca-de-modelos]] e [[sistemas/dano-localizado]].
+
 - Player skeleton: `PlayerModel/Robot_Skeleton/Skeleton3D` (playera herda de Player)
 - Enemy skeleton: `RedRobotModel/Armature/Skeleton3D`
 

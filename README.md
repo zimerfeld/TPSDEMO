@@ -45,8 +45,10 @@ vivo (sem botão Aplicar).
 per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
 character, in the model's own folder `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits) where the body type (biped/quadruped/crawler) defines the members and
 protruding sub-members (plates, guards) are editable too; a Models viewer with per-category master toggles (rotation, animation,
-special effects, audio, colliders — with live X/Y/Z offset & scale inputs (plus a Save button) for the
-isolated member/sub-member collider — member labels — incl. a Bone toggle floating the chosen loose
+special effects, audio, colliders — plus, per selected member/sub-member/loose bone, a **collider-geometry
+dropdown** (sphere/box/capsule, or "Selecione…" = no collider on a member) and a reusable floating dialog
+with live X/Y/Z **offset & scale** that persist instantly and are read back when a character spawns —
+member labels — incl. a Bone toggle floating the chosen loose
 bone's name) and selector dropdowns — both persisted between
 visits, with the drill-down chain restored on reopen; a
 developer screen whose debug overlay is split into **Debug 2D** (light
@@ -78,8 +80,10 @@ standard × close and a modal backdrop — the same base other floating windows 
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
 por personagem, na pasta do próprio modelo `library3D/<cat>/<modelo>/limb_config.json`, com override gravável em `user://` para edições no jogo), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
 os sub-membros salientes (placas, guardas) também são editáveis; um visualizador Models com toggles mestres por categoria (rotação, animação,
-efeitos especiais, áudio, colliders — com inputs X/Y/Z de afastamento e escala ao vivo (mais botão
-Salvar) para o collider do membro/sub-membro isolado — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
+efeitos especiais, áudio, colliders — e, por membro/sub-membro/osso avulso selecionado, um **dropdown de
+geometria do collider** (esfera/caixa/cápsula, ou "Selecione…" = sem collider no membro) e uma janela
+flutuante reutilizável com **afastamento e escala** X/Y/Z ao vivo, que persistem na hora e são relidos
+quando um personagem entra em cena — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
 do osso avulso escolhido) e dropdowns de seleção — ambos persistidos
 entre visitas, com a cadeia de navegação restaurada ao reabrir; uma tela developer cujo overlay de
 debug é dividido nas

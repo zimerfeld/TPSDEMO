@@ -63,7 +63,8 @@ func _build_ui() -> void:
 			Settings.save_settings())
 	_add_button(listen_row, "▶ Tocar", func() -> void:
 		if not _tracks.is_empty() and _listen_picker.selected >= 0:
-			MusicManager.preview(String(_listen_picker.get_item_metadata(_listen_picker.selected))))
+			MusicManager.preview_or_resume(String(_listen_picker.get_item_metadata(_listen_picker.selected))))
+	_add_button(listen_row, "⏸ Pausar", func() -> void: MusicManager.pause_preview())
 	_add_button(listen_row, "⏹ Parar", func() -> void: MusicManager.stop_preview())
 
 	root.add_child(HSeparator.new())
@@ -100,11 +101,15 @@ func _build_ui() -> void:
 		picker.item_selected.connect(_on_scene_track_selected.bind(key, picker))
 		row.add_child(picker)
 		_scene_pickers[key] = picker
-		# ▶ por linha: ouve a trilha EFETIVA daquela cena (já considerando a escolha atual).
-		_add_button(row, "▶", func() -> void:
+		# ▶ / ⏸ / ⏹ por linha: ouve, pausa e para a trilha EFETIVA daquela cena (já considerando a
+		# escolha atual). Pausa/parar agem na pré-escuta compartilhada (só uma toca por vez).
+		var play_btn := _add_button(row, "▶", func() -> void:
 			var fname := MusicManager.effective_track(key)
 			if fname != "":
-				MusicManager.preview(fname))
+				MusicManager.preview_or_resume(fname))
+		play_btn.tooltip_text = "Tocar"
+		_add_button(row, "⏸", func() -> void: MusicManager.pause_preview()).tooltip_text = "Pausar"
+		_add_button(row, "⏹", func() -> void: MusicManager.stop_preview()).tooltip_text = "Parar"
 
 	# ── Rodapé ───────────────────────────────────────────────────────────
 	root.add_child(HSeparator.new())

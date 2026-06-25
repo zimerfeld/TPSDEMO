@@ -43,6 +43,9 @@ const SCENES := [
 var _player: AudioStreamPlayer
 # Player separado para PRÉ-ESCUTA no Gerenciador de Música (não bagunça a trilha de fundo).
 var _preview: AudioStreamPlayer
+# Nome do arquivo que está em pré-escuta agora (para o ▶ retomar uma pausa da MESMA faixa em vez
+# de reiniciar). "" = nada em pré-escuta.
+var _preview_file: String = ""
 # Caminho da trilha tocando agora (ou "" = silêncio) e a chave da cena atual. Evitam reiniciar a
 # mesma faixa entre cenas e permitem reaplicar ao vivo quando o override muda.
 var _current_path: String = ""
@@ -203,7 +206,35 @@ func preview(filename: String) -> void:
 	_ensure_loop(s)
 	_player.stream_paused = true
 	_preview.stream = s
+	_preview.stream_paused = false
 	_preview.play()
+	_preview_file = filename
+
+
+# ▶ do Gerenciador: se a MESMA faixa está pausada, RETOMA de onde parou; senão toca do início.
+func preview_or_resume(filename: String) -> void:
+	if _preview != null and _preview.stream != null and _preview_file == filename:
+		resume_preview()
+		return
+	preview(filename)
+
+
+# ⏸ do Gerenciador: pausa a pré-escuta sem reiniciar (mantém o fundo mudo). No-op se nada toca.
+func pause_preview() -> void:
+	if _preview == null or _preview.stream == null:
+		return
+	_preview.stream_paused = true
+
+
+# Retoma a pré-escuta pausada (▶ na mesma faixa). Mantém o fundo mudo enquanto a pré-escuta toca.
+func resume_preview() -> void:
+	if _preview == null or _preview.stream == null:
+		return
+	_preview.stream_paused = false
+	if not _preview.playing:
+		_preview.play()
+	if _player != null:
+		_player.stream_paused = true
 
 
 func stop_preview() -> void:
@@ -211,5 +242,7 @@ func stop_preview() -> void:
 		return
 	_preview.stop()
 	_preview.stream = null
+	_preview.stream_paused = false
+	_preview_file = ""
 	if _player != null:
 		_player.stream_paused = false

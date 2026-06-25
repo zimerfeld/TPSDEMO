@@ -4,6 +4,8 @@ signal replace_main_scene(resource: PackedScene)
 
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 const AIConfigLib := preload("res://effects_shared/ai_config.gd")
+# Janela flutuante REUTILIZÁVEL (controles2D) usada como editor de Afastamento/Escala do collider.
+const _FLOATING_WINDOW := preload("res://scenes2D/controls2D/floating_window/floating_window.tscn")
 
 # Placeholder shown as the first, default-selected option of every dropdown.
 # Picking it means "nothing chosen yet": dependent dropdowns reset to this same
@@ -256,13 +258,21 @@ var _damage_panel_drag_offset: Vector2 = Vector2.ZERO
 var _ai_panel_dragging: bool = false
 var _ai_panel_drag_offset: Vector2 = Vector2.ZERO
 
-# Edição ao vivo do afastamento (offset) do collider do grupo focado. _offset_group é o grupo
-# carregado nos SpinBox; _offset_saved é o valor salvo no momento da carga; _offset_dirty marca que
-# o usuário mexeu (dispara a confirmação "Deseja salvar..." na próxima troca de seleção).
-var _offset_group: String = ""
-var _offset_saved: Vector3 = Vector3.ZERO
-var _scale_saved: Vector3 = Vector3.ONE
-var _offset_dirty: bool = false
+# Janela flutuante REUTILIZÁVEL (FloatingWindow) de Afastamento/Escala do collider do item escolhido
+# nos dropdowns Membro/Sub-membro/Esqueleto. _dialog_group é o grupo em edição; cada mudança persiste
+# e aplica AO VIVO na hora (sem botão Salvar). _dialog_dismissed_group: grupo cuja janela o usuário
+# fechou no × — não reabre até o alvo mudar. _closing_dialog_programmatically distingue o fechamento
+# por código (alvo sumiu) do manual. _dlg_* são os SpinBox criados no conteúdo da janela.
+var _collider_dialog: FloatingWindow = null
+var _dialog_group: String = ""
+var _dialog_dismissed_group: String = ""
+var _closing_dialog_programmatically: bool = false
+var _dlg_off_x: SpinBox
+var _dlg_off_y: SpinBox
+var _dlg_off_z: SpinBox
+var _dlg_scale_x: SpinBox
+var _dlg_scale_y: SpinBox
+var _dlg_scale_z: SpinBox
 
 @onready var model_holder: Node3D = $ModelHolder
 @onready var camera: Camera3D = $Camera3D
@@ -291,17 +301,15 @@ var _zoom_target: float = 0.0
 # Rótulo da row de sub-membro: gerenciado em código (sempre "Sub-membro:" agora que os ossos avulsos
 # têm o dropdown próprio "Esqueleto"); fica no SKIP_GROUP do Locale, retraduzido por código.
 @onready var sub_member_label: Label = %SubMemberLabel
-# Editor de collider do membro/sub-membro focado — só visível com o toggle de collider do tipo ligado E um
-# grupo isolado. SpinBox de Afastamento (X/Y/Z) movem o StaticBody3D e de Escala (X/Y/Z) escalam a
-# forma, ambos AO VIVO; o botão Salvar persiste os valores em LimbConfig.
-@onready var collider_edit_box: VBoxContainer = %ColliderEditBox
-@onready var offset_x: SpinBox = %OffsetX
-@onready var offset_y: SpinBox = %OffsetY
-@onready var offset_z: SpinBox = %OffsetZ
-@onready var scale_x: SpinBox = %ScaleX
-@onready var scale_y: SpinBox = %ScaleY
-@onready var scale_z: SpinBox = %ScaleZ
-@onready var collider_save_button: Button = %SaveButton
+# Dropdowns de TIPO DE GEOMETRIA (collider) à direita de Membro/Sub-membro/Esqueleto. Visíveis só com
+# um item REAL escolhido na row; "Selecione..." = sem collider (no MEMBRO REMOVE o collider; em
+# sub-membro/avulso só deixa de aplicar override). A escolha vai p/ LimbConfig.collider_shape e é
+# lida na construção dos colliders (spawn). Ver _refresh_collider_editors / _on_*_geo_selected.
+@onready var cbo_member_geo: OptionButton = %cboMemberGeo
+@onready var cbo_sub_member_geo: OptionButton = %cboSubMemberGeo
+@onready var cbo_skeleton_geo: OptionButton = %cboSkeletonGeo
+# Raiz da UI (Control) onde a janela flutuante de Afastamento/Escala é anexada (como os painéis Dano/IA).
+@onready var ui_root: Control = $UI
 @onready var rotate_toggle: CheckButton = %RotateToggle
 @onready var animation_toggle: CheckButton = %AnimationToggle
 @onready var audio_toggle: CheckButton = %AudioToggle
@@ -364,9 +372,12 @@ func _ready() -> void:
 	cbo_members.item_selected.connect(_on_member_selected)
 	cbo_sub_members.item_selected.connect(_on_sub_member_selected)
 	cbo_skeleton.item_selected.connect(_on_skeleton_selected)
-	for sp in [offset_x, offset_y, offset_z, scale_x, scale_y, scale_z]:
-		sp.value_changed.connect(_on_collider_field_changed)
-	collider_save_button.pressed.connect(_on_collider_save_pressed)
+	_populate_geo_dropdown(cbo_member_geo)
+	_populate_geo_dropdown(cbo_sub_member_geo)
+	_populate_geo_dropdown(cbo_skeleton_geo)
+	cbo_member_geo.item_selected.connect(_on_member_geo_selected)
+	cbo_sub_member_geo.item_selected.connect(_on_sub_member_geo_selected)
+	cbo_skeleton_geo.item_selected.connect(_on_skeleton_geo_selected)
 	_reset_animations()
 	_reset_effects()
 	_reset_members()
@@ -455,6 +466,9 @@ func _on_language_changed(_lang: String) -> void:
 	for combo in [cbo_prefix, cbo_models, cbo_meshes, cbo_animations, cbo_effects, cbo_members, cbo_sub_members, cbo_skeleton]:
 		if combo.item_count > 0:
 			combo.set_item_text(0, Locale.tr_key(SELECT_LABEL))
+	# Dropdowns de geometria (itens fixos Selecione/Esfera/Caixa/Cápsula) — re-traduz preservando a seleção.
+	for geo in [cbo_member_geo, cbo_sub_member_geo, cbo_skeleton_geo]:
+		_relabel_geo_dropdown(geo)
 	if cbo_meshes.item_count > 1:
 		cbo_meshes.set_item_text(1, Locale.tr_key(WHOLE_MODEL_LABEL))
 	# The "Todos" entry (when present) sits at index 1 of the Efeitos dropdown.
@@ -551,7 +565,6 @@ func _process(delta: float) -> void:
 # "Selecione..." placeholder (real categories start at index 1). Selecting it blanks
 # and disables the whole chain below and clears the preview.
 func _on_category_selected(index: int) -> void:
-	_prompt_save_offset_if_dirty()
 	_save_selection("sel_category", _category_value(index))
 	if index <= 0:
 		_reset_prefixes()
@@ -599,7 +612,6 @@ func _reset_prefixes() -> void:
 
 
 func _on_prefix_selected(index: int) -> void:
-	_prompt_save_offset_if_dirty()
 	_prefix_filter = cbo_prefix.get_item_metadata(index)
 	_save_selection("sel_prefix", _prefix_filter)
 	if _prefix_filter == "":
@@ -671,7 +683,6 @@ func _reset_meshes_and_preview() -> void:
 # mesh) but leaves the placeholder selected, so nothing previews until a part is
 # picked. Selecting the placeholder blanks the part dropdown and the preview.
 func _on_model_selected(index: int) -> void:
-	_prompt_save_offset_if_dirty()
 	if index <= 0:
 		_save_selection("sel_model", "")
 		_reset_meshes_and_preview()
@@ -707,7 +718,6 @@ func _on_model_selected(index: int) -> void:
 # index 1 is the assembled "Modelo completo", and indices 2.. map to the distinct
 # meshes in _mesh_catalog (shifted by the two leading entries).
 func _on_mesh_selected(index: int) -> void:
-	_prompt_save_offset_if_dirty()
 	_save_selection("sel_part", _part_value(index))
 	if index <= 0:
 		_clear_preview()
@@ -928,6 +938,9 @@ func _reset_members() -> void:
 	cbo_members.disabled = true
 	member_row.visible = false
 	_member_entries = []
+	# A row some → seus dropdowns de geometria também; e a janela de Afastamento/Escala fecha (sem alvo).
+	_close_collider_dialog()
+	_dialog_dismissed_group = ""
 	_reset_sub_members()
 
 
@@ -1066,11 +1079,11 @@ func _on_skeleton_selected(index: int) -> void:
 	_save_selection("sel_skeleton", _skeleton_value(index))
 	_refresh_aux_highlight()
 	_refresh_aux_labels()
+	_refresh_collider_editors()   # dropdown de geometria do osso avulso + janela Afastamento/Escala
 
 
 # Escolher um membro: persiste, repopula os sub-membros daquele membro e reaplica o isolamento.
 func _on_member_selected(index: int) -> void:
-	_prompt_save_offset_if_dirty()
 	_save_selection("sel_member", _member_value(index))
 	_populate_sub_members()
 	_refresh_member_overlays()
@@ -1083,7 +1096,6 @@ func _on_member_selected(index: int) -> void:
 # Escolher um sub-membro (ou um osso avulso no modo "Todos os membros"): persiste e reaplica o
 # isolamento e o realce.
 func _on_sub_member_selected(index: int) -> void:
-	_prompt_save_offset_if_dirty()
 	_save_selection("sel_submember", _sub_member_value(index))
 	_refresh_member_overlays()
 	_refresh_aux_highlight()
@@ -1205,7 +1217,7 @@ func _current_focus_groups():
 func _refresh_member_overlays() -> void:
 	if _preview_instance == null:
 		return
-	_refresh_collider_offset_inputs()
+	_refresh_collider_editors()
 	_refresh_sub_member_labels()
 	var focus = _current_focus_groups()
 	if focus == null:
@@ -1229,52 +1241,153 @@ func _refresh_member_overlays() -> void:
 			(piv as Node3D).visible = in_focus
 
 
-# ── Editor de collider (afastamento + escala) do membro/sub-membro focado ─────
+# ── Geometria do collider + janela de Afastamento/Escala (Membro/Sub-membro/Esqueleto) ─────────
+#
+# Ao escolher um item REAL (não "Selecione..."/"Todos") num dos três dropdowns, aparece à direita um
+# dropdown de TIPO DE GEOMETRIA (Esfera/Caixa/Cápsula) e abre-se a janela flutuante REUTILIZÁVEL
+# (FloatingWindow) com Afastamento e Escala, intitulada com o NOME do item. Tudo persiste em LimbConfig
+# e aplica AO VIVO na hora; o gameplay relê na construção dos colliders (quando o personagem entra em cena).
 
-# Mostra/esconde e (re)carrega o editor conforme o foco e o toggle de collider do grupo focado:
-# MEMBRO → "Colisores de Membro"; SUB-MEMBRO (PART_*) → "Colisores de Submembros". Só aparece com o
-# toggle LIGADO E exatamente UM grupo focado. Ao mudar de grupo, carrega os valores salvos
-# (afastamento + escala) nos SpinBox (sem disparar sinais) e zera o "dirty"; mesmo grupo → não mexe
-# (preserva uma edição em andamento). Com o toggle desligado o box some, mas grupo/dirty ficam.
-func _refresh_collider_offset_inputs() -> void:
-	var focus = _current_focus_groups()
-	var group := ""
-	if focus != null and focus.size() == 1:
-		group = str(focus.keys()[0])
-	var toggle_on: bool = _show_sub_colliders if group.begins_with("PART_") else _show_colliders
-	collider_edit_box.visible = toggle_on and group != ""
-	if not toggle_on:
+# Popula um dropdown de geometria: 0 "Selecione..." (= sem collider) + Esfera/Caixa/Cápsula. O VALOR
+# estável ("", "sphere", "box", "capsule") fica na metadata de cada item.
+func _populate_geo_dropdown(combo: OptionButton) -> void:
+	combo.clear()
+	combo.add_item(Locale.tr_key(SELECT_LABEL)); combo.set_item_metadata(0, "")
+	combo.add_item(Locale.tr_key("Esfera")); combo.set_item_metadata(1, "sphere")
+	combo.add_item(Locale.tr_key("Caixa")); combo.set_item_metadata(2, "box")
+	combo.add_item(Locale.tr_key("Cápsula")); combo.set_item_metadata(3, "capsule")
+
+
+# Re-traduz os rótulos de um dropdown de geometria (troca de idioma; preserva a seleção/metadata).
+func _relabel_geo_dropdown(combo: OptionButton) -> void:
+	if combo.item_count < 4:
 		return
-	if group == "":
-		_offset_group = ""
+	combo.set_item_text(0, Locale.tr_key(SELECT_LABEL))
+	combo.set_item_text(1, Locale.tr_key("Esfera"))
+	combo.set_item_text(2, Locale.tr_key("Caixa"))
+	combo.set_item_text(3, Locale.tr_key("Cápsula"))
+
+
+# Índice do dropdown de geometria para um valor de forma. "none" (membro suprimido) e "" caem em 0.
+func _geo_index_for_value(value: String) -> int:
+	match value:
+		"sphere": return 1
+		"box": return 2
+		"capsule": return 3
+		_: return 0
+
+
+# Forma do collider VIVO de um grupo no preview (sphere/box/capsule), ou "" se o grupo não tem corpo
+# (ex.: osso avulso ainda não promovido). Deixa o dropdown refletir a forma automática atual.
+func _live_shape_kind(group: String) -> String:
+	for body in _member_bodies():
+		if str((body as StaticBody3D).get_meta("group")) == group:
+			for cs in body.find_children("*", "CollisionShape3D", true, false):
+				var sh: Shape3D = (cs as CollisionShape3D).shape
+				if sh is SphereShape3D:
+					return "sphere"
+				if sh is BoxShape3D:
+					return "box"
+				if sh is CapsuleShape3D:
+					return "capsule"
+			return ""
+	return ""
+
+
+# Seleciona no dropdown de geometria a forma do grupo: override explícito salvo > forma viva (auto).
+# "none" salvo (membro sem collider) e ausência sem corpo → "Selecione...". select() não emite sinal.
+func _select_geo_for_group(combo: OptionButton, group: String) -> void:
+	var shape := LimbConfig.collider_shape(_current_model_key(), group)
+	if shape == "":
+		shape = _live_shape_kind(group)
+	combo.select(_geo_index_for_value(shape))
+
+
+# Group do MEMBRO específico em cbo_members (índices 2+), ou "" em "Selecione..."/"Todos os membros".
+func _selected_member_group() -> String:
+	if not member_row.visible or cbo_members.selected < 2 or cbo_members.selected - 2 >= _member_entries.size():
+		return ""
+	return str(_member_entries[cbo_members.selected - 2]["group"])
+
+
+# Atualiza os 3 dropdowns de geometria (visibilidade + forma atual) e sincroniza a janela de
+# Afastamento/Escala com o item escolhido. Chamado por _refresh_member_overlays e _on_skeleton_selected.
+func _refresh_collider_editors() -> void:
+	var mg := _selected_member_group()
+	cbo_member_geo.visible = mg != ""
+	if mg != "":
+		_select_geo_for_group(cbo_member_geo, mg)
+	var sub_val := _sub_member_value(cbo_sub_members.selected) if sub_member_row.visible else ""
+	var sub_real := sub_val.begins_with("PART_")
+	cbo_sub_member_geo.visible = sub_real
+	if sub_real:
+		_select_geo_for_group(cbo_sub_member_geo, sub_val)
+	var skel_val := _skeleton_value(cbo_skeleton.selected) if (skeleton_row.visible and not cbo_skeleton.disabled) else ""
+	var skel_real := skel_val != "" and skel_val != ALL_AUX_VALUE
+	cbo_skeleton_geo.visible = skel_real
+	if skel_real:
+		_select_geo_for_group(cbo_skeleton_geo, "PART_" + skel_val)
+	_sync_collider_dialog()
+
+
+# Item ÚNICO em edição (para a janela de Afastamento/Escala), por precedência esqueleto > sub > membro.
+# {group, label} ou {} quando nada está escolhido. group é "PART_<osso>" p/ sub/avulso, ou o membro.
+func _current_edit_target() -> Dictionary:
+	if not member_row.visible:
+		return {}
+	if skeleton_row.visible and not cbo_skeleton.disabled:
+		var sv := _skeleton_value(cbo_skeleton.selected)
+		if sv != "" and sv != ALL_AUX_VALUE:
+			return {"group": "PART_" + sv, "label": sv}
+	if sub_member_row.visible:
+		var sub := _sub_member_value(cbo_sub_members.selected)
+		if sub.begins_with("PART_"):
+			return {"group": sub, "label": _group_label(sub)}
+	# Membro: usa o rótulo do PLANO (CABEÇA/BRAÇO E…) — vale mesmo suprimido (sem corpo para _group_label).
+	if _selected_member_group() != "":
+		var e: Dictionary = _member_entries[cbo_members.selected - 2]
+		return {"group": str(e["group"]), "label": str(e["label"])}
+	return {}
+
+
+# Escolher geometria do MEMBRO: "Selecione..." REMOVE o collider (SHAPE_NONE); senão sobrescreve a
+# forma. Persiste, reconstrói o preview (mostra na hora) e o gameplay relê no spawn.
+func _on_member_geo_selected(index: int) -> void:
+	var g := _selected_member_group()
+	if g == "":
 		return
-	if group != _offset_group:
-		_offset_group = group
-		_offset_dirty = false
-		_offset_saved = LimbConfig.collider_offset(_current_model_key(), group)
-		_scale_saved = LimbConfig.collider_scale(_current_model_key(), group)
-		offset_x.set_value_no_signal(_offset_saved.x)
-		offset_y.set_value_no_signal(_offset_saved.y)
-		offset_z.set_value_no_signal(_offset_saved.z)
-		scale_x.set_value_no_signal(_scale_saved.x)
-		scale_y.set_value_no_signal(_scale_saved.y)
-		scale_z.set_value_no_signal(_scale_saved.z)
+	var value := str(cbo_member_geo.get_item_metadata(index))
+	LimbConfig.set_collider_shape(_current_model_key(), g, LimbConfig.SHAPE_NONE if value == "" else value)
+	_rebuild_member_colliders()
 
 
-# Mudou um SpinBox (afastamento ou escala): marca "dirty" e aplica AO VIVO no corpo do grupo focado.
-func _on_collider_field_changed(_v: float) -> void:
-	if _offset_group == "":
+# Escolher geometria do SUB-MEMBRO: "Selecione..." só limpa o override (NÃO remove o sub-membro —
+# isso é pela lixeira da janela de dano); senão sobrescreve a forma. Persiste + mostra na hora.
+func _on_sub_member_geo_selected(index: int) -> void:
+	var g := _sub_member_value(cbo_sub_members.selected)
+	if not g.begins_with("PART_"):
 		return
-	_offset_dirty = true
-	_apply_collider_xform(_offset_group, _current_offset_value(), _current_scale_value())
+	LimbConfig.set_collider_shape(_current_model_key(), g, str(cbo_sub_member_geo.get_item_metadata(index)))
+	_rebuild_member_colliders()
 
 
-func _current_offset_value() -> Vector3:
-	return Vector3(offset_x.value, offset_y.value, offset_z.value)
-
-
-func _current_scale_value() -> Vector3:
-	return Vector3(scale_x.value, scale_y.value, scale_z.value)
+# Escolher geometria de um OSSO AVULSO ("Esqueleto"): PROMOVE o osso a sub-membro com essa forma (cria
+# o collider) e o seleciona no dropdown Sub-membro p/ a edição continuar. "Selecione..." = não promover.
+func _on_skeleton_geo_selected(index: int) -> void:
+	var bone := _skeleton_value(cbo_skeleton.selected)
+	if bone == "" or bone == ALL_AUX_VALUE:
+		return
+	var value := str(cbo_skeleton_geo.get_item_metadata(index))
+	if value == "":
+		return
+	var model_key := _current_model_key()
+	LimbConfig.add_sub_member(model_key, bone, "")
+	LimbConfig.set_collider_shape(model_key, "PART_" + bone, value)
+	_rebuild_member_colliders()
+	var sub_i := _sub_member_index_for_value("PART_" + bone)
+	if sub_i > 0:
+		cbo_sub_members.select(sub_i)
+		_on_sub_member_selected(sub_i)
 
 
 # Aplica afastamento (posição do StaticBody3D) e escala (na forma, em torno do seu centro) de um grupo
@@ -1296,39 +1409,126 @@ func _group_label(group: String) -> String:
 	return group
 
 
-# Botão "Salvar" do editor de collider: persiste afastamento + escala do grupo focado em LimbConfig
-# (para reaparecerem ao recarregar aquele membro/sub-membro) e limpa o "dirty".
-func _on_collider_save_pressed() -> void:
-	if _offset_group == "":
+# ── Janela flutuante reutilizável de Afastamento/Escala ────────────────────────
+
+# Abre/atualiza/fecha a janela conforme o item em edição (_current_edit_target). Respeita um fechamento
+# manual (× / ESC) do mesmo alvo: não reabre até o alvo mudar.
+func _sync_collider_dialog() -> void:
+	var target := _current_edit_target()
+	if target.is_empty():
+		_close_collider_dialog()
+		_dialog_dismissed_group = ""
 		return
-	var model_key := _current_model_key()
-	_offset_saved = _current_offset_value()
-	_scale_saved = _current_scale_value()
-	LimbConfig.set_collider_offset(model_key, _offset_group, _offset_saved)
-	LimbConfig.set_collider_scale(model_key, _offset_group, _scale_saved)
-	_offset_dirty = false
+	var g := str(target["group"])
+	if g == _dialog_dismissed_group:
+		return
+	_dialog_dismissed_group = ""
+	_open_or_update_collider_dialog(g, str(target["label"]))
 
 
-# Chamado ANTES de processar uma nova seleção de dropdown: se o collider do grupo atual foi alterado,
-# pergunta se deve salvar (mostrando o NOME do membro/sub-membro). Confirmar grava em LimbConfig;
-# cancelar reverte o corpo vivo aos valores salvos. Consome o "dirty" de imediato.
-func _prompt_save_offset_if_dirty() -> void:
-	if not _offset_dirty or _offset_group == "":
+# (Re)abre a janela reutilizável (FloatingWindow) com Afastamento/Escala do grupo; título = nome do item.
+func _open_or_update_collider_dialog(group: String, label: String) -> void:
+	if _collider_dialog != null and is_instance_valid(_collider_dialog):
+		_dialog_group = group
+		_collider_dialog.set_title(label)
+		_load_dialog_values(group)
 		return
-	var grp := _offset_group
-	var new_off := _current_offset_value()
-	var new_scale := _current_scale_value()
-	var old_off := _offset_saved
-	var old_scale := _scale_saved
+	var dlg: FloatingWindow = _FLOATING_WINDOW.instantiate()
+	dlg.modal = false                      # não escurece/bloqueia: dá p/ girar o modelo com ela aberta
+	dlg.close_on_escape = true
+	dlg.min_window_size = Vector2(360, 200)
+	dlg.remember_position_key = "models_collider_dialog"
+	dlg.title = label
+	ui_root.add_child(dlg)
+	_collider_dialog = dlg
+	_dialog_group = group
+	_build_collider_dialog_content(dlg)
+	dlg.closed.connect(_on_collider_dialog_closed)
+	_load_dialog_values(group)
+	dlg.popup_centered()
+
+
+# Monta Afastamento (X/Y/Z) e Escala (X/Y/Z) no conteúdo da janela; cada mudança persiste + aplica ao vivo.
+func _build_collider_dialog_content(dlg: FloatingWindow) -> void:
+	var content := dlg.get_content()
+	var off := _make_vec3_row(content, "Afastamento:", -10.0, 10.0, 0.01, 0.0)
+	_dlg_off_x = off[0]; _dlg_off_y = off[1]; _dlg_off_z = off[2]
+	var sc := _make_vec3_row(content, "Escala:", 0.05, 20.0, 0.05, 1.0)
+	_dlg_scale_x = sc[0]; _dlg_scale_y = sc[1]; _dlg_scale_z = sc[2]
+	for sp in [_dlg_off_x, _dlg_off_y, _dlg_off_z, _dlg_scale_x, _dlg_scale_y, _dlg_scale_z]:
+		(sp as SpinBox).value_changed.connect(_on_dialog_field_changed)
+
+
+# Linha "rótulo: X[ ] Y[ ] Z[ ]" de 3 SpinBox; devolve os 3. Rótulos auto-localizados pelo Locale.
+func _make_vec3_row(parent: Control, label_text: String, mn: float, mx: float, step: float, default_v: float) -> Array:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var lbl := Label.new()
+	lbl.text = label_text
+	lbl.custom_minimum_size.x = 110
+	row.add_child(lbl)
+	var spins: Array = []
+	for axis in ["X", "Y", "Z"]:
+		var al := Label.new()
+		al.text = axis
+		row.add_child(al)
+		var sp := SpinBox.new()
+		sp.custom_minimum_size = Vector2(90, 44)
+		sp.min_value = mn
+		sp.max_value = mx
+		sp.step = step
+		sp.value = default_v
+		sp.allow_greater = true
+		sp.allow_lesser = true
+		row.add_child(sp)
+		spins.append(sp)
+	parent.add_child(row)
+	return spins
+
+
+# Carrega nos SpinBox da janela o afastamento/escala salvos do grupo (sem disparar sinais).
+func _load_dialog_values(group: String) -> void:
+	var off := LimbConfig.collider_offset(_current_model_key(), group)
+	var sc := LimbConfig.collider_scale(_current_model_key(), group)
+	_dlg_off_x.set_value_no_signal(off.x)
+	_dlg_off_y.set_value_no_signal(off.y)
+	_dlg_off_z.set_value_no_signal(off.z)
+	_dlg_scale_x.set_value_no_signal(sc.x)
+	_dlg_scale_y.set_value_no_signal(sc.y)
+	_dlg_scale_z.set_value_no_signal(sc.z)
+
+
+# Mudou um SpinBox da janela: persiste na hora (sem botão Salvar) e aplica AO VIVO no corpo do grupo
+# (gizmo/rótulo acompanham). O gameplay relê esses valores no spawn.
+func _on_dialog_field_changed(_v: float) -> void:
+	if _dialog_group == "":
+		return
 	var model_key := _current_model_key()
-	var label := _group_label(grp)
-	_offset_dirty = false
-	var dlg := FloatingDialog.confirm(self, "Colisores", "Deseja salvar modificações para colisores de \"%s\" ?" % label, "Sim", "Não")
-	dlg.confirmed.connect(func():
-		LimbConfig.set_collider_offset(model_key, grp, new_off)
-		LimbConfig.set_collider_scale(model_key, grp, new_scale))
-	dlg.canceled.connect(func():
-		_apply_collider_xform(grp, old_off, old_scale))   # descarta: reverte o corpo vivo ao salvo
+	var off := Vector3(_dlg_off_x.value, _dlg_off_y.value, _dlg_off_z.value)
+	var sc := Vector3(_dlg_scale_x.value, _dlg_scale_y.value, _dlg_scale_z.value)
+	LimbConfig.set_collider_offset(model_key, _dialog_group, off)
+	LimbConfig.set_collider_scale(model_key, _dialog_group, sc)
+	_apply_collider_xform(_dialog_group, off, sc)
+
+
+# Fecha a janela por CÓDIGO (alvo sumiu) — não marca o grupo como "dispensado" (reabre se o alvo voltar).
+func _close_collider_dialog() -> void:
+	if _collider_dialog == null or not is_instance_valid(_collider_dialog):
+		_collider_dialog = null
+		_dialog_group = ""
+		return
+	_closing_dialog_programmatically = true
+	_collider_dialog.close()
+	_closing_dialog_programmatically = false
+
+
+# A janela fechou (× / ESC do usuário, ou close() por código): limpa as refs. Fechamento MANUAL marca o
+# grupo para não reabrir até o alvo mudar (ver _sync_collider_dialog).
+func _on_collider_dialog_closed() -> void:
+	if not _closing_dialog_programmatically:
+		_dialog_dismissed_group = _dialog_group
+	_collider_dialog = null
+	_dialog_group = ""
 
 
 func _on_rotate_toggled(pressed: bool) -> void:
@@ -2387,11 +2587,10 @@ func _clear_preview() -> void:
 	_preview_effect_nodes = []
 	_member_label_pivots = []
 	_clear_damage_fields()
-	# Zera o estado da edição de afastamento: sem preview não há corpo focado, e o próximo build deve
-	# recarregar os SpinBox do zero (senão um grupo de mesmo nome de outro modelo manteria valores velhos).
-	_offset_group = ""
-	_offset_dirty = false
-	collider_edit_box.visible = false
+	# Sem preview não há corpo focado: fecha a janela de Afastamento/Escala e zera o "dispensado" (o
+	# próximo modelo recarrega os valores do zero, sem herdar um grupo de mesmo nome de outro modelo).
+	_close_collider_dialog()
+	_dialog_dismissed_group = ""
 	_yaw = 0.0
 	_pitch = 0.0
 	model_holder.rotation = Vector3.ZERO
@@ -3007,6 +3206,7 @@ func _build_damage_footer(model_key: String) -> void:
 	add_row.add_theme_constant_override("separation", 8)
 	var picker := OptionButton.new()
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	picker.size_flags_vertical = Control.SIZE_SHRINK_END   # base alinhada ao dropdown do dono (que tem rótulo acima)
 	var candidates := _aux_bone_candidates()
 	if candidates.is_empty():
 		picker.add_item(Locale.tr_key("(sem ossos auxiliares)"))
@@ -3015,6 +3215,12 @@ func _build_damage_footer(model_key: String) -> void:
 		for b in candidates:
 			picker.add_item(b)
 	add_row.add_child(picker)
+	# Coluna do membro-dono: um rótulo "Para Membro Dono" ACIMA do dropdown (deixa claro o que ele faz).
+	var owner_col := VBoxContainer.new()
+	owner_col.add_theme_constant_override("separation", 2)
+	var owner_label := Label.new()
+	owner_label.text = "Para Membro Dono"   # Label: auto-localizado pelo Locale
+	owner_col.add_child(owner_label)
 	var owner_btn := OptionButton.new()
 	owner_btn.tooltip_text = Locale.tr_key("Membro-dono (agrupa o dano; não mexe na malha)")
 	for ch in _owner_choices():
@@ -3022,10 +3228,12 @@ func _build_damage_footer(model_key: String) -> void:
 		owner_btn.add_item(str(ch["label"]))
 		owner_btn.set_item_metadata(i, str(ch["group"]))
 	owner_btn.disabled = candidates.is_empty()
-	add_row.add_child(owner_btn)
+	owner_col.add_child(owner_btn)
+	add_row.add_child(owner_col)
 	var add_btn := Button.new()
 	add_btn.text = "Adicionar"   # Button: auto-localizado pelo Locale
 	add_btn.disabled = candidates.is_empty()
+	add_btn.size_flags_vertical = Control.SIZE_SHRINK_END   # base alinhada ao dropdown do dono
 	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker, owner_btn))
 	add_row.add_child(add_btn)
 	damage_footer.add_child(add_row)
@@ -3558,7 +3766,11 @@ func _add_mesh_member_colliders(instance: Node) -> void:
 			members[g] = {"label": lab, "nodes": []}
 		members[g]["nodes"].append(mi)
 
+	var model_key := _current_model_key()
 	for g in members:
+		# "Selecione..." no dropdown de geometria (tela Models) suprime o collider do membro (SHAPE_NONE).
+		if LimbConfig.collider_shape(model_key, g) == LimbConfig.SHAPE_NONE:
+			continue
 		var nodes: Array = members[g]["nodes"]
 		var anchor := _lca(nodes, instance)
 		if anchor == null:
@@ -3584,16 +3796,20 @@ func _add_mesh_member_colliders(instance: Node) -> void:
 		body.set_meta("group", g)
 		body.set_meta("member_label", members[g]["label"])
 		# Afastamento salvo (igual ao caminho com esqueleto em LimbColliders): move o corpo inteiro.
-		body.position = LimbConfig.collider_offset(_current_model_key(), g)
+		body.position = LimbConfig.collider_offset(model_key, g)
+		# Forma escolhida na tela Models (override) tem prioridade; senão a automática por tipo de rig.
+		var shape_override := LimbConfig.collider_shape(model_key, g)
 		var shape_node: CollisionShape3D
-		if is_weapon:
+		if shape_override == "sphere" or shape_override == "box" or shape_override == "capsule":
+			shape_node = LimbColliders.make_shape(shape_override, aabb)
+		elif is_weapon:
 			# Barrel → capsule along its length; receiver/grip/stock/mag → box.
 			var kind := "capsule" if g == WeaponParts.BARREL else "box"
 			shape_node = LimbColliders.make_shape(kind, aabb)
 		else:
 			shape_node = LimbColliders.make_member_shape(g, aabb)
 		# Escala salva (igual ao caminho com esqueleto): escala a forma em torno do seu centro.
-		shape_node.scale = LimbConfig.collider_scale(_current_model_key(), g)
+		shape_node.scale = LimbConfig.collider_scale(model_key, g)
 		body.add_child(shape_node)
 		anchor.add_child(body)
 

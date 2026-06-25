@@ -248,22 +248,27 @@ toggle é o **interruptor mestre** da sua categoria:
       **throttle adaptativo** no
       `_process` (intervalo = `elapsed·30`, teto 10 Hz / piso 2 Hz) mantém o custo em ~3% → **≥ 60 FPS**,
       com modelos mais densos re-encaixando menos vezes. (1ª chamada ainda monta o cache ~150 ms uma vez.)
-  - **Editor de collider (Afastamento + Escala) X/Y/Z por membro/sub-membro (2026-06-22):** com o
-    toggle **Colisores LIGADO** e **um** grupo isolado (membro ou sub-membro), aparece a
-    `ColliderEditBox` logo abaixo dos dropdowns: row **"Afastamento:"/"Offset:"** (3 `SpinBox` X/Y/Z),
-    row **"Escala:"/"Scale:"** (3 `SpinBox` X/Y/Z) e um botão **"Salvar"/"Save"** (numa `SaveRow` com
-    espaçador, **alinhado sob a coluna Y** da Escala — 2026-06-23). Carrega os valores
-    salvos (`LimbConfig.collider_offset`/`collider_scale(model_key, group)`) e, ao mudar, aplica **AO
-    VIVO** no grupo (`_apply_collider_xform`: afastamento → `body.position`; escala → `scale` da forma,
-    em torno do centro; gizmo/rótulo acompanham). Valores em espaço LOCAL do osso/collider.
-    Visibilidade/carga em `_refresh_collider_offset_inputs` (só recarrega quando o GRUPO focado muda,
-    preservando uma edição em andamento). **Salvar** (`_on_collider_save_pressed`) persiste afastamento
-    + escala. Ao iniciar **uma nova seleção de dropdown** (categoria/prefixo/modelo/parte/membro/
-    sub-membro) com edição pendente, `_prompt_save_offset_if_dirty` abre uma janela `FloatingDialog.confirm`
-    **"Deseja salvar modificações para colisores de \"&lt;nome do membro/sub-membro&gt;\" ?"** — confirmar
-    grava, cancelar reverte o corpo aos valores salvos. Ambos são aplicados no build
-    (`LimbColliders._build_member_shape` e `_add_mesh_member_colliders` setam `body.position` e
-    `shape.scale`), então valem também no gameplay. Ver [[sistemas/dano-localizado]].
+  - **Geometria do collider + janela de Afastamento/Escala por membro/sub-membro/osso avulso (2026-06-25,
+    substitui o editor inline):** ao escolher um item **real** (não "Selecione..."/"Todos") em **Membro**,
+    **Sub-membro** ou **Esqueleto**, aparece **à direita** daquele dropdown um **dropdown de geometria**
+    (`cboMemberGeo`/`cboSubMemberGeo`/`cboSkeletonGeo`; itens "Selecione..." + Esfera/Caixa/Cápsula com
+    metadata `""`/`sphere`/`box`/`capsule`) **e** abre-se a **janela flutuante REUTILIZÁVEL**
+    ([[convencoes/ancoragem-ui|FloatingWindow]] dos controles2D) — `_open_or_update_collider_dialog`,
+    anexada ao `UI`, `modal=false` (dá p/ girar o modelo), posição lembrada em
+    `windows/models_collider_dialog` — com **Afastamento** e **Escala** X/Y/Z, **intitulada com o nome do
+    item**. Cada mudança **persiste na hora** (`LimbConfig.set_collider_offset`/`set_collider_scale`,
+    **sem botão Salvar**) e aplica **AO VIVO** (`_apply_collider_xform`: afastamento → `body.position`;
+    escala → `scale` da forma). O **dropdown de geometria** grava `LimbConfig.set_collider_shape` e
+    **reconstrói** os colliders (`_rebuild_member_colliders`): num **MEMBRO**, "Selecione..." = `SHAPE_NONE`
+    → **remove o collider** (membro sem hitbox); num **SUB-MEMBRO**, "Selecione..." só limpa o override (a
+    remoção é pela lixeira da árvore de Dano); num **OSSO AVULSO**, escolher uma geometria **promove** o osso
+    a sub-membro com aquela forma (`add_sub_member` + `set_collider_shape`) e o seleciona em "Sub-membro".
+    Pré-seleção do dropdown: override salvo > forma VIVA do collider (`_live_shape_kind`); membro suprimido
+    → "Selecione...". Tudo é **relido no spawn** via `LimbColliders` (`make_member_shape` honra o override;
+    `build_for`/`_add_mesh_member_colliders` pulam grupos `SHAPE_NONE`). Lógica em
+    `_refresh_collider_editors` / `_on_*_geo_selected` / `_sync_collider_dialog` / `_current_edit_target`.
+    O antigo `ColliderEditBox` inline + botão **Salvar** + `_prompt_save_offset_if_dirty` foram **REMOVIDOS**.
+    Ver [[sistemas/dano-localizado]].
 - **Efeitos especiais** — mostra/esconde **tudo o que sobra** ligado ao modelo e que
   nenhum outro toggle cobre: partículas, luzes, decals/névoa e malhas presas a osso (muzzle/
   laser), coletadas por `_collect_effect_nodes` (lista `_EFFECT_CLASSES`). O combo **"Efeitos
@@ -435,9 +440,9 @@ toggle é o **interruptor mestre** da sua categoria:
     (`group_of == ""`, não promovidos), com **"Todos os Esqueletos"** (`ALL_AUX_VALUE`) no topo; só
     inspeção/realce (não isola). `_populate_sub_members` (sub-membros) e `_populate_skeleton` (ossos
     avulsos, chamado no topo daquele) populam; `_reset_skeleton` limpa. **Posição do "Esqueleto":** a
-    `SkeletonRow` fica APÓS o `ColliderEditBox` na árvore, então quando um sub-membro está selecionado
-    o editor (afastamento/escala + **Salvar**) aparece e empurra o "Esqueleto" para baixo dele; sem
-    sub-membro selecionado o editor some (colapsa) e o "Esqueleto" fica logo abaixo de "Sub-membro".
+    `SkeletonRow` fica logo abaixo de "Sub-membro" (o antigo `ColliderEditBox` inline foi REMOVIDO — o
+    editor de afastamento/escala agora é a janela flutuante reutilizável; ver acima). À direita do combo
+    "Esqueleto" há o dropdown de geometria `cboSkeletonGeo` quando um osso avulso real está escolhido.
     Persistência: sub-membro em `sel_submember` (cobre os dois modos), osso avulso em `sel_skeleton`;
     ambos restaurados no `_restore_selection_chain`.
   - **Toggle "Colisores de Esqueleto" (renomeado de "Realçar avulso"→"Esqueleto"→"Colisores de Esqueleto" em 2026-06-22) + "Todo o esqueleto" (2026-06-21; item antes "Todos os ossos avulsos"):** como os personagens são UMA

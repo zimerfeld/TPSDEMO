@@ -50,6 +50,8 @@ Clicar em **Música: Enabled** na aba Audio abre o **Gerenciador de Música**
 Templates de Level). Permite:
 
 - **Ouvir** qualquer faixa de `Audios/` (player de pré-escuta separado; pausa o fundo enquanto toca).
+  Cada botão **▶ Tocar** tem ao lado um **⏸ Pausar** e um **⏹ Parar** (2026-06-25) — tanto na linha
+  "Ouvir faixa" quanto na lista por cena. ▶ retoma uma pausa da MESMA faixa (`preview_or_resume`).
 - **Atribuir/remover** a trilha de cada cena/level: "Padrão" (resolve pelo nome), "Sem música"
   (silêncio) ou um arquivo específico.
 
@@ -57,7 +59,8 @@ As atribuições viram **overrides** persistidos em `Settings` (seção `[music]
 ou `""` = silêncio) e têm **prioridade** sobre a resolução por nome em `_resolve()`. Mudar a
 atribuição reaplica **na hora** se for a cena tocando. `MusicManager` expõe `list_tracks()`,
 `scene_list()`, `assignment_of()`, `set_assignment()`, `effective_track()`, `preview()`,
-`stop_preview()`. Abre via `button_down` do botão Enabled (abre mesmo com a música já ligada).
+`preview_or_resume()`/`pause_preview()`/`resume_preview()` (2026-06-25), `stop_preview()`. Abre via
+`button_down` do botão Enabled (abre mesmo com a música já ligada).
 A janela usa `FloatingWindow.pointer_over_any_window()`? Não — é um `Window` nativo; quem usa esse
 helper são as cenas 3D (ver [[sistemas/biblioteca-de-modelos]]).
 

@@ -108,18 +108,22 @@ em terceira pessoa. Em alto nível, oferece:
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
   toggle cobre — partículas, luzes, malhas de laser/clarão presas a ossos), **Áudio** (todo som que
   o modelo emite — movimento, motor, tiros, explosões, vozes), **Colisores de Membro** (com o toggle
-  ligado e um membro/sub-membro isolado, **inputs X/Y/Z de afastamento e escala** ajustam a posição/tamanho daquele
-  collider ao vivo, com botão **Salvar** — e trocar de seleção com edição pendente pergunta se quer
-  salvar, citando o nome do membro/sub-membro), **rótulos de membro**
+  ligado e um membro/sub-membro isolado, exibe o gizmo verde daquele collider), **rótulos de membro**
   (toggle próprio do browser para as tags "Membro: …" sobre cada collider, independente da tela
   Debug 3D — com, logo abaixo do toggle **Membro**, um toggle **Esqueleto** que faz flutuar o rótulo
   "Esqueleto: \<nome\>" do osso avulso escolhido sobre ele, e as linhas extras Tipo/Nome/ID), **Colisores de Esqueleto** (no modo "Todos os membros" → filtro "Esqueleto", destaca com uma
   caixa translúcida a região do osso avulso escolhido, ou de todos), **Submembros** (rótulo flutuante
   "Submembro: \<nome\>" sobre o sub-membro escolhido no dropdown) e **Colisores de Submembros** (mostra
-  só o limbcollider do sub-membro selecionado, com o mesmo editor de afastamento/escala). Os seletores são **três
+  só o limbcollider do sub-membro selecionado). Os seletores são **três
   dropdowns** — **Membro**, **Sub-membro** (logo abaixo, com a opção **"Todos os Sub-membros"** para ver todos de
-  uma vez) e, só no modo **"Todos os membros"**, **Esqueleto** (ossos avulsos), que fica abaixo de Sub-membro — ou
-  abaixo do botão **Salvar** quando um sub-membro está selecionado e o editor aparece. A **tela de Dano** não
+  uma vez) e, só no modo **"Todos os membros"**, **Esqueleto** (ossos avulsos), que fica abaixo de Sub-membro.
+  Ao escolher um item **real** (não "Selecione…"/"Todos") em qualquer um dos três, aparece **à direita** um
+  **dropdown de geometria do collider** (Esfera/Caixa/Cápsula) e abre-se uma **janela flutuante reutilizável**
+  (a `FloatingWindow` dos controles2D) com **Afastamento e Escala** X/Y/Z, intitulada com o nome do item:
+  cada mudança **persiste na hora**, aparece no modelo e é **relida quando um personagem entra em cena**. No
+  dropdown de geometria, **"Selecione…"** significa **sem limbcollider** — num **membro** isso **remove** o
+  collider; num **sub-membro** apenas limpa o override (a remoção é pela lixeira da árvore de Dano); e num
+  **osso avulso** escolher uma geometria o **promove** a sub-membro com aquela forma. A **tela de Dano** não
   fica na lista de toggles: é aberta pelo **botão "Dano"** (à direita do botão "Voltar") — uma **janela flutuante
   arrastável** de fundo preto opaco (barra de título "Dano" + botão × para fechar) com uma **árvore** do bônus %
   de cada membro/sub-membro, onde também se adicionam/removem colliders salientes `PART_*` (que **mantêm o nome
@@ -277,7 +281,8 @@ e um ritmo vertical consistente (espaçamento de linhas/seções igual a 8). Os 
 os traduz em código). A maioria das linhas é um conjunto de botões toggle que compartilham um
 gradiente verde → amarelo → laranja → vermelho lido como barato → caro (ex.: performance vs.
 qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (selecionado) fica
-**aceso** — fundo claro com borda branca e brilho — destacando-se nitidamente dos inativos.
+**aceso** — fundo claro com borda branca e brilho — enquanto as opções **não selecionadas** ficam
+**bem menos iluminadas** (escurecidas), realçando ainda mais a escolha atual.
 
 - **Resolution** — um dropdown de resolução de vídeo (tingido de ciano claro para marcá-lo como
   seletor), escala de resolução e o filtro de escala (Bilinear / FSR / MetalFX…).
@@ -295,7 +300,8 @@ qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (
   **loop infinito** a faixa `Audios/<nome-da-cena>.ogg` correspondente, trocando a cada tela (ver
   `Audios/README.md`). Ao clicar em **Música → Enabled** abre o **Gerenciador de Música**: ouça
   qualquer faixa e **atribua ou remova** a trilha de cada cena/level (atribuições persistidas, com
-  prioridade sobre a faixa padrão pelo nome); um botão **🎲 Sortear faixas** sorteia uma faixa
+  prioridade sobre a faixa padrão pelo nome). Cada botão **▶ Tocar** tem ao lado um **⏸ Pausar** e um
+  **⏹ Parar** (tanto na linha "Ouvir faixa" quanto na lista por cena); um botão **🎲 Sortear faixas** sorteia uma faixa
   aleatória para cada cena/level e salva para a próxima abertura. À direita de cada linha (**Música** e **Efeitos de
   Som**) há um **controle de volume tipo equalizador** (`VolumeBar`, 10 segmentos coloridos em
   gradiente): com o áudio ligado, clique/arraste para ajustar o volume daquele bus de **1 a 100**.

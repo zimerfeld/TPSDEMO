@@ -82,6 +82,10 @@ func build_for(skel: Skeleton3D) -> void:
 	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
 	var members := _collect_member_boxes(skel)
 	for group in members:
+		# "Selecione..." no dropdown de geometria (tela Models) marca o MEMBRO como SEM collider
+		# (SHAPE_NONE) — pula a construção, então ele não é atingível. Lido aqui no spawn.
+		if LimbConfig.collider_shape(model_key, group) == LimbConfig.SHAPE_NONE:
+			continue
 		_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"])
 
 
@@ -375,7 +379,8 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	# inteiro (shape/gizmo/rótulo acompanham). Vazio/ausente = Vector3.ZERO (sem afastamento).
 	body.position = LimbConfig.collider_offset(model_key, group)
 
-	var shape_node := make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale)
+	# Forma do collider: override explícito da tela Models (LimbConfig.collider_shape) ou a automática.
+	var shape_node := make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale, LimbConfig.collider_shape(model_key, group))
 	# Escala por eixo (espaço local da forma), editável na tela Models — escala a forma em torno do
 	# seu centro (o gizmo, filho dela, acompanha). Vazio/ausente = Vector3.ONE (sem escala).
 	shape_node.scale = LimbConfig.collider_scale(model_key, group)
@@ -502,7 +507,7 @@ func refit(skel: Skeleton3D) -> void:
 		if sns.is_empty():
 			continue
 		var sn := sns[0] as CollisionShape3D
-		var fresh := make_member_shape(g, boxes[g], head_shape, torso_shape, head_scale)
+		var fresh := make_member_shape(g, boxes[g], head_shape, torso_shape, head_scale, LimbConfig.collider_shape(model_key, g))
 		sn.shape = fresh.shape
 		sn.transform = fresh.transform
 		sn.scale = LimbConfig.collider_scale(model_key, g)
@@ -524,9 +529,17 @@ const LIMB_RADIUS_RATIO := 0.32  # max capsule radius as a fraction of its lengt
 # Pick the geometry that best wraps a member from its (padded) AABB: the HEAD is a
 # SPHERE by default but a CAPSULE when `head_kind` asks for it (player), the TORSO a
 # BOX, and the elongated limbs (arms/legs) a CAPSULE aligned to the long axis.
+# `shape_override` ("sphere"/"box"/"capsule"), quando setado, FORÇA a forma do grupo
+# (escolha do dropdown de geometria da tela Models, lida de LimbConfig) sobre a automática.
 # Returns a positioned/oriented CollisionShape3D. Static so the model browser can reuse
 # it for non-skeleton rigs (criatura).
-static func make_member_shape(group: String, box_aabb: AABB, head_kind: String = "sphere", torso_kind: String = "box", head_scale: float = 1.0) -> CollisionShape3D:
+static func make_member_shape(group: String, box_aabb: AABB, head_kind: String = "sphere", torso_kind: String = "box", head_scale: float = 1.0, shape_override: String = "") -> CollisionShape3D:
+	if shape_override == "sphere" or shape_override == "box" or shape_override == "capsule":
+		# Forma escolhida na tela Models, sobrepondo a automática. A cabeça mantém o head_scale e, em
+		# cápsula, o RAIO CHEIO (cap_radius=false) p/ abraçá-la; demais grupos usam o raio de membro.
+		if group == BodyParts.HEAD:
+			return make_shape(shape_override, _scaled_aabb(box_aabb, head_scale), shape_override != "capsule")
+		return make_shape(shape_override, box_aabb)
 	if group == BodyParts.HEAD:
 		# head_scale aumenta o volume da cabeça em torno do centro (AABB escalado simétrico).
 		var head_aabb := _scaled_aabb(box_aabb, head_scale)

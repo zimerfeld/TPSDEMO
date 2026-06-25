@@ -85,5 +85,9 @@
 	"Adicionar": "Add",
 	"Remover sub-membro": "Remove sub-member",
 	"Outros sub-membros": "Other sub-members",
-	"(sem ossos auxiliares)": "(no auxiliary bones)"
+	"(sem ossos auxiliares)": "(no auxiliary bones)",
+	"Para Membro Dono": "For Owner Member",
+	"Esfera": "Sphere",
+	"Caixa": "Box",
+	"Cápsula": "Capsule"
 }

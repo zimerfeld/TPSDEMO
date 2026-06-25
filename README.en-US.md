@@ -104,17 +104,22 @@ third-person shooter sandbox. At a high level it offers:
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
   **Audio** (every sound the model emits — movement, motor, shots, explosions, voices),
-  **Colisores de Membro** / member colliders (with the toggle on and one member/sub-member isolated, **X/Y/Z offset and scale inputs**
-  tweak that collider's position/size live, with a **Save** button — and changing selection with
-  unsaved edits prompts to save, naming the member/sub-member), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
+  **Colisores de Membro** / member colliders (with the toggle on and one member/sub-member isolated, shows that collider's
+  green gizmo), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
   collider, independent of the Debug 3D screen — with, right below the **Membro** toggle, an **Esqueleto** toggle
   that floats the "Esqueleto: \<name\>" label of the chosen loose bone over it, plus extra Type/Name/ID lines), **Colisores de Esqueleto** (in "All members" mode → "Skeleton" filter, highlights the
   chosen loose bone's region — or all of them — with a translucent box), **Submembros** (a floating
   "Submembro: \<name\>" label over the sub-member chosen in the dropdown) and **Colisores de Submembros**
-  (shows only the selected sub-member's limbcollider, with the same offset/scale editor). The selectors are **three
+  (shows only the selected sub-member's limbcollider). The selectors are **three
   dropdowns** — **Membro** (member), **Sub-membro** right below it (with a **"Todos os Sub-membros"** option to show
-  them all at once) and, only in **"Todos os membros"** mode, **Esqueleto** (loose bones), which sits below Sub-membro
-  — or below the **Salvar**/Save button when a sub-member is selected and the editor appears. The **Dano (Damage)
+  them all at once) and, only in **"Todos os membros"** mode, **Esqueleto** (loose bones), which sits below Sub-membro.
+  Picking a **real** item (not "Selecione…"/"Todos") in any of the three reveals, **to its right**, a
+  **collider-geometry dropdown** (sphere/box/capsule) and opens a **reusable floating window** (the controls2D
+  `FloatingWindow`) with X/Y/Z **Offset and Scale**, titled with the item's name: each change **persists instantly**,
+  shows on the model and is **read back when a character spawns**. In the geometry dropdown, **"Selecione…"** means
+  **no limbcollider** — on a **member** it **removes** the collider; on a **sub-member** it only clears the override
+  (removal is via the Damage tree's trash icon); and on a **loose bone**, picking a geometry **promotes** it to a
+  sub-member with that shape. The **Dano (Damage)
   screen** is not in the toggle list: it opens from the **"Dano" button** (right of the "Voltar"/Back button) — a
   **draggable floating window** with an opaque black background ("Dano" title bar + × close) holding a **tree** of
   each member/sub-member's bonus %, where you also add/remove protruding `PART_*` colliders (which **keep the
@@ -276,7 +281,8 @@ Tab titles are themselves localized (they come from the child node names, so Loc
 them in code). Most rows are a set of toggle buttons sharing a green → yellow → orange → red
 color gradient that reads as cheap → expensive (e.g. performance vs. quality), with the green
 button being the safe/low option. The **active** (selected) button appears **lit** — a bright fill
-with a white glowing border — clearly standing out from the inactive ones.
+with a white glowing border — while the **unselected** options are now **much dimmer** (darkened),
+making the current choice stand out even more.
 
 - **Resolution** — a video-resolution dropdown (tinted light cyan to mark it as a selector),
   resolution scale, and the scale filter (Bilinear / FSR / MetalFX…).
@@ -294,7 +300,8 @@ with a white glowing border — clearly standing out from the inactive ones.
   autoload plays the matching `Audios/<scene-name>.ogg` track in an **infinite loop**, switching on
   every screen (see `Audios/README.md`). Clicking **Música → Enabled** opens the **Music Manager**:
   listen to any track and **assign or remove** the track of each scene/level (assignments are
-  persisted and take priority over the default name-based track); a **🎲 Shuffle** button assigns a
+  persisted and take priority over the default name-based track). Each **▶ Play** button has a
+  **⏸ Pause** and a **⏹ Stop** beside it (both on the "Listen" row and in the per-scene list); a **🎲 Shuffle** button assigns a
   random track to every scene/level and saves it for next time. To the right of each row
   (**Música** and **Efeitos de Som**) sits an **equalizer-style volume control** (`VolumeBar`, 10
   gradient-colored segments): with audio on, click/drag to set that bus's volume from **1 to 100**.
