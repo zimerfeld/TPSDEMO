@@ -33,8 +33,10 @@ var _rotation_spin: SpinBox
 
 func _ready() -> void:
 	title = "Templates de Level"
-	size = Vector2i(900, 700)
-	min_size = Vector2i(760, 560)
+	# Larga o suficiente para os rótulos da coluna 1, os campos da coluna 2 e as linhas de botões
+	# caberem inteiros — sem cortar controles nem exibir só parte deles.
+	size = Vector2i(1200, 720)
+	min_size = Vector2i(1040, 600)
 	close_requested.connect(hide)
 	_build_ui()
 

@@ -216,8 +216,8 @@ toggle é o **interruptor mestre** da sua categoria:
 > **Rótulo do nome da cena (2026-06-20 → OCULTADO 2026-06-21):** o `SceneNameLabel` local (nó no
 > `.tscn`) hoje fica **sempre oculto** — o nome "Models" **não deve aparecer na janela de dano**. O
 > nó é preservado só para não quebrar `@onready`/referências; `_ready` faz `visible = false` e nada
-> mais o exibe. O nome da cena já é mostrado pelo **watermark GLOBAL** de `debug_overlay.gd` no canto
-> inferior esquerdo (que agora tem **tooltip de Debug 2D**). Ver [[sistemas/debug-overlay]].
+> mais o exibe. O nome da cena já é mostrado pelo **watermark GLOBAL** de `debug_overlay.gd` no
+> **topo direito, ao lado do título** (que tem **tooltip de Debug 2D**). Ver [[sistemas/debug-overlay]].
 
 > [!important] Toggles agem **in-place** (2026-06-17)
 > Nenhum toggle **reconstrói** o preview: o modelo **não é recarregado** e a

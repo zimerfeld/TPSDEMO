@@ -37,7 +37,21 @@ aplicam na hora (`DebugOverlay.refresh()`).
 - O `_tag` aplica o 2D em **TODAS as telas, sem exceção** (não checa `no_debug_overlay`) — inclusive
   Models e o editor de Dano. Ao trocar de tela, o `_process` detecta `_active_screen_root` mudar e
   chama `refresh()` para reconstruir os tooltips na cena nova.
-- O **watermark do nome da cena** (canto inferior esquerdo, canvas persistente) também ganha tooltip
+- **Toggle de Debug 2D na barra Actions:** ao trocar de tela, o `_process` também chama
+  `_ensure_debug2d_toggle(screen)`, que injeta (idempotente) um `Debug2DToggle`
+  (`scenes2D/controls2D/debug2d_toggle.gd`, um `CheckButton`) na `HBoxContainer` **Actions** da tela —
+  **menos a developer** (`scene_file_path` termina em `developer.tscn`, que já tem o seu próprio par).
+  O **menu** e os **levels de gameplay** (level_1/2/base) também ganharam uma barra Actions na posição
+  padrão (no menu sob `UI`; nos levels sob o `TitleCanvas`), então o toggle os alcança quando são a
+  tela ativa (solo offline). Telas sem nenhuma Actions são ignoradas. O toggle lê/grava
+  `Settings("game","debug_2d")` e chama `DebugOverlay.refresh()`. Roda mesmo com o Debug 2D **desligado**
+  (a chamada está ANTES do `if _canvas_layer == null: return`), senão não haveria como ligá-lo.
+- **Posição dos tooltips:** por padrão cada tooltip fica **à direita** do controle (vira para a
+  esquerda se sair da tela). **Exceção — `TitleLabel`:** o tooltip fica **centralizado abaixo do
+  texto** do título (flag `is_title` na entrada do `_overlay_map`; também é pulado no
+  `_resolve_overlaps` para não ser empurrado lateralmente).
+- O **watermark do nome da cena** (`_scene_name_label`) fica no **topo direito, ao lado do
+  `TitleLabel`** (antes era o canto inferior esquerdo), no canvas persistente. Também ganha tooltip
   2D: como o `_scan` pula o canvas persistente, `_build_overlays` registra `_scene_name_label`
   explicitamente (`_add_2d`) quando `debug_2d` está ligado.
 

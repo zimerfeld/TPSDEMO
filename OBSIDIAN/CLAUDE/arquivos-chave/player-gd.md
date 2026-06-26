@@ -10,6 +10,11 @@
 - Gerenciamento de animações (enum `Animations`)
 - Instanciação e disparo de balas
 - **Sistema de HP e respawn**
+- **Nome do jogador** — `NameLabel` (Label3D, billboard) acima da cabeça aparece só para os
+  **outros** jogadores conectados; no próprio player local o nome vai para o HUD (health_bar) e o
+  Label3D fica escondido. Decidido por `_is_owned_locally()` (autoridade do InputSynchronizer ==
+  este peer e não-bot; cobre host id 1 e clientes), reavaliado quando `player_id`/`bot_controlled`/
+  `player_name` mudam. Ver [[arquivos-chave/health-bar-gd]]
 - Sons: jump, land, shoot
 - Camera shake via trauma
 

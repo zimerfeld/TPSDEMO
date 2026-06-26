@@ -102,29 +102,18 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
-[node name="LangBar" type="HBoxContainer" parent="UI"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -298.0
-offset_top = -100.0
-offset_right = -16.0
-offset_bottom = -50.0
-grow_horizontal = 0
-grow_vertical = 0
+[node name="LangBar" type="HBoxContainer" parent="UI/Actions"]
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/LangBar"]
+[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/LangBar"]
+[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -132,5 +121,5 @@ theme_override_font_sizes/font_size = 20
 text = "English"
 
 [connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]

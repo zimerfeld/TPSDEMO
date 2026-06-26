@@ -349,12 +349,11 @@ var _zoom_target: float = 0.0
 @onready var ai_list: VBoxContainer = %AIList
 @onready var ai_titlebar: PanelContainer = %AITitleBar
 @onready var ai_close_button: Button = %AICloseButton
-@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/LangBar/EnglishButton
-# Watermark do nome da cena no canto inferior esquerdo (mesma faixa do botão "Voltar"),
-# espelhando o do debug_overlay.gd. A cena Models está no grupo no_debug_overlay (isenta
-# do overlay global), então ela mostra o PRÓPRIO rótulo, sempre visível e sem depender de
-# nenhum toggle de Debug.
+@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
+# Rótulo LOCAL do nome da cena (nó no .tscn). Mantido OCULTO (ver _ready) — o nome da cena é
+# mostrado pelo watermark GLOBAL de debug_overlay.gd (topo direito, ao lado do título). Nó
+# preservado só para não quebrar a referência %SceneNameLabel.
 @onready var scene_name_label: Label = %SceneNameLabel
 
 

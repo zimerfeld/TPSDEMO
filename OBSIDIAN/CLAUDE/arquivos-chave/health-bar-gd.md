@@ -8,6 +8,8 @@
 ## Responsabilidades
 
 - Exibir barra de vida do player local no canto inferior esquerdo
+- **Mostrar o nome do próprio jogador no topo do HUD** (acima do HP) — o rótulo 3D acima da
+  cabeça é só para os **outros** jogadores; ver [[arquivos-chave/player-gd]]
 - Mostrar texto `HP: atual / máximo`
 - Mudar cor conforme porcentagem de HP
 
@@ -19,6 +21,7 @@
 CanvasLayer (layer=10)
   └─ PanelContainer  (âncora inferior-esquerda, elevada 72px da borda)
        └─ VBoxContainer
+            ├─ Label      (_name_label) nome do jogador (oculto quando vazio)
             ├─ Label      (_label)  "HP: 100 / 100"
             └─ ProgressBar (_bar)   min=0, max=100, size 200×18
 ```
@@ -32,10 +35,11 @@ CanvasLayer (layer=10)
 ## API Pública
 
 ```gdscript
+func set_player_name(player_name: String) -> void   # nome no topo do HUD (oculto se vazio)
 func update_health(current: int, maximum: int) -> void
 ```
 
-Atualiza barra e label. Muda a cor de fill:
+`update_health` atualiza barra e label. Muda a cor de fill:
 
 | HP % | Cor |
 |---|---|
@@ -65,16 +69,20 @@ Atualiza barra e label. Muda a cor de fill:
 func _setup_health_bar() -> void:
     if _health_bar != null:          # idempotente — não duplica
         return
-    if not is_inside_tree():         # aguarda o nó entrar na árvore
+    if not _is_owned_locally():      # só o player local vê o HUD (mesmo critério do nome 3D)
         return
-    # $InputSynchronizer (não o onready) pois o setter pode rodar antes do _ready
-    if $InputSynchronizer.get_multiplayer_authority() != multiplayer.get_unique_id():
-        return                       # só o player local vê o HUD
     _health_bar = preload("res://library3D/characters/players/player/health_bar.gd").new()
     _health_bar.name = "HealthBar"
     add_child(_health_bar)
     _health_bar.update_health(hp, MAX_HP)
+    _health_bar.set_player_name(player_name)   # nome do dono no topo do HUD
+    _apply_name_label()                        # esconde o Label3D acima da própria cabeça
 ```
+
+> `_is_owned_locally()` resolve "é o meu player" pelo mesmo critério em `player.gd`:
+> `$InputSynchronizer.get_multiplayer_authority() == multiplayer.get_unique_id()` e não é bot
+> (cobre host id 1 e clientes). Usa `$InputSynchronizer` — não o `@onready` — pois pode rodar
+> antes do `_ready`.
 
 > **Por que dois gatilhos:** em `level_1` (single-player) a authority já está definida no
 > `_ready`. Em `level_base` num **cliente**, o player é criado via `MultiplayerSpawner` e a

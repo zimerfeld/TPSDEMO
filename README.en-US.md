@@ -101,9 +101,10 @@ third-person shooter sandbox. At a high level it offers:
   restart the host stays on the management grid with the mouse free (just like starting a level).
   **Join Rooms** opens the room browser (`client_session`), which lists the running rooms with a **Play**
   button (shown only while a room exists) that drops you into the chosen room after the character
-  picker. Each player's chosen variant/colour shows for everyone online (per-peer loadout), and other
-  players/enemies are smoothed with a **timestamped interpolation buffer** for a flicker-free, high-FPS
-  client view. The Play Online screen also has an **Optimization** selector applied before you host/join:
+  picker. Each player's chosen variant/colour shows for everyone online (per-peer loadout), and each
+  player's **name** floats as a 3D label above the **other** players' heads — never above your own,
+  whose name sits at the top of your local HP HUD instead. Other players/enemies are smoothed with a
+  **timestamped interpolation buffer** for a flicker-free, high-FPS client view. The Play Online screen also has an **Optimization** selector applied before you host/join:
   interpolation **Smooth / Balanced / Responsive** (render delay 100 / 60 / 35 ms — smoothness vs.
   responsiveness), **sync rate 30 / 60 Hz** (server→client updates per second), and **host render
   Window / Pure-server** (skip room rendering to free the GPU). All dynamic models (players, enemies,
@@ -174,8 +175,8 @@ third-person shooter sandbox. At a high level it offers:
   the Models scene is fully decoupled from the global **Debug 3D** overlay (its root is in the
   `no_debug_overlay` group), so Debug 2D/3D only affect actual game levels. Being exempt from the
   global overlay, so only Debug 3D is limited to game levels (Debug 2D now applies everywhere). The
-  scene name shows via the **global watermark** in the bottom-left corner (from `debug_overlay.gd`);
-  the old LOCAL label stays hidden (not shown in the damage window). Skinned characters
+  scene name shows via the **global watermark** at the **top-right, beside the scene title** (from
+  `debug_overlay.gd`); the old LOCAL label stays hidden (not shown in the damage window). Skinned characters
   are framed/centered from their posed colliders so they spin in place instead of drifting, and
   models open **facing the camera** (player and red_robot, exported with their front on +Z, start
   showing their face with no need to rotate).
@@ -201,8 +202,13 @@ light colors so you can tell them apart:
   switches `Type` / `Name` / `Id` / `Tab`. Controls the 2D overlay (a colored border + a
   TYPE/Name/ID/TAB tooltip) on every `Control`, in **every scene with no exception** — including Models
   and the Damage editor (which opt out of the **3D** overlay via `no_debug_overlay`) — and also over
-  the bottom-left **scene-name label**. The **Tab** line (white, `show_tab`) reports each control's
-  keyboard **tab/focus index** in the active 2D scene (`-` for non-focusable controls).
+  the **scene-name label** (top-right, beside the title). The tooltip sits to the right of each control,
+  except the **TitleLabel**, whose tooltip is **centered below its text**. The **Tab** line (white, `show_tab`) reports each control's
+  keyboard **tab/focus index** in the active 2D scene (`-` for non-focusable controls). Besides the
+  developer screen, every 2D screen with a footer **Actions** bar carries a **Debug 2D** toggle
+  (`CheckButton`, injected by `DebugOverlay`) so you can flip the master on/off without leaving the scene
+  (the developer screen keeps its own pair). A standard-position Actions bar was also added to the
+  **menu** and the **gameplay levels** (under each level's `TitleCanvas`), so the toggle reaches them too.
 - **Debug 3D** (light-cyan labels/labels) — master `debug_3d` plus the dependent switches
   `Type` / `Name` / `Id` (describing the owning `Skeleton3D`), `Members`, `Skeleton` and
   `Mesh`. Renders per-member `Label3D` tags that follow the live pose.
@@ -282,10 +288,10 @@ The UI language switches between **Português** and **English** via the **Locale
   the tree is translated automatically. `OptionButton`/`MenuButton` are skipped (their text is
   the live selection), and the first time it sees a node it stores the original text in a meta
   key, so language switches translate from the original rather than already-translated text.
-- **Every screen carries the language buttons.** A bottom-right `LangBar` with **Português** /
-  **English** buttons (the same pattern as the menu), aligned at the **Back (Voltar) button's
-  height**, is present on menu, chooseplayer,
-  settings, developer, levels, playonline, controls and models. Pressing one calls
+- **Every screen carries the language buttons.** A `LangBar` with **Português** / **English**
+  buttons now lives **inside the footer `Actions` bar** (as its last group, paths
+  `UI/Actions/LangBar/…`) rather than as a separate bottom-right bar — a unified footer on menu,
+  chooseplayer, settings, developer, levels, playonline, controls and models. Pressing one calls
   `Locale.set_language(...)`, which persists the choice and re-localizes the live tree in
   place (the active language's button is greyed out).
 - **Code-driven text** (dynamic status lines, dropdown placeholders, the settings tab titles
