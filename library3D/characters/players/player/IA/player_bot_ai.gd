@@ -19,6 +19,17 @@ const BEHAVIOR_PRESSURE_FLANK := "pressure_flank"
 @export var lead_strength := 0.82
 @export var flank_duration := 1.1
 @export var scan_interval := 0.35
+## Só engaja inimigos a até esta distância (m) do próprio bot — evita perseguir ameaças do
+## outro lado do mapa e abandonar a cobertura do player.
+@export var engage_range := 32.0
+## Também engaja inimigos a até esta distância (m) do player humano (para defendê-lo).
+@export var player_threat_radius := 24.0
+## Coleira de cobertura: a partir desta distância (m) do player o bot já é puxado de volta
+## durante o combate, para lutar ao lado do player em vez de derivar atrás do inimigo.
+@export var soft_leash := 14.0
+## Distância (m) máxima do player: além disto, reagrupar tem prioridade sobre perseguir.
+## É o que impede o aliado de "correr sem parar até cair do mapa".
+@export var max_leash := 20.0
 
 var _behaviors: Dictionary = {}
 var _target: Node3D = null
@@ -57,30 +68,48 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 			scope = bot.get_tree().current_scene
 		_target = _find_enemy(scope, bot.global_position)
 		_anchor = _find_human_ally(scope, bot)
+	var bot_pos := bot.global_position
+	var has_anchor := behavior_enabled(BEHAVIOR_ALLY_FOLLOW) and _is_valid_anchor(_anchor)
+	var anchor_pos := _anchor.global_position if has_anchor else bot_pos
 	var move_dir := Vector3.ZERO
 	var aim_point := Vector3.ZERO
 	var should_aim := false
 	var should_shoot := false
-	if behavior_enabled(BEHAVIOR_ENEMY_PRIORITIZATION) and _is_valid_enemy(_target):
+	# Cobertura: se o bot se afastou demais do player, reagrupar tem prioridade sobre perseguir.
+	# É isto que impede o aliado de correr atrás de um inimigo até cair do mapa.
+	var must_regroup := has_anchor and bot_pos.distance_to(anchor_pos) > max_leash
+	# Só engaja ameaças perto do bot OU perto do player (defendê-lo) — nunca do outro lado do mapa.
+	var engage := false
+	if behavior_enabled(BEHAVIOR_ENEMY_PRIORITIZATION) and _is_valid_enemy(_target) and not must_regroup:
+		var enemy_pos: Vector3 = _target.global_position
+		var near_bot := bot_pos.distance_to(enemy_pos) <= engage_range
+		var threatens_anchor := has_anchor and anchor_pos.distance_to(enemy_pos) <= player_threat_radius
+		engage = near_bot or threatens_anchor
+	if engage:
 		var target_pos := _target.global_position + Vector3.UP
 		var target_velocity := _velocity_of(_target)
-		aim_point = _compute_aim_point(bot.global_position + Vector3.UP, target_pos, target_velocity)
-		move_dir = _combat_move(bot.global_position, _target.global_position)
+		aim_point = _compute_aim_point(bot_pos + Vector3.UP, target_pos, target_velocity)
+		move_dir = _combat_move(bot_pos, _target.global_position, anchor_pos, has_anchor)
 		should_aim = true
-		should_shoot = bot.global_position.distance_to(_target.global_position) <= weapon_range \
+		should_shoot = bot_pos.distance_to(_target.global_position) <= weapon_range \
 			and _has_line_of_fire(bot, aim_point)
-	elif behavior_enabled(BEHAVIOR_ALLY_FOLLOW) and _is_valid_anchor(_anchor):
-		move_dir = _follow_move(bot.global_position, _anchor.global_position)
-		aim_point = bot.global_position + _flat_or_forward(move_dir, -bot.global_transform.basis.z) * 20.0 + Vector3.UP
+	elif has_anchor:
+		# Sem ameaça engajável: dá cobertura ao player (segue e mantém-se por perto).
+		move_dir = _follow_move(bot_pos, anchor_pos)
+		# Guarda virada para o inimigo mais próximo, se houver; senão, para onde anda.
+		if _is_valid_enemy(_target):
+			aim_point = _target.global_position + Vector3.UP
+		else:
+			aim_point = bot_pos + _flat_or_forward(move_dir, -bot.global_transform.basis.z) * 20.0 + Vector3.UP
 	input.motion = _world_dir_to_motion(input, move_dir)
 	input.aiming = should_aim
 	input.shooting = should_shoot
 	input.shoot_target = aim_point
 	input.jumping = false
 	if should_aim:
-		_face_point(input, bot.global_position + Vector3.UP, aim_point)
+		_face_point(input, bot_pos + Vector3.UP, aim_point)
 	elif move_dir.length() > 0.01:
-		_face_point(input, bot.global_position + Vector3.UP, bot.global_position + move_dir + Vector3.UP)
+		_face_point(input, bot_pos + Vector3.UP, bot_pos + move_dir + Vector3.UP)
 
 
 func note_shot_fired(distance: float, target_speed: float) -> void:
@@ -111,7 +140,7 @@ func report_shot_result(hit_target: bool) -> void:
 		_flank_sign *= -1.0
 
 
-func _combat_move(origin: Vector3, target_position: Vector3) -> Vector3:
+func _combat_move(origin: Vector3, target_position: Vector3, anchor_position: Vector3, has_anchor: bool) -> Vector3:
 	var to_target := target_position - origin
 	to_target.y = 0.0
 	var distance := to_target.length()
@@ -128,6 +157,15 @@ func _combat_move(origin: Vector3, target_position: Vector3) -> Vector3:
 		var right := Vector3.UP.cross(forward).normalized()
 		var flank_weight := 0.55 if _flank_time > 0.0 else 0.25
 		move += right * _flank_sign * flank_weight
+	# Coleira de cobertura: ao começar a se afastar do player, o bot é puxado de volta — assim
+	# combate ao lado dele em vez de derivar pelo mapa atrás do inimigo (e nunca cai do mapa).
+	if has_anchor:
+		var to_anchor := anchor_position - origin
+		to_anchor.y = 0.0
+		var leash := to_anchor.length()
+		if leash > soft_leash:
+			var pull := clampf((leash - soft_leash) / maxf(max_leash - soft_leash, 0.1), 0.0, 1.0)
+			move += to_anchor.normalized() * (0.6 + pull)
 	return move.normalized() if move.length() > 0.01 else Vector3.ZERO
 
 

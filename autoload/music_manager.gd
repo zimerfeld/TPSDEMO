@@ -1,14 +1,14 @@
 extends Node
-## Trilha de fundo em LOOP INFINITO por cena/level, escolhida pelo NOME da cena. Centraliza a
-## música (antes cada cena embutia o próprio nó "Music"): o roteador (main.gd) chama
-## play_for_scene() a cada troca de tela e este autoload toca `res://Audios/<nome_da_cena>.<ext>`
-## em loop (ext em .ogg/.mp3/.wav, a 1ª que existir vence). Sem arquivo para a cena → silêncio.
-## Se a próxima cena resolve para a MESMA trilha, ela continua tocando sem reiniciar (transições
-## suaves, ex.: menu → escolher personagem).
+## Trilha de fundo em LOOP INFINITO por cena/level. Centraliza a música (antes cada cena embutia o
+## próprio nó "Music"): o roteador (main.gd) chama play_for_scene() a cada troca de tela e este autoload
+## toca a faixa ATRIBUÍDA àquela cena em loop (ext em .ogg/.mp3/.wav). Se a próxima cena resolve para a
+## MESMA trilha, ela continua tocando sem reiniciar (transições suaves, ex.: menu → escolher personagem).
 ##
-## Atribuição manual (Gerenciador de Música, na tela Settings): o jogador pode ATRIBUIR uma faixa
-## específica a uma cena/level ou REMOVÊ-LA (silêncio). Isso vira um override persistido em
-## Settings (seção "music"), que tem prioridade sobre a resolução por nome. Ver music_manager_window.gd.
+## Atribuição (Gerenciador de Música, na tela Settings): por DEFAULT uma cena fica em **"Selecione..."
+## = SILÊNCIO** (não toca; 2026-06-25 — antes resolvia automaticamente por `Audios/<nome-da-cena>`). O
+## jogador ATRIBUI a faixa de cada cena: um arquivo específico, **"Padrão"** (volta a resolver pelo nome
+## da cena, `Audios/<nome>.<ext>`) ou "Selecione..." (silêncio). As escolhas viram overrides persistidos
+## em Settings (seção "music"). Ver music_manager_window.gd.
 ##
 ## Para definir/trocar a música por arquivo, basta colocar a faixa em `res://Audios/` com o nome da
 ## cena (ex.: `Audios/menu.ogg`, `Audios/level_1.ogg`). Ver `Audios/README.md`.
@@ -21,8 +21,12 @@ const EXTENSIONS := [".ogg", ".mp3", ".wav"]
 # Cenas que COMPARTILHAM a trilha de outra (sem duplicar arquivo). A tela de escolher personagem
 # mantém a música do menu tocando continuamente.
 const ALIASES := {"chooseplayer": "menu"}
-# Seção do Settings onde ficam os overrides do Gerenciador de Música (scene_key -> arquivo, ou "" = silêncio).
+# Seção do Settings onde ficam os overrides do Gerenciador de Música (scene_key -> arquivo, "" = silêncio
+# explícito, ou BYNAME = resolve pelo nome da cena). SEM chave = "Selecione..." = SILÊNCIO (default).
 const OVERRIDE_SECTION := "music"
+# Valor de override da opção "Padrão (pelo nome da cena)": toca Audios/<nome-da-cena>. Distinto de
+# "sem atribuição" (que agora é SILÊNCIO, não mais o nome da cena — 2026-06-25).
+const BYNAME := "byname"
 # Cenas/levels gerenciáveis pelo Gerenciador de Música (rótulo amigável + chave = nome do arquivo da cena).
 const SCENES := [
 	{"key": "menu", "label": "Menu principal"},
@@ -43,6 +47,9 @@ const SCENES := [
 var _player: AudioStreamPlayer
 # Player separado para PRÉ-ESCUTA no Gerenciador de Música (não bagunça a trilha de fundo).
 var _preview: AudioStreamPlayer
+# Nome do arquivo que está em pré-escuta agora (para o ▶ retomar uma pausa da MESMA faixa em vez
+# de reiniciar). "" = nada em pré-escuta.
+var _preview_file: String = ""
 # Caminho da trilha tocando agora (ou "" = silêncio) e a chave da cena atual. Evitam reiniciar a
 # mesma faixa entre cenas e permitem reaplicar ao vivo quando o override muda.
 var _current_path: String = ""
@@ -88,25 +95,30 @@ func play_key(key: String, force: bool = false) -> void:
 	_player.play()
 
 
-# Caminho da trilha de `key`: override do Gerenciador (se houver) > Audios/<key>.<ext> > alias > "".
+# Caminho da trilha de `key`: SEM atribuição = "Selecione..." = SILÊNCIO (2026-06-25, antes resolvia
+# pelo nome). Override = arquivo, "" (silêncio explícito) ou BYNAME ("Padrão" → Audios/<key>.<ext>).
 func _resolve(key: String) -> String:
 	if key.is_empty():
 		return ""
-	# Override manual do Gerenciador de Música tem prioridade.
-	if Settings.config_file.has_section_key(OVERRIDE_SECTION, key):
-		var ov := String(Settings.config_file.get_value(OVERRIDE_SECTION, key, ""))
-		if ov.is_empty():
-			return ""  # silêncio explícito
-		var po: String = AUDIOS_DIR + ov
-		if ResourceLoader.exists(po):
-			return po
-		# arquivo do override sumiu → cai na resolução por nome abaixo
+	if not Settings.config_file.has_section_key(OVERRIDE_SECTION, key):
+		return ""   # cena não configurada = "Selecione..." = silêncio
+	var ov := String(Settings.config_file.get_value(OVERRIDE_SECTION, key, ""))
+	if ov == BYNAME:
+		return _resolve_by_name(key)   # opção "Padrão (pelo nome da cena)"
+	if ov.is_empty():
+		return ""                      # silêncio explícito
+	var po: String = AUDIOS_DIR + ov
+	return po if ResourceLoader.exists(po) else ""
+
+
+# Trilha de `key` pelo NOME da cena (Audios/<key>.<ext>, 1ª extensão que existir) + alias. Opção "Padrão".
+func _resolve_by_name(key: String) -> String:
 	for ext in EXTENSIONS:
 		var p: String = AUDIOS_DIR + key + ext
 		if ResourceLoader.exists(p):
 			return p
 	if ALIASES.has(key):
-		return _resolve(ALIASES[key])
+		return _resolve_by_name(ALIASES[key])
 	return ""
 
 
@@ -160,23 +172,23 @@ func list_tracks() -> Array:
 	return out
 
 
-# Estado de atribuição de uma cena para o Gerenciador refletir: "default" (sem override, usa o nome
-# da cena), "none" (silêncio explícito) ou o nome do arquivo atribuído.
+# Estado de atribuição de uma cena para o Gerenciador refletir: "none" ("Selecione..." = silêncio, o
+# default sem override), BYNAME ("Padrão", resolve pelo nome) ou o nome do arquivo atribuído.
 func assignment_of(key: String) -> String:
 	if not Settings.config_file.has_section_key(OVERRIDE_SECTION, key):
-		return "default"
+		return "none"
 	var ov := String(Settings.config_file.get_value(OVERRIDE_SECTION, key, ""))
+	if ov == BYNAME:
+		return BYNAME
 	return "none" if ov.is_empty() else ov
 
 
-# Atribui a faixa de uma cena. `value`: "default" remove o override (volta a resolver pelo nome);
-# "none" = silêncio; senão é o nome do arquivo. Persiste e reaplica AO VIVO se for a cena atual.
+# Atribui a faixa de uma cena. `value`: "none" ("Selecione..."/silêncio) REMOVE o override; BYNAME
+# ("Padrão") ou o nome do arquivo são gravados. Persiste e reaplica AO VIVO se for a cena atual.
 func set_assignment(key: String, value: String) -> void:
-	if value == "default":
+	if value == "none":
 		if Settings.config_file.has_section_key(OVERRIDE_SECTION, key):
 			Settings.config_file.erase_section_key(OVERRIDE_SECTION, key)
-	elif value == "none":
-		Settings.config_file.set_value(OVERRIDE_SECTION, key, "")
 	else:
 		Settings.config_file.set_value(OVERRIDE_SECTION, key, value)
 	Settings.save_settings()
@@ -203,7 +215,35 @@ func preview(filename: String) -> void:
 	_ensure_loop(s)
 	_player.stream_paused = true
 	_preview.stream = s
+	_preview.stream_paused = false
 	_preview.play()
+	_preview_file = filename
+
+
+# ▶ do Gerenciador: se a MESMA faixa está pausada, RETOMA de onde parou; senão toca do início.
+func preview_or_resume(filename: String) -> void:
+	if _preview != null and _preview.stream != null and _preview_file == filename:
+		resume_preview()
+		return
+	preview(filename)
+
+
+# ⏸ do Gerenciador: pausa a pré-escuta sem reiniciar (mantém o fundo mudo). No-op se nada toca.
+func pause_preview() -> void:
+	if _preview == null or _preview.stream == null:
+		return
+	_preview.stream_paused = true
+
+
+# Retoma a pré-escuta pausada (▶ na mesma faixa). Mantém o fundo mudo enquanto a pré-escuta toca.
+func resume_preview() -> void:
+	if _preview == null or _preview.stream == null:
+		return
+	_preview.stream_paused = false
+	if not _preview.playing:
+		_preview.play()
+	if _player != null:
+		_player.stream_paused = true
 
 
 func stop_preview() -> void:
@@ -211,5 +251,7 @@ func stop_preview() -> void:
 		return
 	_preview.stop()
 	_preview.stream = null
+	_preview.stream_paused = false
+	_preview_file = ""
 	if _player != null:
 		_player.stream_paused = false

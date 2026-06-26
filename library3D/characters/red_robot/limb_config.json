@@ -43,6 +43,12 @@
 			1.29999995231628
 		]
 	},
+	"collider_shapes": {
+		"ARM_L": "capsule",
+		"HEAD": "sphere",
+		"PART_L-Fingers": "capsule",
+		"PART_L-Shield": "box"
+	},
 	"damage": {
 		"PART_FuelTank": 1.6
 	},

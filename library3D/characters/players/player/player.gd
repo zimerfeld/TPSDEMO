@@ -14,9 +14,15 @@ const ROTATION_INTERPOLATE_SPEED: float = 10.0
 const PlayerBotAILib := preload("res://library3D/characters/players/player/IA/player_bot_ai.gd")
 
 const MIN_AIRBORNE_TIME: float = 0.1
-const JUMP_SPEED: float = 5.0
+const JUMP_SPEED: float = 6.5
+# Tempo (s) mirando antes do PRIMEIRO tiro — espera a animação de mira assentar. Sem isto, num
+# aim→tiro instantâneo a bala saía antes de o corpo entrar na pose de mira; no cliente (corpo
+# renderizado ~100 ms no passado) isso parecia a bala saindo fora da extremidade do cano.
+const AIM_WARMUP_TIME: float = 0.45
 
 var airborne_time: float = 100.0
+# Tempo acumulado mirando (zera ao sair da mira); o tiro só é liberado após AIM_WARMUP_TIME.
+var _aim_held_time: float = 0.0
 
 var orientation := Transform3D()
 var root_motion := Transform3D()
@@ -351,11 +357,13 @@ func apply_input(delta: float) -> void:
 	player_input.jumping = false
 
 	if on_air:
+		_aim_held_time = 0.0  # no ar não há mira: zera o aquecimento de mira
 		if velocity.y > 0:
 			animate(Animations.JUMP_UP, delta)
 		else:
 			animate(Animations.JUMP_DOWN, delta)
 	elif player_input.aiming:
+		_aim_held_time += delta  # acumula tempo de mira; o disparo aguarda AIM_WARMUP_TIME
 		var q_to: Quaternion = player_input.get_camera_base_quaternion()
 		if not _was_aiming:
 			# Aim-enter: alinha o corpo À CÂMERA IMEDIATAMENTE (sem slerp). Sem isto, num
@@ -377,7 +385,11 @@ func apply_input(delta: float) -> void:
 		# Disparo é SERVER-AUTORITATIVO: só o servidor spawna a bala (replicada a todos via
 		# MultiplayerSpawner) e dispara o RPC do efeito de tiro. No cliente isso é pulado — senão
 		# nasceria uma bala local sem física nem replicação, presa no cano (efeito que "não some").
-		if authoritative and player_input.shooting and fire_cooldown.time_left == 0:
+		# Aguarda o aquecimento de mira (AIM_WARMUP_TIME): o tiro sai só DEPOIS de a animação
+		# de mira assentar e o cano estar alinhado — corrige o glitch do cliente (bala antes
+		# da mira / fora do cano). Vale p/ host, cliente e bots (todos passam por aqui).
+		if authoritative and player_input.shooting and fire_cooldown.time_left == 0 \
+				and _aim_held_time >= AIM_WARMUP_TIME:
 			var shoot_origin: Vector3 = shoot_from.global_transform.origin
 			var to_target: Vector3 = player_input.shoot_target - shoot_origin
 			# Guarda contra alvo degenerado (perto/atrás do cano, ex.: shoot_target ainda em
@@ -399,6 +411,7 @@ func apply_input(delta: float) -> void:
 			shoot.rpc()
 
 	else: # Not in air or aiming, idle.
+		_aim_held_time = 0.0  # saiu da mira: zera o aquecimento
 		# Convert orientation to quaternions for interpolating rotation.
 		var target: Vector3 = camera_x * motion.x + camera_z * motion.y
 		if target.length() > 0.001:

@@ -124,8 +124,28 @@ func hit() -> void:
 
 ---
 
+## Movimento individualizado + formação (2026-06-25)
+
+Para os inimigos **não andarem iguais a cada segundo**, a IA (`red_robot_ai.gd`) semeia no `_ready`
+de cada robô um **sinal de strafe**, uma **fase** e um **multiplicador de velocidade** próprios
+(RNG do servidor — movimento é server-autoritativo, clientes só interpolam), e os **flips de strafe**
+passaram a usar períodos aleatórios (`randf_range`) em vez de exatamente ~1 s, quebrando o lockstep.
+
+Cada robô também guarda um **slot de formação designado**: na 1ª vez, captura a direção a partir do
+player (derivada do ponto de spawn) como `_slot_bearing` e, durante o combate, ganha um **viés suave
+de retorno** ao ponto `player + slot_dir * preferred` (`formation_cohesion`/`formation_band`).
+Resultado: o pelotão **circula/estrafa livre**, mas tende a **voltar à formação** em vez de amontoar.
+Tunáveis: `formation_cohesion` (0.55), `formation_band` (5 m), `speed_variation` (±0.18).
+
+A **Criatura Alada** teve a oscilação de voo (`_t`/bob) **dessincronizada** entre instâncias via uma
+`_bob_phase` aleatória semeada no `_ready` (e reusada ao reentrar em PATROL), então várias criaturas
+não sobem/descem em sincronia. Ver [[arquivos-chave/red-robot-ai-gd]].
+
+---
+
 ## Relacionado
 
 - [[sistemas/combate-tiro]]
 - [[arquivos-chave/red-robot-gd]]
+- [[arquivos-chave/red-robot-ai-gd]]
 - [[arquivos-chave/limb-colliders-gd]]

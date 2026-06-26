@@ -31,7 +31,16 @@ third-person shooter sandbox. At a high level it offers:
   (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a standard × close and a
   modal backdrop — created by the `FloatingDialog` helper; the same base other floating windows can reuse.
 - **Playable characters** — selectable player variants that move, aim, jump and shoot,
-  with first-person camera control and a local health HUD.
+  with first-person camera control and a local health HUD. The **jump is higher** and the **fire
+  rate more spaced out**; the **shot now leaves only after the aim settles** (once the aim animation
+  finishes), from the barrel tip — fixing the glitch where, on the **client** player, the bullet
+  seemed to leave before the aim / outside the barrel.
+- **Allied bots (covering fire)** — players of the **friendly faction** (spawned `bot_controlled` by
+  the level templates) give **cover and assistance** to the human player: they engage threats near
+  the bot or the player, but **follow the player** and stay within a **leash** — when they stray too
+  far, regrouping takes priority over chasing, so they **no longer run off until falling off the
+  map**. Their behaviors (follow squad, prioritize enemies, combat spacing, pressure flank…) live in
+  a dedicated AI script (`library3D/characters/players/player/IA/player_bot_ai.gd`).
 - **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
   ball** (a recolored, red-glowing version of the player's shot), and a flying bomber
   (Criatura Alada) that orbits the player and drops bombs.
@@ -39,7 +48,11 @@ third-person shooter sandbox. At a high level it offers:
   (`library3D/characters/red_robot/IA/red_robot_ai.gd`): **1.5× faster reload** (first and
   subsequent shots); it **opens fire** as soon as the player enters weapon range and is more than
   10 m away; and if the player gets to **10 m or closer**, the robot **runs away in the opposite
-  direction** while still facing/aiming at and shooting the player.
+  direction** while still facing/aiming at and shooting the player. Each robot moves
+  **individually** (its own strafe sign, phase and speed, seeded at spawn) so the squad **doesn't
+  march in lockstep every second**, and keeps a **loose formation**: it circles/strafes freely in
+  combat but tends to **return to its designated slot** (the bearing from the player captured at its
+  spawn point). The **Criatura Alada**'s flight bob is desynchronized across instances too.
 - **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
   when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
   It appears when you **aim at the enemy** and hides the moment your aim leaves it; the aim ray
@@ -104,17 +117,29 @@ third-person shooter sandbox. At a high level it offers:
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
   **Audio** (every sound the model emits — movement, motor, shots, explosions, voices),
-  **Colisores de Membro** / member colliders (with the toggle on and one member/sub-member isolated, **X/Y/Z offset and scale inputs**
-  tweak that collider's position/size live, with a **Save** button — and changing selection with
-  unsaved edits prompts to save, naming the member/sub-member), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
+  **Colisores de Membro** / member colliders (with the toggle on and one member/sub-member isolated, shows that collider's
+  green gizmo), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
   collider, independent of the Debug 3D screen — with, right below the **Membro** toggle, an **Esqueleto** toggle
   that floats the "Esqueleto: \<name\>" label of the chosen loose bone over it, plus extra Type/Name/ID lines), **Colisores de Esqueleto** (in "All members" mode → "Skeleton" filter, highlights the
   chosen loose bone's region — or all of them — with a translucent box), **Submembros** (a floating
   "Submembro: \<name\>" label over the sub-member chosen in the dropdown) and **Colisores de Submembros**
-  (shows only the selected sub-member's limbcollider, with the same offset/scale editor). The selectors are **three
+  (shows only the selected sub-member's limbcollider). The selectors are **three
   dropdowns** — **Membro** (member), **Sub-membro** right below it (with a **"Todos os Sub-membros"** option to show
-  them all at once) and, only in **"Todos os membros"** mode, **Esqueleto** (loose bones), which sits below Sub-membro
-  — or below the **Salvar**/Save button when a sub-member is selected and the editor appears. The **Dano (Damage)
+  them all at once) and, only in **"Todos os membros"** mode, **Esqueleto** (loose bones), which sits below Sub-membro.
+  Picking a **real** item (not "Selecione…"/"Todos") in any of the three reveals, **to its right**, a
+  **collider-geometry dropdown** (sphere/box/capsule) and opens a **reusable floating window** (the controls2D
+  `FloatingWindow`) with X/Y/Z **Offset, Rotation (degrees) and Scale**, titled with the item's name: each change **persists instantly**,
+  shows on the model and is **read back when a character spawns**. Every geometry dropdown follows the same rule:
+  it **loads the last saved choice**; with **no saved choice it auto-detects** the shape from the part's form
+  (elongated → capsule, round → sphere, else box); and **"Selecione…" means no limbcollider**. "Selecione…" on a
+  **member** removes its collider; on a **sub-member** it **suppresses** the collider yet **keeps the sub-member**
+  in the Damage tree/dropdown so you can reconfigure it (full removal stays on the trash icon). For a **loose bone**
+  (Esqueleto), a chosen shape only **previews** the collider via the **"Colisor de Esqueleto"** toggle and
+  "Selecione…" hides it; the bone is **not** promoted to a sub-member (promotion stays in the Damage window's "Add
+  sub-member"), and skeletons carry no damage, so they are **ignored in level scenes**. When a specific
+  **sub-member** is selected, the **member** geometry dropdown is hidden (the sub-member's takes over). Members'
+  colliders are shown **only** with **Membro = "Todos os membros"** (at "Modelo completo"/"Selecione…" none are
+  shown). The **Dano (Damage)
   screen** is not in the toggle list: it opens from the **"Dano" button** (right of the "Voltar"/Back button) — a
   **draggable floating window** with an opaque black background ("Dano" title bar + × close) holding a **tree** of
   each member/sub-member's bonus %, where you also add/remove protruding `PART_*` colliders (which **keep the
@@ -136,7 +161,10 @@ third-person shooter sandbox. At a high level it offers:
   library that selector (and the ones below it) are disabled. Navigation is guided purely by the
   sequential dropdown gating (no status line). Drag to hand-rotate the
   model up to 180° on both axes (rotation **freezes** while the pointer is over a floating window —
-  Damage/AI or any other — and resumes when it leaves or the window closes). Toggling any option acts on the live preview in place — it
+  Damage/AI or any other — and resumes when it leaves or the window closes). A **3D axis gizmo**
+  (editor-style: red X, green Y, blue Z, with a ball and letter at each tip) sits at the **top
+  right** — in its own overlaid SubViewport, left of the toggles, without covering the model — and
+  **rotates together with the model**, showing its orientation. Toggling any option acts on the live preview in place — it
   never reloads the model nor changes the camera/rotation. For Personagens and Armas, a
   **member tooltip stack** floats over each member's collider: each line has its **own color**
   (Membro = cyan-blue, Tipo = orange, Nome = green, ID = yellow), **the same color applied to the
@@ -161,7 +189,10 @@ third-person shooter sandbox. At a high level it offers:
 
 A global debug overlay (`autoload/debug_overlay.gd`, autoload **DebugOverlay**) is toggled
 from the **developer** screen and the settings "Debug" tab. All toggles persist in the
-saved settings (`game` section) and apply immediately (`DebugOverlay.refresh()`).
+saved settings (`game` section) and apply immediately (`DebugOverlay.refresh()`). Each
+Disabled/Enabled toggle pair uses the **same coloured-button style as the Settings screen**: the
+**selected** option shows its full authored colour (green/yellow) while the **unselected** one is
+**darkened** (a disabled sub-toggle — its Debug 2D master off — greys out instead).
 
 The developer screen lays the toggles out in **two columns**, whose tooltips use distinct
 light colors so you can tell them apart:
@@ -276,10 +307,12 @@ Tab titles are themselves localized (they come from the child node names, so Loc
 them in code). Most rows are a set of toggle buttons sharing a green → yellow → orange → red
 color gradient that reads as cheap → expensive (e.g. performance vs. quality), with the green
 button being the safe/low option. The **active** (selected) button appears **lit** — a bright fill
-with a white glowing border — clearly standing out from the inactive ones.
+with a white glowing border — while the **unselected** options are now **much dimmer** (darkened),
+making the current choice stand out even more.
 
-- **Resolution** — a video-resolution dropdown (tinted light cyan to mark it as a selector),
-  resolution scale, and the scale filter (Bilinear / FSR / MetalFX…).
+- **Resolution** — a video-resolution dropdown (tinted light cyan to mark it as a selector; with a
+  **minimum width fit to its widest item** so no text is truncated), resolution scale, and the scale
+  filter (Bilinear / FSR / MetalFX…).
 - **Display** — Display Mode (Window / Fullscreen / Exclusive Fullscreen), Vertical
   Synchronization, and FPS Limit (30…144 / Unlimited). The mode and FPS-limit buttons are
   colored along the same gradient (higher cap = more demanding = warmer color). In **Window** mode
@@ -290,11 +323,13 @@ with a white glowing border — clearly standing out from the inactive ones.
 - **Effects** — Bloom and Volumetric Fog.
 - **Audio** — independent controls for background **Música** (the `Music` bus) and **Efeitos
   de Som** (the `SFX` bus, into which the `Outside`/`Reactor` gameplay buses route), each
-  saved and applied globally. The **background music is per scene/level**: the **MusicManager**
-  autoload plays the matching `Audios/<scene-name>.ogg` track in an **infinite loop**, switching on
-  every screen (see `Audios/README.md`). Clicking **Música → Enabled** opens the **Music Manager**:
-  listen to any track and **assign or remove** the track of each scene/level (assignments are
-  persisted and take priority over the default name-based track); a **🎲 Shuffle** button assigns a
+  saved and applied globally. The **background music is per scene/level**, driven by the **MusicManager**
+  autoload in an **infinite loop**, switching on every screen (see `Audios/README.md`). By default a
+  scene is **"Selecione…" = silent** (no music) until you assign it a track. Clicking **Música → Enabled**
+  opens the **Music Manager**: listen to any track and **assign** each scene/level a specific track,
+  **"Padrão"** (resolve by the scene name, `Audios/<scene-name>.<ext>`) or **"Selecione…"** (silence);
+  assignments are persisted. Each **▶ Play** button has a
+  **⏸ Pause** and a **⏹ Stop** beside it (both on the "Listen" row and in the per-scene list); a **🎲 Shuffle** button assigns a
   random track to every scene/level and saves it for next time. To the right of each row
   (**Música** and **Efeitos de Som**) sits an **equalizer-style volume control** (`VolumeBar`, 10
   gradient-colored segments): with audio on, click/drag to set that bus's volume from **1 to 100**.

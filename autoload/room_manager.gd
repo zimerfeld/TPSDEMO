@@ -68,8 +68,7 @@ func start_room(level_path: String) -> int:
 	var id: int = _next_id
 	_next_id += 1
 	_instantiate_room(id, level_path, true)  # servidor: SubViewport com World3D próprio (isolado)
-	_broadcast_room_list()
-	rooms_changed.emit()
+	_broadcast_room_list()  # já emite rooms_changed (atualiza a grade do host)
 	return id
 
 
@@ -141,8 +140,7 @@ func _close_room(id: int, reason: CloseReason) -> void:
 			for peer_id in _peer_room.keys():
 				if int(_peer_room[peer_id]) == id:
 					_peer_room.erase(peer_id)
-			_broadcast_room_list()
-			rooms_changed.emit()
+			_broadcast_room_list()  # já emite rooms_changed (atualiza a grade do host)
 			return
 
 
@@ -177,6 +175,12 @@ func register_room_level(room_id: int, spawned_nodes: Node3D, spawn_points: Node
 		return
 	room["spawned_nodes"] = spawned_nodes
 	if not multiplayer.is_server():
+		# DIAGNÓSTICO TEMPORÁRIO (player sem câmera no cliente) — remover após confirmar. Esta linha
+		# imprime quando o servidor REPLICA (spawna) o player/inimigos na sala-espelho. Se aparecer
+		# "→ '<seu peer id>'" após "Jogar", o spawn chegou e a câmera deve ativar; se NÃO aparecer,
+		# o spawn ainda não está sendo enviado pelo servidor (visibilidade/rede).
+		if not spawned_nodes.child_entered_tree.is_connected(_dbg_client_spawn):
+			spawned_nodes.child_entered_tree.connect(_dbg_client_spawn)
 		return  # cliente: só precisa do caminho casando (já tem); sem lógica de spawn
 	room["spawn_points"] = spawn_points
 	room["spawn_queue"] = spawn_points.get_children().duplicate()
@@ -201,6 +205,14 @@ func _on_room_child_entered(node: Node, room_id: int) -> void:
 	_apply_room_visibility(node, room_id)
 
 
+# DIAGNÓSTICO TEMPORÁRIO (player sem câmera no cliente) — remover após confirmar. Dispara no CLIENTE
+# quando o servidor replica (spawna) uma entidade na sala-espelho. Filtra para os filhos diretos do
+# SpawnedNodes (o player/inimigo), ignorando os sub-nós, para não poluir o log.
+func _dbg_client_spawn(node: Node) -> void:
+	if node.get_parent() != null and node.get_parent().name == "SpawnedNodes":
+		print("[salas] cliente: spawn recebido do servidor → '%s' (%s)" % [node.name, node.get_class()])
+
+
 # Interest management: o nó (e seus sub-nós) só é replicado (spawn + sync) para peers QUE ESTÃO
 # NESTA SALA. Implementado com um visibility filter (veta quem NÃO está na sala).
 #
@@ -220,11 +232,16 @@ func _apply_room_visibility(node: Node, room_id: int) -> void:
 		# entidades), então isto controla a frequência de envio servidor→clientes. Reaplicado a cada
 		# synchronizer que entra (inimigos/players/balas) → vale para a sala inteira.
 		sync.replication_interval = NetConfig.sync_interval()
-		if sync.has_meta("room_filtered"):
-			continue
-		sync.set_meta("room_filtered", true)
-		sync.add_visibility_filter(func(peer: int) -> bool:
-			return int(_peer_room.get(peer, -1)) == room_id)
+		if not sync.has_meta("room_filtered"):
+			sync.set_meta("room_filtered", true)
+			sync.add_visibility_filter(func(peer: int) -> bool:
+				return int(_peer_room.get(peer, -1)) == room_id)
+		# SEMPRE reavalia a visibilidade — não só na 1ª vez. O child_entered_tree do SpawnedNodes
+		# dispara primeiro para o PLAYER (synchronizers ainda não registrados no replicador) e DEPOIS
+		# para cada synchronizer. Se pulássemos o update aqui pelo meta-guard, a reavaliação BOA — a que
+		# roda com o synchronizer já registrado — nunca aconteceria, e o spawn não seria enviado ao
+		# cliente da sala (player sem câmera no cliente). update_visibility é idempotente; reavaliar
+		# sempre corrige o timing sem efeito colateral.
 		sync.update_visibility()
 
 
@@ -255,12 +272,21 @@ func _refresh_room_visibility(room_id: int) -> void:
 func request_room_list() -> void:
 	if not multiplayer.is_server():
 		return
-	receive_room_list.rpc_id(multiplayer.get_remote_sender_id(), _room_list_payload())
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	# DIAGNÓSTICO TEMPORÁRIO (lista de salas vazia no cliente) — remover após achar a causa.
+	print("[salas] servidor: request_room_list de peer ", sender_id, " — respondendo ", _rooms.size(), " sala(s)")
+	receive_room_list.rpc_id(sender_id, _room_list_payload())
 
 
 func _broadcast_room_list() -> void:
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		# DIAGNÓSTICO TEMPORÁRIO (lista de salas vazia no cliente) — remover após achar a causa.
+		print("[salas] servidor: broadcast de ", _rooms.size(), " sala(s) para ", multiplayer.get_peers().size(), " cliente(s)")
 		receive_room_list.rpc(_room_list_payload())
+	# A grade do host também espelha a lista (e a CONTAGEM DE CONEXÕES por sala): como o host não
+	# recebe o próprio RPC, refresca a UI local aqui. Assim entrar/sair de um cliente (join_room/
+	# leave_room/_on_peer_disconnected, que chamam isto) atualiza a grade do host na hora.
+	rooms_changed.emit()
 
 
 func _room_list_payload() -> Array:
@@ -276,6 +302,8 @@ func _room_list_payload() -> Array:
 
 @rpc("authority", "reliable")
 func receive_room_list(list: Array) -> void:
+	# DIAGNÓSTICO TEMPORÁRIO (lista de salas vazia no cliente) — remover após achar a causa.
+	print("[salas] cliente: recebeu lista do servidor — ", list.size(), " sala(s)")
 	_server_rooms = list
 	rooms_changed.emit()
 
@@ -284,6 +312,16 @@ func _players_in_room(room_id: int) -> int:
 	var n: int = 0
 	for peer_id in _peer_room:
 		if int(_peer_room[peer_id]) == room_id:
+			n += 1
+	return n
+
+
+# Conexões (clientes REMOTOS) ativas numa sala, para a grade do host. O peer 1 é o próprio host
+# local — não é uma conexão de rede, então não conta, mesmo quando ele joga dentro da sala.
+func connections_in_room(room_id: int) -> int:
+	var n: int = 0
+	for peer_id in _peer_room:
+		if int(_peer_room[peer_id]) == room_id and int(peer_id) != 1:
 			n += 1
 	return n
 
@@ -314,6 +352,10 @@ func join_room(room_id: int, variant_id: int) -> void:
 	# Reavalia a visibilidade: o que JÁ existe na sala (inimigos) passa a replicar p/ este peer.
 	_refresh_room_visibility(room_id)
 	_reserve_and_spawn(sender, room_id, variant_id)
+	# Reavalia DE NOVO no próximo frame: aí o player recém-spawnado e seus synchronizers já estão
+	# totalmente na árvore e registrados no replicador, garantindo que o spawn seja enviado a este
+	# cliente (a reavaliação síncrona durante o add_child pode rodar cedo demais).
+	_refresh_room_visibility.call_deferred(room_id)
 	_broadcast_room_list()
 
 

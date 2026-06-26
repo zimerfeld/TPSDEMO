@@ -58,6 +58,7 @@
 | `standalone_part_bones` | `[] / []` | Sub-membros FIXOS no nó (collider PRÓPRIO) — UNIDOS aos de `LimbConfig` + do plano. O red_robot **não usa mais** (placas migraram p/ `limb_config.json`) |
 | `hitbox_layer` | `16 / 32` | Layer dos colliders (player bit5, enemy bit6) |
 | `model_key` | `"player" / "red_robot"` | Chave (nome da pasta) p/ buscar multiplicadores + sub-membros em [[sistemas/dano-localizado\|LimbConfig]]; vazio = defaults do plano |
+| `include_suppressed` | `false` (`true` só no preview da tela Models) | True: SUB-MEMBROS `SHAPE_NONE` ("Selecione...") ainda são construídos (forma auto, meta `suppressed`, sem gizmo) p/ ficarem na árvore/dropdown e poderem ser reconfigurados. False (gameplay): pulados, sem hitbox (2026-06-25) |
 
 ---
 
@@ -75,6 +76,17 @@ add_child(lc)
 lc.build_for(skel)   # resolve _classifier (body_type) + _sub_member_set (3 fontes)
 ```
 Construídos em todos os peers (só o servidor simula os tiros). `get_limb_bodies()` lista os `StaticBody3D` criados (usado para excluir os próprios da colisão do projétil disparado).
+
+> [!note] Override de FORMA + supressão por grupo (2026-06-25)
+> `make_member_shape(group, aabb, head_kind, torso_kind, head_scale, shape_override="")` ganhou o
+> param **`shape_override`**: `"sphere"/"box"/"capsule"` FORÇA a forma daquele grupo sobre a automática
+> (a CABEÇA em cápsula mantém o raio cheio). `build_for`/`_build_member_shape`/`refit` leem
+> `LimbConfig.collider_shape(model_key, group)` e passam o override; e `build_for` **pula** os grupos
+> cujo `collider_shape == LimbConfig.SHAPE_NONE` (`"none"`) → o membro/sub-membro fica **sem collider**
+> (exceto SUB-MEMBROS no preview da tela Models, via `include_suppressed` — ver tabela). Tudo
+> escolhido na tela Models (dropdown de geometria à direita de Membro/Sub-membro/Esqueleto) e relido
+> aqui no spawn. O caminho sem-esqueleto (`models.gd._add_mesh_member_colliders`) honra os mesmos
+> dois. Ver [[sistemas/biblioteca-de-modelos]] e [[sistemas/dano-localizado]].
 
 - Player skeleton: `PlayerModel/Robot_Skeleton/Skeleton3D` (playera herda de Player)
 - Enemy skeleton: `RedRobotModel/Armature/Skeleton3D`

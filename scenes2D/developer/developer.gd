@@ -39,6 +39,11 @@ const _DEBUG2D_SUBROWS: Array[String] = [
 const _DISABLED_MODULATE := Color(0.5, 0.5, 0.55, 0.5)
 const _BASE_MODULATE_META := &"_base_modulate"
 
+# Estilo de cor como na tela Settings: o botão SELECIONADO de cada par fica na cor (modulate) autorada
+# cheia (verde/amarelo) e o NÃO selecionado fica bem menos iluminado — a cor base multiplicada por este
+# fator (mantém o matiz). Sobreposto pelo estado "disabled" (acinzentado) das sub-linhas do Debug 2D.
+const OPTION_DIM_FACTOR: float = 0.42
+
 @onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
 @onready var english_button: Button = $UI/LangBar/EnglishButton
 
@@ -58,6 +63,9 @@ func _ready() -> void:
 		enabled_btn.set_pressed_no_signal(general_on)
 		disabled_btn.set_pressed_no_signal(not general_on)
 		enabled_btn.toggled.connect(_on_toggle.bind(key))
+		# Estilo de cor como na Settings: selecionado na cor cheia, não selecionado escurecido.
+		_setup_toggle_button(disabled_btn)
+		_setup_toggle_button(enabled_btn)
 
 	for row_name in _TOGGLES:
 		var row: HBoxContainer = _row(row_name)
@@ -70,11 +78,13 @@ func _ready() -> void:
 		enabled_btn.set_pressed_no_signal(on)
 		disabled_btn.set_pressed_no_signal(not on)
 		enabled_btn.toggled.connect(_on_toggle.bind(key))
-	# Remember each sub-toggle ROW child's authored color (os botões E o rótulo) so it can be
-	# restored after the greyed-out (disabled) state.
+		_setup_toggle_button(disabled_btn)
+		_setup_toggle_button(enabled_btn)
+	# Guarda a cor autorada dos RÓTULOS das sub-linhas do Debug 2D p/ restaurar após o estado acinzentado
+	# (os BOTÕES já guardaram a sua em _setup_toggle_button, ANTES de qualquer dimming).
 	for row_name in _DEBUG2D_SUBROWS:
 		for child in _row(row_name).get_children():
-			if child is Control:
+			if child is Control and not (child is BaseButton):
 				child.set_meta(_BASE_MODULATE_META, (child as Control).modulate)
 	# As sub-toggles do Debug 2D só valem com o master (Debug 2D) ligado.
 	_update_subrows_enabled()
@@ -115,15 +125,17 @@ func _update_subrows_enabled() -> void:
 func _set_subrows_disabled(rows: Array[String], is_disabled: bool) -> void:
 	for row_name in rows:
 		for child in _row(row_name).get_children():
-			if child is Control:
+			if child is BaseButton:
+				# Botão: o estado "disabled" (master off) tem prioridade no estilo (acinzentado);
+				# reativado, _style_toggle_button repinta conforme selecionado/não selecionado.
+				(child as BaseButton).disabled = is_disabled
+				_style_toggle_button(child as BaseButton)
+			elif child is Control:
+				# O rótulo (ShowTypeLabel/…/ShowTabLabel) também está "ligado" ao Debug 2D: escurece
+				# junto para a linha INTEIRA refletir o estado desativado, restaurando a cor original
+				# quando reativada (o tema não tem estilo "disabled" próprio).
 				var ctrl := child as Control
-				# O rótulo (ShowTypeLabel/…/ShowIDLabel/ShowTabLabel) também está "ligado" ao
-				# Debug 2D: escurece junto dos botões para a linha INTEIRA refletir o estado
-				# desativado, restaurando a cor original quando reativada (o tema não tem
-				# estilo "disabled" próprio).
 				ctrl.modulate = _DISABLED_MODULATE if is_disabled else ctrl.get_meta(_BASE_MODULATE_META, ctrl.modulate)
-				if ctrl is BaseButton:
-					(ctrl as BaseButton).disabled = is_disabled
 
 
 func _make_button_group(row: Node) -> void:
@@ -131,6 +143,30 @@ func _make_button_group(row: Node) -> void:
 	for btn in row.get_children():
 		if btn is BaseButton:
 			btn.button_group = group
+
+
+# Prepara um botão de toggle (par Desativado/Ativado) p/ o estilo de cor da Settings: guarda a cor
+# autorada como base (ANTES de qualquer dimming), repinta a si mesmo a cada (des)seleção e aplica o
+# estilo inicial. Os dois botões do par reagem (o radio anterior emite toggled(false) e o novo true).
+func _setup_toggle_button(btn: BaseButton) -> void:
+	btn.set_meta(_BASE_MODULATE_META, btn.modulate)
+	btn.toggled.connect(func(_pressed: bool) -> void: _style_toggle_button(btn))
+	_style_toggle_button(btn)
+
+
+# Pinta UM botão de toggle: "disabled" (master off) → acinzentado; selecionado → cor autorada cheia;
+# não selecionado → cor autorada escurecida (OPTION_DIM_FACTOR). Igual ao realce da tela Settings.
+func _style_toggle_button(btn: BaseButton) -> void:
+	if btn.disabled:
+		btn.modulate = _DISABLED_MODULATE
+		return
+	var base: Color = btn.get_meta(_BASE_MODULATE_META, btn.modulate)
+	btn.modulate = base if btn.button_pressed else _dim_color(base)
+
+
+# Escurece uma cor multiplicando o RGB por OPTION_DIM_FACTOR (mantém matiz e alfa) — opção inativa.
+func _dim_color(c: Color) -> Color:
+	return Color(c.r * OPTION_DIM_FACTOR, c.g * OPTION_DIM_FACTOR, c.b * OPTION_DIM_FACTOR, c.a)
 
 
 func _on_toggle(button_pressed: bool, key: String) -> void:

@@ -4,6 +4,14 @@ signal replace_main_scene
 
 const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
 
+# Fator que MULTIPLICA a cor (modulate) AUTORADA de uma opção NÃO selecionada — escurece mantendo o
+# matiz do gradiente verde→amarelo→laranja→vermelho (a selecionada fica na cor CHEIA, realçada). O
+# mesmo padrão é usado na tela developer. Ver _on_option_toggled / _refresh_option_dimming.
+const OPTION_DIM_FACTOR: float = 0.42
+# Meta com a cor (modulate) AUTORADA de cada botão de opção (o gradiente do .tscn), p/ a opção
+# selecionada voltar à cor cheia e a não selecionada ser escurecida a partir dela.
+const _BASE_MODULATE_META := &"_base_modulate"
+
 # Placeholder shown as the first, default-selected option of the resolution
 # dropdown. Picking it leaves the window untouched; it stays the default until a
 # saved resolution matches a preset, in which case that preset is selected instead.
@@ -152,6 +160,14 @@ func _ready() -> void:
 
 	for row in _rows:
 		_make_button_group(row)
+		# Cada botão de opção atualiza seu próprio brilho ao (des)selecionar: o radio selecionado emite
+		# toggled(true) e o anterior toggled(false), então conectar `toggled` em cada um mantém o realce
+		# da opção ativa em sincronia sem varrer tudo a cada clique. A cor AUTORADA (gradiente do .tscn)
+		# é guardada como base ANTES de qualquer dimming, p/ a selecionada voltar à cor cheia.
+		for btn in row.get_children():
+			if btn is BaseButton:
+				(btn as BaseButton).set_meta(_BASE_MODULATE_META, (btn as BaseButton).modulate)
+				(btn as BaseButton).toggled.connect(_on_option_toggled.bind(btn as BaseButton))
 
 	# VolumeBar (equalizador) à direita de cada linha de áudio. Criadas ANTES de _load_current_settings
 	# (que ajusta valor/estado) e conectadas DEPOIS (para o load não disparar apply à toa).
@@ -161,6 +177,9 @@ func _ready() -> void:
 	_populate_video_resolutions()
 
 	_load_current_settings()
+	# Pinta o brilho inicial de TODAS as opções (as não selecionadas nunca disparam `toggled` no load,
+	# então um passe explícito garante que comecem escurecidas).
+	_refresh_option_dimming()
 
 	# There is no "Aplicar" button: every option saves + applies the moment it changes.
 	# Connect AFTER _load_current_settings so programmatically setting the initial state
@@ -225,7 +244,30 @@ func _populate_video_resolutions() -> void:
 	for res in VIDEO_RESOLUTIONS:
 		video_resolution_dropdown.add_item(res["nome"])
 	_select_saved_resolution()
+	_fit_dropdown_to_widest_item(video_resolution_dropdown)
 	video_resolution_dropdown.item_selected.connect(_on_video_resolution_selected)
+
+
+# Largura mínima do dropdown = a do MAIOR texto de item (medido pela fonte resolvida), para nenhum
+# item ser truncado. size_flags_horizontal continua expandindo além disto quando há espaço na linha.
+func _fit_dropdown_to_widest_item(dropdown: OptionButton) -> void:
+	var font := dropdown.get_theme_font(&"font")
+	if font == null:
+		return
+	var font_size := dropdown.get_theme_font_size(&"font_size")
+	var widest := 0.0
+	for i in dropdown.item_count:
+		widest = maxf(widest, font.get_string_size(
+			dropdown.get_item_text(i), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+	# Folga para as margens internas do stylebox + o ícone da seta à direita + separação/segurança.
+	var extra := 28.0
+	var sb := dropdown.get_theme_stylebox(&"normal")
+	if sb != null:
+		extra += sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)
+	var arrow := dropdown.get_theme_icon(&"arrow")
+	if arrow != null:
+		extra += arrow.get_width()
+	dropdown.custom_minimum_size.x = ceilf(widest + extra)
 
 
 # Point the dropdown at the preset matching the saved resolution (or the "Selecione..."
@@ -257,6 +299,28 @@ func _group_of(row: Node) -> ButtonGroup:
 		if btn is BaseButton:
 			return btn.button_group
 	return null
+
+
+# Mantém o realce das opções: a SELECIONADA de cada linha fica na cor AUTORADA cheia (gradiente) e as
+# demais ficam bem menos iluminadas (cor escurecida por OPTION_DIM_FACTOR). Conectado em `toggled` de
+# cada botão (o radio anterior apaga e o novo acende). `btn` vem do bind feito em _ready.
+func _on_option_toggled(pressed: bool, btn: BaseButton) -> void:
+	var base: Color = btn.get_meta(_BASE_MODULATE_META, btn.modulate)
+	btn.modulate = base if pressed else _dim_color(base)
+
+
+# Escurece uma cor multiplicando o RGB por OPTION_DIM_FACTOR (mantém o matiz e o alfa) — opção inativa.
+func _dim_color(c: Color) -> Color:
+	return Color(c.r * OPTION_DIM_FACTOR, c.g * OPTION_DIM_FACTOR, c.b * OPTION_DIM_FACTOR, c.a)
+
+
+# Passe completo do realce sobre todas as linhas (usado no load e após Reset, quando opções que
+# permanecem não selecionadas não emitem `toggled`).
+func _refresh_option_dimming() -> void:
+	for row in _rows:
+		for btn in row.get_children():
+			if btn is BaseButton:
+				_on_option_toggled((btn as BaseButton).button_pressed, btn as BaseButton)
 
 
 # A button in one of the option rows was clicked: persist + apply every setting now
@@ -573,6 +637,7 @@ func _on_reset_pressed() -> void:
 	dlg.confirmed.connect(func() -> void:
 		Settings.reset_to_defaults()
 		_load_current_settings()
+		_refresh_option_dimming()
 		_select_saved_resolution()
 		_apply_settings()
 		Settings.apply_window_resolution(get_window())

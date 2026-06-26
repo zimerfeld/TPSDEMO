@@ -38,7 +38,10 @@
 - **Dropdowns que refletem estado salvo** (ex.: resolução de vídeo em
   `settings.gd`): `"Selecione..."` é o default só quando **não há valor salvo**;
   se o salvo casa com um preset, seleciona o preset. Selecionar `"Selecione..."`
-  não altera a janela (placeholder no-op).
+  não altera a janela (placeholder no-op). A **largura mínima** do dropdown é
+  ajustada por código (`_fit_dropdown_to_widest_item`) à do **maior texto de item**
+  (medido pela fonte resolvida + margens do stylebox + ícone da seta), para nenhum
+  item ser truncado; `size_flags_horizontal` continua expandindo acima disso.
 
 ## Onde se aplica hoje
 
