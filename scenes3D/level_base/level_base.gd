@@ -31,10 +31,16 @@ func _ready() -> void:
 		return
 
 	if multiplayer.is_server():
-		if not LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points):
-			# Server will spawn the red robots
-			for child in robot_spawn_points.get_children():
-				spawn_robot(child)
+		# Modo-sala (multi-level): a sala NASCE VAZIA — nada pré-spawnado na criação, NEM o template
+		# (o RoomManager o aplica depois, pelo caminho per-peer protegido, quando há gente na sala).
+		# Assim nenhum nó é replicado ao client ANTES de o espelho da sala existir — causa raiz da
+		# tela cinza (envenenamento do scene-cache). Single-level (offline / "Hospedar Somente", via
+		# NetSpawn): template ativo ou, na falta dele, os robôs padrão do jogo original — como sempre.
+		# Ver [[salas-nascem-limpas]].
+		if not has_meta("room_id"):
+			if not LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points):
+				for child in robot_spawn_points.get_children():
+					spawn_robot(child)
 		randomize()
 
 	# Modo-sala (servidor multi-level) usa spawn POR-SALA (RoomManager); senão, NetSpawn single-level.

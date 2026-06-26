@@ -318,7 +318,9 @@ making the current choice stand out even more.
   colored along the same gradient (higher cap = more demanding = warmer color). In **Window** mode
   the game runs as a **normal OS window**: on entering it, the window is resized to the saved
   resolution and centered, so it can be dragged by its title bar (no longer stuck at full-screen size).
-- **Antialiasing** — TAA, MSAA and FXAA.
+- **Antialiasing** — TAA, MSAA and FXAA. **TAA is disabled automatically** when the scaling filter
+  is **FSR 2** or **MetalFX Temporal** (temporal upscalers already do temporal antialiasing and are
+  incompatible with TAA — avoids the engine warning).
 - **Lighting** — Shadow Mapping, GI Type/Quality, SSAO and SSIL.
 - **Effects** — Bloom and Volumetric Fog.
 - **Audio** — independent controls for background **Música** (the `Music` bus) and **Efeitos

@@ -142,5 +142,5 @@ func _input(input_event: InputEvent) -> void:
 		if UINav.cancel_active_edit(get_viewport(), play_button):
 			get_viewport().set_input_as_handled()
 			return
-		_on_quit_pressed()
 		get_viewport().set_input_as_handled()
+		_on_quit_pressed()

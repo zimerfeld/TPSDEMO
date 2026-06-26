@@ -171,11 +171,11 @@ func _confirm_disconnect() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"quit"):
+		get_viewport().set_input_as_handled()   # marca antes da ação: _go_back() libera a cena (viewport vira null depois)
 		if _playing_room >= 0:
 			_confirm_disconnect()       # jogando: confirma desconectar e volta ao navegador
 		else:
 			_go_back()                  # navegador: volta ao PlayOnline (fecha o peer)
-		get_viewport().set_input_as_handled()
 
 
 # ───────────────────────────── helpers de UI ─────────────────────────────

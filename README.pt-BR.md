@@ -318,7 +318,9 @@ qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (
   pelo mesmo gradiente (limite maior = mais exigente = cor mais quente). No modo **Window** a janela
   é uma **janela normal do SO**: ao entrar nela, é redimensionada para a resolução salva e
   centralizada, ficando arrastável pela barra de título (não mais presa do tamanho da tela cheia).
-- **Antialiasing** — TAA, MSAA e FXAA.
+- **Antialiasing** — TAA, MSAA e FXAA. O **TAA é desativado automaticamente** quando o filtro de
+  escala é **FSR 2** ou **MetalFX Temporal** (são upscalers temporais que já fazem antialiasing
+  temporal e são incompatíveis com TAA — evita o warning da engine).
 - **Lighting** — Shadow Mapping, Tipo/Qualidade de GI, SSAO e SSIL.
 - **Effects** — Bloom e Volumetric Fog.
 - **Audio** — controles independentes para **Música** de fundo (o bus `Music`) e **Efeitos de Som**

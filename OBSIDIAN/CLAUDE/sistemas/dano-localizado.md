@@ -307,6 +307,13 @@ ele causava 50 de dano no início. Correção: **bullet sem `shooter` fica inert
 (`_ready`: `if shooter == null or not is_server: disable`). Cobre também clientes
 (onde `shooter` não é replicado).
 
+**Rede (2026-06-26):** o `BulletCache` carregava o `MultiplayerSynchronizer` do `bullet.tscn` para
+dentro da cena replicada do player. Ao spawnar/despawnar o player via rede, esse sync gerava
+`Node not found .../BulletCache/MultiplayerSynchronizer`, `Failed to get cached node from peer` e
+`on_despawn_receive ERR_UNAUTHORIZED`. Correção: no `player.tscn`, override do sync do cache com
+**`public_visibility = false`** (não replica) — afeta só o cache; balas reais (instâncias de
+`bullet.tscn`) seguem replicando normalmente.
+
 ---
 
 ## Precisão e alcance do enemy
