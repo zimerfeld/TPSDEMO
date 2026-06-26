@@ -29,10 +29,12 @@ Trilha de fundo por **nome de cena**, em **loop infinito**. O autoload `MusicMan
 (`res://autoload/music_manager.gd`) mantém um único `AudioStreamPlayer` no bus `Music`; a cada
 troca de tela o roteador `main.gd` chama `MusicManager.play_for_scene(node)`:
 
-- **Resolução por nome:** toca `res://Audios/<nome-da-cena>.<ext>` (1ª de `.ogg`/`.mp3`/`.wav` que
-  existir). Ex.: `menu.tscn` → `Audios/menu.ogg`; `level_1.tscn` → `Audios/level_1.ogg`.
-- **Sem arquivo → silêncio.** Mesma faixa da cena anterior → continua sem reiniciar (transição
-  suave). `ALIASES` faz `chooseplayer` herdar a trilha do `menu`.
+- **Default = SILÊNCIO (2026-06-25):** uma cena SEM atribuição salva fica em **"Selecione..." = sem
+  música** (não toca). Antes, o default resolvia automaticamente por `Audios/<nome-da-cena>.<ext>` — isso
+  agora é a **opção "Padrão"** (override `BYNAME`), escolhida por cena no Gerenciador.
+- **Resolução por nome (opção "Padrão"):** `res://Audios/<nome-da-cena>.<ext>` (1ª de `.ogg`/`.mp3`/`.wav`
+  que existir), em `_resolve_by_name`. Ex.: `menu` → `Audios/menu.ogg`. `ALIASES` faz `chooseplayer`
+  herdar a trilha do `menu`. Mesma faixa da cena anterior → continua sem reiniciar (transição suave).
 - **Loop forçado em runtime** (`_ensure_loop`): vale para qualquer arquivo solto em `Audios/`,
   mesmo que o import venha com `loop=false`.
 - **Online:** nas salas a cena raiz é `host_session`/`client_session`, então a música delas vem de
@@ -52,11 +54,13 @@ Templates de Level). Permite:
 - **Ouvir** qualquer faixa de `Audios/` (player de pré-escuta separado; pausa o fundo enquanto toca).
   Cada botão **▶ Tocar** tem ao lado um **⏸ Pausar** e um **⏹ Parar** (2026-06-25) — tanto na linha
   "Ouvir faixa" quanto na lista por cena. ▶ retoma uma pausa da MESMA faixa (`preview_or_resume`).
-- **Atribuir/remover** a trilha de cada cena/level: "Padrão" (resolve pelo nome), "Sem música"
-  (silêncio) ou um arquivo específico.
+- **Atribuir** a trilha de cada cena/level. **Todo dropdown tem "Selecione..." como 1ª opção = sem
+  música (silêncio), o DEFAULT** de uma cena não configurada. Outras opções: **"Padrão"** (resolve pelo
+  nome, override `BYNAME`) ou um **arquivo** específico.
 
 As atribuições viram **overrides** persistidos em `Settings` (seção `[music]`: `scene_key = arquivo`,
-ou `""` = silêncio) e têm **prioridade** sobre a resolução por nome em `_resolve()`. Mudar a
+`BYNAME` = pelo nome, `""` = silêncio explícito; **SEM chave = "Selecione..." = silêncio**, o default).
+`_resolve()` lê isso. Mudar a
 atribuição reaplica **na hora** se for a cena tocando. `MusicManager` expõe `list_tracks()`,
 `scene_list()`, `assignment_of()`, `set_assignment()`, `effective_track()`, `preview()`,
 `preview_or_resume()`/`pause_preview()`/`resume_preview()` (2026-06-25), `stop_preview()`. Abre via

@@ -4,9 +4,13 @@ signal replace_main_scene
 
 const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
 
-# Modulação das opções NÃO selecionadas de cada linha (radio): bem menos iluminadas que a escolhida
-# (que fica em branco pleno), destacando visualmente a opção ativa. Ver _refresh_option_dimming.
-const OPTION_DIM_MODULATE: Color = Color(0.45, 0.45, 0.48, 1.0)
+# Fator que MULTIPLICA a cor (modulate) AUTORADA de uma opção NÃO selecionada — escurece mantendo o
+# matiz do gradiente verde→amarelo→laranja→vermelho (a selecionada fica na cor CHEIA, realçada). O
+# mesmo padrão é usado na tela developer. Ver _on_option_toggled / _refresh_option_dimming.
+const OPTION_DIM_FACTOR: float = 0.42
+# Meta com a cor (modulate) AUTORADA de cada botão de opção (o gradiente do .tscn), p/ a opção
+# selecionada voltar à cor cheia e a não selecionada ser escurecida a partir dela.
+const _BASE_MODULATE_META := &"_base_modulate"
 
 # Placeholder shown as the first, default-selected option of the resolution
 # dropdown. Picking it leaves the window untouched; it stays the default until a
@@ -158,9 +162,11 @@ func _ready() -> void:
 		_make_button_group(row)
 		# Cada botão de opção atualiza seu próprio brilho ao (des)selecionar: o radio selecionado emite
 		# toggled(true) e o anterior toggled(false), então conectar `toggled` em cada um mantém o realce
-		# da opção ativa em sincronia sem varrer tudo a cada clique.
+		# da opção ativa em sincronia sem varrer tudo a cada clique. A cor AUTORADA (gradiente do .tscn)
+		# é guardada como base ANTES de qualquer dimming, p/ a selecionada voltar à cor cheia.
 		for btn in row.get_children():
 			if btn is BaseButton:
+				(btn as BaseButton).set_meta(_BASE_MODULATE_META, (btn as BaseButton).modulate)
 				(btn as BaseButton).toggled.connect(_on_option_toggled.bind(btn as BaseButton))
 
 	# VolumeBar (equalizador) à direita de cada linha de áudio. Criadas ANTES de _load_current_settings
@@ -272,11 +278,17 @@ func _group_of(row: Node) -> ButtonGroup:
 	return null
 
 
-# Mantém o realce das opções: a SELECIONADA de cada linha fica em branco pleno e as demais bem menos
-# iluminadas (OPTION_DIM_MODULATE). Conectado em `toggled` de cada botão (o radio anterior apaga e o
-# novo acende). `btn` vem do bind feito em _ready.
+# Mantém o realce das opções: a SELECIONADA de cada linha fica na cor AUTORADA cheia (gradiente) e as
+# demais ficam bem menos iluminadas (cor escurecida por OPTION_DIM_FACTOR). Conectado em `toggled` de
+# cada botão (o radio anterior apaga e o novo acende). `btn` vem do bind feito em _ready.
 func _on_option_toggled(pressed: bool, btn: BaseButton) -> void:
-	btn.modulate = Color.WHITE if pressed else OPTION_DIM_MODULATE
+	var base: Color = btn.get_meta(_BASE_MODULATE_META, btn.modulate)
+	btn.modulate = base if pressed else _dim_color(base)
+
+
+# Escurece uma cor multiplicando o RGB por OPTION_DIM_FACTOR (mantém o matiz e o alfa) — opção inativa.
+func _dim_color(c: Color) -> Color:
+	return Color(c.r * OPTION_DIM_FACTOR, c.g * OPTION_DIM_FACTOR, c.b * OPTION_DIM_FACTOR, c.a)
 
 
 # Passe completo do realce sobre todas as linhas (usado no load e após Reset, quando opções que

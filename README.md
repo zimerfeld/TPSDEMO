@@ -25,16 +25,20 @@ Este jogo é construído e mantido no meu tempo livre. Se você curte o ZIMARO, 
 
 ![EN](screenshots/screenshotGB.png) Built on the Godot Engine, ZIMARO is a small third-person
 shooter sandbox: a menu-driven flow (character selection, level picker, settings, developer screen,
-online play), playable characters that move/aim/jump/shoot, ground and flying enemies (the Red
-Robot has a reactive AI that reloads faster, opens fire in range and flees when you close in),
+online play), playable characters that move/aim/jump/shoot (the shot waits for the aim to settle),
+allied bots that give the player covering fire, ground and flying enemies (the Red Robot has a
+reactive AI that reloads faster, opens fire in range and flees when you close in — enemies now move
+with individual variation and hold a loose formation),
 per-limb localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD
 widgets, per-scene looping background music, debug tooling, EN/PT localization and live (no-Apply) settings.
 
 ![PT](screenshots/screenshotBR.png) Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro em
 terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, configurações, tela de
-desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atiram, inimigos
-terrestres e voadores (o Red Robot tem uma IA reativa que recarrega mais rápido, abre fogo no
-alcance e recua quando você se aproxima), dano localizado por membro, várias fases, biblioteca de
+desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atiram (o tiro espera a
+mira assentar), bots aliados que dão cobertura ao jogador, inimigos terrestres e voadores (o Red
+Robot tem uma IA reativa que recarrega mais rápido, abre fogo no alcance e recua quando você se
+aproxima — e os inimigos agora se movem com variação individual e mantêm uma formação frouxa), dano
+localizado por membro, várias fases, biblioteca de
 modelos 3D navegável,
 widgets de HUD cyberpunk reutilizáveis, música de fundo por cena em loop, ferramentas de debug, localização EN/PT e configurações ao
 vivo (sem botão Aplicar).

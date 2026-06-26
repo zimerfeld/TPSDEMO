@@ -255,17 +255,28 @@ toggle é o **interruptor mestre** da sua categoria:
     metadata `""`/`sphere`/`box`/`capsule`) **e** abre-se a **janela flutuante REUTILIZÁVEL**
     ([[convencoes/ancoragem-ui|FloatingWindow]] dos controles2D) — `_open_or_update_collider_dialog`,
     anexada ao `UI`, `modal=false` (dá p/ girar o modelo), posição lembrada em
-    `windows/models_collider_dialog` — com **Afastamento** e **Escala** X/Y/Z, **intitulada com o nome do
-    item**. Cada mudança **persiste na hora** (`LimbConfig.set_collider_offset`/`set_collider_scale`,
-    **sem botão Salvar**) e aplica **AO VIVO** (`_apply_collider_xform`: afastamento → `body.position`;
-    escala → `scale` da forma). O **dropdown de geometria** grava `LimbConfig.set_collider_shape` e
+    `windows/models_collider_dialog` — com **Afastamento**, **Rotação** (graus) e **Escala** X/Y/Z, **intitulada
+    com o nome do item**. Cada mudança **persiste na hora** (`LimbConfig.set_collider_offset`/`set_collider_rotation`/
+    `set_collider_scale`, **sem botão Salvar**) e aplica **AO VIVO** (`_apply_collider_xform`: afastamento →
+    `body.position`; rotação → `body.rotation_degrees`; escala → `scale` da forma). O **dropdown de geometria** grava `LimbConfig.set_collider_shape` e
     **reconstrói** os colliders (`_rebuild_member_colliders`): num **MEMBRO**, "Selecione..." = `SHAPE_NONE`
-    → **remove o collider** (membro sem hitbox); num **SUB-MEMBRO**, "Selecione..." só limpa o override (a
-    remoção é pela lixeira da árvore de Dano); num **OSSO AVULSO**, escolher uma geometria **promove** o osso
-    a sub-membro com aquela forma (`add_sub_member` + `set_collider_shape`) e o seleciona em "Sub-membro".
-    Pré-seleção do dropdown: override salvo > forma VIVA do collider (`_live_shape_kind`); membro suprimido
-    → "Selecione...". Tudo é **relido no spawn** via `LimbColliders` (`make_member_shape` honra o override;
-    `build_for`/`_add_mesh_member_colliders` pulam grupos `SHAPE_NONE`). Lógica em
+    → **remove o collider** (membro sem hitbox); num **SUB-MEMBRO**, "Selecione..." = `SHAPE_NONE` **SUPRIME o
+    collider** mas **mantém o sub-membro** na árvore/dropdown (corpo de preview suprimido — ver `include_suppressed`
+    abaixo) p/ reconfigurar; a remoção total é pela lixeira da árvore de Dano. Para um **OSSO AVULSO** (Esqueleto),
+    escolher uma geometria **NÃO promove** (2026-06-25): só persiste a forma de preview (`set_collider_shape`) e o
+    realce **"Colisor de Esqueleto"** passa a desenhar nessa geometria (ver abaixo) — a promoção (criar o collider
+    de fato) segue na janela de Dano ("Adicionar sub-membro"). Esqueletos **não têm dano e não entram nos levels**
+    (preview-only). **Pré-seleção dos 3 dropdowns (3 estados, 2026-06-25, `_select_geo_for_group`):** forma salva
+    (sphere/box/capsule) → **CARREGA** a última escolha; `SHAPE_NONE` → **"Selecione..."** (sem collider, explícito);
+    **sem escolha ("") → AUTODETECTA** — forma VIVA do collider (`_live_shape_kind`, membro/sub têm corpo) ou pelo
+    **formato do osso** (`_auto_geo_for_box`/`_auto_geo_for_group` via AABB: alongado→cápsula, redondo→esfera, senão caixa).
+    **Sub-membro suprimido fica VISÍVEL (`include_suppressed`, 2026-06-25):** o preview seta `lc.include_suppressed
+    = true`; em `build_for`, um sub-membro `SHAPE_NONE` ainda é construído (forma automática, meta `suppressed`,
+    **sem gizmo** — `_add_collider_gizmos` o pula) p/ continuar na árvore/dropdown; no gameplay (flag false) é PULADO.
+    Tudo é **relido no spawn** via `LimbColliders` (`make_member_shape` honra o override;
+    `build_for`/`_add_mesh_member_colliders` pulam grupos `SHAPE_NONE`). **Visibilidade dos geo (2026-06-25):**
+    o geo do **Membro** some quando um **sub-membro específico** (`PART_*`, ≠ "Selecione..."/"Todos os Sub-membros")
+    está escolhido — aí vale o geo do sub-membro (mesma precedência da janela de Afastamento/Escala). Lógica em
     `_refresh_collider_editors` / `_on_*_geo_selected` / `_sync_collider_dialog` / `_current_edit_target`.
     O antigo `ColliderEditBox` inline + botão **Salvar** + `_prompt_save_offset_if_dirty` foram **REMOVIDOS**.
     Ver [[sistemas/dano-localizado]].
@@ -429,10 +440,10 @@ toggle é o **interruptor mestre** da sua categoria:
   - **Três dropdowns separados — Membro · Sub-membro · Esqueleto (reestruturado em 2026-06-23):** o
     `cboSubMembers` ("Sub-membro:", logo abaixo de "Membro") agora é SEMPRE a lista de sub-membros —
     nunca mais o filtro de ossos avulsos. Com **membro específico** lista os `PART_*` daquele membro;
-    com **"Todos os membros"** lista **TODOS os `PART_*` do modelo** (ordenados) e ganha, no topo, a
-    opção **"Todos os Sub-membros"** (`ALL_SUB_MEMBERS_LABEL`/`ALL_SUB_MEMBERS_VALUE`) = não isola,
-    mostra o modelo inteiro — **e, com "Colisores de Submembros" LIGADO (2026-06-25), exibe os gizmos de
-    TODOS os sub-membros de uma vez** (`_should_show_all_sub_colliders`), independente do toggle de membro.
+    com **"Todos os membros"** oferece **SÓ "Selecione..." e "Todos os Sub-membros"** (2026-06-25 — sub-membros
+    INDIVIDUAIS só aparecem ao escolher um membro específico). **"Todos os Sub-membros"**
+    (`ALL_SUB_MEMBERS_LABEL`/`ALL_SUB_MEMBERS_VALUE`) não isola, mostra o modelo inteiro — **e, com "Colisores
+    de Submembros" LIGADO, exibe os gizmos de TODOS os sub-membros de uma vez** (`_should_show_all_sub_colliders`).
     Os **ossos avulsos** saíram para um dropdown PRÓPRIO **"Esqueleto"**
     (`SkeletonRow` → `cboSkeleton`, label estático "Esqueleto:" auto-traduzido), exibido **só no modo
     "Todos os membros"** e **sempre visível nesse modo** — quando o modelo não tem ossos avulsos
@@ -443,17 +454,29 @@ toggle é o **interruptor mestre** da sua categoria:
     `SkeletonRow` fica logo abaixo de "Sub-membro" (o antigo `ColliderEditBox` inline foi REMOVIDO — o
     editor de afastamento/escala agora é a janela flutuante reutilizável; ver acima). À direita do combo
     "Esqueleto" há o dropdown de geometria `cboSkeletonGeo` quando um osso avulso real está escolhido.
-    Persistência: sub-membro em `sel_submember` (cobre os dois modos), osso avulso em `sel_skeleton`;
-    ambos restaurados no `_restore_selection_chain`.
+    **Carga do PERSISTIDO ao exibir (2026-06-25):** cada `_populate_*` (membro/sub/esqueleto) CARREGA o
+    valor persistido (`sel_member`/`sel_submember`/`sel_skeleton`, lidos de Settings) sempre que o dropdown é
+    (re)exibido; sem valor salvo ou inválido para o contexto → **"Selecione..."**. Então **"Todos os membros"
+    só "reseta" Sub-membro/Esqueleto a "Selecione..." quando não acha persistido válido** (ex.: um `PART_*` de
+    membro específico não casa no modo "Todos os membros" → "Selecione..."; mas "Todos os Sub-membros" ou um
+    osso avulso salvos voltam). `_restore_selection_chain` **não** restaura membro/sub/esqueleto
+    explicitamente — `_on_mesh_selected(1)` roda `_populate_members`, que faz a carga. (A flag `_restoring`
+    e o reset em `_on_member_selected` foram REMOVIDOS.)
   - **Toggle "Colisores de Esqueleto" (renomeado de "Realçar avulso"→"Esqueleto"→"Colisores de Esqueleto" em 2026-06-22) + "Todo o esqueleto" (2026-06-21; item antes "Todos os ossos avulsos"):** como os personagens são UMA
     malha skinada (partes não separáveis por nó), o filtro **DESTACA sem esconder**: o toggle
-    `AuxHighlightToggle` (`_show_aux_highlight`, persistido) desenha uma **caixa laranja translúcida**
+    `AuxHighlightToggle` (`_show_aux_highlight`, persistido) desenha uma **forma laranja translúcida**
     (sem depth-test, presa via `BoneAttachment3D`) sobre a região do osso avulso escolhido — AABB dos
     vértices DOMINANTES do osso via `LimbColliders.bone_vertex_box` (static). O item **"Todos os ossos
     avulsos"** (`ALL_AUX_VALUE`) no topo do filtro realça todos de uma vez; "Selecione..." / toggle off
     = modelo inteiro sem realce. `_refresh_aux_highlight` (chamado nos handlers de membro/sub-membro,
     em `_populate_members` e no `_rebuild_member_colliders`) decide o quê; `_highlight_aux_bones`
     desenha; `_clear_aux_highlights` remove (nós com prefixo `_AuxHL_`).
+    **Forma por geometria (2026-06-25):** `_highlight_aux_bones` desenha na **geometria** do osso (salva em
+    `LimbConfig.collider_shape("PART_<osso>")`): `SHAPE_NONE` ("Selecione...") → **SEM realce**; **sem escolha ("")
+    → AUTODETECTA** pelo formato (`_auto_geo_for_box`); forma salva → essa. Desenha via
+    `LimbColliders.make_shape` + `_solid_mesh_for_shape`, aplicando também o **afastamento/escala** salvos do
+    osso — então o realce **PREVISUALIZA o collider** que o osso teria se promovido, **sem promovê-lo**. A
+    janela de Afastamento/Escala chama `_refresh_aux_highlight` ao mudar, então a prévia acompanha ao vivo.
   - **Isolamento EXCLUSIVo (2026-06-21):** `_current_focus_groups` mostra **uma peça por vez** —
     Membro escolhido **sem** Sub-membro → só o collider do MEMBRO; **com** Sub-membro → só aquele
     sub-membro. "Todos os membros" → o `cboSubMembers` isola o `PART_*` escolhido (ou `null` = mostra
@@ -462,8 +485,10 @@ toggle é o **interruptor mestre** da sua categoria:
     `_refresh_member_overlays` exibe o gizmo conforme o **toggle MESTRE do tipo** do grupo em foco:
     MEMBRO → **"Colisores de Membro"** (`_show_colliders`); SUB-MEMBRO (PART_*) → **"Colisores de
     Submembros"** (`_show_sub_colliders`) — `giz_on = in_focus and (_show_sub_colliders if PART_ else
-    _show_colliders)`. Na visão GERAL (sem foco), `_apply_colliders_visibility` mostra só membros e
-    **esconde os PART_***; o sub-membro só aparece isolado, via seu toggle — **exceto** no modo "Todos os
+    _show_colliders)`. Na visão GERAL (sem foco), `_apply_colliders_visibility` mostra os colliders de membro
+    **SÓ quando "Membro" está em "Todos os membros"** (`cbo_members.selected == 1` + toggle "Colisores de
+    Membro"; em "Modelo completo"/"Selecione..." = **NENHUM**, 2026-06-25 — antes o toggle sozinho mostrava
+    todos) e **esconde os PART_***; o sub-membro só aparece isolado, via seu toggle — **exceto** no modo "Todos os
     Sub-membros" + "Colisores de Submembros" on, que mostra TODOS os sub-membros de uma vez (2026-06-25,
     `_should_show_all_sub_colliders`). O isolamento dos **rótulos**
     continua independente dos toggles de collider. Obs.: ossos que já são MEMBRO (ex.:

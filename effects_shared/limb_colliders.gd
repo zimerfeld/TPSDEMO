@@ -41,6 +41,10 @@ const _PART_PREFIX := "PART_"
 ## Fator de escala do collider da CABEÇA (1.0 = ajustado à malha). > 1 aumenta o VOLUME da cabeça
 ## em torno do seu centro — ex.: red_robot usa ~1.3 para um headshot mais generoso.
 @export var head_scale: float = 1.0
+## Só no PREVIEW da tela Models (true): SUB-MEMBROS marcados "Selecione..." (SHAPE_NONE) ainda são
+## construídos com a forma automática e gizmo escondido (meta "suppressed"), p/ continuarem na árvore/
+## dropdown e poderem ser reconfigurados. No gameplay (false, default) são PULADOS (sem hitbox).
+@export var include_suppressed: bool = false
 
 @export_group("Mapeamento de Bones")
 ## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
@@ -82,9 +86,13 @@ func build_for(skel: Skeleton3D) -> void:
 	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
 	var members := _collect_member_boxes(skel)
 	for group in members:
-		# "Selecione..." no dropdown de geometria (tela Models) marca o MEMBRO como SEM collider
-		# (SHAPE_NONE) — pula a construção, então ele não é atingível. Lido aqui no spawn.
+		# "Selecione..." no dropdown de geometria (tela Models) marca o grupo como SEM collider
+		# (SHAPE_NONE) — pula a construção, então ele não é atingível. Lido aqui no spawn. EXCEÇÃO: no
+		# PREVIEW da tela Models (include_suppressed), um SUB-MEMBRO suprimido ainda é construído (forma
+		# automática, gizmo escondido) p/ continuar na árvore/dropdown e poder ser reconfigurado.
 		if LimbConfig.collider_shape(model_key, group) == LimbConfig.SHAPE_NONE:
+			if include_suppressed and group.begins_with(_PART_PREFIX):
+				_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"], true)
 			continue
 		_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"])
 
@@ -350,7 +358,10 @@ static func bone_vertex_box(skel: Skeleton3D, bone_idx: int) -> AABB:
 
 # ── Construção do collider de um membro ───────────────────────────────────────
 
-func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aabb: AABB) -> void:
+# `suppressed` (só no PREVIEW da tela Models, via include_suppressed): constrói o corpo com a forma
+# AUTOMÁTICA (ignora o "none") e o marca com a meta "suppressed", p/ o sub-membro continuar na árvore/
+# dropdown e poder ser reconfigurado, mas SEM gizmo (ver _add_collider_gizmos) e sem hitbox no gameplay.
+func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aabb: AABB, suppressed: bool = false) -> void:
 	var att := BoneAttachment3D.new()
 	att.name = "Hitbox_%s" % group
 	skel.add_child(att)
@@ -375,12 +386,19 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	body.set_meta("damage_multiplier", mult)
 	body.set_meta("member_label", label)
 	body.set_meta("character", _character)
+	if suppressed:
+		body.set_meta("suppressed", true)   # collider de preview (sem gizmo); sem hitbox no gameplay
 	# Afastamento (offset) do collider em espaço LOCAL do osso, editável na tela Models. Move o corpo
 	# inteiro (shape/gizmo/rótulo acompanham). Vazio/ausente = Vector3.ZERO (sem afastamento).
 	body.position = LimbConfig.collider_offset(model_key, group)
+	# Rotação (graus) do collider, editável na tela Models — gira o corpo inteiro em torno da sua origem
+	# (ponto de afastamento). Relativa à pose do osso (acompanha a animação). Ausente = sem rotação.
+	body.rotation_degrees = LimbConfig.collider_rotation(model_key, group)
 
 	# Forma do collider: override explícito da tela Models (LimbConfig.collider_shape) ou a automática.
-	var shape_node := make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale, LimbConfig.collider_shape(model_key, group))
+	# Um grupo SUPRIMIDO (preview) usa a forma AUTOMÁTICA (ignora o "none").
+	var shape_override := "" if suppressed else LimbConfig.collider_shape(model_key, group)
+	var shape_node := make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale, shape_override)
 	# Escala por eixo (espaço local da forma), editável na tela Models — escala a forma em torno do
 	# seu centro (o gizmo, filho dela, acompanha). Vazio/ausente = Vector3.ONE (sem escala).
 	shape_node.scale = LimbConfig.collider_scale(model_key, group)

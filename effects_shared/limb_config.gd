@@ -12,11 +12,14 @@ extends RefCounted
 ##   { "damage": { "<GROUP>": <mult> }, "sub_members": [<osso>],
 ##     "sub_member_owners": { "<osso>": "<GROUP_DONO>" },
 ##     "collider_offsets": { "<GROUP>": [x, y, z] }, "collider_scales": { "<GROUP>": [x, y, z] },
+##     "collider_rotations": { "<GROUP>": [x, y, z] },
 ##     "collider_shapes": { "<GROUP>": "sphere"|"box"|"capsule"|"none" } }
 ## - "collider_offsets" = afastamento (em metros, espaço LOCAL do osso/collider) aplicado à posição do
 ##   StaticBody3D de cada membro/sub-membro, editável na tela Models. Ausente/zero = sem afastamento.
 ## - "collider_scales" = escala (por eixo, espaço LOCAL) aplicada à forma do collider de cada
 ##   membro/sub-membro, editável na tela Models. Ausente/[1,1,1] = sem escala.
+## - "collider_rotations" = rotação (GRAUS por eixo) aplicada ao StaticBody3D de cada membro/sub-membro,
+##   editável na tela Models. Ausente/[0,0,0] = sem rotação.
 ## - "collider_shapes" = forma escolhida na tela Models para o collider do grupo: "sphere"/"box"/
 ##   "capsule" sobrescreve a forma automática; "none" SUPRIME o collider do MEMBRO (sem dano);
 ##   ausente = forma automática do plano. Lido por LimbColliders.build_for no spawn.
@@ -269,6 +272,29 @@ static func set_collider_scale(model_key: String, group: String, scale: Vector3)
 	_save_entry(model_key, entry)
 
 
+## Rotação (Vector3, GRAUS por eixo) salva para o collider de (modelo, grupo), ou Vector3.ZERO (sem
+## rotação). Aplicada ao StaticBody3D (rotation_degrees) na construção e editável na tela Models.
+static func collider_rotation(model_key: String, group: String) -> Vector3:
+	var raw: Variant = _load_entry(model_key).get("collider_rotations", {}).get(group, null)
+	if raw is Array and raw.size() == 3:
+		return Vector3(float(raw[0]), float(raw[1]), float(raw[2]))
+	return Vector3.ZERO
+
+
+## Define (ou limpa, quando == Vector3.ZERO) a rotação (graus) do collider de (modelo, grupo) e persiste.
+static func set_collider_rotation(model_key: String, group: String, rot: Vector3) -> void:
+	if model_key == "" or group == "":
+		return
+	var entry := _load_entry(model_key)
+	var rots: Dictionary = entry.get("collider_rotations", {})
+	if rot == Vector3.ZERO:
+		rots.erase(group)
+	else:
+		rots[group] = [rot.x, rot.y, rot.z]
+	entry["collider_rotations"] = rots
+	_save_entry(model_key, entry)
+
+
 ## Sentinela de FORMA que SUPRIME o collider de um MEMBRO (escolha "Selecione..." no dropdown de
 ## geometria da tela Models). Distinto de ausência (= forma automática do plano). Só usado para membros.
 const SHAPE_NONE := "none"
@@ -347,6 +373,9 @@ static func remove_sub_member(model_key: String, bone: String) -> void:
 	var scs: Dictionary = entry.get("collider_scales", {})
 	scs.erase("PART_" + bone)
 	entry["collider_scales"] = scs
+	var rots: Dictionary = entry.get("collider_rotations", {})
+	rots.erase("PART_" + bone)
+	entry["collider_rotations"] = rots
 	var shapes: Dictionary = entry.get("collider_shapes", {})
 	shapes.erase("PART_" + bone)
 	entry["collider_shapes"] = shapes

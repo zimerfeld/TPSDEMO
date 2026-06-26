@@ -145,19 +145,22 @@ grava no novo local sem perder dados. Schema de cada arquivo:
   Valor = **multiplicador** (`1.0` = normal, `1.5` = +50%). `sub_member_owners` = membro-**DONO**
   EXPLÍCITO de cada sub-membro (agrupamento só lógico p/ herança; vazio = resolução automática).
   `collider_offsets` (2026-06-22) = **afastamento** `[x,y,z]` (metros, espaço local do collider)
-  aplicado à `position` do `StaticBody3D`; `collider_scales` (2026-06-22) = **escala** `[x,y,z]`
-  aplicada à forma do collider (em torno do centro). `collider_shapes` (2026-06-25) = **forma**
+  aplicado à `position` do `StaticBody3D`; `collider_rotations` (2026-06-25) = **rotação** `[x,y,z]`
+  (GRAUS) aplicada ao `rotation_degrees` do `StaticBody3D`; `collider_scales` (2026-06-22) = **escala**
+  `[x,y,z]` aplicada à forma do collider (em torno do centro). `collider_shapes` (2026-06-25) = **forma**
   escolhida na tela Models: `"sphere"`/`"box"`/`"capsule"` sobrescreve a forma automática, `"none"`
-  (`SHAPE_NONE`) **suprime o collider do MEMBRO** (sem hitbox), ausente = forma automática do plano.
+  (`SHAPE_NONE`) **suprime o collider** do membro/sub-membro (sem hitbox; o preview da tela Models ainda
+  mostra o sub-membro suprimido na árvore via `include_suppressed`), ausente = forma automática do plano.
   Todos por membro/sub-membro, editáveis na tela Models (ver [[sistemas/biblioteca-de-modelos]]);
   ausente/zero(offset)/[1,1,1](escala) = neutro.
 - API estática (2026-06-21): `effective_multiplier(model_key, group, classifier, owner_group="")`
   (COM herança), `get_multiplier(...)` (wrapper sem owner), `has_multiplier`/`clear_multiplier`
   (estado do checkbox "Definir"), `set_multiplier`, `sub_members`, `sub_member_owner(s)`,
   `set_sub_member_owner`, `add_sub_member(model_key, bone, owner="")`, `remove_sub_member` (apaga
-  também o `PART_<bone>` do `damage`, o dono, o `collider_offsets`, o `collider_scales` e o
-  `collider_shapes`), `collider_offset`/`set_collider_offset`, `collider_scale`/`set_collider_scale`
-  (2026-06-22), `collider_shape`/`set_collider_shape` + const `SHAPE_NONE` (2026-06-25) e `load_table`.
+  também o `PART_<bone>` do `damage`, o dono, o `collider_offsets`, o `collider_scales`, o
+  `collider_rotations` e o `collider_shapes`), `collider_offset`/`set_collider_offset`,
+  `collider_scale`/`set_collider_scale` (2026-06-22), `collider_rotation`/`set_collider_rotation`,
+  `collider_shape`/`set_collider_shape` + const `SHAPE_NONE` (2026-06-25) e `load_table`.
 - **Herança / "nenhum valor é obrigatório" (2026-06-21):** `effective_multiplier` — valor EXPLÍCITO
   do próprio grupo tem precedência; um `PART_*` SEM valor próprio **herda o do membro-DONO**
   (explícito do dono, senão default do plano do dono); sem nada, cai no `default_multiplier` do

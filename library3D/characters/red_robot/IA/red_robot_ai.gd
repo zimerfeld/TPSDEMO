@@ -56,6 +56,12 @@ const QUICK_RETRY_DELAY := 0.35
 @export_range(0.0, 0.4) var learned_accuracy_bonus: float = 0.18
 ## Duração (s) de um burst de reposicionamento quando a IA sente pressão.
 @export var reposition_duration: float = 0.9
+## Coesão de formação: o quanto o robô tende a voltar ao seu slot designado (0 = livre, 1 = rígido).
+@export_range(0.0, 1.5) var formation_cohesion: float = 0.55
+## Tolerância (m) antes de o robô ser puxado de volta ao slot — abaixo disto ele circula livre.
+@export var formation_band: float = 5.0
+## Variação de velocidade por-indivíduo (±fração) — quebra o "todos andam igual a cada segundo".
+@export_range(0.0, 0.4) var speed_variation: float = 0.18
 
 var _behaviors: Dictionary = {}
 var _pending_shots: Array[Dictionary] = []
@@ -65,10 +71,22 @@ var _strafe_cooldown: float = 0.0
 var _blocked_time: float = 0.0
 var _reposition_time: float = 0.0
 var _miss_streak: int = 0
+# Individualização (semeada no _ready): cada robô tem slot/fase/velocidade próprios, para que o
+# pelotão não se mova em lockstep e cada um mantenha seu lugar na formação designada.
+var _slot_bearing: float = 0.0
+var _slot_seeded: bool = false
+var _phase: float = 0.0
+var _speed_mult: float = 1.0
 
 
 func _ready() -> void:
 	reload_config()
+	# Cada robô começa com sinal de strafe, fase e velocidade próprios — assim o pelotão NÃO
+	# anda "exatamente igual a cada segundo". RNG do servidor (movimento é server-autoritativo;
+	# clientes só interpolam), portanto não há dessincronia de rede.
+	_strafe_sign = 1.0 if randf() < 0.5 else -1.0
+	_phase = randf() * TAU
+	_speed_mult = 1.0 + randf_range(-speed_variation, speed_variation)
 
 
 ## Recarrega os toggles persistidos da IA deste modelo.
@@ -209,7 +227,7 @@ func movement_plan(origin: Vector3, target_position: Vector3, effective_range: f
 	if action == Action.FLEE:
 		plan["manual"] = true
 		plan["direction"] = -forward
-		plan["speed"] = flee_speed
+		plan["speed"] = flee_speed * _speed_mult
 		return plan
 	var should_strafe := action == Action.ENGAGE and behavior_enabled(BEHAVIOR_REACTIVE_STRAFE)
 	var geometry_recover := behavior_enabled(BEHAVIOR_GEOMETRY_PROBE) and not has_los and distance <= effective_range * 1.1
@@ -230,9 +248,22 @@ func movement_plan(origin: Vector3, target_position: Vector3, effective_range: f
 		move += forward * 0.45
 	if pressure:
 		move += lateral * 0.45 + forward * 0.2
+	# Formação designada: cada robô guarda um slot (a direção a partir do player capturada na
+	# 1ª vez, derivada do ponto de spawn) e tende a voltar a ele. Continua circulando/strafe
+	# livremente, mas o pelotão mantém uma formação frouxa em vez de amontoar e marchar igual.
+	if not _slot_seeded:
+		_slot_seeded = true
+		var spawn_off := origin - target_position
+		spawn_off.y = 0.0
+		_slot_bearing = atan2(spawn_off.x, spawn_off.z) if spawn_off.length() > 0.5 else _phase
+	var slot_dir := Vector3(sin(_slot_bearing), 0.0, cos(_slot_bearing))
+	var to_slot := (target_position + slot_dir * preferred) - origin
+	to_slot.y = 0.0
+	if to_slot.length() > formation_band:
+		move += to_slot.normalized() * formation_cohesion * clampf(to_slot.length() / maxf(preferred, 1.0), 0.0, 1.0)
 	plan["manual"] = true
 	plan["direction"] = move.normalized()
-	plan["speed"] = pressure_speed if pressure else strafe_speed
+	plan["speed"] = (pressure_speed if pressure else strafe_speed) * _speed_mult
 	return plan
 
 
@@ -247,7 +278,7 @@ func _choose_strafe_sign(space_state: PhysicsDirectSpaceState3D, origin: Vector3
 	if not behavior_enabled(BEHAVIOR_GEOMETRY_PROBE):
 		if _strafe_cooldown <= 0.0:
 			_strafe_sign *= -1.0
-			_strafe_cooldown = 1.1
+			_strafe_cooldown = randf_range(0.7, 1.6)  # período individual: evita flips sincronizados
 		return _strafe_sign
 	var from := origin + Vector3.UP
 	var right := Vector3.UP.cross(forward).normalized()
@@ -258,10 +289,10 @@ func _choose_strafe_sign(space_state: PhysicsDirectSpaceState3D, origin: Vector3
 	left_score += 0.35 * _probe_score(space_state, from, (left + forward).normalized(), probe_length * 0.75, exclude)
 	if absf(right_score - left_score) > 0.08:
 		_strafe_sign = 1.0 if right_score >= left_score else -1.0
-		_strafe_cooldown = 0.55
+		_strafe_cooldown = randf_range(0.45, 0.7)
 	elif _strafe_cooldown <= 0.0:
 		_strafe_sign *= -1.0
-		_strafe_cooldown = 1.0
+		_strafe_cooldown = randf_range(0.6, 1.3)  # período individual: quebra o lockstep
 	return _strafe_sign
 
 

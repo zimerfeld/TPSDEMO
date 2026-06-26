@@ -15,7 +15,7 @@
 ## Ciclo de Tiro
 
 1. `player_input.shooting` (Input capturado no cliente local, replicado ao servidor)
-2. Servidor verifica `fire_cooldown.time_left == 0`
+2. Servidor verifica `fire_cooldown.time_left == 0` **e** `_aim_held_time ≥ AIM_WARMUP_TIME` (mira assentada)
 3. Servidor instancia `bullet.tscn`, posiciona em `ShootFrom`, aplica direção
 4. `shoot.rpc()` → `call_local` → partículas + flash + som + camera shake (trauma 0.35)
 
@@ -45,6 +45,13 @@ var ray_dir  = camera.project_ray_normal(crosshair_center)
 > hora** (`orientation.basis = Basis(q_to)` + atualiza já o `player_model`), sem slerp, antes do
 > teste de disparo. Frames seguintes seguem com slerp normal.
 
+> 🎯 **Aquecimento de mira (`AIM_WARMUP_TIME = 0.45 s`, 2026-06-25):** o disparo agora só ocorre
+> depois de o player ficar mirando por ≥ `AIM_WARMUP_TIME` (`_aim_held_time` acumula no branch de
+> mira do `apply_input`, zera ao sair da mira/no ar). Assim **a bala sai só após a animação de mira
+> assentar e o cano estar alinhado** — corrige o glitch do jogador **cliente**, cujo corpo é
+> renderizado ~100 ms no passado e fazia a bala parecer sair antes da mira / fora do cano. Vale p/
+> host, cliente e bots; não afeta tiros sustentados (gateados pelo `FireCooldown`), só o 1º após mirar.
+
 ---
 
 ## Bala (`bullet.gd`)
@@ -68,7 +75,7 @@ explode.rpc()
 
 ## Cooldown de Tiro
 
-- `FireCooldown` Timer: **0.4 s**, auto-start
+- `FireCooldown` Timer: **0.7 s**, auto-start (era 0.4 — cadência mais espaçada)
 - Verificado em `apply_input()`: `fire_cooldown.time_left == 0`
 
 ---
