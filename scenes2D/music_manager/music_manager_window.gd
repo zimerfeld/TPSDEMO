@@ -7,8 +7,10 @@ extends Window
 ##
 ## Construído em código (mesmo padrão da janela de Templates de Level). Faixas vêm de res://Audios/.
 
+# 1ª opção de TODO dropdown: "Selecione..." = sem música definida (silêncio), a cena não toca. É o
+# default de uma cena não configurada. "Padrão" é uma opção à parte (resolve pelo nome da cena).
+const SELECT_LABEL := "Selecione..."
 const DEFAULT_LABEL := "Padrão (pelo nome da cena)"
-const NONE_LABEL := "— Sem música —"
 # Estado de UI persistido (a faixa escolhida no "Ouvir faixa"), restaurado na próxima abertura.
 const UI_SECTION := "music_ui"
 const LISTEN_KEY := "listen"
@@ -20,8 +22,10 @@ var _scene_pickers: Dictionary = {}   # scene_key -> OptionButton
 
 func _ready() -> void:
 	title = "Gerenciador de Música"
-	size = Vector2i(760, 640)
-	min_size = Vector2i(560, 440)
+	# Larga o bastante p/ caber, em cada linha de cena, o rótulo + dropdown + os 3 botões ▶/⏸/⏹ sem
+	# cortar (com o tema do projeto os botões são largos) — antes a janela estreita escondia pause/stop.
+	size = Vector2i(1060, 700)
+	min_size = Vector2i(900, 520)
 	close_requested.connect(_on_close)
 	_tracks = MusicManager.list_tracks()
 	_build_ui()
@@ -62,8 +66,9 @@ func _build_ui() -> void:
 			Settings.config_file.set_value(UI_SECTION, LISTEN_KEY, String(_listen_picker.get_item_metadata(_listen_picker.selected)))
 			Settings.save_settings())
 	_add_button(listen_row, "▶ Tocar", func() -> void:
-		if not _tracks.is_empty() and _listen_picker.selected >= 0:
-			MusicManager.preview(String(_listen_picker.get_item_metadata(_listen_picker.selected))))
+		if _listen_picker.selected > 0:   # 0 = "Selecione..." (nada para ouvir)
+			MusicManager.preview_or_resume(String(_listen_picker.get_item_metadata(_listen_picker.selected))))
+	_add_button(listen_row, "⏸ Pausar", func() -> void: MusicManager.pause_preview())
 	_add_button(listen_row, "⏹ Parar", func() -> void: MusicManager.stop_preview())
 
 	root.add_child(HSeparator.new())
@@ -71,7 +76,7 @@ func _build_ui() -> void:
 	# ── Atribuição por cena/level ────────────────────────────────────────
 	root.add_child(_section_title("Trilha por cena / level"))
 	var hint := Label.new()
-	hint.text = "Escolha a faixa de cada tela, ou \"%s\" para silêncio. \"%s\" toca Audios/<nome-da-cena>." % [NONE_LABEL, DEFAULT_LABEL]
+	hint.text = "\"%s\" = sem música (silêncio, padrão). \"%s\" toca Audios/<nome-da-cena>. Ou escolha uma faixa." % [SELECT_LABEL, DEFAULT_LABEL]
 	hint.modulate = Color(1, 1, 1, 0.7)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(hint)
@@ -100,11 +105,15 @@ func _build_ui() -> void:
 		picker.item_selected.connect(_on_scene_track_selected.bind(key, picker))
 		row.add_child(picker)
 		_scene_pickers[key] = picker
-		# ▶ por linha: ouve a trilha EFETIVA daquela cena (já considerando a escolha atual).
-		_add_button(row, "▶", func() -> void:
+		# ▶ / ⏸ / ⏹ por linha: ouve, pausa e para a trilha EFETIVA daquela cena (já considerando a
+		# escolha atual). Pausa/parar agem na pré-escuta compartilhada (só uma toca por vez).
+		var play_btn := _add_button(row, "▶", func() -> void:
 			var fname := MusicManager.effective_track(key)
 			if fname != "":
-				MusicManager.preview(fname))
+				MusicManager.preview_or_resume(fname))
+		play_btn.tooltip_text = "Tocar"
+		_add_button(row, "⏸", func() -> void: MusicManager.pause_preview()).tooltip_text = "Pausar"
+		_add_button(row, "⏹", func() -> void: MusicManager.stop_preview()).tooltip_text = "Parar"
 
 	# ── Rodapé ───────────────────────────────────────────────────────────
 	root.add_child(HSeparator.new())
@@ -125,6 +134,8 @@ func _refresh() -> void:
 		_listen_picker.disabled = true
 	else:
 		_listen_picker.disabled = false
+		_listen_picker.add_item(SELECT_LABEL)                      # 0: "Selecione..." (nada p/ ouvir)
+		_listen_picker.set_item_metadata(0, "")
 		for t in _tracks:
 			_listen_picker.add_item(_clean_label(String(t)))
 			_listen_picker.set_item_metadata(_listen_picker.item_count - 1, String(t))
@@ -158,10 +169,10 @@ func _restore_listen_choice() -> void:
 # na metadata do item, então a ordem/idioma do texto não importa para salvar.
 func _populate_scene_picker(picker: OptionButton) -> void:
 	picker.clear()
-	picker.add_item(DEFAULT_LABEL)
-	picker.set_item_metadata(picker.item_count - 1, "default")
-	picker.add_item(NONE_LABEL)
+	picker.add_item(SELECT_LABEL)                                  # 0: "Selecione..." = sem música (silêncio)
 	picker.set_item_metadata(picker.item_count - 1, "none")
+	picker.add_item(DEFAULT_LABEL)                                 # 1: "Padrão" = resolve pelo nome da cena
+	picker.set_item_metadata(picker.item_count - 1, MusicManager.BYNAME)
 	for t in _tracks:
 		picker.add_item(_clean_label(String(t)))
 		picker.set_item_metadata(picker.item_count - 1, String(t))

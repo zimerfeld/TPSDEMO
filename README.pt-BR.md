@@ -32,7 +32,16 @@ em terceira pessoa. Em alto nível, oferece:
   uniforme, × de fechar padrão e fundo modal —, criadas pelo helper `FloatingDialog`; a mesma base
   serve de fundação para outras janelas flutuantes.
 - **Personagens jogáveis** — variações de player selecionáveis que se movem, miram, pulam e
-  atiram, com câmera em primeira pessoa e um HUD de vida local.
+  atiram, com câmera em primeira pessoa e um HUD de vida local. O **pulo é mais alto** e a
+  **cadência de tiro mais espaçada**; o **tiro sai só depois de a mira assentar** (ao fim da
+  animação de mira), partindo da extremidade do cano — corrigindo o glitch em que, no jogador
+  **cliente**, a bala parecia sair antes da mira / fora do cano.
+- **Bots aliados (cobertura)** — players da **facção amiga** (spawnados como `bot_controlled` pelos
+  templates de fase) dão **cobertura e assistência** ao jogador: engajam ameaças próximas do bot ou
+  do jogador, mas **seguem o jogador** e ficam dentro de uma **coleira** — ao se afastarem demais,
+  reagrupar tem prioridade sobre perseguir, então **não saem mais correndo até cair do mapa**. Os
+  comportamentos (seguir esquadrão, priorizar inimigos, espaçamento de combate, flanco sob pressão…)
+  ficam num script de IA dedicado (`library3D/characters/players/player/IA/player_bot_ai.gd`).
 - **Inimigos** — um inimigo terrestre (Red Robot) que se aproxima, mira e dispara uma **bala de
   canhão** preta (uma versão recolorida, com brilho vermelho, do tiro do player), e um bombardeiro
   voador (Criatura Alada) que orbita o player e solta bombas.
@@ -40,7 +49,11 @@ em terceira pessoa. Em alto nível, oferece:
   dedicado (`library3D/characters/red_robot/IA/red_robot_ai.gd`): recarga **1,5× mais rápida** (no
   1º e nos próximos tiros); **abre fogo** assim que o player entra no alcance da arma e está a mais
   de 10 m; e, se o player chegar a **10 m ou menos**, o robô **recua correndo no sentido oposto**
-  enquanto continua olhando/mirando e atirando.
+  enquanto continua olhando/mirando e atirando. Cada robô se move de forma **individualizada**
+  (sinal de strafe, fase e velocidade próprios, semeados no spawn) para o pelotão **não andar igual
+  a cada segundo**, e mantém uma **formação frouxa**: circula/estrafa livre em combate, mas tende a
+  **voltar ao seu lugar designado** (a direção a partir do player capturada do ponto de spawn). A
+  **Criatura Alada** também teve a oscilação de voo dessincronizada entre instâncias.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
   Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo
@@ -108,18 +121,29 @@ em terceira pessoa. Em alto nível, oferece:
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
   toggle cobre — partículas, luzes, malhas de laser/clarão presas a ossos), **Áudio** (todo som que
   o modelo emite — movimento, motor, tiros, explosões, vozes), **Colisores de Membro** (com o toggle
-  ligado e um membro/sub-membro isolado, **inputs X/Y/Z de afastamento e escala** ajustam a posição/tamanho daquele
-  collider ao vivo, com botão **Salvar** — e trocar de seleção com edição pendente pergunta se quer
-  salvar, citando o nome do membro/sub-membro), **rótulos de membro**
+  ligado e um membro/sub-membro isolado, exibe o gizmo verde daquele collider), **rótulos de membro**
   (toggle próprio do browser para as tags "Membro: …" sobre cada collider, independente da tela
   Debug 3D — com, logo abaixo do toggle **Membro**, um toggle **Esqueleto** que faz flutuar o rótulo
   "Esqueleto: \<nome\>" do osso avulso escolhido sobre ele, e as linhas extras Tipo/Nome/ID), **Colisores de Esqueleto** (no modo "Todos os membros" → filtro "Esqueleto", destaca com uma
   caixa translúcida a região do osso avulso escolhido, ou de todos), **Submembros** (rótulo flutuante
   "Submembro: \<nome\>" sobre o sub-membro escolhido no dropdown) e **Colisores de Submembros** (mostra
-  só o limbcollider do sub-membro selecionado, com o mesmo editor de afastamento/escala). Os seletores são **três
+  só o limbcollider do sub-membro selecionado). Os seletores são **três
   dropdowns** — **Membro**, **Sub-membro** (logo abaixo, com a opção **"Todos os Sub-membros"** para ver todos de
-  uma vez) e, só no modo **"Todos os membros"**, **Esqueleto** (ossos avulsos), que fica abaixo de Sub-membro — ou
-  abaixo do botão **Salvar** quando um sub-membro está selecionado e o editor aparece. A **tela de Dano** não
+  uma vez) e, só no modo **"Todos os membros"**, **Esqueleto** (ossos avulsos), que fica abaixo de Sub-membro.
+  Ao escolher um item **real** (não "Selecione…"/"Todos") em qualquer um dos três, aparece **à direita** um
+  **dropdown de geometria do collider** (Esfera/Caixa/Cápsula) e abre-se uma **janela flutuante reutilizável**
+  (a `FloatingWindow` dos controles2D) com **Afastamento, Rotação (graus) e Escala** X/Y/Z, intitulada com o nome do item:
+  cada mudança **persiste na hora**, aparece no modelo e é **relida quando um personagem entra em cena**. Todo
+  dropdown de geometria segue a mesma regra: **carrega a última escolha salva**; **sem escolha, autodetecta** a
+  forma pelo formato da peça (alongado → cápsula, redondo → esfera, senão caixa); e **"Selecione…" = sem
+  limbcollider**. "Selecione…" num **membro** remove o collider dele; num **sub-membro** **suprime** o collider
+  mas **mantém o sub-membro** na árvore/dropdown de Dano para reconfigurar (a remoção total fica na lixeira). Para
+  um **osso avulso** (Esqueleto), a forma escolhida só **previsualiza** o collider via o toggle **"Colisor de
+  Esqueleto"** e "Selecione…" o esconde; o osso **não** é promovido a sub-membro (a promoção segue na janela de
+  Dano, em "Adicionar sub-membro"), e esqueletos não têm dano, então são **ignorados nas cenas de level**. Quando
+  um **sub-membro** específico está escolhido, o dropdown de geometria do **membro** fica oculto (vale o do
+  sub-membro). Os colliders de membro só aparecem com
+  **Membro = "Todos os membros"** (em "Modelo completo"/"Selecione…" nenhum aparece). A **tela de Dano** não
   fica na lista de toggles: é aberta pelo **botão "Dano"** (à direita do botão "Voltar") — uma **janela flutuante
   arrastável** de fundo preto opaco (barra de título "Dano" + botão × para fechar) com uma **árvore** do bônus %
   de cada membro/sub-membro, onde também se adicionam/removem colliders salientes `PART_*` (que **mantêm o nome
@@ -140,7 +164,10 @@ em terceira pessoa. Em alto nível, oferece:
   abaixo) ficam desabilitados. A navegação é guiada apenas pelo gating sequencial dos dropdowns
   (sem linha de status). Arraste para girar o modelo à mão em
   até 180° nos dois eixos (a rotação **congela** enquanto o ponteiro está sobre uma janela
-  flutuante — Dano/IA ou outra — e volta a responder ao sair dela ou fechá-la). Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
+  flutuante — Dano/IA ou outra — e volta a responder ao sair dela ou fechá-la). Um **gizmo de eixos
+  3D** (estilo editor: X vermelho, Y verde, Z azul, com bola e letra na ponta) fica no **topo à
+  direita** — num SubViewport próprio sobreposto, à esquerda dos toggles, sem cobrir o modelo — e
+  **gira junto com o modelo**, indicando sua orientação. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
   o modelo nem altera a câmera/rotação. Para Personagens e Armas, uma **pilha de tooltips de membro**
   flutua sobre o collider de cada membro: cada linha tem **cor própria** (Membro = azul-ciano, Tipo =
   laranja, Nome = verde, ID = amarelo), **a mesma cor aplicada ao toggle** que a liga, e as pilhas de
@@ -164,7 +191,10 @@ em terceira pessoa. Em alto nível, oferece:
 
 Um overlay de debug global (`autoload/debug_overlay.gd`, autoload **DebugOverlay**) é ligado pela
 tela **developer** e pela aba "Debug" das configurações. Todos os toggles persistem nas
-configurações salvas (seção `game`) e aplicam na hora (`DebugOverlay.refresh()`).
+configurações salvas (seção `game`) e aplicam na hora (`DebugOverlay.refresh()`). Cada par
+Desativado/Ativado usa o **mesmo estilo de botão colorido da tela Settings**: a opção **selecionada**
+mostra a cor autorada cheia (verde/amarelo) e a **não selecionada** fica **escurecida** (uma sub-linha
+desativada — com o master Debug 2D desligado — fica acinzentada em vez disso).
 
 A tela developer organiza os toggles em **duas colunas**, cujos tooltips usam cores claras
 distintas para você diferenciá-los:
@@ -277,10 +307,12 @@ e um ritmo vertical consistente (espaçamento de linhas/seções igual a 8). Os 
 os traduz em código). A maioria das linhas é um conjunto de botões toggle que compartilham um
 gradiente verde → amarelo → laranja → vermelho lido como barato → caro (ex.: performance vs.
 qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (selecionado) fica
-**aceso** — fundo claro com borda branca e brilho — destacando-se nitidamente dos inativos.
+**aceso** — fundo claro com borda branca e brilho — enquanto as opções **não selecionadas** ficam
+**bem menos iluminadas** (escurecidas), realçando ainda mais a escolha atual.
 
 - **Resolution** — um dropdown de resolução de vídeo (tingido de ciano claro para marcá-lo como
-  seletor), escala de resolução e o filtro de escala (Bilinear / FSR / MetalFX…).
+  seletor; com **largura mínima ajustada ao maior item** para nenhum texto ser truncado), escala de
+  resolução e o filtro de escala (Bilinear / FSR / MetalFX…).
 - **Display** — Modo de exibição (Window / Fullscreen / Exclusive Fullscreen), Sincronização
   Vertical e Limite de FPS (30…144 / Unlimited). Os botões de modo e de limite de FPS são coloridos
   pelo mesmo gradiente (limite maior = mais exigente = cor mais quente). No modo **Window** a janela
@@ -291,11 +323,13 @@ qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (
 - **Effects** — Bloom e Volumetric Fog.
 - **Audio** — controles independentes para **Música** de fundo (o bus `Music`) e **Efeitos de Som**
   (o bus `SFX`, para onde os buses de gameplay `Outside`/`Reactor` são roteados), cada um salvo e
-  aplicado globalmente. A **música de fundo é por cena/level**: o autoload **MusicManager** toca em
-  **loop infinito** a faixa `Audios/<nome-da-cena>.ogg` correspondente, trocando a cada tela (ver
-  `Audios/README.md`). Ao clicar em **Música → Enabled** abre o **Gerenciador de Música**: ouça
-  qualquer faixa e **atribua ou remova** a trilha de cada cena/level (atribuições persistidas, com
-  prioridade sobre a faixa padrão pelo nome); um botão **🎲 Sortear faixas** sorteia uma faixa
+  aplicado globalmente. A **música de fundo é por cena/level**, conduzida pelo autoload **MusicManager**
+  em **loop infinito**, trocando a cada tela (ver `Audios/README.md`). Por padrão, uma cena fica em
+  **"Selecione…" = silêncio** (sem música) até você atribuir uma faixa. Ao clicar em **Música → Enabled**
+  abre o **Gerenciador de Música**: ouça qualquer faixa e **atribua** a cada cena/level uma faixa
+  específica, **"Padrão"** (resolve pelo nome da cena, `Audios/<nome>.<ext>`) ou **"Selecione…"** (silêncio);
+  as atribuições são persistidas. Cada botão **▶ Tocar** tem ao lado um **⏸ Pausar** e um
+  **⏹ Parar** (tanto na linha "Ouvir faixa" quanto na lista por cena); um botão **🎲 Sortear faixas** sorteia uma faixa
   aleatória para cada cena/level e salva para a próxima abertura. À direita de cada linha (**Música** e **Efeitos de
   Som**) há um **controle de volume tipo equalizador** (`VolumeBar`, 10 segmentos coloridos em
   gradiente): com o áudio ligado, clique/arraste para ajustar o volume daquele bus de **1 a 100**.

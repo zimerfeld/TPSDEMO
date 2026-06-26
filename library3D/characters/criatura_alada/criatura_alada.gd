@@ -34,6 +34,7 @@ const BOMB_GRAVITY := 18.0   # deve casar com bomb.gd (fall_gravity)
 enum Phase { CLIMB, PATROL }
 
 var _t := 0.0
+var _bob_phase := 0.0  # fase inicial individual do bob (criaturas não oscilam em sincronia)
 var _yaw := 0.0
 var _phase := Phase.CLIMB
 var _bomb_cd := 0.0
@@ -62,6 +63,8 @@ var _interp_seeded := false
 func _ready() -> void:
 	_yaw = rotation.y
 	_bomb_cd = bomb_interval
+	_bob_phase = randf() * TAU  # desincroniza o bob/oscilação entre criaturas
+	_t = _bob_phase
 	ai = CriaturaAladaAILib.new()
 	ai.name = "IA"
 	add_child(ai)
@@ -129,7 +132,7 @@ func _physics_process(delta: float) -> void:
 		var dy := desired_altitude - global_position.y
 		if dy <= 0.4:
 			_phase = Phase.PATROL
-			_t = 0.0
+			_t = _bob_phase
 		vy = clampf(dy * 2.0, -climb_speed, climb_speed)
 		horiz *= 0.6   # sobe mais reto
 	else:

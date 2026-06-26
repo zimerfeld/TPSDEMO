@@ -41,6 +41,10 @@ const _PART_PREFIX := "PART_"
 ## Fator de escala do collider da CABEÇA (1.0 = ajustado à malha). > 1 aumenta o VOLUME da cabeça
 ## em torno do seu centro — ex.: red_robot usa ~1.3 para um headshot mais generoso.
 @export var head_scale: float = 1.0
+## Só no PREVIEW da tela Models (true): SUB-MEMBROS marcados "Selecione..." (SHAPE_NONE) ainda são
+## construídos com a forma automática e gizmo escondido (meta "suppressed"), p/ continuarem na árvore/
+## dropdown e poderem ser reconfigurados. No gameplay (false, default) são PULADOS (sem hitbox).
+@export var include_suppressed: bool = false
 
 @export_group("Mapeamento de Bones")
 ## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
@@ -82,6 +86,14 @@ func build_for(skel: Skeleton3D) -> void:
 	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
 	var members := _collect_member_boxes(skel)
 	for group in members:
+		# "Selecione..." no dropdown de geometria (tela Models) marca o grupo como SEM collider
+		# (SHAPE_NONE) — pula a construção, então ele não é atingível. Lido aqui no spawn. EXCEÇÃO: no
+		# PREVIEW da tela Models (include_suppressed), um SUB-MEMBRO suprimido ainda é construído (forma
+		# automática, gizmo escondido) p/ continuar na árvore/dropdown e poder ser reconfigurado.
+		if LimbConfig.collider_shape(model_key, group) == LimbConfig.SHAPE_NONE:
+			if include_suppressed and group.begins_with(_PART_PREFIX):
+				_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"], true)
+			continue
 		_build_member_shape(skel, group, members[group]["bone"], members[group]["aabb"])
 
 
@@ -346,7 +358,10 @@ static func bone_vertex_box(skel: Skeleton3D, bone_idx: int) -> AABB:
 
 # ── Construção do collider de um membro ───────────────────────────────────────
 
-func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aabb: AABB) -> void:
+# `suppressed` (só no PREVIEW da tela Models, via include_suppressed): constrói o corpo com a forma
+# AUTOMÁTICA (ignora o "none") e o marca com a meta "suppressed", p/ o sub-membro continuar na árvore/
+# dropdown e poder ser reconfigurado, mas SEM gizmo (ver _add_collider_gizmos) e sem hitbox no gameplay.
+func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aabb: AABB, suppressed: bool = false) -> void:
 	var att := BoneAttachment3D.new()
 	att.name = "Hitbox_%s" % group
 	skel.add_child(att)
@@ -371,11 +386,19 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	body.set_meta("damage_multiplier", mult)
 	body.set_meta("member_label", label)
 	body.set_meta("character", _character)
+	if suppressed:
+		body.set_meta("suppressed", true)   # collider de preview (sem gizmo); sem hitbox no gameplay
 	# Afastamento (offset) do collider em espaço LOCAL do osso, editável na tela Models. Move o corpo
 	# inteiro (shape/gizmo/rótulo acompanham). Vazio/ausente = Vector3.ZERO (sem afastamento).
 	body.position = LimbConfig.collider_offset(model_key, group)
+	# Rotação (graus) do collider, editável na tela Models — gira o corpo inteiro em torno da sua origem
+	# (ponto de afastamento). Relativa à pose do osso (acompanha a animação). Ausente = sem rotação.
+	body.rotation_degrees = LimbConfig.collider_rotation(model_key, group)
 
-	var shape_node := make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale)
+	# Forma do collider: override explícito da tela Models (LimbConfig.collider_shape) ou a automática.
+	# Um grupo SUPRIMIDO (preview) usa a forma AUTOMÁTICA (ignora o "none").
+	var shape_override := "" if suppressed else LimbConfig.collider_shape(model_key, group)
+	var shape_node := make_member_shape(group, box_aabb, head_shape, torso_shape, head_scale, shape_override)
 	# Escala por eixo (espaço local da forma), editável na tela Models — escala a forma em torno do
 	# seu centro (o gizmo, filho dela, acompanha). Vazio/ausente = Vector3.ONE (sem escala).
 	shape_node.scale = LimbConfig.collider_scale(model_key, group)
@@ -502,7 +525,7 @@ func refit(skel: Skeleton3D) -> void:
 		if sns.is_empty():
 			continue
 		var sn := sns[0] as CollisionShape3D
-		var fresh := make_member_shape(g, boxes[g], head_shape, torso_shape, head_scale)
+		var fresh := make_member_shape(g, boxes[g], head_shape, torso_shape, head_scale, LimbConfig.collider_shape(model_key, g))
 		sn.shape = fresh.shape
 		sn.transform = fresh.transform
 		sn.scale = LimbConfig.collider_scale(model_key, g)
@@ -524,9 +547,17 @@ const LIMB_RADIUS_RATIO := 0.32  # max capsule radius as a fraction of its lengt
 # Pick the geometry that best wraps a member from its (padded) AABB: the HEAD is a
 # SPHERE by default but a CAPSULE when `head_kind` asks for it (player), the TORSO a
 # BOX, and the elongated limbs (arms/legs) a CAPSULE aligned to the long axis.
+# `shape_override` ("sphere"/"box"/"capsule"), quando setado, FORÇA a forma do grupo
+# (escolha do dropdown de geometria da tela Models, lida de LimbConfig) sobre a automática.
 # Returns a positioned/oriented CollisionShape3D. Static so the model browser can reuse
 # it for non-skeleton rigs (criatura).
-static func make_member_shape(group: String, box_aabb: AABB, head_kind: String = "sphere", torso_kind: String = "box", head_scale: float = 1.0) -> CollisionShape3D:
+static func make_member_shape(group: String, box_aabb: AABB, head_kind: String = "sphere", torso_kind: String = "box", head_scale: float = 1.0, shape_override: String = "") -> CollisionShape3D:
+	if shape_override == "sphere" or shape_override == "box" or shape_override == "capsule":
+		# Forma escolhida na tela Models, sobrepondo a automática. A cabeça mantém o head_scale e, em
+		# cápsula, o RAIO CHEIO (cap_radius=false) p/ abraçá-la; demais grupos usam o raio de membro.
+		if group == BodyParts.HEAD:
+			return make_shape(shape_override, _scaled_aabb(box_aabb, head_scale), shape_override != "capsule")
+		return make_shape(shape_override, box_aabb)
 	if group == BodyParts.HEAD:
 		# head_scale aumenta o volume da cabeça em torno do centro (AABB escalado simétrico).
 		var head_aabb := _scaled_aabb(box_aabb, head_scale)

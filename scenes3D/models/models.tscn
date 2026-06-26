@@ -184,6 +184,12 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
+[node name="cboMemberGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(190, 50)
+layout_mode = 2
+
 [node name="SubMemberRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
 unique_name_in_owner = true
 visible = false
@@ -201,131 +207,11 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="ColliderEditBox" type="VBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
+[node name="cboSubMemberGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
 unique_name_in_owner = true
 visible = false
+custom_minimum_size = Vector2(190, 50)
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="OffsetRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-text = "Afastamento:"
-
-[node name="LabelX" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
-layout_mode = 2
-text = "X"
-
-[node name="OffsetX" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(90, 44)
-layout_mode = 2
-min_value = -10.0
-max_value = 10.0
-step = 0.01
-allow_greater = true
-allow_lesser = true
-
-[node name="LabelY" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
-layout_mode = 2
-text = "Y"
-
-[node name="OffsetY" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(90, 44)
-layout_mode = 2
-min_value = -10.0
-max_value = 10.0
-step = 0.01
-allow_greater = true
-allow_lesser = true
-
-[node name="LabelZ" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
-layout_mode = 2
-text = "Z"
-
-[node name="OffsetZ" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/OffsetRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(90, 44)
-layout_mode = 2
-min_value = -10.0
-max_value = 10.0
-step = 0.01
-allow_greater = true
-allow_lesser = true
-
-[node name="ScaleRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
-custom_minimum_size = Vector2(120, 0)
-layout_mode = 2
-text = "Escala:"
-
-[node name="LabelX" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
-layout_mode = 2
-text = "X"
-
-[node name="ScaleX" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(90, 44)
-layout_mode = 2
-min_value = 0.05
-max_value = 20.0
-step = 0.05
-value = 1.0
-allow_greater = true
-allow_lesser = true
-
-[node name="LabelY" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
-layout_mode = 2
-text = "Y"
-
-[node name="ScaleY" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(90, 44)
-layout_mode = 2
-min_value = 0.05
-max_value = 20.0
-step = 0.05
-value = 1.0
-allow_greater = true
-allow_lesser = true
-
-[node name="LabelZ" type="Label" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
-layout_mode = 2
-text = "Z"
-
-[node name="ScaleZ" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/ScaleRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(90, 44)
-layout_mode = 2
-min_value = 0.05
-max_value = 20.0
-step = 0.05
-value = 1.0
-allow_greater = true
-allow_lesser = true
-
-[node name="SaveRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="SaveSpacer" type="Control" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/SaveRow"]
-custom_minimum_size = Vector2(262, 0)
-layout_mode = 2
-
-[node name="SaveButton" type="Button" parent="UI/Margin/Main/Body/Selectors/ColliderEditBox/SaveRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
-layout_mode = 2
-size_flags_horizontal = 0
-text = "Salvar"
 
 [node name="SkeletonRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
 unique_name_in_owner = true
@@ -341,6 +227,12 @@ text = "Esqueleto:"
 [node name="cboSkeleton" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+
+[node name="cboSkeletonGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(190, 50)
 layout_mode = 2
 
 [node name="Toggles" type="VBoxContainer" parent="UI/Margin/Main/Body"]

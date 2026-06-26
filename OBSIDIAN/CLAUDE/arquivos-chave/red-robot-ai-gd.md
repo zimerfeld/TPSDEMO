@@ -21,6 +21,9 @@ tunáveis, fáceis de ajustar sem mexer na máquina de estados.
 | `fire_rate_multiplier` | `1.5` | Recarga **1,5× mais rápida** (1º e próximos tiros) |
 | `flee_distance` | `10.0 m` | Player a esta distância ou menos → o robô recua atirando |
 | `flee_speed` | `6.0 m/s` | Velocidade ao correr para longe do player |
+| `formation_cohesion` | `0.55` | Força do retorno ao slot de formação designado |
+| `formation_band` | `5.0 m` | Tolerância antes de o robô ser puxado de volta ao slot |
+| `speed_variation` | `±0.18` | Variação de velocidade por-indivíduo (quebra o lockstep) |
 
 ---
 
@@ -51,6 +54,20 @@ func should_shoot(distance, effective_range) -> bool  # distance <= effective_ra
 ---
 
 ## Caminho: `library3D/characters/red_robot/IA/red_robot_ai.gd`
+
+---
+
+## Individualização + formação (2026-06-25)
+
+- **Sem lockstep:** `_ready` semeia por instância `_strafe_sign` (aleatório ±1), `_phase` e
+  `_speed_mult` (`1 ± speed_variation`); os resets de `_strafe_cooldown` em `_choose_strafe_sign`
+  usam `randf_range` (≈0.45–1.6 s) no lugar de períodos fixos (~1 s). Assim o pelotão **não anda
+  igual a cada segundo**. RNG do servidor (movimento é server-autoritativo; clientes interpolam).
+- **Formação designada:** na 1ª chamada de `movement_plan`, captura `_slot_bearing` a partir de
+  `origin - target_position` (direção do spawn vista do player). Durante strafe/engage, adiciona um
+  **viés de retorno** ao ponto `player + slot_dir * preferred` quando a folga passa de `formation_band`,
+  ponderado por `formation_cohesion`. O robô **circula livre** mas tende a **voltar ao seu lugar**.
+- **Velocidade:** `flee/strafe/pressure speed` saem multiplicados por `_speed_mult`.
 
 ---
 

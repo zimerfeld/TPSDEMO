@@ -25,17 +25,21 @@ Este jogo é construído e mantido no meu tempo livre. Se você curte o ZIMARO, 
 
 ![EN](screenshots/screenshotGB.png) Built on the Godot Engine, ZIMARO is a small third-person
 shooter sandbox: a menu-driven flow (character selection, level picker, settings, developer screen,
-online play), playable characters that move/aim/jump/shoot, ground and flying enemies (the Red
-Robot has a reactive AI that reloads faster, opens fire in range and flees when you close in),
-per-limb localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD
+online play), playable characters that move/aim/jump/shoot (the shot waits for the aim to settle),
+allied bots that give the player covering fire, ground and flying enemies (the Red Robot has a
+reactive AI that reloads faster, opens fire in range and flees when you close in — enemies now move
+with individual variation and hold a loose formation),
+per-limb localized damage, several levels, a browsable 3D model library (with a model-orientation axis gizmo), reusable cyberpunk HUD
 widgets, per-scene looping background music, debug tooling, EN/PT localization and live (no-Apply) settings.
 
 ![PT](screenshots/screenshotBR.png) Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro em
 terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, configurações, tela de
-desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atiram, inimigos
-terrestres e voadores (o Red Robot tem uma IA reativa que recarrega mais rápido, abre fogo no
-alcance e recua quando você se aproxima), dano localizado por membro, várias fases, biblioteca de
-modelos 3D navegável,
+desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atiram (o tiro espera a
+mira assentar), bots aliados que dão cobertura ao jogador, inimigos terrestres e voadores (o Red
+Robot tem uma IA reativa que recarrega mais rápido, abre fogo no alcance e recua quando você se
+aproxima — e os inimigos agora se movem com variação individual e mantêm uma formação frouxa), dano
+localizado por membro, várias fases, biblioteca de
+modelos 3D navegável (com gizmo de eixos de orientação),
 widgets de HUD cyberpunk reutilizáveis, música de fundo por cena em loop, ferramentas de debug, localização EN/PT e configurações ao
 vivo (sem botão Aplicar).
 
@@ -45,8 +49,10 @@ vivo (sem botão Aplicar).
 per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
 character, in the model's own folder `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits) where the body type (biped/quadruped/crawler) defines the members and
 protruding sub-members (plates, guards) are editable too; a Models viewer with per-category master toggles (rotation, animation,
-special effects, audio, colliders — with live X/Y/Z offset & scale inputs (plus a Save button) for the
-isolated member/sub-member collider — member labels — incl. a Bone toggle floating the chosen loose
+special effects, audio, colliders — plus, per selected member/sub-member/loose bone, a **collider-geometry
+dropdown** (sphere/box/capsule, or "Selecione…" = no collider on a member) and a reusable floating dialog
+with live X/Y/Z **offset & scale** that persist instantly and are read back when a character spawns —
+member labels — incl. a Bone toggle floating the chosen loose
 bone's name) and selector dropdowns — both persisted between
 visits, with the drill-down chain restored on reopen; a
 developer screen whose debug overlay is split into **Debug 2D** (light
@@ -78,8 +84,10 @@ standard × close and a modal backdrop — the same base other floating windows 
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
 por personagem, na pasta do próprio modelo `library3D/<cat>/<modelo>/limb_config.json`, com override gravável em `user://` para edições no jogo), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
 os sub-membros salientes (placas, guardas) também são editáveis; um visualizador Models com toggles mestres por categoria (rotação, animação,
-efeitos especiais, áudio, colliders — com inputs X/Y/Z de afastamento e escala ao vivo (mais botão
-Salvar) para o collider do membro/sub-membro isolado — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
+efeitos especiais, áudio, colliders — e, por membro/sub-membro/osso avulso selecionado, um **dropdown de
+geometria do collider** (esfera/caixa/cápsula, ou "Selecione…" = sem collider no membro) e uma janela
+flutuante reutilizável com **afastamento e escala** X/Y/Z ao vivo, que persistem na hora e são relidos
+quando um personagem entra em cena — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
 do osso avulso escolhido) e dropdowns de seleção — ambos persistidos
 entre visitas, com a cadeia de navegação restaurada ao reabrir; uma tela developer cujo overlay de
 debug é dividido nas
