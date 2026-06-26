@@ -280,15 +280,6 @@ func _display_name(key: String) -> String:
 func _install_defaults() -> void:
 	templates = [
 		{
-			"id": "default_level_1_squad",
-			"name": "Level 1 - Esquadra contra robôs",
-			"level_path": "res://scenes3D/level_1/level_1.tscn",
-			"entries": [
-				{"kind": "character", "faction": "enemy", "model_key": "red_robot", "scene_path": "res://library3D/characters/red_robot/red_robot.tscn", "placement": "formation", "formation": "line", "formation_origin": [20, 1, 0], "count": 3, "spacing": 7.0},
-				{"kind": "character", "faction": "friendly", "model_key": "player", "scene_path": "res://library3D/characters/players/player/player.tscn", "placement": "formation", "formation": "wedge", "formation_origin": [-8, 1, 0], "count": 2, "spacing": 4.0}
-			]
-		},
-		{
 			"id": "default_level_2_air_support",
 			"name": "Level 2 - Caça aérea",
 			"level_path": "res://scenes3D/level_2/level_2.tscn",

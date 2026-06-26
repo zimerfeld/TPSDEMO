@@ -2,8 +2,6 @@ extends Node3D
 
 signal quit
 
-const RedRobot: PackedScene = preload("res://library3D/characters/red_robot/red_robot.tscn")
-
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 @onready var spawned_nodes: Node3D = $SpawnedNodes
 @onready var player_spawn_points: Node3D = $PlayerSpawnpoints
@@ -22,10 +20,11 @@ func _ready() -> void:
 	# Offline (OfflineMultiplayerPeer) e host (ENet) entram aqui como servidor; o cliente
 	# recebe inimigo/players via MultiplayerSpawner. Mesmo padrão do level_base.
 	if multiplayer.is_server():
-		if not LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points):
-			var robot: CharacterBody3D = RedRobot.instantiate()
-			robot.position = Vector3(20, 1, 0)
-			spawned_nodes.add_child(robot, true)
+		# Sem template ativo: sala "LIMPA" — só os players que entram + o solo (geometria estática da
+		# cena). NÃO spawna inimigo padrão na criação da sala: nós pré-spawnados ANTES de qualquer
+		# client entrar vazavam para o client sem o espelho pronto ("spawner null") e desalinhavam o
+		# scene cache da replicação por-sala. Quem quiser inimigos/estruturas usa um template.
+		LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points)
 		randomize()
 
 	# Modo-sala (servidor multi-level) usa spawn POR-SALA (RoomManager); senão, NetSpawn single-level.

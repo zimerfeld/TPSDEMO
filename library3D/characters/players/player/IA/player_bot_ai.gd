@@ -272,13 +272,19 @@ func _collect_nodes(root: Node) -> Array[Node]:
 	return out
 
 
-func _is_valid_enemy(node: Node) -> bool:
-	return node is Node3D and is_instance_valid(node) and node.has_method(&"hit") \
+# Parâmetro SEM tipo de propósito: _target pode apontar para um inimigo JÁ LIBERADO (morreu/
+# despawnou). Com o parâmetro tipado (Node), o GDScript valida o tipo do argumento na ENTRADA da
+# função e estoura ("previously freed ... not a subclass") antes de o is_instance_valid() rodar.
+# Sem tipo, o objeto liberado entra e o is_instance_valid (1º, por curto-circuito) o rejeita.
+func _is_valid_enemy(node) -> bool:
+	return is_instance_valid(node) and node is Node3D and node.has_method(&"hit") \
 		and node.has_method(&"show_health_hud") and not _is_ally(node)
 
 
-func _is_valid_anchor(node: Node) -> bool:
-	return node is Node3D and is_instance_valid(node) and _is_ally(node)
+func _is_valid_anchor(node) -> bool:
+	# Sem tipo: o anchor (player seguido) pode ter sido liberado — o parâmetro tipado estouraria
+	# na entrada antes do is_instance_valid (mesmo motivo de _is_valid_enemy).
+	return is_instance_valid(node) and node is Node3D and _is_ally(node)
 
 
 func _is_ally(node: Node) -> bool:
