@@ -242,7 +242,12 @@ func _make_server_row(room: Dictionary) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	var lbl := Label.new()
-	lbl.text = "Sala #%d — %s" % [id, RoomManager.level_label(String(room["level_path"]))]
+	# Conexões (clientes remotos) ativas nesta sala. Atualiza ao vivo: o RoomManager emite
+	# rooms_changed em join_room/leave_room/_on_peer_disconnected → _refresh_rooms remonta as linhas.
+	var conns: int = RoomManager.connections_in_room(id)
+	lbl.text = "Sala #%d — %s  (%d %s)" % [
+		id, RoomManager.level_label(String(room["level_path"])),
+		conns, "conexão" if conns == 1 else "conexões"]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	# Modo "servidor puro" (render do host desligado): não há o que ver, então Jogar/Observar ficam

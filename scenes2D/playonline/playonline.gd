@@ -151,17 +151,44 @@ func _is_full_domain(value: String) -> bool:
 
 
 func _on_port_history_item_selected(index: int) -> void:
-	if index <= 0:  # item 0 = "Selecione..."
+	if index <= 0:  # "Selecione..." → limpa o campo de porta (mesma regra do endereço).
+		_clear_port()
 		return
-	# Copia o valor para o campo e MANTÉM o item selecionado no dropdown (antes resetava p/
-	# "Selecione...", então a escolha não "ficava"). A mudança do campo persiste via _on_port_changed.
+	# Copia o valor para o campo e MANTÉM o item selecionado no dropdown. A mudança persiste sozinha
+	# via _on_port_changed (o value_changed do SpinBox dispara mesmo setando por código).
 	port.value = float(port_history.get_item_text(index))
 
 
 func _on_address_history_item_selected(index: int) -> void:
+	# "Selecione..." (0) → limpa o campo; qualquer outro item → copia o endereço escolhido p/ o campo.
+	# Em AMBOS os casos persiste o valor: setar address.text por código NÃO dispara text_changed (ao
+	# contrário do port, cujo value_changed dispara sozinho), então replicamos a persistência em
+	# _set_address — sem isso a escolha do dropdown não "ficava" e não recarregava na próxima vez.
 	if index <= 0:
-		return
-	address.text = address_history.get_item_text(index)
+		_set_address("")
+	else:
+		_set_address(address_history.get_item_text(index))
+
+
+# Aplica um endereço ao campo E persiste (last_address) + reflete a seleção no dropdown — o
+# equivalente ao que o port ganha de graça pelo value_changed. Texto vazio limpa o campo e deixa o
+# dropdown em "Selecione...". É o ÚNICO caminho (além de digitar e do _prefill no load) que altera o
+# campo de endereço, atendendo à regra "o endereço só muda se for digitado ou a seleção mudar".
+func _set_address(text: String) -> void:
+	address.text = text
+	Settings.config_file.set_value("online", "last_address", text)
+	Settings.save_settings()
+	_select_in_history(address_history, text)
+
+
+# "Selecione..." na porta: limpa o texto visível (o SpinBox não fica vazio de verdade, mas zeramos o
+# que aparece) e a persistência (last_port = 0 = "sem último valor"), deixando o dropdown em
+# "Selecione..." — espelha o clear do endereço.
+func _clear_port() -> void:
+	port.get_line_edit().text = ""
+	Settings.config_file.set_value("online", "last_port", 0)
+	Settings.save_settings()
+	port_history.selected = 0
 
 
 # Salva o que foi digitado no campo (IP OU domínio) ao pressionar Enter e atualiza o
