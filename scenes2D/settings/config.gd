@@ -170,6 +170,13 @@ func save_settings() -> void:
 		push_error("Settings: failed to save '%s': %s" % [CONFIG_FILE_PATH, error_string(err)])
 
 
+## True quando o modo de escala 3D é um upscaler temporal (FSR 2 / MetalFX Temporal),
+## que já faz antialiasing temporal e é incompatível com TAA.
+func is_temporal_upscaler(scaling_mode: int) -> bool:
+	return scaling_mode == Viewport.SCALING_3D_MODE_FSR2 \
+		or scaling_mode == Viewport.SCALING_3D_MODE_METALFX_TEMPORAL
+
+
 func apply_graphics_settings(window: Window, environment: Environment, scene_root: Node) -> void:
 	get_window().mode = Settings.config_file.get_value("video", "display_mode")
 	DisplayServer.window_set_vsync_mode(Settings.config_file.get_value("video", "vsync"))
@@ -177,7 +184,9 @@ func apply_graphics_settings(window: Window, environment: Environment, scene_roo
 	window.scaling_3d_scale = Settings.config_file.get_value("video", "resolution_scale")
 	window.scaling_3d_mode = Settings.config_file.get_value("video", "scale_filter")
 
-	window.use_taa = Settings.config_file.get_value("rendering", "taa")
+	# FSR 2 e MetalFX Temporal já são upscalers temporais e são incompatíveis com TAA — a engine
+	# desligaria o TAA internamente e emitiria warning. Garantimos a exclusividade aqui.
+	window.use_taa = Settings.config_file.get_value("rendering", "taa") and not is_temporal_upscaler(window.scaling_3d_mode)
 	window.msaa_3d = Settings.config_file.get_value("rendering", "msaa")
 	window.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if Settings.config_file.get_value("rendering", "fxaa") else Viewport.SCREEN_SPACE_AA_DISABLED
 

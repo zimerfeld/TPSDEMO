@@ -3,19 +3,20 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cdqvx16nfp8m4"
-path="res://.godot/imported/criatura_alada_preview.png-51bb95794e1e0e60f8d6716ddb23778e.ctex"
+path.s3tc="res://.godot/imported/criatura_alada_preview.png-51bb95794e1e0e60f8d6716ddb23778e.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://library3D/characters/criatura_alada/criatura_alada_preview.png"
-dest_files=["res://.godot/imported/criatura_alada_preview.png-51bb95794e1e0e60f8d6716ddb23778e.ctex"]
+dest_files=["res://.godot/imported/criatura_alada_preview.png-51bb95794e1e0e60f8d6716ddb23778e.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

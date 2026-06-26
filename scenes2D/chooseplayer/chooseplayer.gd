@@ -173,5 +173,5 @@ func _input(input_event: InputEvent) -> void:
 		if UINav.cancel_active_edit(get_viewport()):
 			get_viewport().set_input_as_handled()
 			return
-		_go_back()
 		get_viewport().set_input_as_handled()
+		_go_back()

@@ -140,5 +140,5 @@ func _input(input_event: InputEvent) -> void:
 		if UINav.cancel_active_edit(get_viewport()):
 			get_viewport().set_input_as_handled()
 			return
-		emit_signal("replace_main_scene", load(CHOOSEPLAYER_PATH))
 		get_viewport().set_input_as_handled()
+		emit_signal("replace_main_scene", load(CHOOSEPLAYER_PATH))
