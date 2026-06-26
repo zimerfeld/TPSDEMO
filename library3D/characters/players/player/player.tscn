@@ -37,6 +37,9 @@ properties/5/replication_mode = 0
 properties/6/path = NodePath(".:bot_controlled")
 properties/6/spawn = true
 properties/6/replication_mode = 0
+properties/7/path = NodePath(".:player_name")
+properties/7/spawn = true
+properties/7/replication_mode = 0
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_8yuxf"]
 properties/0/path = NodePath("CameraBase:rotation")
@@ -687,8 +690,19 @@ stream = SubResource("35")
 unit_size = 12.0
 max_distance = 60.0
 
+[node name="NameLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0)
+billboard = 1
+no_depth_test = true
+render_priority = 1
+outline_render_priority = 0
+text = ""
+pixel_size = 0.008
+font_size = 48
+outline_size = 14
+
 [node name="FireCooldown" type="Timer" parent="."]
-wait_time = 0.7
+wait_time = 0.6
 one_shot = true
 autostart = true
 

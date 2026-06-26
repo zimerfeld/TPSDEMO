@@ -86,7 +86,7 @@ func _begin_server(spawned_nodes: Node3D, spawn_points_parent: Node3D, spawn_hos
 	_spawn_queue.shuffle()
 
 	if spawn_host:
-		_spawn(1, _take_point(), PlayerSelection.variant_id)
+		_spawn(1, _take_point(), PlayerSelection.variant_id, PlayerSelection.player_name)
 
 	# Peers já conectados quando o nível carregou (caso raro): esperam o loadout deles também.
 	for id in multiplayer.get_peers():
@@ -104,18 +104,18 @@ func _begin_server(spawned_nodes: Node3D, spawn_points_parent: Node3D, spawn_hos
 func _announce_loadout() -> void:
 	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
 	if peer != null and peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
-		register_loadout.rpc_id(1, PlayerSelection.variant_id)
+		register_loadout.rpc_id(1, PlayerSelection.variant_id, PlayerSelection.player_name)
 	elif not multiplayer.connected_to_server.is_connected(_send_loadout):
 		multiplayer.connected_to_server.connect(_send_loadout, CONNECT_ONE_SHOT)
 
 
 func _send_loadout() -> void:
-	register_loadout.rpc_id(1, PlayerSelection.variant_id)
+	register_loadout.rpc_id(1, PlayerSelection.variant_id, PlayerSelection.player_name)
 
 
 # Cliente → servidor: "eu escolhi a variante X". O servidor spawna o player desse peer.
 @rpc("any_peer", "reliable")
-func register_loadout(variant_id: int) -> void:
+func register_loadout(variant_id: int, player_name: String = "") -> void:
 	if not multiplayer.is_server():
 		return
 	var id: int = multiplayer.get_remote_sender_id()
@@ -123,7 +123,7 @@ func register_loadout(variant_id: int) -> void:
 		return  # já spawnou (ou peer desconhecido) — ignora
 	var spawn_point: Marker3D = _pending[id]
 	_pending.erase(id)
-	_spawn(id, spawn_point, variant_id)
+	_spawn(id, spawn_point, variant_id, player_name)
 
 
 # Servidor: reserva um spawn point para o peer e aguarda o loadout (com fallback por timeout).
@@ -145,7 +145,7 @@ func _loadout_timeout(id: int) -> void:
 		_spawn(id, spawn_point, DEFAULT_VARIANT)
 
 
-func _spawn(id: int, spawn_point: Marker3D, variant_id: int) -> void:
+func _spawn(id: int, spawn_point: Marker3D, variant_id: int, player_name: String = "") -> void:
 	if not is_instance_valid(_spawned_nodes):
 		return
 	if _spawned_nodes.has_node(str(id)):
@@ -156,6 +156,7 @@ func _spawn(id: int, spawn_point: Marker3D, variant_id: int) -> void:
 	var player: CharacterBody3D = scene.instantiate()
 	player.name = str(id)
 	player.player_id = id
+	player.player_name = player_name  # spawn property → Label3D acima da cabeça em todos os peers
 	if spawn_point != null:
 		player.transform = spawn_point.transform
 		# Posição de spawn replicada (spawn property): o cliente nasce aqui em vez de (0,0,0).

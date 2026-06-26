@@ -175,12 +175,6 @@ func register_room_level(room_id: int, spawned_nodes: Node3D, spawn_points: Node
 		return
 	room["spawned_nodes"] = spawned_nodes
 	if not multiplayer.is_server():
-		# DIAGNÓSTICO TEMPORÁRIO (player sem câmera no cliente) — remover após confirmar. Esta linha
-		# imprime quando o servidor REPLICA (spawna) o player/inimigos na sala-espelho. Se aparecer
-		# "→ '<seu peer id>'" após "Jogar", o spawn chegou e a câmera deve ativar; se NÃO aparecer,
-		# o spawn ainda não está sendo enviado pelo servidor (visibilidade/rede).
-		if not spawned_nodes.child_entered_tree.is_connected(_dbg_client_spawn):
-			spawned_nodes.child_entered_tree.connect(_dbg_client_spawn)
 		return  # cliente: só precisa do caminho casando (já tem); sem lógica de spawn
 	room["spawn_points"] = spawn_points
 	room["spawn_queue"] = spawn_points.get_children().duplicate()
@@ -203,14 +197,6 @@ func register_room_level(room_id: int, spawned_nodes: Node3D, spawn_points: Node
 
 func _on_room_child_entered(node: Node, room_id: int) -> void:
 	_apply_room_visibility(node, room_id)
-
-
-# DIAGNÓSTICO TEMPORÁRIO (player sem câmera no cliente) — remover após confirmar. Dispara no CLIENTE
-# quando o servidor replica (spawna) uma entidade na sala-espelho. Filtra para os filhos diretos do
-# SpawnedNodes (o player/inimigo), ignorando os sub-nós, para não poluir o log.
-func _dbg_client_spawn(node: Node) -> void:
-	if node.get_parent() != null and node.get_parent().name == "SpawnedNodes":
-		print("[salas] cliente: spawn recebido do servidor → '%s' (%s)" % [node.name, node.get_class()])
 
 
 # Interest management: o nó (e seus sub-nós) só é replicado (spawn + sync) para peers QUE ESTÃO
@@ -272,16 +258,11 @@ func _refresh_room_visibility(room_id: int) -> void:
 func request_room_list() -> void:
 	if not multiplayer.is_server():
 		return
-	var sender_id: int = multiplayer.get_remote_sender_id()
-	# DIAGNÓSTICO TEMPORÁRIO (lista de salas vazia no cliente) — remover após achar a causa.
-	print("[salas] servidor: request_room_list de peer ", sender_id, " — respondendo ", _rooms.size(), " sala(s)")
-	receive_room_list.rpc_id(sender_id, _room_list_payload())
+	receive_room_list.rpc_id(multiplayer.get_remote_sender_id(), _room_list_payload())
 
 
 func _broadcast_room_list() -> void:
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		# DIAGNÓSTICO TEMPORÁRIO (lista de salas vazia no cliente) — remover após achar a causa.
-		print("[salas] servidor: broadcast de ", _rooms.size(), " sala(s) para ", multiplayer.get_peers().size(), " cliente(s)")
 		receive_room_list.rpc(_room_list_payload())
 	# A grade do host também espelha a lista (e a CONTAGEM DE CONEXÕES por sala): como o host não
 	# recebe o próprio RPC, refresca a UI local aqui. Assim entrar/sair de um cliente (join_room/
@@ -302,8 +283,6 @@ func _room_list_payload() -> Array:
 
 @rpc("authority", "reliable")
 func receive_room_list(list: Array) -> void:
-	# DIAGNÓSTICO TEMPORÁRIO (lista de salas vazia no cliente) — remover após achar a causa.
-	print("[salas] cliente: recebeu lista do servidor — ", list.size(), " sala(s)")
 	_server_rooms = list
 	rooms_changed.emit()
 
@@ -338,11 +317,11 @@ func client_join_room(room_id: int, level_path: String, variant_id: int) -> void
 	if get_room(room_id).is_empty():
 		_instantiate_room(room_id, level_path, false)  # espelho local (Node comum, janela principal)
 		rooms_changed.emit()
-	join_room.rpc_id(1, room_id, variant_id)
+	join_room.rpc_id(1, room_id, variant_id, PlayerSelection.player_name)
 
 
 @rpc("any_peer", "reliable")
-func join_room(room_id: int, variant_id: int) -> void:
+func join_room(room_id: int, variant_id: int, player_name: String = "") -> void:
 	if not multiplayer.is_server():
 		return
 	var sender: int = multiplayer.get_remote_sender_id()
@@ -351,7 +330,7 @@ func join_room(room_id: int, variant_id: int) -> void:
 	_peer_room[sender] = room_id
 	# Reavalia a visibilidade: o que JÁ existe na sala (inimigos) passa a replicar p/ este peer.
 	_refresh_room_visibility(room_id)
-	_reserve_and_spawn(sender, room_id, variant_id)
+	_reserve_and_spawn(sender, room_id, variant_id, player_name)
 	# Reavalia DE NOVO no próximo frame: aí o player recém-spawnado e seus synchronizers já estão
 	# totalmente na árvore e registrados no replicador, garantindo que o spawn seja enviado a este
 	# cliente (a reavaliação síncrona durante o add_child pode rodar cedo demais).
@@ -361,7 +340,7 @@ func join_room(room_id: int, variant_id: int) -> void:
 
 # Reserva um spawn point na sala e spawna o player do peer (a variante/cor replica a todos os
 # peers DA SALA via MultiplayerSpawner + visibilidade).
-func _reserve_and_spawn(peer_id: int, room_id: int, variant_id: int) -> void:
+func _reserve_and_spawn(peer_id: int, room_id: int, variant_id: int, player_name: String = "") -> void:
 	var room := get_room(room_id)
 	var spawned: Node3D = room.get("spawned_nodes")
 	if spawned == null or not is_instance_valid(spawned):
@@ -375,6 +354,7 @@ func _reserve_and_spawn(peer_id: int, room_id: int, variant_id: int) -> void:
 	var player: CharacterBody3D = scene.instantiate()
 	player.name = str(peer_id)
 	player.player_id = peer_id
+	player.player_name = player_name  # spawn property → replica p/ todos (Label3D acima da cabeça)
 	if marker != null:
 		player.transform = marker.transform
 		player.spawn_position = marker.transform.origin
@@ -433,6 +413,7 @@ func host_spawn_in_room(room_id: int, variant_id: int) -> void:
 	var player: CharacterBody3D = scene.instantiate()
 	player.name = "1"
 	player.player_id = 1
+	player.player_name = PlayerSelection.player_name  # nome do host → Label3D acima da cabeça
 	if marker != null:
 		player.transform = marker.transform
 		player.spawn_position = marker.transform.origin

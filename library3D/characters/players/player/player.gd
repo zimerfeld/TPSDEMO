@@ -94,6 +94,14 @@ var initial_position: Vector3 = Vector3.ZERO
 		spawn_position = value
 		_apply_spawn_position()
 
+## Nome do jogador (spawn property, definida pelo servidor a partir do que o peer escolheu na
+## playonline). Replicada a TODOS os peers no pacote de spawn → cada um mostra o Label3D acima
+## da cabeça. O setter pode rodar antes do _ready (como player_id), por isso é idempotente.
+@export var player_name: String = "":
+	set(value):
+		player_name = value
+		_apply_name_label()
+
 const MAX_HP: int = 100
 var hp: int = MAX_HP
 
@@ -120,6 +128,8 @@ func _ready() -> void:
 	initial_position = transform.origin
 	# Posiciona no spawn replicado (cobre o caso de a property já ter chegado antes do _ready).
 	_apply_spawn_position()
+	# Mostra o nome acima da cabeça (cobre o caso de player_name já ter chegado antes do _ready).
+	_apply_name_label()
 	# Semeia os proxies de rede com a pose inicial APENAS no servidor (assim o spawn property
 	# já carrega o valor certo). No cliente NÃO semeamos: o valor correto chega pela replicação
 	# de spawn; semear aqui marcaria _net_received cedo e a entidade interpolaria a partir da
@@ -174,6 +184,18 @@ func _apply_spawn_position() -> void:
 	# Salto de posição: zera a interpolação física para não "rasgar" (flicker) do ponto
 	# antigo (ex.: 0,0,0) até o spawn. Roda em todos os peers (a property é replicada).
 	reset_physics_interpolation()
+
+
+# Atualiza o Label3D do nome acima da cabeça. Idempotente (chamado pelo setter de player_name e
+# pelo _ready). Esconde quando o nome está vazio para não mostrar uma etiqueta em branco.
+func _apply_name_label() -> void:
+	if not is_inside_tree():
+		return
+	var lbl := get_node_or_null(^"NameLabel") as Label3D
+	if lbl == null:
+		return
+	lbl.text = player_name
+	lbl.visible = player_name.strip_edges() != ""
 
 
 func _setup_health_bar() -> void:

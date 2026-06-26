@@ -11,6 +11,9 @@ const VARIANTS: Array[String] = [
 var scene_path: String = VARIANTS[0]
 # Variante escolhida no chooseplayer (índice em VARIANTS). Enviada ao servidor ao conectar.
 var variant_id: int = 0
+# Nome do jogador (digitado na playonline, persistido em Settings). Enviado ao servidor junto com
+# a variante ao entrar/hospedar e replicado como spawn property → vira o Label3D acima da cabeça.
+var player_name: String = ""
 
 # Fluxo "Jogar Online": definido ao escolher Play Online no menu. Quando true, a tela
 # de levels não carrega o nível direto — guarda o nível escolhido em level_path e abre
