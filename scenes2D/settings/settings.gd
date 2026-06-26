@@ -244,7 +244,30 @@ func _populate_video_resolutions() -> void:
 	for res in VIDEO_RESOLUTIONS:
 		video_resolution_dropdown.add_item(res["nome"])
 	_select_saved_resolution()
+	_fit_dropdown_to_widest_item(video_resolution_dropdown)
 	video_resolution_dropdown.item_selected.connect(_on_video_resolution_selected)
+
+
+# Largura mínima do dropdown = a do MAIOR texto de item (medido pela fonte resolvida), para nenhum
+# item ser truncado. size_flags_horizontal continua expandindo além disto quando há espaço na linha.
+func _fit_dropdown_to_widest_item(dropdown: OptionButton) -> void:
+	var font := dropdown.get_theme_font(&"font")
+	if font == null:
+		return
+	var font_size := dropdown.get_theme_font_size(&"font_size")
+	var widest := 0.0
+	for i in dropdown.item_count:
+		widest = maxf(widest, font.get_string_size(
+			dropdown.get_item_text(i), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+	# Folga para as margens internas do stylebox + o ícone da seta à direita + separação/segurança.
+	var extra := 28.0
+	var sb := dropdown.get_theme_stylebox(&"normal")
+	if sb != null:
+		extra += sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)
+	var arrow := dropdown.get_theme_icon(&"arrow")
+	if arrow != null:
+		extra += arrow.get_width()
+	dropdown.custom_minimum_size.x = ceilf(widest + extra)
 
 
 # Point the dropdown at the preset matching the saved resolution (or the "Selecione..."

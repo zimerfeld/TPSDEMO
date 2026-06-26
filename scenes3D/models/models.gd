@@ -280,6 +280,12 @@ var _dlg_scale_z: SpinBox
 @onready var model_holder: Node3D = $ModelHolder
 @onready var camera: Camera3D = $Camera3D
 
+# Gizmo de eixos 3D: overlay (SubViewport) reposicionado à esquerda dos toggles; _gizmo_node gira
+# junto com o modelo. Ver _setup_axis_gizmo / _process.
+@onready var _toggles_col: Control = $UI/Margin/Main/Body/Toggles
+var _gizmo_overlay: SubViewportContainer = null
+var _gizmo_node: Node3D = null
+
 # Mouse-wheel zoom state: the camera's distance from the model along its local Z.
 # _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
 var _zoom: float = 0.0
@@ -355,6 +361,7 @@ var _zoom_target: float = 0.0
 func _ready() -> void:
 	_zoom = camera.position.z
 	_zoom_target = _zoom
+	_setup_axis_gizmo()
 	# Watermark LOCAL do nome da cena: mantido OCULTO (o nome "Models" não deve aparecer na janela
 	# de dano). O nome da cena já é mostrado pelo watermark GLOBAL de debug_overlay.gd no canto da
 	# tela. Nó preservado só para não quebrar referências.
@@ -516,6 +523,121 @@ func _on_english_pressed() -> void:
 	_update_language_buttons()
 
 
+# --- Gizmo de eixos 3D ------------------------------------------------------------------
+# Indicador de orientação estilo editor de jogos: três eixos coloridos (X vermelho, Y verde, Z
+# azul) com bola na ponta + letra, que GIRAM junto com o modelo (ver _process). É renderizado num
+# SubViewport PRÓPRIO (mundo isolado, fundo transparente, MSAA) sobreposto no topo à direita —
+# assim NUNCA é coberto pelo modelo e independe do zoom/tamanho dele; o overlay é reposicionado à
+# esquerda da coluna de toggles a cada frame, então também não cobre a UI nem o modelo.
+const _GIZMO_SIZE: int = 132          # lado do overlay (px)
+const _GIZMO_ARM: float = 0.9         # comprimento de cada eixo
+const _GIZMO_ARM_RADIUS: float = 0.045
+const _GIZMO_BALL: float = 0.17       # bola da ponta + (eixo positivo)
+const _GIZMO_NEG_BALL: float = 0.115  # bola da ponta - (apagada)
+
+
+func _setup_axis_gizmo() -> void:
+	var container := SubViewportContainer.new()
+	container.name = "AxisGizmoOverlay"
+	container.stretch = true
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	container.custom_minimum_size = Vector2(_GIZMO_SIZE, _GIZMO_SIZE)
+	container.size = Vector2(_GIZMO_SIZE, _GIZMO_SIZE)
+	$UI.add_child(container)
+	_gizmo_overlay = container
+
+	var vp := SubViewport.new()
+	vp.name = "AxisGizmoViewport"
+	vp.size = Vector2i(_GIZMO_SIZE, _GIZMO_SIZE)
+	vp.own_world_3d = true
+	vp.transparent_bg = true
+	vp.msaa_3d = Viewport.MSAA_4X
+	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	container.add_child(vp)
+
+	# Câmera ortográfica olhando -Z (mesma orientação da câmera principal), para o gizmo
+	# renderizar exatamente como o modelo é visto na tela.
+	var cam := Camera3D.new()
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.size = 3.2
+	cam.near = 0.05
+	cam.far = 100.0
+	cam.position = Vector3(0.0, 0.0, 6.0)
+	vp.add_child(cam)
+
+	var gizmo := Node3D.new()
+	gizmo.name = "AxisGizmo"
+	vp.add_child(gizmo)
+	# Hub central neutro que une os braços.
+	gizmo.add_child(_gizmo_ball(Vector3.ZERO, 0.13, Color(0.22, 0.23, 0.27)))
+	# Um braço + bola + letra por eixo; bola apagada (sem letra) no sentido negativo.
+	var axes := [
+		{"dir": Vector3.RIGHT, "rot": Vector3(0, 0, -90), "col": Color(0.96, 0.27, 0.31), "letter": "X"},
+		{"dir": Vector3.UP,    "rot": Vector3(0, 0, 0),   "col": Color(0.46, 0.86, 0.33), "letter": "Y"},
+		{"dir": Vector3.BACK,  "rot": Vector3(90, 0, 0),  "col": Color(0.30, 0.56, 1.00), "letter": "Z"},
+	]
+	for a in axes:
+		var dir: Vector3 = a["dir"]
+		var col: Color = a["col"]
+		var arm := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = _GIZMO_ARM_RADIUS
+		cyl.bottom_radius = _GIZMO_ARM_RADIUS
+		cyl.height = _GIZMO_ARM
+		cyl.radial_segments = 12
+		arm.mesh = cyl
+		arm.material_override = _gizmo_mat(col)
+		arm.rotation_degrees = a["rot"]
+		arm.position = dir * (_GIZMO_ARM * 0.5)
+		gizmo.add_child(arm)
+		gizmo.add_child(_gizmo_ball(dir * _GIZMO_ARM, _GIZMO_BALL, col))
+		var lbl := Label3D.new()
+		lbl.text = a["letter"]
+		lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lbl.fixed_size = true
+		lbl.pixel_size = 0.0055
+		lbl.font_size = 110
+		lbl.outline_size = 30
+		lbl.modulate = Color.WHITE
+		lbl.outline_modulate = Color(0, 0, 0, 0.85)
+		lbl.position = dir * (_GIZMO_ARM + _GIZMO_BALL + 0.12)
+		gizmo.add_child(lbl)
+		gizmo.add_child(_gizmo_ball(-dir * _GIZMO_ARM, _GIZMO_NEG_BALL, col.darkened(0.55)))
+	_gizmo_node = gizmo
+
+
+# Esfera unshaded reutilizável do gizmo.
+func _gizmo_ball(pos: Vector3, radius: float, col: Color) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = radius
+	sph.height = radius * 2.0
+	sph.radial_segments = 16
+	sph.rings = 8
+	mi.mesh = sph
+	mi.material_override = _gizmo_mat(col)
+	mi.position = pos
+	return mi
+
+
+# Material unshaded (cor cheia, legível sem luz — o gizmo tem mundo próprio sem iluminação).
+func _gizmo_mat(col: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = col
+	return mat
+
+
+# Mantém o overlay do gizmo ancorado à ESQUERDA da coluna de toggles, no topo — assim não cobre
+# os toggles (qualquer largura/idioma) nem o modelo (centralizado), em qualquer resolução.
+func _position_gizmo_overlay() -> void:
+	if _gizmo_overlay == null or _toggles_col == null:
+		return
+	var x: float = _toggles_col.global_position.x - float(_GIZMO_SIZE) - 16.0
+	_gizmo_overlay.position = Vector2(maxf(x, 16.0), 40.0)
+
+
 func _process(delta: float) -> void:
 	# Slowly spin the previewed mesh, like the character on the choose-player
 	# screen — but pause while the user is hand-rotating it with the mouse.
@@ -525,6 +647,10 @@ func _process(delta: float) -> void:
 	# _front_yaw_base turns the model's front toward the camera (180° por padrão; 0° para
 	# modelos cuja frente já é +Z, como player/red_robot — ver _MODEL_FRONT_YAW).
 	model_holder.rotation = Vector3(_pitch, _front_yaw_base + _yaw, 0.0)
+	# O gizmo de eixos gira em lockstep com o modelo e fica ancorado à esquerda dos toggles.
+	if _gizmo_node != null:
+		_gizmo_node.rotation = model_holder.rotation
+		_position_gizmo_overlay()
 	# Glide the camera toward the wheel-set zoom distance instead of snapping.
 	if not is_equal_approx(_zoom, _zoom_target):
 		_zoom = lerpf(_zoom, _zoom_target, minf(ZOOM_SMOOTH * delta, 1.0))

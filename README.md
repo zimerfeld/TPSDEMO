@@ -29,7 +29,7 @@ online play), playable characters that move/aim/jump/shoot (the shot waits for t
 allied bots that give the player covering fire, ground and flying enemies (the Red Robot has a
 reactive AI that reloads faster, opens fire in range and flees when you close in — enemies now move
 with individual variation and hold a loose formation),
-per-limb localized damage, several levels, a browsable 3D model library, reusable cyberpunk HUD
+per-limb localized damage, several levels, a browsable 3D model library (with a model-orientation axis gizmo), reusable cyberpunk HUD
 widgets, per-scene looping background music, debug tooling, EN/PT localization and live (no-Apply) settings.
 
 ![PT](screenshots/screenshotBR.png) Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro em
@@ -39,7 +39,7 @@ mira assentar), bots aliados que dão cobertura ao jogador, inimigos terrestres 
 Robot tem uma IA reativa que recarrega mais rápido, abre fogo no alcance e recua quando você se
 aproxima — e os inimigos agora se movem com variação individual e mantêm uma formação frouxa), dano
 localizado por membro, várias fases, biblioteca de
-modelos 3D navegável,
+modelos 3D navegável (com gizmo de eixos de orientação),
 widgets de HUD cyberpunk reutilizáveis, música de fundo por cena em loop, ferramentas de debug, localização EN/PT e configurações ao
 vivo (sem botão Aplicar).
 

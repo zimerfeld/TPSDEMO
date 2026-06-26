@@ -164,7 +164,10 @@ em terceira pessoa. Em alto nível, oferece:
   abaixo) ficam desabilitados. A navegação é guiada apenas pelo gating sequencial dos dropdowns
   (sem linha de status). Arraste para girar o modelo à mão em
   até 180° nos dois eixos (a rotação **congela** enquanto o ponteiro está sobre uma janela
-  flutuante — Dano/IA ou outra — e volta a responder ao sair dela ou fechá-la). Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
+  flutuante — Dano/IA ou outra — e volta a responder ao sair dela ou fechá-la). Um **gizmo de eixos
+  3D** (estilo editor: X vermelho, Y verde, Z azul, com bola e letra na ponta) fica no **topo à
+  direita** — num SubViewport próprio sobreposto, à esquerda dos toggles, sem cobrir o modelo — e
+  **gira junto com o modelo**, indicando sua orientação. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega
   o modelo nem altera a câmera/rotação. Para Personagens e Armas, uma **pilha de tooltips de membro**
   flutua sobre o collider de cada membro: cada linha tem **cor própria** (Membro = azul-ciano, Tipo =
   laranja, Nome = verde, ID = amarelo), **a mesma cor aplicada ao toggle** que a liga, e as pilhas de
@@ -308,7 +311,8 @@ qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (
 **bem menos iluminadas** (escurecidas), realçando ainda mais a escolha atual.
 
 - **Resolution** — um dropdown de resolução de vídeo (tingido de ciano claro para marcá-lo como
-  seletor), escala de resolução e o filtro de escala (Bilinear / FSR / MetalFX…).
+  seletor; com **largura mínima ajustada ao maior item** para nenhum texto ser truncado), escala de
+  resolução e o filtro de escala (Bilinear / FSR / MetalFX…).
 - **Display** — Modo de exibição (Window / Fullscreen / Exclusive Fullscreen), Sincronização
   Vertical e Limite de FPS (30…144 / Unlimited). Os botões de modo e de limite de FPS são coloridos
   pelo mesmo gradiente (limite maior = mais exigente = cor mais quente). No modo **Window** a janela

@@ -4,6 +4,17 @@ Tela `scenes3D/models/models.tscn` (`models.gd`): navegador + extrator dos
 modelos 3D do projeto. Alcançada por **developer → Modelos 3D**; volta com
 "Voltar" (→ developer) e abre a galeria com "Exportados" (→ `Exported.tscn`).
 
+## Gizmo de eixos 3D (orientação)
+
+Indicador de orientação estilo editor no **topo à direita**: três eixos coloridos (X vermelho, Y
+verde, Z azul) com bola e letra na ponta, que **giram junto com o modelo** (`_gizmo_node.rotation =
+model_holder.rotation` no `_process`). Montado por código (`_setup_axis_gizmo`) num **SubViewport
+próprio** (`own_world_3d`, `transparent_bg`, MSAA) com câmera ortográfica olhando -Z — assim **nunca
+é coberto pelo modelo** e independe do zoom. O overlay é reposicionado a cada frame **à esquerda da
+coluna de toggles** (`_position_gizmo_overlay`), então não cobre a UI nem o modelo (centralizado),
+em qualquer resolução. Materiais **unshaded** (cor cheia, legível sem luz). Tunáveis: `_GIZMO_SIZE`,
+`_GIZMO_ARM`, `_GIZMO_BALL`.
+
 ## Biblioteca de assets
 
 Tudo sob `res://library3D/<tipo>/<modelo>/`:

@@ -161,7 +161,10 @@ third-person shooter sandbox. At a high level it offers:
   library that selector (and the ones below it) are disabled. Navigation is guided purely by the
   sequential dropdown gating (no status line). Drag to hand-rotate the
   model up to 180° on both axes (rotation **freezes** while the pointer is over a floating window —
-  Damage/AI or any other — and resumes when it leaves or the window closes). Toggling any option acts on the live preview in place — it
+  Damage/AI or any other — and resumes when it leaves or the window closes). A **3D axis gizmo**
+  (editor-style: red X, green Y, blue Z, with a ball and letter at each tip) sits at the **top
+  right** — in its own overlaid SubViewport, left of the toggles, without covering the model — and
+  **rotates together with the model**, showing its orientation. Toggling any option acts on the live preview in place — it
   never reloads the model nor changes the camera/rotation. For Personagens and Armas, a
   **member tooltip stack** floats over each member's collider: each line has its **own color**
   (Membro = cyan-blue, Tipo = orange, Nome = green, ID = yellow), **the same color applied to the
@@ -307,8 +310,9 @@ button being the safe/low option. The **active** (selected) button appears **lit
 with a white glowing border — while the **unselected** options are now **much dimmer** (darkened),
 making the current choice stand out even more.
 
-- **Resolution** — a video-resolution dropdown (tinted light cyan to mark it as a selector),
-  resolution scale, and the scale filter (Bilinear / FSR / MetalFX…).
+- **Resolution** — a video-resolution dropdown (tinted light cyan to mark it as a selector; with a
+  **minimum width fit to its widest item** so no text is truncated), resolution scale, and the scale
+  filter (Bilinear / FSR / MetalFX…).
 - **Display** — Display Mode (Window / Fullscreen / Exclusive Fullscreen), Vertical
   Synchronization, and FPS Limit (30…144 / Unlimited). The mode and FPS-limit buttons are
   colored along the same gradient (higher cap = more demanding = warmer color). In **Window** mode

@@ -40,7 +40,8 @@
 	},
 	"collider_shapes": {
 		"HEAD": "capsule",
-		"PART_eyes": "box"
+		"PART_eyes": "box",
+		"PART_f_ring1scaler.R": "none"
 	},
 	"damage": {
 		"PART_eyes": 1.7,
