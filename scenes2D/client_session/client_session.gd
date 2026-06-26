@@ -31,6 +31,9 @@ func _ready() -> void:
 	RoomManager.rooms_changed.connect(_refresh_rooms)
 	RoomManager.room_closed.connect(_on_room_closed)
 	RoomManager.room_restarted.connect(_on_room_restarted)
+	# DIAGNÓSTICO TEMPORÁRIO (lista de salas vazia no cliente) — remover após achar a causa.
+	print("[salas] cliente: _ready — conectado=", multiplayer.has_multiplayer_peer(),
+		" id=", multiplayer.get_unique_id(), " — pedindo lista de salas ao servidor")
 	RoomManager.request_room_list.rpc_id(1)  # pede a lista de salas ao servidor
 	# Voltou do ChoosePlayer para ENTRAR numa sala? espelha a sala e spawna o player.
 	if RoomManager.pending_play_room >= 0:
