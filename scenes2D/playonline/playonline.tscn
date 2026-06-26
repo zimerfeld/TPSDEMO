@@ -90,6 +90,26 @@ custom_minimum_size = Vector2(960, 0)
 layout_mode = 2
 theme_override_constants/separation = 16
 
+[node name="NameRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="NameLabel" type="Label" parent="UI/Margin/Main/FormCenter/VBox/NameRow"]
+custom_minimum_size = Vector2(320, 50)
+layout_mode = 2
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 26
+text = "Player name:"
+
+[node name="PlayerName" type="LineEdit" parent="UI/Margin/Main/FormCenter/VBox/NameRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(560, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+max_length = 16
+placeholder_text = "Jogador"
+
 [node name="PortRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 20
@@ -239,6 +259,8 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
+[connection signal="focus_exited" from="UI/Margin/Main/FormCenter/VBox/NameRow/PlayerName" to="." method="_on_player_name_focus_exited"]
+[connection signal="text_submitted" from="UI/Margin/Main/FormCenter/VBox/NameRow/PlayerName" to="." method="_on_player_name_submitted"]
 [connection signal="item_selected" from="UI/Margin/Main/FormCenter/VBox/PortRow/PortHistory" to="." method="_on_port_history_item_selected"]
 [connection signal="item_selected" from="UI/Margin/Main/FormCenter/VBox/AddressRow/AddressHistory" to="." method="_on_address_history_item_selected"]
 [connection signal="text_submitted" from="UI/Margin/Main/FormCenter/VBox/AddressRow/Address" to="." method="_on_address_text_submitted"]

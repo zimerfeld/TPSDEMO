@@ -18,6 +18,7 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 # o auto-localizer do Locale pula OptionButton (seus itens são geridos em código).
 var _opt_buttons: Array[OptionButton] = []
 
+@onready var player_name_field: LineEdit = %PlayerName
 @onready var port: SpinBox = %Port
 @onready var address: LineEdit = %Address
 @onready var port_history: OptionButton = %PortHistory
@@ -33,6 +34,8 @@ var _opt_buttons: Array[OptionButton] = []
 
 func _ready() -> void:
 	_update_language_buttons()
+	# Carrega o nome do jogador salvo (persistido ao sair do campo) → campo + PlayerSelection.
+	_prefill_player_name()
 	# Preenche os campos Porta/IP com o último valor ANTES de montar os dropdowns, para que cada
 	# dropdown já nasça com esse valor SELECIONADO (não mais preso em "Selecione...").
 	_prefill_last_used()
@@ -50,6 +53,30 @@ func _ready() -> void:
 		return
 	# Foco inicial para a navegação por setas do teclado (não em headless, sem UI).
 	manage_rooms_button.grab_focus.call_deferred()
+
+
+# Carrega o nome salvo no campo e no PlayerSelection (que o RoomManager/NetSpawn leem ao spawnar).
+func _prefill_player_name() -> void:
+	var saved := String(Settings.config_file.get_value("online", "player_name", ""))
+	player_name_field.text = saved
+	PlayerSelection.player_name = saved
+
+
+# Salvo ao sair do campo (foco perdido) ou ao pressionar Enter. Persiste em Settings e atualiza o
+# PlayerSelection — o nome vira o Label3D acima da cabeça do jogador ao entrar num level.
+func _on_player_name_focus_exited() -> void:
+	_save_player_name()
+
+
+func _on_player_name_submitted(_new_text: String) -> void:
+	_save_player_name()
+
+
+func _save_player_name() -> void:
+	var pname := player_name_field.text.strip_edges()
+	PlayerSelection.player_name = pname
+	Settings.config_file.set_value("online", "player_name", pname)
+	Settings.save_settings()
 
 
 # Histórico de porta/IP persistido em Settings.config_file (seção "online"). Mostra os
@@ -316,6 +343,13 @@ func _on_join_rooms_pressed() -> void:
 	multiplayer.multiplayer_peer = peer
 	RoomManager.client_mode = true
 	loading.show()
+	# Reconexão idempotente: uma tentativa anterior (que falhou e voltou pelo retry do CrashHandler,
+	# ou que conectou e deixou o connection_failed ONE_SHOT pendente) pode ter deixado o sinal preso
+	# nesta mesma tela. Sem limpar, o connect() repetido estoura "Signal already connected".
+	if multiplayer.connected_to_server.is_connected(_open_rooms_client):
+		multiplayer.connected_to_server.disconnect(_open_rooms_client)
+	if multiplayer.connection_failed.is_connected(_on_rooms_connect_failed):
+		multiplayer.connection_failed.disconnect(_on_rooms_connect_failed)
 	multiplayer.connected_to_server.connect(_open_rooms_client, CONNECT_ONE_SHOT)
 	multiplayer.connection_failed.connect(_on_rooms_connect_failed, CONNECT_ONE_SHOT)
 
