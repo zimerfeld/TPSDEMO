@@ -20,11 +20,13 @@ func _ready() -> void:
 	# Offline (OfflineMultiplayerPeer) e host (ENet) entram aqui como servidor; o cliente
 	# recebe inimigo/players via MultiplayerSpawner. Mesmo padrão do level_base.
 	if multiplayer.is_server():
-		# Sem template ativo: sala "LIMPA" — só os players que entram + o solo (geometria estática da
-		# cena). NÃO spawna inimigo padrão na criação da sala: nós pré-spawnados ANTES de qualquer
-		# client entrar vazavam para o client sem o espelho pronto ("spawner null") e desalinhavam o
-		# scene cache da replicação por-sala. Quem quiser inimigos/estruturas usa um template.
-		LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points)
+		# Modo-sala (multi-level): a sala NASCE VAZIA — nada pré-spawnado na criação, NEM o template
+		# (o RoomManager o aplica depois, pelo caminho per-peer protegido, quando há gente na sala).
+		# Assim nenhum nó é replicado ao client ANTES de o espelho da sala existir — causa raiz da
+		# tela cinza (envenenamento do scene-cache). Single-level (offline / "Hospedar Somente"):
+		# aplica o template ativo, se houver. Ver [[salas-nascem-limpas]].
+		if not has_meta("room_id"):
+			LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points)
 		randomize()
 
 	# Modo-sala (servidor multi-level) usa spawn POR-SALA (RoomManager); senão, NetSpawn single-level.

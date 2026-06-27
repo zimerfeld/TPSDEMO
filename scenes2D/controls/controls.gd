@@ -22,8 +22,8 @@ var _controls: Array = []
 
 @onready var cbo_control: OptionButton = %cboControl
 @onready var preview: SubViewport = %SubViewport
-@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/LangBar/EnglishButton
+@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
 
 
 func _ready() -> void:
@@ -143,5 +143,5 @@ func _input(input_event: InputEvent) -> void:
 		if UINav.cancel_active_edit(get_viewport()):
 			get_viewport().set_input_as_handled()
 			return
-		_on_back_pressed()
 		get_viewport().set_input_as_handled()
+		_on_back_pressed()

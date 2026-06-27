@@ -30,7 +30,8 @@ const ROOM_RESOLUTION := Vector2i(1280, 720)
 const SpectatorCamera: PackedScene = preload("res://scenes3D/spectator_camera/spectator_camera.tscn")
 const DEFAULT_VARIANT: int = 0
 
-# Cada sala: { id, level_path, viewport, level, spawned_nodes, spawn_points, spawn_queue, pending }
+# Cada sala: { id, level_path, viewport, level, spawned_nodes, spawn_points, spawn_queue, pending,
+#             template_applied }
 var _rooms: Array[Dictionary] = []
 var _next_id: int = 1
 # Servidor: peer_id -> room_id (em qual sala cada cliente entrou).
@@ -103,6 +104,7 @@ func _instantiate_room(id: int, level_path: String, as_subviewport: bool) -> voi
 	_rooms.append({
 		"id": id, "level_path": level_path, "viewport": container, "level": level,
 		"spawned_nodes": null, "spawn_points": null, "spawn_queue": [], "pending": {},
+		"template_applied": false,  # template aplicado lazy no 1º peer (ver _ensure_template_spawned)
 	})
 	container.add_child(level)
 
@@ -176,6 +178,16 @@ func register_room_level(room_id: int, spawned_nodes: Node3D, spawn_points: Node
 	room["spawned_nodes"] = spawned_nodes
 	if not multiplayer.is_server():
 		return  # cliente: só precisa do caminho casando (já tem); sem lógica de spawn
+	# ── GUARD: a sala NASCE VAZIA, sem exceção (causa raiz da "tela cinza") ──────────────────────
+	# Em modo-sala NADA é pré-spawnado na criação: nem inimigos padrão, nem o template (este é aplicado
+	# depois, lazy, em _ensure_template_spawned, pelo caminho per-peer protegido). Qualquer nó já
+	# presente aqui foi pré-spawnado por engano e seria replicado ao client ANTES de o espelho da sala
+	# existir → envenenaria o scene-cache → quebraria a replicação de tudo (tela cinza). Então o
+	# SpawnedNodes TEM que estar vazio neste ponto: removemos qualquer intruso (mantém a sala segura) e
+	# logamos o erro para o causador ser corrigido. A regra "salas nascem limpas" vale LITERALMENTE.
+	for stray in spawned_nodes.get_children():
+		push_error("RoomManager: nó '%s' pré-spawnado na criação da sala #%d — removido (regra: salas nascem vazias; conteúdo entra só pelo caminho protegido). Ver salas-nascem-limpas." % [stray.name, room_id])
+		stray.queue_free()
 	room["spawn_points"] = spawn_points
 	room["spawn_queue"] = spawn_points.get_children().duplicate()
 	room["spawn_queue"].shuffle()
@@ -197,6 +209,24 @@ func register_room_level(room_id: int, spawned_nodes: Node3D, spawn_points: Node
 
 func _on_room_child_entered(node: Node, room_id: int) -> void:
 	_apply_room_visibility(node, room_id)
+
+
+# Materializa o TEMPLATE da sala UMA vez, no 1º peer que entra (cliente em join_room ou host jogando
+# em host_spawn_in_room). Os nós entram em SpawnedNodes DEPOIS de register_room_level, então o
+# child_entered_tree aplica o filtro de visibilidade da sala em cada um (igual aos players) — nunca
+# são replicados a um peer fora da sala / sem o espelho pronto. Por isso a sala pode NASCER VAZIA
+# (sem envenenar o scene-cache) e ainda assim ganhar o conteúdo do template quando há gente nela.
+# Idempotente: a flag template_applied (marcada ANTES de aplicar) garante uma única materialização,
+# mesmo com vários peers entrando aos poucos. Sem template ativo, é um no-op (a sala segue vazia).
+func _ensure_template_spawned(room_id: int) -> void:
+	var room := get_room(room_id)
+	if room.is_empty() or bool(room.get("template_applied", false)):
+		return
+	room["template_applied"] = true
+	var spawned: Node3D = room.get("spawned_nodes")
+	if not is_instance_valid(spawned):
+		return
+	LevelTemplateManager.apply_active_template(String(room.get("level_path", "")), spawned)
 
 
 # Interest management: o nó (e seus sub-nós) só é replicado (spawn + sync) para peers QUE ESTÃO
@@ -328,7 +358,11 @@ func join_room(room_id: int, variant_id: int, player_name: String = "") -> void:
 	if get_room(room_id).is_empty():
 		return
 	_peer_room[sender] = room_id
-	# Reavalia a visibilidade: o que JÁ existe na sala (inimigos) passa a replicar p/ este peer.
+	# Há gente na sala agora → materializa o template (1ª vez) pelo caminho protegido, ANTES de
+	# reavaliar a visibilidade: os nós herdam o filtro da sala (child_entered_tree) e passam a
+	# replicar só para os peers desta sala — que já têm o espelho pronto.
+	_ensure_template_spawned(room_id)
+	# Reavalia a visibilidade: o que JÁ existe na sala (template/inimigos) passa a replicar p/ este peer.
 	_refresh_room_visibility(room_id)
 	_reserve_and_spawn(sender, room_id, variant_id, player_name)
 	# Reavalia DE NOVO no próximo frame: aí o player recém-spawnado e seus synchronizers já estão
@@ -418,6 +452,7 @@ func host_spawn_in_room(room_id: int, variant_id: int) -> void:
 		player.transform = marker.transform
 		player.spawn_position = marker.transform.origin
 	_peer_room[1] = room_id
+	_ensure_template_spawned(room_id)  # host jogando = gente na sala → materializa o template (1ª vez)
 	spawned.add_child(player)  # child_entered_tree → aplica a visibilidade da sala
 	# Reforça a câmera do player como current no SubViewport (apply_authority já faz no _ready;
 	# isto garante contra qualquer outra câmera que tenha ficado current no World3D da sala).
@@ -430,6 +465,10 @@ func host_spawn_in_room(room_id: int, variant_id: int) -> void:
 # Garante a câmera livre da sala como current (observação), reabilitando seu processamento. Robusto
 # contra outras câmeras do nível que tenham ficado current no World3D do SubViewport.
 func activate_spectator(room_id: int) -> void:
+	# Observar também conta como "gente na sala" → materializa o template (1ª vez) pelo caminho
+	# protegido. Server-side: os nós aparecem no SubViewport observado; o filtro de visibilidade segue
+	# vetando qualquer client remoto que não esteja nesta sala (sem risco de vazamento). Idempotente.
+	_ensure_template_spawned(room_id)
 	var room := get_room(room_id)
 	var cam: Camera3D = room.get("spectator_cam")
 	if is_instance_valid(cam):

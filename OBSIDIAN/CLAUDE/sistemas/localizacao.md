@@ -49,6 +49,11 @@ Os **prefixos dos `Label3D`** da cena Models (`Membro:`/`Sub-membro:`/`Esqueleto
 também não são alcançados pelo auto-tradutor: vão por `Locale.tr_key` e são reconstruídos no
 `language_changed` (`_refresh_member_overlays`/`_refresh_aux_labels`) — ver [[sistemas/biblioteca-de-modelos]].
 
+Os **títulos de coluna do `Tree`** da janela de **Dano** (`Membro`/`Def`/`Bônus %`/`Dono`) são outro
+caso: `set_column_title` não é `Label`/`Button`, então o auto-tradutor não o alcança. Desde 2026-06-27,
+`_apply_damage_tree_titles()` os reaplica via `Locale.tr_key` na construção da árvore E no
+`language_changed` (antes ficavam presos no idioma da última construção) — ver [[sistemas/dano-localizado]].
+
 ## Regra — mudou texto, atualize as chaves
 
 **Sempre que alterar ou adicionar um texto de UI em uma cena, atualize a chave correspondente em

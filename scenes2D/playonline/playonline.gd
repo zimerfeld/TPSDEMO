@@ -28,8 +28,8 @@ var _opt_buttons: Array[OptionButton] = []
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
-@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/LangBar/EnglishButton
+@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
 
 
 func _ready() -> void:
@@ -492,5 +492,5 @@ func _input(input_event: InputEvent) -> void:
 		if UINav.cancel_active_edit(get_viewport(), manage_rooms_button):
 			get_viewport().set_input_as_handled()
 			return
-		quit.emit()
 		get_viewport().set_input_as_handled()
+		quit.emit()

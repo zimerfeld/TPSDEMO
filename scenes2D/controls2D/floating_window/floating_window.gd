@@ -57,6 +57,9 @@ var _pointer_inside: bool = false
 
 
 func _ready() -> void:
+	# Toda janela flutuante entra no grupo do DebugOverlay: enquanto visível, o Debug 2D some na UI de
+	# fundo que a chamou (em QUALQUER cena), mantendo só os tooltips dela. Ver autoload/debug_overlay.gd.
+	add_to_group(DebugOverlay.FLOATING_WINDOW_GROUP)
 	_apply_window_style()
 	_titlebar.gui_input.connect(_on_titlebar_input)
 	_close_button.pressed.connect(_on_close_pressed)

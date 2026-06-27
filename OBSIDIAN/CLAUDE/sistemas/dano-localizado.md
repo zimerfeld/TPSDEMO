@@ -225,8 +225,16 @@ vai para a seção **"Outros sub-membros"**. O painel é uma **árvore (Tree)**;
 tem um **botão de lixeira à direita do nome** para removê-la ali mesmo — com **diálogo de confirmação**
 ("Deseja realmente remover associação do sub-membro: <nome> ?") (2026-06-22; substituiu o antigo botão
 grande "Remover sub-membro" do rodapé — ver [[sistemas/biblioteca-de-modelos]]). No fim, a linha
-de **adicionar**: um `OptionButton` com os ossos AUXILIARES do esqueleto do preview (os cujo `group_of`
-dá "") + botão "Adicionar".
+de **adicionar** (`_build_damage_footer`): um `OptionButton` com os ossos AUXILIARES do esqueleto do
+preview (os cujo `group_of` dá "") + o dropdown de **membro-dono** + botão "Adicionar".
+**Cabeçalho mesclado (2026-06-27):** os rótulos "Adicionar sub-membro" e "Para Membro Dono" ficam
+agora numa **única `HBoxContainer`** acima da linha (antes: um título solto + um rótulo dentro de um
+`VBoxContainer` sobre o dropdown). "Adicionar sub-membro" usa `SIZE_EXPAND_FILL` (esquerda, sobre o
+seletor de osso) e "Para Membro Dono" fica à direita.
+**Títulos de coluna re-traduzidos (2026-06-27):** os cabeçalhos da árvore (Membro/Def/Bônus %/Dono)
+**não** são `Label`/`Button`, então o auto-localizador do `Locale` não os alcançava e ficavam presos
+no idioma da última construção. Agora `_apply_damage_tree_titles()` os reaplica via `tr_key` tanto em
+`_refresh_damage_panel` quanto em `_on_language_changed` (ver [[sistemas/localizacao]]).
 Adicionar/remover chama `LimbConfig.add_sub_member`/`remove_sub_member` e **reconstrói** os colliders
 do preview (`_rebuild_member_colliders`), repondo gizmos/rótulos. A leitura em jogo (`bullet.gd`/
 `laser_shooter.gd` lendo a meta `damage_multiplier`) é **inalterada**.
@@ -306,6 +314,13 @@ Para reutilizar o tiro entre modelos, a lógica foi isolada em `effects_shared/`
 ele causava 50 de dano no início. Correção: **bullet sem `shooter` fica inerte**
 (`_ready`: `if shooter == null or not is_server: disable`). Cobre também clientes
 (onde `shooter` não é replicado).
+
+**Rede (2026-06-26):** o `BulletCache` carregava o `MultiplayerSynchronizer` do `bullet.tscn` para
+dentro da cena replicada do player. Ao spawnar/despawnar o player via rede, esse sync gerava
+`Node not found .../BulletCache/MultiplayerSynchronizer`, `Failed to get cached node from peer` e
+`on_despawn_receive ERR_UNAUTHORIZED`. Correção: no `player.tscn`, override do sync do cache com
+**`public_visibility = false`** (não replica) — afeta só o cache; balas reais (instâncias de
+`bullet.tscn`) seguem replicando normalmente.
 
 ---
 

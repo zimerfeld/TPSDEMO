@@ -7,6 +7,16 @@ Convenção (2026-06-16): elementos colados nas bordas da tela usam ancoragem **
   controls/developer/levels/playonline) → **`BOTTOM_WIDE` (preset 12)**: `anchor_left=0`,
   `anchor_right=1`, `anchor_top=1`, `anchor_bottom=1`, `offset_left/right=0`, com
   `alignment=1` e `grow_horizontal=2`. Largura toda, colada no rodapé, botões no centro.
+  - **Também no menu** (sob `UI`) e nos **levels de gameplay** level_1/2/base (sob o `TitleCanvas`):
+    mesma `Actions` BOTTOM_WIDE, mas com `mouse_filter=2` (ignore, para não bloquear o que está atrás)
+    — criadas para o toggle de Debug 2D injetado pelo `DebugOverlay`. Ver [[sistemas/debug-overlay]].
+  - **LangBar dentro da Actions (2026-06-26):** os botões de idioma (`PortugueseButton`/
+    `EnglishButton`) NÃO ficam mais numa barra própria ancorada à direita — a `LangBar` virou um
+    `HBoxContainer` filho de `UI/Actions` (sub-grupo com `separation=12`), como último item do grupo
+    centralizado. Vale para TODAS as telas (menu/settings/levels/chooseplayer/controls/playonline/
+    developer/models). Caminhos: `UI/Actions/LangBar/PortugueseButton` (e as conexões `pressed`). As telas
+    que referenciam por `%NomeÚnico` seguem funcionando; controls/developer/playonline usam o caminho
+    `$UI/Actions/LangBar/...`.
 - **Label do título** (`TitleLabel` de chooseplayer/controls/developer/levels/menu/
   playonline/models + os `TitleCanvas/TitleLabel` dos níveis) → **`TOP_WIDE` (preset 10)**:
   `anchor_left=0`, `anchor_right=1`, `anchor_top/bottom=0`, `offset_left/right=0`, com

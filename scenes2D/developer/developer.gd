@@ -44,8 +44,8 @@ const _BASE_MODULATE_META := &"_base_modulate"
 # fator (mantém o matiz). Sobreposto pelo estado "disabled" (acinzentado) das sub-linhas do Debug 2D.
 const OPTION_DIM_FACTOR: float = 0.42
 
-@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/LangBar/EnglishButton
+@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
 
 
 func _ready() -> void:
@@ -199,5 +199,5 @@ func _input(input_event: InputEvent) -> void:
 		if UINav.cancel_active_edit(get_viewport()):
 			get_viewport().set_input_as_handled()
 			return
-		quit.emit()
 		get_viewport().set_input_as_handled()
+		quit.emit()

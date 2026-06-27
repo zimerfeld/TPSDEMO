@@ -565,7 +565,8 @@ func _apply_settings() -> void:
 	Engine.max_fps = Settings.config_file.get_value("video", "max_fps")
 	get_window().scaling_3d_scale = Settings.config_file.get_value("video", "resolution_scale")
 	get_window().scaling_3d_mode = Settings.config_file.get_value("video", "scale_filter")
-	get_window().use_taa = Settings.config_file.get_value("rendering", "taa")
+	# FSR 2 / MetalFX Temporal são upscalers temporais e incompatíveis com TAA (ver Settings.is_temporal_upscaler).
+	get_window().use_taa = Settings.config_file.get_value("rendering", "taa") and not Settings.is_temporal_upscaler(get_window().scaling_3d_mode)
 	get_window().msaa_3d = Settings.config_file.get_value("rendering", "msaa")
 	get_window().screen_space_aa = (
 		Viewport.SCREEN_SPACE_AA_FXAA if Settings.config_file.get_value("rendering", "fxaa")

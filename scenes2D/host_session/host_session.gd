@@ -317,13 +317,13 @@ func _confirm_disconnect() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"quit"):
+		get_viewport().set_input_as_handled()   # marca antes da ação: _go_back() libera a cena (viewport vira null depois)
 		if _playing_id >= 0:
 			_confirm_disconnect()       # jogando: confirma desconectar e voltar à gerência
 		elif _observing_id >= 0:
 			_set_observing(-1)          # observando: 1º ESC sai da observação
 		else:
 			_go_back()                  # grade: volta ao PlayOnline (derruba o servidor)
-		get_viewport().set_input_as_handled()
 		return
 	# Observando OU jogando: empurra o mouse p/ a sala (câmera livre ou mira do player). NUNCA
 	# encaminhamos teclas — assim o ESC fica nesta sessão e o nível dentro do SubViewport não o vê.

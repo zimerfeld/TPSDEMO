@@ -349,12 +349,11 @@ var _zoom_target: float = 0.0
 @onready var ai_list: VBoxContainer = %AIList
 @onready var ai_titlebar: PanelContainer = %AITitleBar
 @onready var ai_close_button: Button = %AICloseButton
-@onready var portuguese_button: Button = $UI/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/LangBar/EnglishButton
-# Watermark do nome da cena no canto inferior esquerdo (mesma faixa do botão "Voltar"),
-# espelhando o do debug_overlay.gd. A cena Models está no grupo no_debug_overlay (isenta
-# do overlay global), então ela mostra o PRÓPRIO rótulo, sempre visível e sem depender de
-# nenhum toggle de Debug.
+@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
+@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
+# Rótulo LOCAL do nome da cena (nó no .tscn). Mantido OCULTO (ver _ready) — o nome da cena é
+# mostrado pelo watermark GLOBAL de debug_overlay.gd (topo direito, ao lado do título). Nó
+# preservado só para não quebrar a referência %SceneNameLabel.
 @onready var scene_name_label: Label = %SceneNameLabel
 
 
@@ -497,6 +496,8 @@ func _on_language_changed(_lang: String) -> void:
 	# Rótulo da row de sub-membro (SKIP_GROUP, dirigido por código): agora sempre "Sub-membro:"
 	# (o filtro de ossos avulsos virou o dropdown próprio "Esqueleto", com label estático).
 	sub_member_label.text = Locale.tr_key("Sub-membro:")
+	# Títulos de coluna da árvore de Dano: não passam pelo auto-localizador (não são Label/Button).
+	_apply_damage_tree_titles()
 	if _show_ai_panel:
 		_refresh_ai_panel()
 	_refresh_ai_actions()
@@ -1611,6 +1612,7 @@ func _open_or_update_collider_dialog(group: String, label: String) -> void:
 	dlg.remember_position_key = "models_collider_dialog"
 	dlg.title = label
 	ui_root.add_child(dlg)
+	# (A FloatingWindow já entra sozinha no FLOATING_WINDOW_GROUP do DebugOverlay no seu _ready.)
 	_collider_dialog = dlg
 	_dialog_group = group
 	_build_collider_dialog_content(dlg)
@@ -2203,6 +2205,8 @@ func _setup_damage_window() -> void:
 	damage_close_button.tooltip_text = Locale.tr_key("Fechar")
 	FloatingWindow.style_close_button(damage_close_button)
 	damage_close_button.pressed.connect(_on_damage_close)
+	# Janela flutuante: com ela aberta, o Debug 2D some na UI de fundo que a chamou (ver DebugOverlay).
+	damage_panel.add_to_group(DebugOverlay.FLOATING_WINDOW_GROUP)
 	# Restaura a ÚLTIMA posição salva da janela (default = posição do .tscn). Presa à viewport
 	# para nunca abrir fora da tela caso o valor salvo tenha ficado além da borda.
 	var saved_pos = Settings.config_file.get_value("models", "damage_panel_pos", damage_panel.position)
@@ -2315,6 +2319,8 @@ func _setup_ai_window() -> void:
 	ai_close_button.tooltip_text = Locale.tr_key("Fechar")
 	FloatingWindow.style_close_button(ai_close_button)
 	ai_close_button.pressed.connect(_on_ai_close)
+	# Janela flutuante: com ela aberta, o Debug 2D some na UI de fundo que a chamou (ver DebugOverlay).
+	ai_panel.add_to_group(DebugOverlay.FLOATING_WINDOW_GROUP)
 	var saved_pos = Settings.config_file.get_value("models", "ai_panel_pos", ai_panel.position)
 	if saved_pos is Vector2:
 		var vp := get_viewport().get_visible_rect().size
@@ -3198,10 +3204,7 @@ func _refresh_damage_panel() -> void:
 		return
 	_ensure_member_colliders()
 	var model_key := _current_model_key()
-	damage_tree.set_column_title(0, Locale.tr_key("Membro"))
-	damage_tree.set_column_title(1, Locale.tr_key("Def"))
-	damage_tree.set_column_title(2, Locale.tr_key("Bônus %"))
-	damage_tree.set_column_title(3, Locale.tr_key("Dono"))
+	_apply_damage_tree_titles()
 	var root := damage_tree.create_item()
 	var members := _plan_member_entries()
 	var member_groups := {}
@@ -3251,6 +3254,16 @@ func _setup_damage_tree() -> void:
 	damage_tree.add_theme_constant_override("inner_item_margin_top", 4)
 	damage_tree.add_theme_constant_override("inner_item_margin_bottom", 4)
 	_trash_icon = _make_trash_icon()
+
+
+# Títulos das colunas da árvore de Dano no idioma atual. Os títulos de coluna de um Tree NÃO são
+# Label/Button, então o auto-localizador do Locale não os alcança — reaplicamos via tr_key tanto na
+# construção (_refresh_damage_panel) quanto a cada troca de idioma (_on_language_changed).
+func _apply_damage_tree_titles() -> void:
+	damage_tree.set_column_title(0, Locale.tr_key("Membro"))
+	damage_tree.set_column_title(1, Locale.tr_key("Def"))
+	damage_tree.set_column_title(2, Locale.tr_key("Bônus %"))
+	damage_tree.set_column_title(3, Locale.tr_key("Dono"))
 
 
 # Desenha em código um ícone de LIXEIRA (vermelho = excluir), usado no botão de remover de cada
@@ -3399,19 +3412,27 @@ func _on_damage_tree_button(item: TreeItem, _column: int, id: int, _mouse_button
 		_on_sub_member_removed(model_key, bone))
 
 
-# Footer abaixo da árvore: só a linha "Adicionar sub-membro" (osso avulso + dono explícito +
-# Adicionar). A REMOÇÃO agora é por linha, via ícone de lixeira ao lado do nome de cada sub-membro
+# Footer abaixo da árvore: a linha "Adicionar sub-membro" (osso avulso + dono explícito + Adicionar).
+# A REMOÇÃO agora é por linha, via ícone de lixeira ao lado do nome de cada sub-membro
 # (ver _fill_sub_member_item / _on_damage_tree_button). Reconstruído a cada _refresh_damage_panel.
 func _build_damage_footer(model_key: String) -> void:
 	damage_footer.add_child(HSeparator.new())
-	var title := Label.new()
-	title.text = "Adicionar sub-membro"   # Label: auto-localizado pelo Locale
-	damage_footer.add_child(title)
+	# Cabeçalho em UMA única HBox: "Adicionar sub-membro" (à esquerda, sobre o seletor de osso) e
+	# "Para Membro Dono" (à direita, sobre o dropdown de dono) — antes eram dois rótulos separados.
+	var header_row := HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 8)
+	var add_label := Label.new()
+	add_label.text = "Adicionar sub-membro"   # Label: auto-localizado pelo Locale
+	add_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.add_child(add_label)
+	var owner_label := Label.new()
+	owner_label.text = "Para Membro Dono"   # Label: auto-localizado pelo Locale
+	header_row.add_child(owner_label)
+	damage_footer.add_child(header_row)
 	var add_row := HBoxContainer.new()
 	add_row.add_theme_constant_override("separation", 8)
 	var picker := OptionButton.new()
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	picker.size_flags_vertical = Control.SIZE_SHRINK_END   # base alinhada ao dropdown do dono (que tem rótulo acima)
 	var candidates := _aux_bone_candidates()
 	if candidates.is_empty():
 		picker.add_item(Locale.tr_key("(sem ossos auxiliares)"))
@@ -3420,12 +3441,6 @@ func _build_damage_footer(model_key: String) -> void:
 		for b in candidates:
 			picker.add_item(b)
 	add_row.add_child(picker)
-	# Coluna do membro-dono: um rótulo "Para Membro Dono" ACIMA do dropdown (deixa claro o que ele faz).
-	var owner_col := VBoxContainer.new()
-	owner_col.add_theme_constant_override("separation", 2)
-	var owner_label := Label.new()
-	owner_label.text = "Para Membro Dono"   # Label: auto-localizado pelo Locale
-	owner_col.add_child(owner_label)
 	var owner_btn := OptionButton.new()
 	owner_btn.tooltip_text = Locale.tr_key("Membro-dono (agrupa o dano; não mexe na malha)")
 	for ch in _owner_choices():
@@ -3433,12 +3448,10 @@ func _build_damage_footer(model_key: String) -> void:
 		owner_btn.add_item(str(ch["label"]))
 		owner_btn.set_item_metadata(i, str(ch["group"]))
 	owner_btn.disabled = candidates.is_empty()
-	owner_col.add_child(owner_btn)
-	add_row.add_child(owner_col)
+	add_row.add_child(owner_btn)
 	var add_btn := Button.new()
 	add_btn.text = "Adicionar"   # Button: auto-localizado pelo Locale
 	add_btn.disabled = candidates.is_empty()
-	add_btn.size_flags_vertical = Control.SIZE_SHRINK_END   # base alinhada ao dropdown do dono
 	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker, owner_btn))
 	add_row.add_child(add_btn)
 	damage_footer.add_child(add_row)
