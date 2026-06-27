@@ -78,6 +78,9 @@ var initial_position: Vector3 = Vector3.ZERO
 		# Garante o HUD do player local em toda cena de level, inclusive quando
 		# player_id chega via replicação depois do _ready (cliente multiplayer).
 		_setup_health_bar.call_deferred()
+		# A autoridade do input (definida agora) decide se o nome vai no Label3D acima da
+		# cabeça (outros) ou no HUD (player local) — reavalia após a autoridade assentar.
+		_apply_name_label.call_deferred()
 		# Guard: multiplayer is only available when inside the scene tree.
 		# _ready() will re-evaluate _is_local_player after add_child().
 		if is_inside_tree():
@@ -169,6 +172,8 @@ func _apply_bot_controlled() -> void:
 			ai = null
 		if is_inside_tree() and not _safe_is_server_call(false):
 			_is_local_player = player_id == multiplayer.get_unique_id()
+	# Bot vs. controlado muda quem é "dono local": reavalia o nome 3D / HUD.
+	_apply_name_label()
 
 
 # Coloca o player na posição de spawn enviada pelo servidor e zera a queda/predição local.
@@ -187,7 +192,9 @@ func _apply_spawn_position() -> void:
 
 
 # Atualiza o Label3D do nome acima da cabeça. Idempotente (chamado pelo setter de player_name e
-# pelo _ready). Esconde quando o nome está vazio para não mostrar uma etiqueta em branco.
+# pelo _ready). O nome 3D acima da cabeça aparece só para os OUTROS jogadores conectados; no
+# próprio player local o nome vai para o HUD (health_bar), então o Label3D dele fica escondido.
+# Também esconde quando o nome está vazio para não mostrar uma etiqueta em branco.
 func _apply_name_label() -> void:
 	if not is_inside_tree():
 		return
@@ -195,25 +202,38 @@ func _apply_name_label() -> void:
 	if lbl == null:
 		return
 	lbl.text = player_name
-	lbl.visible = player_name.strip_edges() != ""
+	lbl.visible = player_name.strip_edges() != "" and not _is_owned_locally()
+	# Mantém o HUD do dono em sincronia com o nome (quando o HUD já existe).
+	if _health_bar != null and _health_bar.has_method(&"set_player_name"):
+		_health_bar.set_player_name(player_name)
+
+
+# True apenas na instância que CONTROLA localmente este player (o "meu" player), pelo mesmo
+# critério do HUD de vida: a autoridade do InputSynchronizer é este peer e não é um bot. Cobre o
+# host (id 1, que joga na sala) e os clientes. Usa $InputSynchronizer (não o onready) porque pode
+# ser chamado antes do _ready, quando o setter de player_id já configurou a autoridade.
+func _is_owned_locally() -> bool:
+	if not is_inside_tree() or multiplayer == null:
+		return false
+	if bot_controlled:
+		return false
+	return $InputSynchronizer.get_multiplayer_authority() == multiplayer.get_unique_id()
 
 
 func _setup_health_bar() -> void:
 	# Idempotente: pode ser chamado pelo _ready e pelo setter de player_id.
 	if _health_bar != null:
 		return
-	if not is_inside_tree():
-		return
-	# Mostra o HUD apenas para o player controlado localmente.
-	# Usa $InputSynchronizer (não o onready) pois o setter pode rodar antes do _ready.
-	if $InputSynchronizer.get_multiplayer_authority() != multiplayer.get_unique_id():
-		return
-	if bot_controlled:
+	# Mostra o HUD apenas para o player controlado localmente (mesmo critério do nome 3D).
+	if not _is_owned_locally():
 		return
 	_health_bar = preload("res://library3D/characters/players/player/health_bar.gd").new()
 	_health_bar.name = "HealthBar"
 	add_child(_health_bar)
 	_health_bar.update_health(hp, MAX_HP)
+	# O nome do player local vai no HUD (acima do HP); o Label3D acima da cabeça fica escondido.
+	_health_bar.set_player_name(player_name)
+	_apply_name_label()
 
 
 func _setup_limb_colliders() -> void:

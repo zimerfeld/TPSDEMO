@@ -81,3 +81,19 @@ grow_horizontal = 2
 theme_override_font_sizes/font_size = 40
 text = "Level 1"
 horizontal_alignment = 1
+
+[node name="Actions" type="HBoxContainer" parent="TitleCanvas"]
+anchors_preset = 12
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = -100.0
+offset_right = 0.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 60
+alignment = 1

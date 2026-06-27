@@ -2,6 +2,7 @@ extends CanvasLayer
 
 var _bar: ProgressBar
 var _label: Label
+var _name_label: Label
 
 
 func _ready() -> void:
@@ -33,6 +34,13 @@ func _ready() -> void:
 	vbox.add_theme_constant_override("separation", 4)
 	panel.add_child(vbox)
 
+	# Nome do próprio jogador no topo do HUD (o Label3D acima da cabeça é só para os outros).
+	_name_label = Label.new()
+	_name_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+	_name_label.add_theme_font_size_override("font_size", 15)
+	_name_label.visible = false  # aparece só quando há um nome definido
+	vbox.add_child(_name_label)
+
 	_label = Label.new()
 	_label.text = "HP: 100 / 100"
 	_label.add_theme_color_override("font_color", Color.WHITE)
@@ -58,6 +66,14 @@ func _ready() -> void:
 
 	vbox.add_child(_bar)
 	add_child(panel)
+
+
+func set_player_name(player_name: String) -> void:
+	if not _name_label:
+		return
+	var trimmed := player_name.strip_edges()
+	_name_label.text = trimmed
+	_name_label.visible = trimmed != ""
 
 
 func update_health(current: int, maximum: int) -> void:

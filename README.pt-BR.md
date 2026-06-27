@@ -105,7 +105,9 @@ em terceira pessoa. Em alto nível, oferece:
   **Entrar em Salas** abre o navegador de salas (`client_session`), que lista as salas
   em execução com um botão **Jogar** (só aparece enquanto houver sala) que leva à sala escolhida após o
   seletor de personagem. A variante/cor escolhida por cada jogador aparece para todos online (loadout
-  por peer), e os outros players/inimigos são suavizados por um **buffer de interpolação com snapshots
+  por peer), e o **nome** de cada jogador flutua como rótulo 3D acima da cabeça dos **outros**
+  jogadores — nunca acima do seu, cujo nome aparece no topo do seu HUD de vida local. Os outros
+  players/inimigos são suavizados por um **buffer de interpolação com snapshots
   datados** — visão do cliente sem flicker e com FPS alto. A tela Jogar Online tem ainda um seletor de
   **Otimização** aplicado antes de hospedar/entrar: interpolação **Suave / Equilibrado / Responsivo**
   (atraso de render 100 / 60 / 35 ms — suavidade × resposta), **taxa de sincronização 30 / 60 Hz**
@@ -176,8 +178,8 @@ em terceira pessoa. Em alto nível, oferece:
   **próprios** da tela Models (Membro + toggles Tipo/Nome/ID) — a cena Models está **totalmente
   desacoplada** do overlay de **Debug 3D** global (seu nó raiz está no grupo `no_debug_overlay`),
   então o Debug 3D só afeta os **levels do jogo** (o Debug 2D agora vale em todas as telas). O nome
-  da cena aparece pelo **watermark global** no canto inferior esquerdo (de `debug_overlay.gd`); o
-  rótulo LOCAL antigo fica oculto (não é exibido na janela de dano). Personagens com skin são
+  da cena aparece pelo **watermark global** no **topo direito, ao lado do título da cena** (de
+  `debug_overlay.gd`); o rótulo LOCAL antigo fica oculto (não é exibido na janela de dano). Personagens com skin são
   enquadrados/centralizados pelos colliders posados para girarem no lugar em vez de derivar, e os
   modelos abrem **de frente para a câmera** (player e red_robot, exportados com a frente em +Z, já
   iniciam mostrando o rosto, sem precisar rotacionar).
@@ -203,9 +205,14 @@ distintas para você diferenciá-los:
   dependentes `Type` / `Name` / `Id` / `Tab`. Controla o overlay 2D (uma borda colorida + um tooltip
   TYPE/Name/ID/TAB) em cada `Control`. Os tooltips 2D aparecem em **todas as telas, sem exceção** —
   inclusive Models e o editor de Dano (que saem do overlay **3D** via `no_debug_overlay`) — e
-  também sobre o **rótulo do nome da cena** no canto inferior esquerdo. A linha **Tab** (branca,
+  também sobre o **rótulo do nome da cena** (topo direito, ao lado do título). O tooltip fica à
+  direita de cada controle, exceto o do **TitleLabel**, que fica **centralizado abaixo do texto**. A linha **Tab** (branca,
   `show_tab`) mostra o **índice de Tab/foco** de cada controle na cena 2D ativa (`-` para
-  controles não focáveis).
+  controles não focáveis). Além da tela developer, toda tela 2D com a barra **Actions** no rodapé
+  ganha um toggle **Debug 2D** (`CheckButton`, injetado pelo `DebugOverlay`) para ligar/desligar o
+  master sem sair da cena (a developer mantém o seu próprio par). Uma barra Actions na posição padrão
+  foi adicionada também ao **menu** e aos **levels de gameplay** (sob o `TitleCanvas` de cada um), para
+  o toggle alcançá-los também.
 - **Debug 3D** (rótulos ciano claro) — master `debug_3d` mais os dependentes `Type` / `Name` /
   `Id` (descrevendo o nó `Skeleton3D`), `Members`, `Skeleton` e `Mesh`. Renderiza rótulos
   `Label3D` por membro que seguem a pose viva.
@@ -283,10 +290,11 @@ O idioma da UI alterna entre **Português** e **English** pelo autoload **Locale
   na árvore é traduzido automaticamente. `OptionButton`/`MenuButton` são ignorados (seu texto é a
   seleção viva) e, na primeira vez que vê um nó, guarda o texto original em um meta, para que trocas
   de idioma traduzam a partir do original e não de um texto já traduzido.
-- **Toda tela tem os botões de idioma.** Uma `LangBar` no canto inferior direito com botões
-  **Português** / **English** (o mesmo padrão do menu), **alinhada à altura do botão "Voltar"**,
-  está presente em menu, chooseplayer,
-  settings, developer, levels, playonline, controls e models. Pressionar um chama
+- **Toda tela tem os botões de idioma.** Uma `LangBar` com botões **Português** / **English**
+  agora fica **dentro da barra `Actions` do rodapé** (como último grupo, caminhos
+  `UI/Actions/LangBar/…`), e não mais numa barra separada no canto inferior direito — um rodapé
+  unificado em menu, chooseplayer, settings, developer, levels, playonline, controls e models.
+  Pressionar um chama
   `Locale.set_language(...)`, que persiste a escolha e re-localiza a árvore viva no lugar (o botão do
   idioma ativo fica acinzentado).
 - **Textos vindos de código** (linhas de status dinâmicas, placeholders de dropdown, os títulos das

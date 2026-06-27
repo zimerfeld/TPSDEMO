@@ -2,6 +2,7 @@ extends Node
 
 const _BORDER_WIDTH := 2
 const _TOOLTIP_GAP := 4.0
+const _Debug2DToggle := preload("res://scenes2D/controls2D/debug2d_toggle.gd")
 
 const _PALETTE := [
 	Color(1.0, 0.25, 0.25),
@@ -147,16 +148,16 @@ func _setup_scene_name_label() -> void:
 	_scene_name_label.add_theme_constant_override("shadow_offset_y", 1)
 	_scene_name_label.add_theme_constant_override("shadow_as_outline", 1)
 	_scene_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_scene_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# Canto inferior esquerdo, na mesma faixa vertical dos botões "Voltar"
-	# (Actions: offset_top -100 / offset_bottom -50, relativo à borda inferior).
-	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_scene_name_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_scene_name_label.offset_left = 8.0
-	_scene_name_label.offset_top = -100.0
-	_scene_name_label.offset_right = 320.0
-	_scene_name_label.offset_bottom = -50.0
+	# À DIREITA do título da cena: encostado na borda direita do topo e na mesma faixa
+	# vertical do TitleLabel (offset_top 38 / offset_bottom 96, padrão das telas 2D).
+	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_scene_name_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_scene_name_label.offset_left = -320.0
+	_scene_name_label.offset_top = 38.0
+	_scene_name_label.offset_right = -12.0
+	_scene_name_label.offset_bottom = 96.0
 	_persistent_canvas.add_child(_scene_name_label)
 
 
@@ -180,6 +181,23 @@ func _active_screen_name() -> String:
 	return target.name if target != null else ""
 
 
+# Injeta (uma vez) o toggle de Debug 2D na barra "Actions" da tela ativa. Toda cena 2D com uma
+# Actions ganha o controle — exceto a developer, que já tem o seu próprio par Desativado/Ativado.
+# Idempotente: não duplica; telas sem Actions (ex.: menu, levels de gameplay) são ignoradas.
+func _ensure_debug2d_toggle(screen: Node) -> void:
+	# is_instance_valid: a tela pode ter sido liberada entre o call_deferred e esta execução.
+	if not is_instance_valid(screen) or screen.scene_file_path.ends_with("developer.tscn"):
+		return
+	var actions := screen.find_child("Actions", true, false)
+	if not (actions is HBoxContainer) or actions.has_node("Debug2DToggle"):
+		return
+	# O texto é definido ANTES de add_child para o auto-localizador (Locale) capturá-lo como fonte.
+	var toggle := _Debug2DToggle.new()
+	toggle.name = "Debug2DToggle"
+	toggle.text = "Debug 2D"
+	actions.add_child(toggle)
+
+
 func _process(_delta: float) -> void:
 	if is_instance_valid(_fps_label):
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
@@ -197,6 +215,8 @@ func _process(_delta: float) -> void:
 		# que os toggles Debug 2D/3D também valham nela — não só na tela onde foram ligados.
 		# (Antes dependia só de _on_node_added, que tinha brechas de timing no carregamento.)
 		call_deferred("refresh")
+		# Garante o toggle de Debug 2D na barra Actions da tela (menos a developer).
+		call_deferred("_ensure_debug2d_toggle", current)
 
 	if _canvas_layer == null:
 		return
@@ -225,10 +245,15 @@ func _process(_delta: float) -> void:
 				ctrl_border.size = rect.size
 				ctrl_border.visible = shown and any_2d_line
 			var vp_size := get_viewport().get_visible_rect().size
-			var tip_x := rect.position.x + rect.size.x
-			if tooltip.size.x > 0 and tip_x + tooltip.size.x > vp_size.x:
-				tip_x = rect.position.x - tooltip.size.x
-			tooltip.position = Vector2(tip_x, rect.position.y)
+			if entry.get("is_title", false):
+				# Tooltip do título centralizado horizontalmente, logo ABAIXO do texto.
+				var tip_cx: float = rect.position.x + rect.size.x * 0.5 - tooltip.size.x * 0.5
+				tooltip.position = Vector2(tip_cx, rect.position.y + rect.size.y + _TOOLTIP_GAP)
+			else:
+				var tip_x := rect.position.x + rect.size.x
+				if tooltip.size.x > 0 and tip_x + tooltip.size.x > vp_size.x:
+					tip_x = rect.position.x - tooltip.size.x
+				tooltip.position = Vector2(tip_x, rect.position.y)
 			entry.type_lbl.visible = _line_visible_2d("type")
 			entry.name_lbl.visible = _line_visible_2d("name")
 			entry.id_lbl.visible = _line_visible_2d("id")
@@ -270,7 +295,11 @@ func _clamp_tooltips_to_viewport() -> void:
 func _resolve_overlaps() -> void:
 	var tooltips: Array = []
 	for inst_id in _overlay_map:
-		var tooltip: PanelContainer = _overlay_map[inst_id].tooltip
+		var entry: Dictionary = _overlay_map[inst_id]
+		# O tooltip do título fica centralizado abaixo do texto — fora do rearranjo lateral.
+		if entry.get("is_title", false):
+			continue
+		var tooltip: PanelContainer = entry.tooltip
 		if is_instance_valid(tooltip) and tooltip.size.x > 0:
 			tooltips.append(tooltip)
 	if tooltips.size() < 2:
@@ -425,6 +454,8 @@ func _add_2d(ctrl: Control) -> void:
 	_overlay_map[id] = {
 		"tooltip": tooltip, "ctrl_border": ctrl_border, "color": color,
 		"type_lbl": type_lbl, "name_lbl": name_lbl, "id_lbl": id_lbl, "tab_lbl": tab_lbl,
+		# O tooltip do título da cena fica centralizado ABAIXO do texto (não à direita).
+		"is_title": ctrl.name == "TitleLabel",
 	}
 
 
