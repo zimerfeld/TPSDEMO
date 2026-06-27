@@ -203,7 +203,14 @@ light colors so you can tell them apart:
   TYPE/Name/ID/TAB tooltip) on every `Control`, in **every scene with no exception** — including Models
   and the Damage editor (which opt out of the **3D** overlay via `no_debug_overlay`) — and also over
   the **scene-name label** (top-right, beside the title). The tooltip sits to the right of each control,
-  except the **TitleLabel**, whose tooltip is **centered below its text**. The **Tab** line (white, `show_tab`) reports each control's
+  except the **TitleLabel**, whose tooltip is **centered below its text**; tooltips are kept **on-screen
+  and non-overlapping** by a 2D separation pass (they nudge apart instead of stacking or running off the
+  edge), and controls hosted inside a **`SubViewport`** (e.g. the Controls 2D preview) are mapped to
+  their real on-screen position so the border/tooltip no longer drifts. In **any scene**, with a
+  **floating window open** (e.g. Models' **Damage**/**AI**/offset-scale windows, or any `FloatingWindow`/
+  confirmation dialog), Debug 2D **hides the tooltips of the calling UI behind it** — only controls
+  **inside** the floating window keep their overlay, to avoid cluttering the screen; opening, closing or
+  switching windows updates this live. The **Tab** line (white, `show_tab`) reports each control's
   keyboard **tab/focus index** in the active 2D scene (`-` for non-focusable controls). Besides the
   developer screen, every 2D screen with a footer **Actions** bar carries a **Debug 2D** toggle
   (`CheckButton`, injected by `DebugOverlay`) so you can flip the master on/off without leaving the scene

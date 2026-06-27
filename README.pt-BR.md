@@ -206,7 +206,14 @@ distintas para você diferenciá-los:
   TYPE/Name/ID/TAB) em cada `Control`. Os tooltips 2D aparecem em **todas as telas, sem exceção** —
   inclusive Models e o editor de Dano (que saem do overlay **3D** via `no_debug_overlay`) — e
   também sobre o **rótulo do nome da cena** (topo direito, ao lado do título). O tooltip fica à
-  direita de cada controle, exceto o do **TitleLabel**, que fica **centralizado abaixo do texto**. A linha **Tab** (branca,
+  direita de cada controle, exceto o do **TitleLabel**, que fica **centralizado abaixo do texto**; os
+  tooltips são mantidos **dentro da tela e sem sobreposição** por uma separação 2D (afastam-se em vez de
+  empilhar ou sair pela borda), e controles dentro de um **`SubViewport`** (ex.: o preview da tela
+  Controles 2D) são mapeados para a posição real na tela, então a borda/tooltip não fica mais deslocada.
+  Em **qualquer cena**, com uma **janela flutuante aberta** (ex.: as janelas **Dano**/**IA**/afastamento-escala
+  da tela Models, ou qualquer `FloatingWindow`/diálogo de confirmação), o Debug 2D **esconde os tooltips
+  da UI que a chamou** atrás dela — só os controles **dentro** da janela flutuante mantêm o overlay, para
+  não poluir a tela; abrir, fechar ou alternar janelas atualiza isso ao vivo. A linha **Tab** (branca,
   `show_tab`) mostra o **índice de Tab/foco** de cada controle na cena 2D ativa (`-` para
   controles não focáveis). Além da tela developer, toda tela 2D com a barra **Actions** no rodapé
   ganha um toggle **Debug 2D** (`CheckButton`, injetado pelo `DebugOverlay`) para ligar/desligar o

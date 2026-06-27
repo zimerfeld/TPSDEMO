@@ -48,12 +48,41 @@ aplicam na hora (`DebugOverlay.refresh()`).
   (a chamada está ANTES do `if _canvas_layer == null: return`), senão não haveria como ligá-lo.
 - **Posição dos tooltips:** por padrão cada tooltip fica **à direita** do controle (vira para a
   esquerda se sair da tela). **Exceção — `TitleLabel`:** o tooltip fica **centralizado abaixo do
-  texto** do título (flag `is_title` na entrada do `_overlay_map`; também é pulado no
-  `_resolve_overlaps` para não ser empurrado lateralmente).
+  texto** do título (flag `is_title` na entrada do `_overlay_map`).
+- **Layout anti-sobreposição (reescrito 2026-06-27):** depois de ancorar cada tooltip ao seu controle,
+  `_resolve_tooltip_layout` (substituiu `_resolve_overlaps` + `_clamp_tooltips_to_viewport`) prende
+  todos à viewport e faz uma **separação iterativa em 2D**: a cada passada empurra cada par sobreposto
+  pelo **menor eixo de penetração** (metade p/ cada lado, mais `_TOOLTIP_GAP`), reprendendo à tela, até
+  ninguém mais se mover (teto de 16 passadas). O antigo empurrão **só-horizontal** jogava tooltips p/
+  fora da tela e deixava cruzamentos (ver imagens do bug). O `TitleLabel` agora **entra** na separação
+  (antes era pulado). A cor da borda de cada tooltip = a do controle, então a associação visual se
+  mantém mesmo quando ele é afastado. Esforço-limitado: com mais tooltips que espaço, minimiza em vez
+  de garantir zero sobreposição.
+- **Mapeamento de coordenadas — controles em `SubViewport` (2026-06-27):** `_screen_rect_of(ctrl)`
+  converte o `get_global_rect()` (espaço da viewport do controle) para **coordenadas de tela** do
+  canvas do overlay. Para controles na viewport principal é o próprio rect; para controles **dentro de
+  um `SubViewport`** (ex.: o preview da **tela Controles 2D**, `scenes2D/controls/controls.tscn`, que
+  instancia cada widget num `SubViewport` via `SubViewportContainer` com `stretch`), sobe a cadeia
+  somando `container.get_global_position()` e a escala `container.size / subviewport.size`. Sem isso, a
+  borda/tooltip saía **deslocada** da posição real do controle.
 - O **watermark do nome da cena** (`_scene_name_label`) fica no **topo direito, ao lado do
   `TitleLabel`** (antes era o canto inferior esquerdo), no canvas persistente. Também ganha tooltip
   2D: como o `_scan` pula o canvas persistente, `_build_overlays` registra `_scene_name_label`
   explicitamente (`_add_2d`) quando `debug_2d` está ligado.
+- **Janela flutuante aberta → some o overlay da UI de fundo (2026-06-27):** enquanto QUALQUER
+  janela flutuante estiver **visível**, o Debug 2D desenha tooltips/bordas **só nos controles DENTRO
+  dela** — a UI que a chamou (a tela atrás) fica limpa, p/ não poluir com informação demais. As
+  janelas se marcam no grupo `DebugOverlay.FLOATING_WINDOW_GROUP` (`&"debug_floating_window"`); a cada
+  frame o `_process` lista as do grupo que estão `is_visible_in_tree()` (`_active_floating_windows`) e
+  `_suppressed_by_floating(ctrl, …)` esconde o que não é descendente de nenhuma delas. Sem janela
+  aberta nada muda. **Vale em QUALQUER cena (2026-06-27):** a classe reutilizável `FloatingWindow`
+  (`scenes2D/controls2D/floating_window/`) entra no grupo sozinha no seu `_ready`, então toda janela
+  baseada nela — incluindo os diálogos de confirmação do `FloatingDialog` — já dispara a supressão em
+  qualquer tela. Em Models, como o `damage_panel` (Dano) e o `ai_panel` (IA) **não** são `FloatingWindow`
+  (são `PanelContainer` próprios), eles entram no grupo **explicitamente** (`add_to_group` no
+  `_setup_damage_window`/`_setup_ai_window`); a `FloatingWindow` de Afastamento/Escala se registra
+  sozinha. Abrir/fechar/alternar janelas atualiza a supressão na hora, pois é decidida pela
+  visibilidade ao vivo (ver [[sistemas/dano-localizado]], [[sistemas/biblioteca-de-modelos]]).
 
 ## Inspeção 3D → tela Models
 

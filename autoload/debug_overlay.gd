@@ -4,6 +4,11 @@ const _BORDER_WIDTH := 2
 const _TOOLTIP_GAP := 4.0
 const _Debug2DToggle := preload("res://scenes2D/controls2D/debug2d_toggle.gd")
 
+# Janelas flutuantes (Dano/IA/Afastamento-Escala etc.) entram neste grupo. Enquanto QUALQUER uma
+# está visível, o Debug 2D some na UI que a chamou: só os controles DENTRO da janela flutuante
+# mantêm tooltip/borda — evita poluir a tela com informação demais (ver _suppressed_by_floating).
+const FLOATING_WINDOW_GROUP := &"debug_floating_window"
+
 const _PALETTE := [
 	Color(1.0, 0.25, 0.25),
 	Color(0.25, 0.85, 0.25),
@@ -126,6 +131,28 @@ func _compute_tab_indices() -> void:
 		cur = cur.find_next_valid_focus()
 
 
+# Janelas flutuantes VISÍVEIS agora (nós do FLOATING_WINDOW_GROUP). Nós já liberados/escondidos
+# ficam de fora — então abrir/fechar uma janela liga/desliga a supressão sem bookkeeping manual.
+func _active_floating_windows() -> Array:
+	var out: Array = []
+	for n in get_tree().get_nodes_in_group(FLOATING_WINDOW_GROUP):
+		if n is Control and (n as Control).is_visible_in_tree():
+			out.append(n)
+	return out
+
+
+# True quando há janela(s) flutuante(s) aberta(s) E o controle NÃO está dentro de nenhuma delas —
+# i.e., pertence à UI de fundo que a chamou, cujo overlay 2D some. Sem janela aberta: nunca suprime.
+func _suppressed_by_floating(ctrl: Control, focus_windows: Array) -> bool:
+	if focus_windows.is_empty():
+		return false
+	for win in focus_windows:
+		var w := win as Control
+		if w == ctrl or w.is_ancestor_of(ctrl):
+			return false
+	return true
+
+
 func refresh() -> void:
 	_clear_all()
 	if _is_overlay_active():
@@ -227,6 +254,10 @@ func _process(_delta: float) -> void:
 	if tab_visible:
 		_compute_tab_indices()
 
+	# Janelas flutuantes abertas agora: enquanto houver alguma, o overlay 2D some na UI de fundo
+	# que a chamou (só os controles DENTRO da janela mantêm tooltip/borda).
+	var focus_windows := _active_floating_windows()
+
 	var to_erase: Array = []
 	for inst_id in _overlay_map:
 		var obj := instance_from_id(inst_id)
@@ -236,14 +267,19 @@ func _process(_delta: float) -> void:
 		if is_instance_valid(obj) and is_instance_valid(tooltip):
 			var ctrl := obj as Control
 			var shown := ctrl.is_visible_in_tree()
-			var rect: Rect2 = ctrl.get_global_rect()
+			# Rect em coordenadas de TELA: controles dentro de um SubViewport (ex.: o preview da tela
+			# Controles 2D) precisam ser mapeados pela posição/escala do SubViewportContainer, senão a
+			# borda/tooltip sai deslocada da posição real do controle (ver _screen_rect_of).
+			var rect: Rect2 = _screen_rect_of(ctrl)
 			# The border is part of the 2D overlay too: hide it unless at least one
 			# dependent line (Type/Name/Id) is selected, so Debug 2D alone shows nothing.
 			var any_2d_line := _has_any_2d_line_enabled()
+			# Com uma janela flutuante aberta, suprime o overlay dos controles da UI que a chamou.
+			var suppressed := _suppressed_by_floating(ctrl, focus_windows)
 			if is_instance_valid(ctrl_border):
 				ctrl_border.position = rect.position
 				ctrl_border.size = rect.size
-				ctrl_border.visible = shown and any_2d_line
+				ctrl_border.visible = shown and any_2d_line and not suppressed
 			var vp_size := get_viewport().get_visible_rect().size
 			if entry.get("is_title", false):
 				# Tooltip do título centralizado horizontalmente, logo ABAIXO do texto.
@@ -261,7 +297,7 @@ func _process(_delta: float) -> void:
 			if tab_visible:
 				var ti: int = _tab_index_map.get(inst_id, -1)
 				entry.tab_lbl.text = "TAB: %d" % ti if ti > 0 else "TAB: -"
-			tooltip.visible = shown and (
+			tooltip.visible = shown and not suppressed and (
 				entry.type_lbl.visible
 				or entry.name_lbl.visible
 				or entry.id_lbl.visible
@@ -276,43 +312,89 @@ func _process(_delta: float) -> void:
 	for k in to_erase:
 		_overlay_map.erase(k)
 
-	_resolve_overlaps()
-	_clamp_tooltips_to_viewport()
+	_resolve_tooltip_layout()
 
 
-func _clamp_tooltips_to_viewport() -> void:
-	var vp_size := get_viewport().get_visible_rect().size
+# Prende uma posição de tooltip à viewport (canto sup-esq dentro da tela).
+func _clamp_pos(pos: Vector2, size: Vector2, vp: Vector2) -> Vector2:
+	pos.x = clampf(pos.x, 0.0, maxf(0.0, vp.x - size.x))
+	pos.y = clampf(pos.y, 0.0, maxf(0.0, vp.y - size.y))
+	return pos
+
+
+# Reposiciona os tooltips visíveis para (a) caberem na tela e (b) NÃO se sobreporem. Cada tooltip já
+# entra ancorado ao seu controle (lado direito/esquerdo, ou centralizado p/ o título — feito no
+# _process); aqui só resolvemos conflitos: prende à viewport e faz uma **separação iterativa em 2D**
+# (empurra cada par sobreposto pelo menor eixo de penetração, metade para cada lado), reprendendo à
+# tela a cada passada. Substitui o antigo empurrão SÓ-horizontal, que jogava tooltips p/ fora da tela
+# e deixava cruzamentos. A cor da borda de cada tooltip continua igual à do controle (associação
+# visual) mesmo quando ele é afastado. Esforço-limitado: com mais tooltips que espaço, minimiza
+# sobreposição em vez de garantir zero.
+func _resolve_tooltip_layout() -> void:
+	var vp := get_viewport().get_visible_rect().size
+	var tips: Array = []
 	for inst_id in _overlay_map:
-		var tooltip: PanelContainer = _overlay_map[inst_id].tooltip
-		if not is_instance_valid(tooltip) or not tooltip.visible or tooltip.size.x <= 0:
-			continue
-		var pos := tooltip.position
-		pos.x = clamp(pos.x, 0.0, vp_size.x - tooltip.size.x)
-		pos.y = clamp(pos.y, 0.0, vp_size.y - tooltip.size.y)
-		tooltip.position = pos
-
-
-func _resolve_overlaps() -> void:
-	var tooltips: Array = []
-	for inst_id in _overlay_map:
-		var entry: Dictionary = _overlay_map[inst_id]
-		# O tooltip do título fica centralizado abaixo do texto — fora do rearranjo lateral.
-		if entry.get("is_title", false):
-			continue
-		var tooltip: PanelContainer = entry.tooltip
-		if is_instance_valid(tooltip) and tooltip.size.x > 0:
-			tooltips.append(tooltip)
-	if tooltips.size() < 2:
+		var t: PanelContainer = _overlay_map[inst_id].tooltip
+		if is_instance_valid(t) and t.visible and t.size.x > 0.0 and t.size.y > 0.0:
+			tips.append(t)
+	if tips.size() < 2:
+		if tips.size() == 1:
+			tips[0].position = _clamp_pos(tips[0].position, tips[0].size, vp)
 		return
-	# Sort right-to-left: fix rightmost tooltips first, push overlaps to the left
-	tooltips.sort_custom(func(a, b): return a.position.x > b.position.x)
-	for i in range(1, tooltips.size()):
-		var pos_i: Vector2 = tooltips[i].position
-		var size_i: Vector2 = tooltips[i].size
-		for j in range(i):
-			if Rect2(pos_i, size_i).intersects(Rect2(tooltips[j].position, tooltips[j].size)):
-				pos_i.x = tooltips[j].position.x - size_i.x - _TOOLTIP_GAP
-		tooltips[i].position = pos_i
+	for t in tips:
+		t.position = _clamp_pos(t.position, t.size, vp)
+	# Passadas de separação: para quando ninguém mais se move (ou no teto de iterações).
+	for _iter in 16:
+		var moved := false
+		for a in range(tips.size()):
+			for b in range(a + 1, tips.size()):
+				var ra := Rect2(tips[a].position, tips[a].size)
+				var rb := Rect2(tips[b].position, tips[b].size)
+				if not ra.intersects(rb):
+					continue
+				var overlap_x: float = minf(ra.end.x, rb.end.x) - maxf(ra.position.x, rb.position.x)
+				var overlap_y: float = minf(ra.end.y, rb.end.y) - maxf(ra.position.y, rb.position.y)
+				var ca := ra.position + ra.size * 0.5
+				var cb := rb.position + rb.size * 0.5
+				if overlap_x <= overlap_y:
+					var sx := overlap_x * 0.5 + _TOOLTIP_GAP * 0.5
+					var dx := -1.0 if ca.x <= cb.x else 1.0
+					tips[a].position.x += dx * sx
+					tips[b].position.x -= dx * sx
+				else:
+					var sy := overlap_y * 0.5 + _TOOLTIP_GAP * 0.5
+					var dy := -1.0 if ca.y <= cb.y else 1.0
+					tips[a].position.y += dy * sy
+					tips[b].position.y -= dy * sy
+				moved = true
+		if not moved:
+			break
+		for t in tips:
+			t.position = _clamp_pos(t.position, t.size, vp)
+
+
+# Rect do controle em coordenadas de TELA (canvas raiz do overlay). Para controles na viewport
+# principal é o próprio get_global_rect(). Para controles DENTRO de um SubViewport (ex.: o preview da
+# tela Controles 2D), sobe a cadeia de SubViewports aplicando a posição global e a escala do
+# SubViewportContainer (com stretch, escala = tamanho_do_container / tamanho_do_subviewport), senão a
+# borda/tooltip ficaria deslocada da posição real do controle na tela.
+func _screen_rect_of(ctrl: Control) -> Rect2:
+	var rect := ctrl.get_global_rect()
+	var vp := ctrl.get_viewport()
+	var guard := 0
+	while vp is SubViewport and guard < 8:
+		guard += 1
+		var container := (vp as SubViewport).get_parent() as SubViewportContainer
+		if container == null:
+			break
+		var scale := Vector2.ONE
+		var sub_size := Vector2((vp as SubViewport).size)
+		if container.stretch and sub_size.x > 0.0 and sub_size.y > 0.0:
+			scale = container.size / sub_size
+		rect.position = container.get_global_position() + rect.position * scale
+		rect.size *= scale
+		vp = container.get_viewport()
+	return rect
 
 
 # ── Build / Clear ─────────────────────────────────────────────────────────────
@@ -401,7 +483,7 @@ func _add_2d(ctrl: Control) -> void:
 	_ensure_canvas()
 
 	var color := _next_color()
-	var rect := ctrl.get_global_rect()
+	var rect := _screen_rect_of(ctrl)
 
 	# Colored border around the tracked control
 	var ctrl_border := Panel.new()
