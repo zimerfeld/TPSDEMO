@@ -19,10 +19,10 @@ func _ready() -> void:
 	toggled.connect(_on_toggled)
 
 
-func _on_toggled(pressed: bool) -> void:
+func _on_toggled(toggled_on: bool) -> void:
 	# Idempotente: nada a fazer se o valor já bate (evita save/refresh redundantes).
-	if Settings.config_file.get_value("game", _CONFIG_KEY, false) == pressed:
+	if Settings.config_file.get_value("game", _CONFIG_KEY, false) == toggled_on:
 		return
-	Settings.config_file.set_value("game", _CONFIG_KEY, pressed)
+	Settings.config_file.set_value("game", _CONFIG_KEY, toggled_on)
 	Settings.save_settings()
 	DebugOverlay.refresh()

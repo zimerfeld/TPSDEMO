@@ -2,6 +2,9 @@ extends Node
 
 const _BORDER_WIDTH := 2
 const _TOOLTIP_GAP := 4.0
+# Intensidade do realce da borda do "host" (controle que contém o apontado), relativa ao realce
+# pleno (1.0). Bem fraco de propósito: só situa o controle dentro do contêiner sem competir com ele.
+const _HOST_GLOW := 0.3
 const _Debug2DToggle := preload("res://scenes2D/controls2D/debug2d_toggle.gd")
 
 # Janelas flutuantes (Dano/IA/Afastamento-Escala etc.) entram neste grupo. Enquanto QUALQUER uma
@@ -29,6 +32,7 @@ const _LINE_COLORS := {
 	"name": Color(0.55, 1.0, 0.55),    # verde (Nome)
 	"id": Color(1.0, 0.92, 0.42),      # amarelo (Id)
 	"tab": Color(1.0, 1.0, 1.0),       # branco (índice de Tab) — pedido do projeto
+	"path": Color(0.45, 0.8, 1.0),     # azul claro (caminho na cena) — diferencia mesmo Type/Name
 }
 
 var _canvas_layer: CanvasLayer = null
@@ -94,8 +98,14 @@ func _is_show_tab_on() -> bool:
 	return Settings.config_file.get_value("game", "show_tab", false)
 
 
+# Linha "Path" (azul claro): caminho do controle na árvore da cena ativa.
+func _is_show_path_on() -> bool:
+	return Settings.config_file.get_value("game", "show_path", false)
+
+
 func _has_any_2d_line_enabled() -> bool:
-	return _is_show_type_on() or _is_show_name_on() or _is_show_id_on() or _is_show_tab_on()
+	return _is_show_type_on() or _is_show_name_on() or _is_show_id_on() \
+		or _is_show_tab_on() or _is_show_path_on()
 
 
 # Visibility of a 2D tooltip line ("type" / "name" / "id"). A line shows only when
@@ -110,6 +120,7 @@ func _line_visible_2d(kind: String) -> bool:
 		"name": return _is_show_name_on()
 		"id": return _is_show_id_on()
 		"tab": return _is_show_tab_on()
+		"path": return _is_show_path_on()
 	return false
 
 
@@ -208,7 +219,8 @@ func _active_screen_root() -> Node:
 
 func _active_screen_name() -> String:
 	var target := _active_screen_root()
-	return target.name if target != null else ""
+	# String(...) porque Node.name é StringName e o retorno é String (evita warning de ternário).
+	return String(target.name) if target != null else ""
 
 
 # Injeta (uma vez) o toggle de Debug 2D na barra "Actions" da tela ativa. Toda cena 2D com uma
@@ -262,84 +274,113 @@ func _process(delta: float) -> void:
 	# que a chamou (só os controles DENTRO da janela mantêm tooltip/borda).
 	var focus_windows := _active_floating_windows()
 
-	# Controle sob o cursor que receberá o realce de iluminação na borda. Escolhemos o de MENOR
-	# área entre os que contêm o mouse (o mais específico/interno), para um único realce limpo
-	# em vez de iluminar toda a cadeia de containers aninhados.
+	# O overlay 2D agora é um INSPETOR POR HOVER: a borda + o tooltip aparecem SÓ no controle sob o
+	# cursor; todos os demais ficam ocultos. Apontamos o de MENOR área entre os que contêm o mouse
+	# (o mais específico/interno). "Elegível" = visível na árvore, com ≥1 linha do Debug 2D ligada e
+	# não suprimido por janela flutuante — mesma condição que antes liberava a borda.
+	var any_2d_line := _has_any_2d_line_enabled()
 	var mouse_pos := get_viewport().get_mouse_position()
 	var hov_id: int = 0
 	var hov_area: float = INF
 
+	# Passo 1: limpa entradas órfãs, esconde TODO o overlay e acha o controle apontado.
 	var to_erase: Array = []
 	for inst_id in _overlay_map:
 		var obj := instance_from_id(inst_id)
 		var entry: Dictionary = _overlay_map[inst_id]
 		var tooltip: PanelContainer = entry.tooltip
 		var ctrl_border: Panel = entry.ctrl_border
-		if is_instance_valid(obj) and is_instance_valid(tooltip):
-			var ctrl := obj as Control
-			var shown := ctrl.is_visible_in_tree()
-			# Rect em coordenadas de TELA: controles dentro de um SubViewport (ex.: o preview da tela
-			# Controles 2D) precisam ser mapeados pela posição/escala do SubViewportContainer, senão a
-			# borda/tooltip sai deslocada da posição real do controle (ver _screen_rect_of).
-			var rect: Rect2 = _screen_rect_of(ctrl)
-			# The border is part of the 2D overlay too: hide it unless at least one
-			# dependent line (Type/Name/Id) is selected, so Debug 2D alone shows nothing.
-			var any_2d_line := _has_any_2d_line_enabled()
-			# Com uma janela flutuante aberta, suprime o overlay dos controles da UI que a chamou.
-			var suppressed := _suppressed_by_floating(ctrl, focus_windows)
-			var border_on := shown and any_2d_line and not suppressed
-			if is_instance_valid(ctrl_border):
-				ctrl_border.position = rect.position
-				ctrl_border.size = rect.size
-				ctrl_border.visible = border_on
-				# Borda visível e com o mouse dentro do controle: candidata ao realce.
-				if border_on and rect.has_point(mouse_pos):
-					var area: float = rect.size.x * rect.size.y
-					if area < hov_area:
-						hov_area = area
-						hov_id = inst_id
-			var vp_size := get_viewport().get_visible_rect().size
-			if entry.get("is_title", false):
-				# Tooltip do título centralizado horizontalmente, logo ABAIXO do texto.
-				var tip_cx: float = rect.position.x + rect.size.x * 0.5 - tooltip.size.x * 0.5
-				tooltip.position = Vector2(tip_cx, rect.position.y + rect.size.y + _TOOLTIP_GAP)
-			else:
-				var tip_x := rect.position.x + rect.size.x
-				if tooltip.size.x > 0 and tip_x + tooltip.size.x > vp_size.x:
-					tip_x = rect.position.x - tooltip.size.x
-				tooltip.position = Vector2(tip_x, rect.position.y)
-			entry.type_lbl.visible = _line_visible_2d("type")
-			entry.name_lbl.visible = _line_visible_2d("name")
-			entry.id_lbl.visible = _line_visible_2d("id")
-			entry.tab_lbl.visible = tab_visible
-			if tab_visible:
-				var ti: int = _tab_index_map.get(inst_id, -1)
-				entry.tab_lbl.text = "TAB: %d" % ti if ti > 0 else "TAB: -"
-			tooltip.visible = shown and not suppressed and (
-				entry.type_lbl.visible
-				or entry.name_lbl.visible
-				or entry.id_lbl.visible
-				or entry.tab_lbl.visible
-			)
-		else:
+		if not (is_instance_valid(obj) and is_instance_valid(tooltip)):
 			if is_instance_valid(tooltip):
 				tooltip.queue_free()
 			if is_instance_valid(ctrl_border):
 				ctrl_border.queue_free()
 			to_erase.append(inst_id)
+			continue
+		var ctrl := obj as Control
+		# Com uma janela flutuante aberta, o overlay da UI de fundo que a chamou fica suprimido.
+		var eligible := ctrl.is_visible_in_tree() and any_2d_line \
+			and not _suppressed_by_floating(ctrl, focus_windows)
+		if eligible:
+			# Rect em coordenadas de TELA (mapeia controles dentro de SubViewport — ver _screen_rect_of).
+			var rect: Rect2 = _screen_rect_of(ctrl)
+			if rect.has_point(mouse_pos):
+				var area: float = rect.size.x * rect.size.y
+				if area < hov_area:
+					hov_area = area
+					hov_id = inst_id
+		# Por padrão tudo fica escondido; o passo 2 reexibe apenas o controle apontado.
+		tooltip.visible = false
+		if is_instance_valid(ctrl_border):
+			ctrl_border.visible = false
 	for k in to_erase:
 		_overlay_map.erase(k)
 
-	_apply_border_glow(hov_id)
+	# Passo 2: exibe o overlay (borda + tooltip) do controle apontado e, se ele estiver DENTRO de outro
+	# controle, também o do seu "host" (ancestral mais próximo). As linhas e o posicionamento são iguais
+	# nos dois; o _resolve_tooltip_layout depois afasta os dois tooltips p/ NÃO colidirem (host × filho).
+	# O brilho do host sai bem mais fraco (ver _apply_border_glow).
+	var host_id: int = 0
+	if hov_id != 0:
+		_show_overlay_for(hov_id, tab_visible)
+		host_id = _host_id_of(instance_from_id(hov_id) as Control)
+		if host_id != 0:
+			_show_overlay_for(host_id, tab_visible)
+
+	_apply_border_glow(hov_id, host_id)
 	_resolve_tooltip_layout()
 
 
+# Posiciona e exibe o overlay (borda + tooltip, com as linhas Type/Name/Id/Tab escolhidas) de UM
+# controle do _overlay_map. Usado tanto para o controle apontado quanto para o seu host.
+func _show_overlay_for(inst_id: int, tab_visible: bool) -> void:
+	var entry: Dictionary = _overlay_map[inst_id]
+	var ctrl := instance_from_id(inst_id) as Control
+	if not is_instance_valid(ctrl):
+		return
+	var tooltip: PanelContainer = entry.tooltip
+	var ctrl_border: Panel = entry.ctrl_border
+	var rect: Rect2 = _screen_rect_of(ctrl)
+	if is_instance_valid(ctrl_border):
+		ctrl_border.position = rect.position
+		ctrl_border.size = rect.size
+		ctrl_border.visible = true
+	var vp_size := get_viewport().get_visible_rect().size
+	if entry.get("is_title", false):
+		# Tooltip do título centralizado horizontalmente, logo ABAIXO do texto.
+		var tip_cx: float = rect.position.x + rect.size.x * 0.5 - tooltip.size.x * 0.5
+		tooltip.position = Vector2(tip_cx, rect.position.y + rect.size.y + _TOOLTIP_GAP)
+	else:
+		var tip_x := rect.position.x + rect.size.x
+		if tooltip.size.x > 0 and tip_x + tooltip.size.x > vp_size.x:
+			tip_x = rect.position.x - tooltip.size.x
+		tooltip.position = Vector2(tip_x, rect.position.y)
+	entry.type_lbl.visible = _line_visible_2d("type")
+	entry.name_lbl.visible = _line_visible_2d("name")
+	entry.id_lbl.visible = _line_visible_2d("id")
+	entry.tab_lbl.visible = tab_visible
+	if tab_visible:
+		var ti: int = _tab_index_map.get(inst_id, -1)
+		entry.tab_lbl.text = "TAB: %d" % ti if ti > 0 else "TAB: -"
+	var path_visible := _line_visible_2d("path")
+	entry.path_lbl.visible = path_visible
+	if path_visible:
+		entry.path_lbl.text = "PATH: %s" % _scene_path_of(ctrl)
+	tooltip.visible = (
+		entry.type_lbl.visible
+		or entry.name_lbl.visible
+		or entry.id_lbl.visible
+		or entry.tab_lbl.visible
+		or entry.path_lbl.visible
+	)
+
+
 # Realça a borda do controle sob o cursor com um "efeito de iluminação": borda mais clara e grossa
-# + brilho (shadow colorido, sem deslocamento) pulsando suavemente. Só o controle apontado fica
-# aceso; os demais voltam ao estado normal UMA vez (flag glow_on) — evita reescrever o StyleBox de
-# todos os controles a cada frame. O aceso também sobe de z_index para o brilho não ficar escondido
-# sob bordas/tooltips vizinhos.
-func _apply_border_glow(hovered_id: int) -> void:
+# + brilho (shadow colorido, sem deslocamento) pulsando suavemente. O `host_id` (controle que CONTÉM
+# o apontado) recebe o MESMO efeito, porém com intensidade bem menor (`_HOST_GLOW`), só p/ situar o
+# controle no seu contêiner. Os demais voltam ao estado normal UMA vez (flag glow_on) — evita
+# reescrever o StyleBox de todos a cada frame. O apontado sobe de z_index (1), o host fica abaixo (0).
+func _apply_border_glow(hovered_id: int, host_id: int) -> void:
 	var pulse: float = 0.5 + 0.5 * sin(fmod(_glow_phase * 5.0, TAU))
 	for inst_id in _overlay_map:
 		var entry: Dictionary = _overlay_map[inst_id]
@@ -348,10 +389,16 @@ func _apply_border_glow(hovered_id: int) -> void:
 		if not is_instance_valid(border) or style == null:
 			continue
 		if inst_id == hovered_id and border.visible:
-			_set_border_lit(style, entry.color, pulse)
+			_set_border_lit(style, entry.color, pulse, 1.0)
 			border.z_index = 1
 			if is_instance_valid(entry.tooltip):
 				entry.tooltip.z_index = 1
+			entry.glow_on = true
+		elif inst_id == host_id and border.visible:
+			_set_border_lit(style, entry.color, pulse, _HOST_GLOW)
+			border.z_index = 0
+			if is_instance_valid(entry.tooltip):
+				entry.tooltip.z_index = 0
 			entry.glow_on = true
 		elif entry.get("glow_on", false):
 			_set_border_normal(style, entry.color)
@@ -359,6 +406,33 @@ func _apply_border_glow(hovered_id: int) -> void:
 			if is_instance_valid(entry.tooltip):
 				entry.tooltip.z_index = 0
 			entry.glow_on = false
+
+
+# Caminho do controle na árvore da cena ativa (para a linha PATH). Diferencia controles com o mesmo
+# Type/Name. Encurta para os 3 últimos segmentos (prefixados com "…/") quando o caminho é longo — o
+# segmento que distingue costuma estar perto do fim. Fora da tela ativa (ex.: o label persistente do
+# nome da cena), cai no nome do nó.
+func _scene_path_of(ctrl: Control) -> String:
+	var root := _active_screen_root()
+	if root != null and is_instance_valid(root) and root != ctrl and root.is_ancestor_of(ctrl):
+		var segs := String(root.get_path_to(ctrl)).split("/")
+		if segs.size() > 3:
+			return "…/" + "/".join(segs.slice(segs.size() - 3))
+		return "/".join(segs)
+	return String(ctrl.name)
+
+
+# inst_id do ancestral mais próximo que é Control E está rastreado no overlay (o "host" do controle
+# apontado), ou 0 se não houver. Como o _tag rotula TODO Control, isso dá o Control-pai imediato.
+func _host_id_of(ctrl: Control) -> int:
+	var p := ctrl.get_parent()
+	while p != null:
+		if p is Control:
+			var pid := p.get_instance_id()
+			if _overlay_map.has(pid):
+				return pid
+		p = p.get_parent()
+	return 0
 
 
 func _set_border_normal(style: StyleBoxFlat, color: Color) -> void:
@@ -369,11 +443,12 @@ func _set_border_normal(style: StyleBoxFlat, color: Color) -> void:
 	style.shadow_offset = Vector2.ZERO
 
 
-func _set_border_lit(style: StyleBoxFlat, color: Color, pulse: float) -> void:
-	style.border_color = color.lightened(0.5)
-	style.set_border_width_all(_BORDER_WIDTH + 2)
-	style.shadow_color = Color(color.r, color.g, color.b, 0.55)
-	style.shadow_size = int(round(lerpf(6.0, 12.0, pulse)))
+# intensity: 1.0 = realce pleno (controle apontado); ~_HOST_GLOW = brilho fraco (host/contêiner).
+func _set_border_lit(style: StyleBoxFlat, color: Color, pulse: float, intensity: float) -> void:
+	style.border_color = color.lightened(0.5 * intensity)
+	style.set_border_width_all(_BORDER_WIDTH + int(round(2.0 * intensity)))
+	style.shadow_color = Color(color.r, color.g, color.b, 0.55 * intensity)
+	style.shadow_size = int(round(lerpf(6.0, 12.0, pulse) * intensity))
 	style.shadow_offset = Vector2.ZERO
 
 
@@ -583,13 +658,19 @@ func _add_2d(ctrl: Control) -> void:
 	# Linha branca do índice de Tab; o texto é preenchido a cada frame em _process
 	# (o valor depende da ordem de foco viva da tela).
 	var tab_lbl := _make_overlay_label("TAB: -", _LINE_COLORS["tab"])
+	# Linha azul do caminho na cena; o texto é preenchido a cada frame em _show_overlay_for
+	# (o caminho depende da tela ativa e pode mudar se o nó for reparenteado).
+	var path_lbl := _make_overlay_label("PATH: -", _LINE_COLORS["path"])
 	type_lbl.visible = _line_visible_2d("type")
 	name_lbl.visible = _line_visible_2d("name")
 	id_lbl.visible = _line_visible_2d("id")
 	tab_lbl.visible = _line_visible_2d("tab")
+	path_lbl.visible = _line_visible_2d("path")
+	# Ordem das linhas = ordem dos toggles na tela developer (Type, Name, Id, Path, Tab).
 	vbox.add_child(type_lbl)
 	vbox.add_child(name_lbl)
 	vbox.add_child(id_lbl)
+	vbox.add_child(path_lbl)
 	vbox.add_child(tab_lbl)
 	tooltip.add_child(vbox)
 	tooltip.position = Vector2(rect.position.x + rect.size.x, rect.position.y)
@@ -599,6 +680,7 @@ func _add_2d(ctrl: Control) -> void:
 		"tooltip": tooltip, "ctrl_border": ctrl_border, "color": color,
 		"border_style": border_style, "glow_on": false,
 		"type_lbl": type_lbl, "name_lbl": name_lbl, "id_lbl": id_lbl, "tab_lbl": tab_lbl,
+		"path_lbl": path_lbl,
 		# O tooltip do título da cena fica centralizado ABAIXO do texto (não à direita).
 		"is_title": ctrl.name == "TitleLabel",
 	}

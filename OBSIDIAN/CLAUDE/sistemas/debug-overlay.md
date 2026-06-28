@@ -19,14 +19,22 @@ aplicam na hora (`DebugOverlay.refresh()`).
 
 - **Geral** (`GridContainer`): **HUD FPS** (`hud_fps`) e **Monitor de Saúde** (`performance_hud`).
 - **Debug 2D** (coluna única): master `debug_2d` + linhas `show_type` / `show_name` / `show_id` /
-  `show_tab`. Desenha tooltips 2D (borda colorida + TYPE/Name/ID/TAB) em cada `Control`, com **cor por
-  linha** (Tipo = rosa, Nome = verde, Id = amarelo, **Tab = branco** — `_LINE_COLORS`). **Debug 2D
-  ligado sozinho não mostra nada**: borda/tooltips só aparecem com ≥1 linha selecionada. As sub-linhas **inteiras** (o rótulo
+  `show_path` / `show_tab` (**Tab é a última opção**). Desenha tooltips 2D (borda colorida +
+  TYPE/Name/ID/PATH/TAB, **uma linha por valor, na MESMA ordem dos toggles** da tela developer — a
+  ordem dos `vbox.add_child` em `_add_2d` espelha `_DEBUG2D_SUBROWS`/`developer.tscn`) em cada
+  `Control`, com **cor por linha** (Tipo = rosa, Nome = verde, Id = amarelo, **Path = azul claro**,
+  **Tab = branco** — `_LINE_COLORS`). **Debug 2D ligado sozinho não mostra nada**: borda/tooltips
+  só aparecem com ≥1 linha selecionada. As sub-linhas **inteiras** (o rótulo
   `Show*Label` **mais** os botões) ficam **acinzentadas** enquanto o master (Debug 2D) está desligado
   — `_set_subrows_disabled` escurece todo `Control` da linha via `modulate` e só desabilita os
   `BaseButton` (`_DEBUG2D_SUBROWS`; cor base lembrada em `_BASE_MODULATE_META`).
-  - **Linha Tab** (`ShowTabRow` → `show_tab`, adicionada abaixo de `ShowIDRow`): mostra o **índice de
-    Tab/foco** de cada controle (`TAB: n`, ou `TAB: -` se não focável). O índice é a ordem REAL de
+  - **Linha Path** (`ShowPathRow` → `show_path`, abaixo de `ShowIDRow`; rótulo "Path"/"Caminho"):
+    mostra o **caminho do controle na árvore da cena ativa** (`_scene_path_of` → `root.get_path_to`,
+    encurtado p/ os 3 últimos segmentos com `…/` quando longo). Serve para **diferenciar controles com
+    o mesmo Type/Name** na mesma cena. Preenchida a cada frame em `_show_overlay_for` (só p/ o controle
+    apontado e seu host).
+  - **Linha Tab** (`ShowTabRow` → `show_tab`, **última** sub-linha, abaixo de `ShowPathRow`): mostra o
+    **índice de Tab/foco** de cada controle (`TAB: n`, ou `TAB: -` se não focável). O índice é a ordem REAL de
     navegação: o `_compute_tab_indices` parte do 1º focável (`UINav.first_focusable`) da tela ativa e
     segue `find_next_valid_focus()` numerando 1, 2, 3… Recalculado a cada frame **só** enquanto a
     linha Tab está visível (a ordem de foco muda conforme controles aparecem/somem). Ver [[fluxo-de-cenas]].
@@ -58,14 +66,29 @@ aplicam na hora (`DebugOverlay.refresh()`).
   (antes era pulado). A cor da borda de cada tooltip = a do controle, então a associação visual se
   mantém mesmo quando ele é afastado. Esforço-limitado: com mais tooltips que espaço, minimiza em vez
   de garantir zero sobreposição.
-- **Realce por iluminação no controle sob o mouse (2026-06-28):** a cada frame o `_process` acha o
-  controle apontado pelo cursor — o de **menor área** entre os que contêm o mouse (o mais
-  específico/interno, evitando acender toda a cadeia de containers) — e `_apply_border_glow` acende
-  **só a borda dele**: cor mais clara (`color.lightened(0.5)`), borda mais grossa (`_BORDER_WIDTH + 2`)
+- **Inspetor por hover — overlay só no controle apontado (2026-06-28):** o Debug 2D deixou de
+  desenhar borda/tooltip de **todos** os controles ao mesmo tempo. Agora o `_process` roda em **dois
+  passos**: (1) esconde **todo** o overlay e acha o controle sob o cursor — o de **menor área** entre
+  os que contêm o mouse (o mais específico/interno) e **elegível** (visível na árvore + ≥1 linha do
+  Debug 2D ligada + não suprimido por janela flutuante); (2) reexibe **só** esse controle (posiciona
+  borda + tooltip e liga as linhas Type/Name/Id/Tab escolhidas). Sem nada sob o cursor, **nada**
+  aparece. Como só 1 tooltip fica visível, o `_resolve_tooltip_layout` vira só um clamp à viewport.
+- **Realce por iluminação no controle apontado (2026-06-28):** `_apply_border_glow` acende a borda do
+  controle exibido: cor mais clara (`color.lightened(0.5)`), borda mais grossa (`_BORDER_WIDTH + 2`)
   e um **brilho** (shadow colorido sem deslocamento) **pulsando** suavemente (`sin(_glow_phase)`,
-  amplitude 6→12 px). O aceso sobe de `z_index` (borda + tooltip) p/ o brilho não ficar sob vizinhos.
-  Os demais voltam ao normal **uma vez** (flag `glow_on` na entrada do `_overlay_map`), então só 1
-  `StyleBox` é reescrito por frame. Vale em **toda cena 2D** (mesma varredura global do Debug 2D).
+  amplitude 6→12 px). O aceso sobe de `z_index` (borda + tooltip). Os demais voltam ao normal **uma
+  vez** (flag `glow_on` na entrada do `_overlay_map`), então só 1 `StyleBox` é reescrito por frame.
+  Vale em **toda cena 2D** (mesma varredura global do Debug 2D).
+  - **Realce fraco do host (2026-06-28):** se o controle apontado estiver **dentro de outro**, o
+    "host" (ancestral `Control` mais próximo rastreado — `_host_id_of`) também recebe overlay, com a
+    **borda** no MESMO efeito porém em intensidade bem menor (`_HOST_GLOW = 0.3`: borda/brilho/largura
+    escalados por esse fator em `_set_border_lit(..., intensity)`), só p/ situar o controle no
+    contêiner. O host fica em `z_index 0`, abaixo do apontado (`1`).
+  - **Tooltip do host também aparece, sem colidir com o filho (2026-06-28):** o overlay do apontado e
+    o do host são montados pelo mesmo helper `_show_overlay_for(inst_id, tab_visible)` (borda + tooltip
+    + linhas Type/Name/Id/Tab), então o **host exibe seu tooltip** igual ao filho. Como agora há 2
+    tooltips visíveis, o `_resolve_tooltip_layout` volta a fazer a **separação 2D** entre eles —
+    afastando o tooltip do host do tooltip do filho p/ não se sobreporem.
 - **Mapeamento de coordenadas — controles em `SubViewport` (2026-06-27):** `_screen_rect_of(ctrl)`
   converte o `get_global_rect()` (espaço da viewport do controle) para **coordenadas de tela** do
   canvas do overlay. Para controles na viewport principal é o próprio rect; para controles **dentro de

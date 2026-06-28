@@ -16,6 +16,7 @@ const _TOGGLES: Dictionary = {
 	"ShowTypeRow": "show_type",
 	"ShowNameRow": "show_name",
 	"ShowIDRow": "show_id",
+	"ShowPathRow": "show_path",
 	"ShowTabRow": "show_tab",
 }
 
@@ -30,7 +31,7 @@ const _GENERAL_TOGGLES: Dictionary = {
 # Sub-rows do Debug 2D: só fazem efeito enquanto o master (Debug 2D) está ligado; seus
 # botões ficam acinzentados (disabled) caso contrário, deixando a dependência clara.
 const _DEBUG2D_SUBROWS: Array[String] = [
-	"ShowTypeRow", "ShowNameRow", "ShowIDRow", "ShowTabRow",
+	"ShowTypeRow", "ShowNameRow", "ShowIDRow", "ShowPathRow", "ShowTabRow",
 ]
 
 # The theme has no "disabled" Button stylebox and the buttons carry a green/yellow

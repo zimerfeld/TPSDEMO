@@ -20,6 +20,7 @@ extends Control
 
 signal closed            ## Fechou (qualquer caminho), já com o foco anterior restaurado.
 signal close_requested   ## Antes de fechar — deixa o dono reagir (× e ESC passam por aqui).
+@warning_ignore("unused_signal")  ## Emitido externamente pelo FloatingDialog (win.confirmed.emit()).
 signal confirmed         ## Enter/botão OK (usado pelo FloatingDialog).
 signal canceled          ## ESC/×/botão Cancelar (usado pelo FloatingDialog).
 
