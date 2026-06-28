@@ -206,7 +206,9 @@ light colors so you can tell them apart:
   except the **TitleLabel**, whose tooltip is **centered below its text**; tooltips are kept **on-screen
   and non-overlapping** by a 2D separation pass (they nudge apart instead of stacking or running off the
   edge), and controls hosted inside a **`SubViewport`** (e.g. the Controls 2D preview) are mapped to
-  their real on-screen position so the border/tooltip no longer drifts. In **any scene**, with a
+  their real on-screen position so the border/tooltip no longer drifts. **Hovering** a control makes its
+  border **light up** with a glow highlight (lighter, thicker, pulsing); only the **most specific**
+  control under the cursor lights up. In **any scene**, with a
   **floating window open** (e.g. Models' **Damage**/**AI**/offset-scale windows, or any `FloatingWindow`/
   confirmation dialog), Debug 2D **hides the tooltips of the calling UI behind it** — only controls
   **inside** the floating window keep their overlay, to avoid cluttering the screen; opening, closing or

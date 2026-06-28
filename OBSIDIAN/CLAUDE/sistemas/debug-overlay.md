@@ -58,6 +58,14 @@ aplicam na hora (`DebugOverlay.refresh()`).
   (antes era pulado). A cor da borda de cada tooltip = a do controle, então a associação visual se
   mantém mesmo quando ele é afastado. Esforço-limitado: com mais tooltips que espaço, minimiza em vez
   de garantir zero sobreposição.
+- **Realce por iluminação no controle sob o mouse (2026-06-28):** a cada frame o `_process` acha o
+  controle apontado pelo cursor — o de **menor área** entre os que contêm o mouse (o mais
+  específico/interno, evitando acender toda a cadeia de containers) — e `_apply_border_glow` acende
+  **só a borda dele**: cor mais clara (`color.lightened(0.5)`), borda mais grossa (`_BORDER_WIDTH + 2`)
+  e um **brilho** (shadow colorido sem deslocamento) **pulsando** suavemente (`sin(_glow_phase)`,
+  amplitude 6→12 px). O aceso sobe de `z_index` (borda + tooltip) p/ o brilho não ficar sob vizinhos.
+  Os demais voltam ao normal **uma vez** (flag `glow_on` na entrada do `_overlay_map`), então só 1
+  `StyleBox` é reescrito por frame. Vale em **toda cena 2D** (mesma varredura global do Debug 2D).
 - **Mapeamento de coordenadas — controles em `SubViewport` (2026-06-27):** `_screen_rect_of(ctrl)`
   converte o `get_global_rect()` (espaço da viewport do controle) para **coordenadas de tela** do
   canvas do overlay. Para controles na viewport principal é o próprio rect; para controles **dentro de

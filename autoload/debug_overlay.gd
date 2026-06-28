@@ -41,6 +41,9 @@ var _last_scene: Node = null
 var _persistent_canvas: CanvasLayer = null
 var _scene_name_label: Label = null
 
+# Fase do pulso do realce de iluminação da borda sob o mouse (avança com o tempo em _process).
+var _glow_phase: float = 0.0
+
 # inst_id → índice de Tab (1-based) na cadeia de foco da tela ativa. Recalculado a cada
 # frame só enquanto a linha "Tab" do Debug 2D está visível (ver _process).
 var _tab_index_map: Dictionary = {}
@@ -225,7 +228,8 @@ func _ensure_debug2d_toggle(screen: Node) -> void:
 	actions.add_child(toggle)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_glow_phase += delta
 	if is_instance_valid(_fps_label):
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
@@ -258,6 +262,13 @@ func _process(_delta: float) -> void:
 	# que a chamou (só os controles DENTRO da janela mantêm tooltip/borda).
 	var focus_windows := _active_floating_windows()
 
+	# Controle sob o cursor que receberá o realce de iluminação na borda. Escolhemos o de MENOR
+	# área entre os que contêm o mouse (o mais específico/interno), para um único realce limpo
+	# em vez de iluminar toda a cadeia de containers aninhados.
+	var mouse_pos := get_viewport().get_mouse_position()
+	var hov_id: int = 0
+	var hov_area: float = INF
+
 	var to_erase: Array = []
 	for inst_id in _overlay_map:
 		var obj := instance_from_id(inst_id)
@@ -276,10 +287,17 @@ func _process(_delta: float) -> void:
 			var any_2d_line := _has_any_2d_line_enabled()
 			# Com uma janela flutuante aberta, suprime o overlay dos controles da UI que a chamou.
 			var suppressed := _suppressed_by_floating(ctrl, focus_windows)
+			var border_on := shown and any_2d_line and not suppressed
 			if is_instance_valid(ctrl_border):
 				ctrl_border.position = rect.position
 				ctrl_border.size = rect.size
-				ctrl_border.visible = shown and any_2d_line and not suppressed
+				ctrl_border.visible = border_on
+				# Borda visível e com o mouse dentro do controle: candidata ao realce.
+				if border_on and rect.has_point(mouse_pos):
+					var area: float = rect.size.x * rect.size.y
+					if area < hov_area:
+						hov_area = area
+						hov_id = inst_id
 			var vp_size := get_viewport().get_visible_rect().size
 			if entry.get("is_title", false):
 				# Tooltip do título centralizado horizontalmente, logo ABAIXO do texto.
@@ -312,7 +330,51 @@ func _process(_delta: float) -> void:
 	for k in to_erase:
 		_overlay_map.erase(k)
 
+	_apply_border_glow(hov_id)
 	_resolve_tooltip_layout()
+
+
+# Realça a borda do controle sob o cursor com um "efeito de iluminação": borda mais clara e grossa
+# + brilho (shadow colorido, sem deslocamento) pulsando suavemente. Só o controle apontado fica
+# aceso; os demais voltam ao estado normal UMA vez (flag glow_on) — evita reescrever o StyleBox de
+# todos os controles a cada frame. O aceso também sobe de z_index para o brilho não ficar escondido
+# sob bordas/tooltips vizinhos.
+func _apply_border_glow(hovered_id: int) -> void:
+	var pulse: float = 0.5 + 0.5 * sin(fmod(_glow_phase * 5.0, TAU))
+	for inst_id in _overlay_map:
+		var entry: Dictionary = _overlay_map[inst_id]
+		var border: Panel = entry.ctrl_border
+		var style: StyleBoxFlat = entry.border_style
+		if not is_instance_valid(border) or style == null:
+			continue
+		if inst_id == hovered_id and border.visible:
+			_set_border_lit(style, entry.color, pulse)
+			border.z_index = 1
+			if is_instance_valid(entry.tooltip):
+				entry.tooltip.z_index = 1
+			entry.glow_on = true
+		elif entry.get("glow_on", false):
+			_set_border_normal(style, entry.color)
+			border.z_index = 0
+			if is_instance_valid(entry.tooltip):
+				entry.tooltip.z_index = 0
+			entry.glow_on = false
+
+
+func _set_border_normal(style: StyleBoxFlat, color: Color) -> void:
+	style.border_color = color
+	style.set_border_width_all(_BORDER_WIDTH)
+	style.shadow_size = 0
+	style.shadow_color = Color(0, 0, 0, 0)
+	style.shadow_offset = Vector2.ZERO
+
+
+func _set_border_lit(style: StyleBoxFlat, color: Color, pulse: float) -> void:
+	style.border_color = color.lightened(0.5)
+	style.set_border_width_all(_BORDER_WIDTH + 2)
+	style.shadow_color = Color(color.r, color.g, color.b, 0.55)
+	style.shadow_size = int(round(lerpf(6.0, 12.0, pulse)))
+	style.shadow_offset = Vector2.ZERO
 
 
 # Prende uma posição de tooltip à viewport (canto sup-esq dentro da tela).
@@ -535,6 +597,7 @@ func _add_2d(ctrl: Control) -> void:
 
 	_overlay_map[id] = {
 		"tooltip": tooltip, "ctrl_border": ctrl_border, "color": color,
+		"border_style": border_style, "glow_on": false,
 		"type_lbl": type_lbl, "name_lbl": name_lbl, "id_lbl": id_lbl, "tab_lbl": tab_lbl,
 		# O tooltip do título da cena fica centralizado ABAIXO do texto (não à direita).
 		"is_title": ctrl.name == "TitleLabel",

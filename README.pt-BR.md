@@ -210,6 +210,8 @@ distintas para você diferenciá-los:
   tooltips são mantidos **dentro da tela e sem sobreposição** por uma separação 2D (afastam-se em vez de
   empilhar ou sair pela borda), e controles dentro de um **`SubViewport`** (ex.: o preview da tela
   Controles 2D) são mapeados para a posição real na tela, então a borda/tooltip não fica mais deslocada.
+  Ao **passar o mouse** sobre um controle, sua borda **acende** com um realce de iluminação (cor mais
+  clara, mais grossa e um brilho pulsante); só o controle **mais específico** sob o cursor acende.
   Em **qualquer cena**, com uma **janela flutuante aberta** (ex.: as janelas **Dano**/**IA**/afastamento-escala
   da tela Models, ou qualquer `FloatingWindow`/diálogo de confirmação), o Debug 2D **esconde os tooltips
   da UI que a chamou** atrás dela — só os controles **dentro** da janela flutuante mantêm o overlay, para
