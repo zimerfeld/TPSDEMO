@@ -328,27 +328,29 @@ var _zoom_target: float = 0.0
 @onready var name_check: CheckButton = %Name
 @onready var id_check: CheckButton = %Id
 @onready var osso_check: CheckButton = %SkeletonLabel
-@onready var damage_button: Button = %DamageButton
-@onready var ai_button: Button = %AIButton
+# O nó do botão se chama "Damage" (sem o sufixo de tipo), mas NÃO é unique_name: o %Damage pertence à
+# JANELA de dano (PanelContainer). Por isso o botão é resolvido por caminho, não por %.
+@onready var damage_button: Button = $UI/Actions/Damage
+@onready var ai_button: Button = %AI
 @onready var aux_highlight_toggle: CheckButton = %SkeletonLimbCollider
 @onready var sub_member_label_toggle: CheckButton = %SubMemberLabel
 @onready var sub_collider_toggle: CheckButton = %SubMemberLimbCollider
 @onready var malha_check: CheckButton = %Mesh
 @onready var skeleton_lines_check: CheckButton = %SkeletonLines
 @onready var effects_toggle: CheckButton = %Effects
-@onready var damage_panel: PanelContainer = %DamagePanel
+@onready var damage_panel: PanelContainer = %Damage
 @onready var ai_panel: PanelContainer = %AIPanel
 # Editor de dano em ÁRVORE (Tree): galhos = membros, folhas = sub-membros sob seu dono. Colunas:
 # Nome | Definir (check) | Bônus % (range) | Dono (dropdown, só sub-membros). Footer abaixo da
 # árvore = linha "Adicionar sub-membro" + botão "Remover sub-membro".
-@onready var damage_tree: Tree = %DamageTree
+@onready var damage_tree: Tree = %Limbs
 @onready var damage_footer: VBoxContainer = %Footer
 # Barra de título (área de arraste) e botão fechar (×, estilo Windows) da janela flutuante de dano.
 @onready var damage_titlebar: PanelContainer = %TitleBar
-@onready var damage_close_button: Button = %CloseButton
+@onready var damage_close_button: Button = %Close
 @onready var ai_list: VBoxContainer = %AIList
 @onready var ai_titlebar: PanelContainer = %AITitleBar
-@onready var ai_close_button: Button = %AICloseButton
+@onready var ai_close_button: Button = %AIClose
 @onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
 @onready var english_button: Button = $UI/Actions/LangBar/English
 # Rótulo LOCAL do nome da cena (nó no .tscn). Mantido OCULTO (ver _ready) — o nome da cena é
@@ -2364,7 +2366,9 @@ func _refresh_ai_panel() -> void:
 		return
 	var model_key := _current_model_key()
 	for def in AIConfigLib.behavior_definitions(model_key):
+		var bkey := str(def.get("key", ""))
 		var panel := PanelContainer.new()
+		panel.name = bkey if bkey != "" else "Behavior"
 		panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var panel_style := StyleBoxFlat.new()
 		panel_style.bg_color = Color(1, 1, 1, 0.03)
@@ -2378,16 +2382,19 @@ func _refresh_ai_panel() -> void:
 		panel.add_theme_stylebox_override("panel", panel_style)
 		ai_list.add_child(panel)
 		var content := VBoxContainer.new()
+		content.name = "Content"
 		content.add_theme_constant_override("separation", 6)
 		panel.add_child(content)
 		var toggle := CheckButton.new()
+		toggle.name = "Enabled"
 		toggle.text = str(def.get("label", ""))
-		toggle.button_pressed = AIConfigLib.behavior_enabled(model_key, str(def.get("key", "")))
+		toggle.button_pressed = AIConfigLib.behavior_enabled(model_key, bkey)
 		toggle.tooltip_text = Locale.tr_key(str(def.get("description", "")))
 		toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		toggle.toggled.connect(_on_ai_behavior_toggled.bind(model_key, str(def.get("key", ""))))
+		toggle.toggled.connect(_on_ai_behavior_toggled.bind(model_key, bkey))
 		content.add_child(toggle)
 		var desc := Label.new()
+		desc.name = "Description"
 		desc.text = str(def.get("description", ""))
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc.tooltip_text = Locale.tr_key(str(def.get("description", "")))
@@ -3416,23 +3423,47 @@ func _on_damage_tree_button(item: TreeItem, _column: int, id: int, _mouse_button
 # A REMOÇÃO agora é por linha, via ícone de lixeira ao lado do nome de cada sub-membro
 # (ver _fill_sub_member_item / _on_damage_tree_button). Reconstruído a cada _refresh_damage_panel.
 func _build_damage_footer(model_key: String) -> void:
-	damage_footer.add_child(HSeparator.new())
-	# Cabeçalho em UMA única HBox: "Adicionar sub-membro" (à esquerda, sobre o seletor de osso) e
-	# "Para Membro Dono" (à direita, sobre o dropdown de dono) — antes eram dois rótulos separados.
-	var header_row := HBoxContainer.new()
-	header_row.add_theme_constant_override("separation", 8)
-	var add_label := Label.new()
-	add_label.text = "Adicionar sub-membro"   # Label: auto-localizado pelo Locale
-	add_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_row.add_child(add_label)
-	var owner_label := Label.new()
-	owner_label.text = "Para Membro Dono"   # Label: auto-localizado pelo Locale
-	header_row.add_child(owner_label)
-	damage_footer.add_child(header_row)
-	var add_row := HBoxContainer.new()
-	add_row.add_theme_constant_override("separation", 8)
+	var separator := HSeparator.new()
+	separator.name = "Separator"
+	damage_footer.add_child(separator)
+
+	# Dica do dono: ANTES era o TOOLTIP do dropdown de dono; agora um rótulo VISÍVEL ocupando todo o
+	# comprimento do Footer, logo acima da seção "Adicionar sub-membro". Label: auto-localizado pelo Locale.
+	var owner_hint := Label.new()
+	owner_hint.name = "OwnerHint"
+	owner_hint.text = "Membro-dono (agrupa o dano; não mexe na malha)"
+	owner_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	owner_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	owner_hint.add_theme_font_size_override("font_size", 13)
+	damage_footer.add_child(owner_hint)
+
+	# Grade de 3 colunas para os cabeçalhos ficarem EXATAMENTE sobre os controles (mesma largura por
+	# coluna): col 0 = osso (expande), col 1 = dono, col 2 = botão Adicionar. Antes eram duas HBox
+	# soltas e o rótulo "Adicionar sub-membro" saía mais largo que o seu dropdown (pedido: alinhá-los).
+	var grid := GridContainer.new()
+	grid.name = "AddArea"
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 4)
+	damage_footer.add_child(grid)
+
+	# Linha 0 da grade (cabeçalhos): "Adicionar sub-membro" | "Para Membro Dono" | célula vazia.
+	var add_title := Label.new()
+	add_title.name = "AddTitle"
+	add_title.text = "Adicionar sub-membro"   # Label: auto-localizado pelo Locale
+	grid.add_child(add_title)
+	var owner_title := Label.new()
+	owner_title.name = "OwnerTitle"
+	owner_title.text = "Para Membro Dono"   # Label: auto-localizado pelo Locale
+	grid.add_child(owner_title)
+	var header_pad := Control.new()   # célula vazia sobre o botão "Adicionar" (mantém o alinhamento)
+	header_pad.name = "Pad"
+	grid.add_child(header_pad)
+
+	# Linha 1 da grade (controles): dropdown de osso (expande) | dropdown de dono | botão Adicionar.
 	var picker := OptionButton.new()
-	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	picker.name = "Bone"
+	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL   # col 0 expande → "AddTitle" acompanha
 	var candidates := _aux_bone_candidates()
 	if candidates.is_empty():
 		picker.add_item(Locale.tr_key("(sem ossos auxiliares)"))
@@ -3440,21 +3471,21 @@ func _build_damage_footer(model_key: String) -> void:
 	else:
 		for b in candidates:
 			picker.add_item(b)
-	add_row.add_child(picker)
+	grid.add_child(picker)
 	var owner_btn := OptionButton.new()
-	owner_btn.tooltip_text = Locale.tr_key("Membro-dono (agrupa o dano; não mexe na malha)")
+	owner_btn.name = "Owner"
 	for ch in _owner_choices():
 		var i := owner_btn.item_count
 		owner_btn.add_item(str(ch["label"]))
 		owner_btn.set_item_metadata(i, str(ch["group"]))
 	owner_btn.disabled = candidates.is_empty()
-	add_row.add_child(owner_btn)
+	grid.add_child(owner_btn)
 	var add_btn := Button.new()
+	add_btn.name = "Add"
 	add_btn.text = "Adicionar"   # Button: auto-localizado pelo Locale
 	add_btn.disabled = candidates.is_empty()
 	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker, owner_btn))
-	add_row.add_child(add_btn)
-	damage_footer.add_child(add_row)
+	grid.add_child(add_btn)
 
 
 # Mapa owner_group → [{group, label, bone}] dos sub-membros (PART_*) do preview, agrupados pelo

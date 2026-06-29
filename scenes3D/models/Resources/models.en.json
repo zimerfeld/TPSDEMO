@@ -87,6 +87,7 @@
 	"Outros sub-membros": "Other sub-members",
 	"(sem ossos auxiliares)": "(no auxiliary bones)",
 	"Para Membro Dono": "For Owner Member",
+	"Membro-dono (agrupa o dano; não mexe na malha)": "Owner member (groups the damage; doesn't touch the mesh)",
 	"Esfera": "Sphere",
 	"Caixa": "Box",
 	"Cápsula": "Capsule"

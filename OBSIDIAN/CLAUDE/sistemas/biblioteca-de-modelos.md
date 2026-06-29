@@ -157,6 +157,18 @@ a `_unhandled_input`.
 > - **Toggles (`CheckButton`):** `Malha→Mesh`, `Colliders→MemberLimbCollider`, `Labels→MemberLabel`,
 >   `SubCollider→SubMemberLimbCollider`, `AuxHighlight→SkeletonLimbCollider`, `Osso→SkeletonLabel`.
 > - **Gizmo de eixos:** `AxisGizmoOverlay→AxisGizmo` (o `SubViewportContainer`).
+> - **Botões/painéis de Dano e IA (sem o sufixo de tipo):** `DamageButton→Damage`, `AIButton→AI`,
+>   `DamagePanel→Damage` (janela), `CloseButton→Close`, `AICloseButton→AIClose`, `DamageTree→Limbs`.
+>   **Colisão de nome:** o botão **e** a janela viram "Damage" (pais diferentes, OK como nó), mas o
+>   `%Damage` único fica com a **janela**; o **botão** é resolvido por caminho (`$UI/Actions/Damage`,
+>   sem `unique_name`). `AIPanel` ficou como está (não pedido), então `%AI` (botão) não colide.
+> - **Footer do painel Dano redesenhado:** a seção "Adicionar sub-membro" virou um **`GridContainer`
+>   de 3 colunas** (osso · dono · botão) para os cabeçalhos ficarem na MESMA largura dos dropdowns
+>   abaixo. O **tooltip** do dropdown de dono ("Membro-dono…") deixou de ser tooltip e virou um
+>   **rótulo visível `OwnerHint`** de largura total acima da seção (chave nova nos `models.{pt,en}.json`).
+>   Controles criados em código agora têm nome (antes `@label@…`/`@optionbutton@…`): `Separator`,
+>   `OwnerHint`, `AddArea` (grid), `AddTitle`/`OwnerTitle`/`Pad`, `Bone`/`Owner`/`Add`; e os itens da
+>   lista de IA: `<chave>`/`Content`/`Enabled`/`Description`.
 > - **Label do dropdown de malha:** texto **"Parte:" → "Malha:"** (`Mesh:` em en; chave em
 >   `models.{pt,en}.json` migrada de `Parte:` para `Malha:`).
 > - **VBox `Selectors`:** perdeu o `size_flags_horizontal = 3` (deixou de esticar a linha toda) e
