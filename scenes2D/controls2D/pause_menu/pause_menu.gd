@@ -13,13 +13,13 @@ signal quit_pressed
 @export var bind_pause_action: bool = true
 
 @onready var _menu: VBoxContainer = $Dimmer/PauseMenu
-@onready var _settings: PanelContainer = $Dimmer/PauseMenu/SettingsPanel
+@onready var _settings: PanelContainer = $Dimmer/PauseMenu/SettingsCard
 
 func _ready() -> void:
 	visible = false
-	_menu.get_node("ResumeBtn").pressed.connect(close)
-	_menu.get_node("SettingsBtn").pressed.connect(_on_settings)
-	_menu.get_node("QuitBtn").pressed.connect(func() -> void: quit_pressed.emit())
+	_menu.get_node("Resume").pressed.connect(close)
+	_menu.get_node("Settings").pressed.connect(_on_settings)
+	_menu.get_node("Quit").pressed.connect(func() -> void: quit_pressed.emit())
 
 func _unhandled_input(event: InputEvent) -> void:
 	if bind_pause_action and InputMap.has_action("pause") \

@@ -211,8 +211,12 @@ distintas para você diferenciá-los:
   overlay — borda com **brilho bem mais fraco** e o seu próprio tooltip — e os dois tooltips (host e
   filho) são **afastados para não se sobreporem**. Vale em **todas as telas, sem exceção** — inclusive Models e o editor de Dano (que saem
   do overlay **3D** via `no_debug_overlay`) — e também sobre o **rótulo do nome da cena** (topo
-  direito, ao lado do título). O tooltip fica à direita do controle, exceto o do **TitleLabel**, que
-  fica **centralizado abaixo do texto**, e é mantido **dentro da tela**; controles dentro de um
+  direito, ao lado do título). Cada tooltip escolhe um dos **quatro cantos** do controle, testando-os em
+  ordem e ficando no primeiro que cabe **inteiro na tela**: (1) à direita do canto **superior-direito**
+  → (2) à esquerda do **superior-esquerdo** → (3) à direita do **inferior-direito** → (4) à esquerda do
+  **inferior-esquerdo**. O tooltip do controle apontado é posicionado **primeiro**; o do **host** vem
+  **depois** e ainda **evita sobrepor** o do filho (corrige o caso "o overlay do pai colide" ao apontar
+  um contêiner). Vale para **todo** controle, inclusive o **título** da cena (o label `Title`). Controles dentro de um
   **`SubViewport`** (ex.: o preview da tela Controles 2D) são mapeados para a posição real na tela,
   então a borda/tooltip não fica deslocada.
   Em **qualquer cena**, com uma **janela flutuante aberta** (ex.: as janelas **Dano**/**IA**/afastamento-escala

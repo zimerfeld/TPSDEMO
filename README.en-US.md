@@ -208,8 +208,12 @@ light colors so you can tell them apart:
   with a **much fainter glow** plus its own tooltip — and the two tooltips (host and child) are **nudged
   apart so they don't overlap**. It works in **every scene with no exception** — including Models and the Damage editor (which opt out
   of the **3D** overlay via `no_debug_overlay`) — and also over the **scene-name label** (top-right,
-  beside the title). The tooltip sits to the right of the control, except the **TitleLabel**, whose
-  tooltip is **centered below its text**, and is kept **on-screen**; controls hosted inside a
+  beside the title). Each tooltip picks one of the control's **four corners**, trying them in order and taking the
+  first that fits **fully on-screen**: (1) right of the **top-right** corner → (2) left of the
+  **top-left** → (3) right of the **bottom-right** → (4) left of the **bottom-left**. The pointed
+  control's tooltip is placed **first**; the **host**'s tooltip is placed **after** and additionally
+  **avoids overlapping** the child's (fixing the "parent overlay collides" case when you hover a
+  container). This applies to **every** control, including the scene **title** (the `Title` label). Controls hosted inside a
   **`SubViewport`** (e.g. the Controls 2D preview) are mapped to their real on-screen position so the
   border/tooltip no longer drifts. In **any scene**, with a
   **floating window open** (e.g. Models' **Damage**/**AI**/offset-scale windows, or any `FloatingWindow`/

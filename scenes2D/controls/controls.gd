@@ -22,8 +22,8 @@ var _controls: Array = []
 
 @onready var cbo_control: OptionButton = %cboControl
 @onready var preview: SubViewport = %SubViewport
-@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
+@onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
+@onready var english_button: Button = $UI/Actions/LangBar/English
 
 
 func _ready() -> void:

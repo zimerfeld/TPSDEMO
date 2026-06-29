@@ -211,9 +211,9 @@ func _add_button(parent: Control, text: String, cb: Callable) -> Button:
 # Os arquivos NCS vêm como "Artista - Título  Gênero  NCS - Copyright Free Music.mp3": o duplo espaço
 # separa o "Artista - Título" do resto, então cortamos ali. Também remove a extensão e o sufixo NCS.
 func _clean_label(filename: String) -> String:
-	var name := filename.get_basename()
-	var cut := name.find("  ")
+	var cleaned := filename.get_basename()
+	var cut := cleaned.find("  ")
 	if cut > 0:
-		name = name.substr(0, cut)
-	name = name.replace(" NCS - Copyright Free Music", "").strip_edges()
-	return name if name != "" else filename
+		cleaned = cleaned.substr(0, cut)
+	cleaned = cleaned.replace(" NCS - Copyright Free Music", "").strip_edges()
+	return cleaned if cleaned != "" else filename

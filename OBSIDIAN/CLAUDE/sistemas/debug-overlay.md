@@ -47,25 +47,28 @@ aplicam na hora (`DebugOverlay.refresh()`).
   chama `refresh()` para reconstruir os tooltips na cena nova.
 - **Toggle de Debug 2D na barra Actions:** ao trocar de tela, o `_process` também chama
   `_ensure_debug2d_toggle(screen)`, que injeta (idempotente) um `Debug2DToggle`
-  (`scenes2D/controls2D/debug2d_toggle.gd`, um `CheckButton`) na `HBoxContainer` **Actions** da tela —
+  (`scenes2D/controls2D/debug2d_toggle.gd`, um `CheckButton`; o **nó** se chama `Debug2D` — sem o sufixo
+  "Toggle", padrão 2026-06-28) na `HBoxContainer` **Actions** da tela —
   **menos a developer** (`scene_file_path` termina em `developer.tscn`, que já tem o seu próprio par).
   O **menu** e os **levels de gameplay** (level_1/2/base) também ganharam uma barra Actions na posição
   padrão (no menu sob `UI`; nos levels sob o `TitleCanvas`), então o toggle os alcança quando são a
   tela ativa (solo offline). Telas sem nenhuma Actions são ignoradas. O toggle lê/grava
   `Settings("game","debug_2d")` e chama `DebugOverlay.refresh()`. Roda mesmo com o Debug 2D **desligado**
   (a chamada está ANTES do `if _canvas_layer == null: return`), senão não haveria como ligá-lo.
-- **Posição dos tooltips:** por padrão cada tooltip fica **à direita** do controle (vira para a
-  esquerda se sair da tela). **Exceção — `TitleLabel`:** o tooltip fica **centralizado abaixo do
-  texto** do título (flag `is_title` na entrada do `_overlay_map`).
-- **Layout anti-sobreposição (reescrito 2026-06-27):** depois de ancorar cada tooltip ao seu controle,
-  `_resolve_tooltip_layout` (substituiu `_resolve_overlaps` + `_clamp_tooltips_to_viewport`) prende
-  todos à viewport e faz uma **separação iterativa em 2D**: a cada passada empurra cada par sobreposto
-  pelo **menor eixo de penetração** (metade p/ cada lado, mais `_TOOLTIP_GAP`), reprendendo à tela, até
-  ninguém mais se mover (teto de 16 passadas). O antigo empurrão **só-horizontal** jogava tooltips p/
-  fora da tela e deixava cruzamentos (ver imagens do bug). O `TitleLabel` agora **entra** na separação
-  (antes era pulado). A cor da borda de cada tooltip = a do controle, então a associação visual se
-  mantém mesmo quando ele é afastado. Esforço-limitado: com mais tooltips que espaço, minimiza em vez
-  de garantir zero sobreposição.
+- **Posição dos tooltips — regra dos 4 cantos (reescrito 2026-06-28):** `_layout_tooltips(hov, host)`
+  posiciona **primeiro** o tooltip do controle **apontado** e **depois** o do **host**, cada um pela
+  função `_pick_corner`, que tenta 4 cantos do controle **nesta ordem de prioridade**, escolhendo o
+  primeiro que cabe **inteiro na tela**: (1) à **direita do canto superior-direito** → (2) à
+  **esquerda do canto superior-esquerdo** → (3) à **direita do canto inferior-direito** → (4) à
+  **esquerda do canto inferior-esquerdo**. Se nenhum couber, relaxa para o 1º que ao menos cabe; último
+  recurso, prende o canto preferido (1) à viewport (`_clamp_pos`). **O tooltip do host, além de caber,
+  evita SOBREPOR o do apontado** (que já foi fixado primeiro) — corrige o bug "o overlay do pai está
+  colidindo" ao apontar um contêiner (ex.: `VBoxContainer` "main"). Substituiu a antiga separação
+  iterativa 2D (`_resolve_tooltip_layout`), desnecessária agora que só há 2 tooltips visíveis (apontado
+  + host) no inspetor por hover. **O título da cena (`Title`) também segue a regra dos 4 cantos**
+  (2026-06-28) — deixou de ter layout próprio (o antigo caso especial `is_title`, que o centralizava
+  abaixo do texto, foi **removido**). A cor da borda de cada tooltip = a do controle, mantendo a
+  associação visual mesmo quando ele vai p/ outro canto.
 - **Inspetor por hover — overlay só no controle apontado (2026-06-28):** o Debug 2D deixou de
   desenhar borda/tooltip de **todos** os controles ao mesmo tempo. Agora o `_process` roda em **dois
   passos**: (1) esconde **todo** o overlay e acha o controle sob o cursor — o de **menor área** entre
@@ -81,14 +84,15 @@ aplicam na hora (`DebugOverlay.refresh()`).
   Vale em **toda cena 2D** (mesma varredura global do Debug 2D).
   - **Realce fraco do host (2026-06-28):** se o controle apontado estiver **dentro de outro**, o
     "host" (ancestral `Control` mais próximo rastreado — `_host_id_of`) também recebe overlay, com a
-    **borda** no MESMO efeito porém em intensidade bem menor (`_HOST_GLOW = 0.3`: borda/brilho/largura
+    **borda** no MESMO efeito porém em intensidade bem menor (`_HOST_GLOW = 0.18`: borda/brilho/largura
     escalados por esse fator em `_set_border_lit(..., intensity)`), só p/ situar o controle no
     contêiner. O host fica em `z_index 0`, abaixo do apontado (`1`).
   - **Tooltip do host também aparece, sem colidir com o filho (2026-06-28):** o overlay do apontado e
     o do host são montados pelo mesmo helper `_show_overlay_for(inst_id, tab_visible)` (borda + tooltip
-    + linhas Type/Name/Id/Tab), então o **host exibe seu tooltip** igual ao filho. Como agora há 2
-    tooltips visíveis, o `_resolve_tooltip_layout` volta a fazer a **separação 2D** entre eles —
-    afastando o tooltip do host do tooltip do filho p/ não se sobreporem.
+    + linhas Type/Name/Id/Tab), então o **host exibe seu tooltip** igual ao filho. Como há 2 tooltips
+    visíveis, o `_layout_tooltips` posiciona **primeiro o do filho** (apontado) e **depois o do host**
+    pela regra dos 4 cantos (`_pick_corner`), com o host **evitando o rect já fixado do filho** — não se
+    sobrepõem (ver "Posição dos tooltips" acima).
 - **Mapeamento de coordenadas — controles em `SubViewport` (2026-06-27):** `_screen_rect_of(ctrl)`
   converte o `get_global_rect()` (espaço da viewport do controle) para **coordenadas de tela** do
   canvas do overlay. Para controles na viewport principal é o próprio rect; para controles **dentro de
@@ -97,9 +101,19 @@ aplicam na hora (`DebugOverlay.refresh()`).
   somando `container.get_global_position()` e a escala `container.size / subviewport.size`. Sem isso, a
   borda/tooltip saía **deslocada** da posição real do controle.
 - O **watermark do nome da cena** (`_scene_name_label`) fica no **topo direito, ao lado do
-  `TitleLabel`** (antes era o canto inferior esquerdo), no canvas persistente. Também ganha tooltip
+  título (`Title`)** (antes era o canto inferior esquerdo), no canvas persistente. Também ganha tooltip
   2D: como o `_scan` pula o canvas persistente, `_build_overlays` registra `_scene_name_label`
   explicitamente (`_add_2d`) quando `debug_2d` está ligado.
+- **Nós `Label` sem o sufixo "Label" (2026-06-28):** para limpar a linha **Name** dos tooltips do Debug
+  2D, os nós **`type="Label"`** cujo nome terminava em "Label" tiveram o sufixo removido: `TitleLabel →
+  Title` (em todas as telas + janelas Dano/IA/`FloatingWindow`), `SceneNameLabel → SceneName` (o nó
+  local de Models **e** o watermark global criado em `debug_overlay._setup_scene_name_label`) e
+  `SubMemberLabel → SubMember` (o **Label** "Sub-membro:" de Models). Os acessores `%` em
+  `models.gd`/`floating_window.gd` acompanham; as variáveis
+  GDScript (`_title_label`, `scene_name_label`, `sub_member_label`) **não** mudaram. **Atenção:** o
+  **`CheckButton`** `SubMemberLabel` (toggle das labels de sub-membro, renomeado de `SubMemberLabelToggle`
+  em 2026-06-28) **não** é `Label` e mantém o nome — os dois `SubMemberLabel` coexistiam por engano (mesmo
+  `unique_name`); renomear o Label p/ `SubMember` desfez a colisão.
 - **Janela flutuante aberta → some o overlay da UI de fundo (2026-06-27):** enquanto QUALQUER
   janela flutuante estiver **visível**, o Debug 2D desenha tooltips/bordas **só nos controles DENTRO
   dela** — a UI que a chamou (a tela atrás) fica limpa, p/ não poluir com informação demais. As

@@ -23,12 +23,12 @@ var _model_rot_y: float = 0.0
 var _loading_path: String = ""
 
 @onready var model_holder: Node3D = $ModelHolder
-@onready var character_name_label: Label = %NameLabel
+@onready var character_name_label: Label = %Name
 @onready var loading: HBoxContainer = %Loading
 @onready var loading_progress: ProgressBar = %Progress
 @onready var loading_done_timer: Timer = %DoneTimer
-@onready var portuguese_button: Button = %PortugueseButton
-@onready var english_button: Button = %EnglishButton
+@onready var portuguese_button: Button = %Portuguese
+@onready var english_button: Button = %English
 
 
 func _ready() -> void:

@@ -10,15 +10,16 @@ Convenção (2026-06-16): elementos colados nas bordas da tela usam ancoragem **
   - **Também no menu** (sob `UI`) e nos **levels de gameplay** level_1/2/base (sob o `TitleCanvas`):
     mesma `Actions` BOTTOM_WIDE, mas com `mouse_filter=2` (ignore, para não bloquear o que está atrás)
     — criadas para o toggle de Debug 2D injetado pelo `DebugOverlay`. Ver [[sistemas/debug-overlay]].
-  - **LangBar dentro da Actions (2026-06-26):** os botões de idioma (`PortugueseButton`/
-    `EnglishButton`) NÃO ficam mais numa barra própria ancorada à direita — a `LangBar` virou um
-    `HBoxContainer` filho de `UI/Actions` (sub-grupo com `separation=12`), como último item do grupo
-    centralizado. Vale para TODAS as telas (menu/settings/levels/chooseplayer/controls/playonline/
-    developer/models). Caminhos: `UI/Actions/LangBar/PortugueseButton` (e as conexões `pressed`). As telas
-    que referenciam por `%NomeÚnico` seguem funcionando; controls/developer/playonline usam o caminho
-    `$UI/Actions/LangBar/...`.
-- **Label do título** (`TitleLabel` de chooseplayer/controls/developer/levels/menu/
-  playonline/models + os `TitleCanvas/TitleLabel` dos níveis) → **`TOP_WIDE` (preset 10)**:
+  - **LangBar dentro da Actions (2026-06-26; nós renomeados 2026-06-28):** os botões de idioma
+    (`Portuguese`/`English` — antes `PortugueseButton`/`EnglishButton`) NÃO ficam mais numa barra
+    própria ancorada à direita — a `LangBar` virou um `HBoxContainer` filho de `UI/Actions` (sub-grupo
+    com `separation=12`), como último item do grupo centralizado. Vale para TODAS as telas
+    (menu/settings/levels/chooseplayer/controls/playonline/developer/models). Caminhos:
+    `UI/Actions/LangBar/Portuguese` (e as conexões `pressed`). As telas que referenciam por
+    `%NomeÚnico` seguem funcionando; controls/developer/playonline/models usam o caminho
+    `$UI/Actions/LangBar/...`. O botão **Voltar** também passou de `BackButton` para `Back`.
+- **Label do título** (`Title` — antes `TitleLabel` — de chooseplayer/controls/developer/levels/menu/
+  playonline/models + os `TitleCanvas/Title` dos níveis) → **`TOP_WIDE` (preset 10)**:
   `anchor_left=0`, `anchor_right=1`, `anchor_top/bottom=0`, `offset_left/right=0`, com
   `horizontal_alignment=1`. Largura toda, colado no topo, texto no centro. (O título de
   settings fica num `VBox` ancorado ao topo, então já flui correto — não é absoluto.)

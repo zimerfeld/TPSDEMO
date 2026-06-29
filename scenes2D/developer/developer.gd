@@ -45,8 +45,8 @@ const _BASE_MODULATE_META := &"_base_modulate"
 # fator (mantém o matiz). Sobreposto pelo estado "disabled" (acinzentado) das sub-linhas do Debug 2D.
 const OPTION_DIM_FACTOR: float = 0.42
 
-@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
+@onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
+@onready var english_button: Button = $UI/Actions/LangBar/English
 
 
 func _ready() -> void:
@@ -132,7 +132,7 @@ func _set_subrows_disabled(rows: Array[String], is_disabled: bool) -> void:
 				(child as BaseButton).disabled = is_disabled
 				_style_toggle_button(child as BaseButton)
 			elif child is Control:
-				# O rótulo (ShowTypeLabel/…/ShowTabLabel) também está "ligado" ao Debug 2D: escurece
+				# O rótulo (ShowType/…/ShowTab) também está "ligado" ao Debug 2D: escurece
 				# junto para a linha INTEIRA refletir o estado desativado, restaurando a cor original
 				# quando reativada (o tema não tem estilo "disabled" próprio).
 				var ctrl := child as Control

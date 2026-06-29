@@ -51,8 +51,8 @@ var _pointer_inside: bool = false
 @onready var _window: PanelContainer = %Window
 @onready var _titlebar: PanelContainer = %TitleBar
 @onready var _left_pad: Control = %LeftPad
-@onready var _title_label: Label = %TitleLabel
-@onready var _close_button: Button = %CloseButton
+@onready var _title_label: Label = %Title
+@onready var _close_button: Button = %Close
 @onready var _content: VBoxContainer = %Content
 @onready var _footer: HBoxContainer = %Footer
 

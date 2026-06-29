@@ -13,7 +13,7 @@ var _cursor: Label = null
 var _game_state: Node = null
 
 func _ready() -> void:
-	var messages := $LogPanel/Messages
+	var messages := $LogCard/Messages
 	for child in messages.get_children():
 		if child is Label and String(child.name).begins_with("Log"):
 			_logs.append(child)

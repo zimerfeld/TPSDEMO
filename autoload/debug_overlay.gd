@@ -4,7 +4,7 @@ const _BORDER_WIDTH := 2
 const _TOOLTIP_GAP := 4.0
 # Intensidade do realce da borda do "host" (controle que contém o apontado), relativa ao realce
 # pleno (1.0). Bem fraco de propósito: só situa o controle dentro do contêiner sem competir com ele.
-const _HOST_GLOW := 0.3
+const _HOST_GLOW := 0.18
 const _Debug2DToggle := preload("res://scenes2D/controls2D/debug2d_toggle.gd")
 
 # Janelas flutuantes (Dano/IA/Afastamento-Escala etc.) entram neste grupo. Enquanto QUALQUER uma
@@ -181,7 +181,7 @@ func _setup_scene_name_label() -> void:
 		_persistent_canvas.name = "DebugSceneCanvas"
 		get_tree().root.add_child(_persistent_canvas)
 	_scene_name_label = Label.new()
-	_scene_name_label.name = "SceneNameLabel"   # nome legível na linha "Name:" do tooltip 2D
+	_scene_name_label.name = "SceneName"   # nome legível na linha "Name:" do tooltip 2D
 	_scene_name_label.add_theme_font_size_override("font_size", 13)
 	_scene_name_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.65))
 	_scene_name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
@@ -192,7 +192,7 @@ func _setup_scene_name_label() -> void:
 	_scene_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_scene_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# À DIREITA do título da cena: encostado na borda direita do topo e na mesma faixa
-	# vertical do TitleLabel (offset_top 38 / offset_bottom 96, padrão das telas 2D).
+	# vertical do título da cena (offset_top 38 / offset_bottom 96, padrão das telas 2D).
 	_scene_name_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_scene_name_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_scene_name_label.offset_left = -320.0
@@ -231,11 +231,11 @@ func _ensure_debug2d_toggle(screen: Node) -> void:
 	if not is_instance_valid(screen) or screen.scene_file_path.ends_with("developer.tscn"):
 		return
 	var actions := screen.find_child("Actions", true, false)
-	if not (actions is HBoxContainer) or actions.has_node("Debug2DToggle"):
+	if not (actions is HBoxContainer) or actions.has_node("Debug2D"):
 		return
 	# O texto é definido ANTES de add_child para o auto-localizador (Locale) capturá-lo como fonte.
 	var toggle := _Debug2DToggle.new()
-	toggle.name = "Debug2DToggle"
+	toggle.name = "Debug2D"
 	toggle.text = "Debug 2D"
 	actions.add_child(toggle)
 
@@ -317,8 +317,8 @@ func _process(delta: float) -> void:
 		_overlay_map.erase(k)
 
 	# Passo 2: exibe o overlay (borda + tooltip) do controle apontado e, se ele estiver DENTRO de outro
-	# controle, também o do seu "host" (ancestral mais próximo). As linhas e o posicionamento são iguais
-	# nos dois; o _resolve_tooltip_layout depois afasta os dois tooltips p/ NÃO colidirem (host × filho).
+	# controle, também o do seu "host" (ancestral mais próximo). As linhas são iguais nos dois; o
+	# _layout_tooltips depois posiciona primeiro o apontado e depois o host SEM sobrepô-lo (host × filho).
 	# O brilho do host sai bem mais fraco (ver _apply_border_glow).
 	var host_id: int = 0
 	if hov_id != 0:
@@ -328,7 +328,8 @@ func _process(delta: float) -> void:
 			_show_overlay_for(host_id, tab_visible)
 
 	_apply_border_glow(hov_id, host_id)
-	_resolve_tooltip_layout()
+	# Posiciona PRIMEIRO o tooltip do controle apontado e DEPOIS o do host (sem sobrepô-lo).
+	_layout_tooltips(hov_id, host_id)
 
 
 # Posiciona e exibe o overlay (borda + tooltip, com as linhas Type/Name/Id/Tab escolhidas) de UM
@@ -345,16 +346,9 @@ func _show_overlay_for(inst_id: int, tab_visible: bool) -> void:
 		ctrl_border.position = rect.position
 		ctrl_border.size = rect.size
 		ctrl_border.visible = true
-	var vp_size := get_viewport().get_visible_rect().size
-	if entry.get("is_title", false):
-		# Tooltip do título centralizado horizontalmente, logo ABAIXO do texto.
-		var tip_cx: float = rect.position.x + rect.size.x * 0.5 - tooltip.size.x * 0.5
-		tooltip.position = Vector2(tip_cx, rect.position.y + rect.size.y + _TOOLTIP_GAP)
-	else:
-		var tip_x := rect.position.x + rect.size.x
-		if tooltip.size.x > 0 and tip_x + tooltip.size.x > vp_size.x:
-			tip_x = rect.position.x - tooltip.size.x
-		tooltip.position = Vector2(tip_x, rect.position.y)
+	# A posição final do tooltip é resolvida em _layout_tooltips (regra dos 4 cantos), que posiciona
+	# primeiro o controle apontado e depois o host sem sobrepô-lo. Vale para TODO controle, inclusive
+	# o título da cena (Title), que segue a mesma regra dos demais.
 	entry.type_lbl.visible = _line_visible_2d("type")
 	entry.name_lbl.visible = _line_visible_2d("name")
 	entry.id_lbl.visible = _line_visible_2d("id")
@@ -459,55 +453,73 @@ func _clamp_pos(pos: Vector2, size: Vector2, vp: Vector2) -> Vector2:
 	return pos
 
 
-# Reposiciona os tooltips visíveis para (a) caberem na tela e (b) NÃO se sobreporem. Cada tooltip já
-# entra ancorado ao seu controle (lado direito/esquerdo, ou centralizado p/ o título — feito no
-# _process); aqui só resolvemos conflitos: prende à viewport e faz uma **separação iterativa em 2D**
-# (empurra cada par sobreposto pelo menor eixo de penetração, metade para cada lado), reprendendo à
-# tela a cada passada. Substitui o antigo empurrão SÓ-horizontal, que jogava tooltips p/ fora da tela
-# e deixava cruzamentos. A cor da borda de cada tooltip continua igual à do controle (associação
-# visual) mesmo quando ele é afastado. Esforço-limitado: com mais tooltips que espaço, minimiza
-# sobreposição em vez de garantir zero.
-func _resolve_tooltip_layout() -> void:
+# Posiciona os tooltips do controle apontado e do seu host (os únicos visíveis no inspetor por hover).
+# Regra (pedido 2026-06-28): posiciona PRIMEIRO o tooltip do controle apontado e DEPOIS o do host —
+# este, além de caber na tela, evita SOBREPOR o do apontado (que já ficou fixo). Cada tooltip escolhe
+# um dos 4 cantos do controle pela regra de _pick_corner — inclusive o título da cena (Title).
+func _layout_tooltips(hov_id: int, host_id: int) -> void:
 	var vp := get_viewport().get_visible_rect().size
-	var tips: Array = []
-	for inst_id in _overlay_map:
-		var t: PanelContainer = _overlay_map[inst_id].tooltip
-		if is_instance_valid(t) and t.visible and t.size.x > 0.0 and t.size.y > 0.0:
-			tips.append(t)
-	if tips.size() < 2:
-		if tips.size() == 1:
-			tips[0].position = _clamp_pos(tips[0].position, tips[0].size, vp)
-		return
-	for t in tips:
-		t.position = _clamp_pos(t.position, t.size, vp)
-	# Passadas de separação: para quando ninguém mais se move (ou no teto de iterações).
-	for _iter in 16:
-		var moved := false
-		for a in range(tips.size()):
-			for b in range(a + 1, tips.size()):
-				var ra := Rect2(tips[a].position, tips[a].size)
-				var rb := Rect2(tips[b].position, tips[b].size)
-				if not ra.intersects(rb):
-					continue
-				var overlap_x: float = minf(ra.end.x, rb.end.x) - maxf(ra.position.x, rb.position.x)
-				var overlap_y: float = minf(ra.end.y, rb.end.y) - maxf(ra.position.y, rb.position.y)
-				var ca := ra.position + ra.size * 0.5
-				var cb := rb.position + rb.size * 0.5
-				if overlap_x <= overlap_y:
-					var sx := overlap_x * 0.5 + _TOOLTIP_GAP * 0.5
-					var dx := -1.0 if ca.x <= cb.x else 1.0
-					tips[a].position.x += dx * sx
-					tips[b].position.x -= dx * sx
-				else:
-					var sy := overlap_y * 0.5 + _TOOLTIP_GAP * 0.5
-					var dy := -1.0 if ca.y <= cb.y else 1.0
-					tips[a].position.y += dy * sy
-					tips[b].position.y -= dy * sy
-				moved = true
-		if not moved:
-			break
-		for t in tips:
-			t.position = _clamp_pos(t.position, t.size, vp)
+	var avoid: Array = []   # rects já fixados que o próximo tooltip deve evitar
+	var hov_rect := _place_one_tooltip(hov_id, vp, avoid)
+	if hov_rect.size.x > 0.0:
+		avoid.append(hov_rect)
+	if host_id != 0 and host_id != hov_id:
+		_place_one_tooltip(host_id, vp, avoid)
+
+
+# Posiciona o tooltip de UM controle (apontado ou host) e devolve seu Rect2 de tela (size zero se
+# não houver tooltip válido). Usa a regra dos 4 cantos (_pick_corner), evitando os rects em `avoid`.
+func _place_one_tooltip(inst_id: int, vp: Vector2, avoid: Array) -> Rect2:
+	if inst_id == 0 or not _overlay_map.has(inst_id):
+		return Rect2()
+	var entry: Dictionary = _overlay_map[inst_id]
+	var t: PanelContainer = entry.tooltip
+	if not (is_instance_valid(t) and t.visible and t.size.x > 0.0 and t.size.y > 0.0):
+		return Rect2()
+	var ctrl := instance_from_id(inst_id) as Control
+	if not is_instance_valid(ctrl):
+		return Rect2()
+	t.position = _pick_corner(_screen_rect_of(ctrl), t.size, vp, avoid)
+	return Rect2(t.position, t.size)
+
+
+# Escolhe a posição do tooltip entre 4 cantos do controle, NESTA ordem de prioridade:
+#   1) à direita do canto superior-direito;
+#   2) à esquerda do canto superior-esquerdo;
+#   3) à direita do canto inferior-direito;
+#   4) à esquerda do canto inferior-esquerdo.
+# Retorna o primeiro que cabe INTEIRO na tela E não sobrepõe nenhum rect de `avoid`. Se nenhum atende
+# aos dois, relaxa: aceita o primeiro que ao menos cabe na tela. Último recurso: prende o canto
+# preferido (1) à viewport.
+func _pick_corner(rect: Rect2, size: Vector2, vp: Vector2, avoid: Array) -> Vector2:
+	var g := _TOOLTIP_GAP
+	var candidates: Array = [
+		Vector2(rect.end.x + g, rect.position.y),                    # 1. direita do canto sup-dir
+		Vector2(rect.position.x - size.x - g, rect.position.y),      # 2. esquerda do canto sup-esq
+		Vector2(rect.end.x + g, rect.end.y - size.y),               # 3. direita do canto inf-dir
+		Vector2(rect.position.x - size.x - g, rect.end.y - size.y),  # 4. esquerda do canto inf-esq
+	]
+	for pos in candidates:
+		if _fits_viewport(pos, size, vp) and not _overlaps_any(pos, size, avoid):
+			return pos
+	for pos in candidates:
+		if _fits_viewport(pos, size, vp):
+			return pos
+	return _clamp_pos(candidates[0], size, vp)
+
+
+# True se o rect (pos+size) cabe inteiro dentro da viewport (0,0)–(vp).
+func _fits_viewport(pos: Vector2, size: Vector2, vp: Vector2) -> bool:
+	return pos.x >= 0.0 and pos.y >= 0.0 and pos.x + size.x <= vp.x and pos.y + size.y <= vp.y
+
+
+# True se o rect (pos+size) intersecta algum dos rects de `avoid`.
+func _overlaps_any(pos: Vector2, size: Vector2, avoid: Array) -> bool:
+	var r := Rect2(pos, size)
+	for other in avoid:
+		if r.intersects(other):
+			return true
+	return false
 
 
 # Rect do controle em coordenadas de TELA (canvas raiz do overlay). Para controles na viewport
@@ -681,8 +693,6 @@ func _add_2d(ctrl: Control) -> void:
 		"border_style": border_style, "glow_on": false,
 		"type_lbl": type_lbl, "name_lbl": name_lbl, "id_lbl": id_lbl, "tab_lbl": tab_lbl,
 		"path_lbl": path_lbl,
-		# O tooltip do título da cena fica centralizado ABAIXO do texto (não à direita).
-		"is_title": ctrl.name == "TitleLabel",
 	}
 
 

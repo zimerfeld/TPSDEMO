@@ -25,7 +25,7 @@ faixas largas — não recebeu HFlow (só seria necessário se telas muito estre
 Control (anchors_preset = 15 → tela inteira)
 └─ MarginContainer (full rect; margens = respiro nas bordas)
    └─ VBoxContainer
-      ├─ TitleLabel            (horizontal_alignment = 1)
+      ├─ Title                 (horizontal_alignment = 1)
       ├─ <seções>              (VBox/HBox/Grid)
       └─ Content (HBox)        filhos com size_flags = Expand → dividem a largura
    (Actions no rodapé e LangBar no canto seguem ancorados — ver ancoragem-ui)

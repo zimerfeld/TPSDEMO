@@ -190,7 +190,7 @@ func _draw_ticks(x0: float, x1: float, y1: float) -> void:
 		var x := x0 + tick_inset + i * step
 		draw_line(Vector2(x, y1 - tick_length), Vector2(x, y1), dim, 1.0, true)
 
-func _draw_corner_flags(x0: float, y0: float, x1: float, y1: float) -> void:
+func _draw_corner_flags(x0: float, _y0: float, x1: float, y1: float) -> void:
 	if flag_size <= 0.0:
 		return
 	# Short outward ticks near the bottom-left and top-right-opposite corners
