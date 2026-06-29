@@ -47,7 +47,7 @@ theme_override_constants/margin_bottom = 110
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="TitleLabel" type="Label" parent="UI/Margin/Main" unique_id=2067419229]
+[node name="Title" type="Label" parent="UI/Margin/Main" unique_id=2067419229]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Configurações"
@@ -75,7 +75,7 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="VideoResolutionLabel" type="Label" parent="UI/Margin/Main/Tabs/Resolution/Body/VideoResolutionRow"]
+[node name="VideoResolution" type="Label" parent="UI/Margin/Main/Tabs/Resolution/Body/VideoResolutionRow"]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -95,7 +95,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ResolutionScaleLabel" type="Label" parent="UI/Margin/Main/Tabs/Resolution/Body/ResolutionScaleRow" unique_id=508499270]
+[node name="ResolutionScale" type="Label" parent="UI/Margin/Main/Tabs/Resolution/Body/ResolutionScaleRow" unique_id=508499270]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -155,7 +155,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ScaleFilterLabel" type="Label" parent="UI/Margin/Main/Tabs/Resolution/Body/ScaleFilterRow" unique_id=2001379291]
+[node name="ScaleFilter" type="Label" parent="UI/Margin/Main/Tabs/Resolution/Body/ScaleFilterRow" unique_id=2001379291]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -218,7 +218,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="DisplayModeLabel" type="Label" parent="UI/Margin/Main/Tabs/Display/Body/DisplayModeRow" unique_id=675032541]
+[node name="DisplayMode" type="Label" parent="UI/Margin/Main/Tabs/Display/Body/DisplayModeRow" unique_id=675032541]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -254,7 +254,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="VSyncLabel" type="Label" parent="UI/Margin/Main/Tabs/Display/Body/VSyncRow" unique_id=1509648480]
+[node name="VSync" type="Label" parent="UI/Margin/Main/Tabs/Display/Body/VSyncRow" unique_id=1509648480]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -298,7 +298,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MaxFPSLabel" type="Label" parent="UI/Margin/Main/Tabs/Display/Body/MaxFPSRow" unique_id=1943116286]
+[node name="MaxFPS" type="Label" parent="UI/Margin/Main/Tabs/Display/Body/MaxFPSRow" unique_id=1943116286]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -385,7 +385,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="TAALabel" type="Label" parent="UI/Margin/Main/Tabs/Antialiasing/Body/TAARow" unique_id=444337486]
+[node name="TAA" type="Label" parent="UI/Margin/Main/Tabs/Antialiasing/Body/TAARow" unique_id=444337486]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -413,7 +413,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MSAALabel" type="Label" parent="UI/Margin/Main/Tabs/Antialiasing/Body/MSAARow" unique_id=283503742]
+[node name="MSAA" type="Label" parent="UI/Margin/Main/Tabs/Antialiasing/Body/MSAARow" unique_id=283503742]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -457,7 +457,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="FXAALabel" type="Label" parent="UI/Margin/Main/Tabs/Antialiasing/Body/FXAARow" unique_id=108225909]
+[node name="FXAA" type="Label" parent="UI/Margin/Main/Tabs/Antialiasing/Body/FXAARow" unique_id=108225909]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -496,7 +496,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ShadowMappingLabel" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/ShadowMappingRow" unique_id=916741178]
+[node name="ShadowMapping" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/ShadowMappingRow" unique_id=916741178]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -524,7 +524,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="GITypeLabel" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/GITypeRow" unique_id=448574587]
+[node name="GIType" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/GITypeRow" unique_id=448574587]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -560,7 +560,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="GIQualityLabel" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/GIQualityRow" unique_id=1494644817]
+[node name="GIQuality" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/GIQualityRow" unique_id=1494644817]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -596,7 +596,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SSAOLabel" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/SSAORow" unique_id=1379764703]
+[node name="SSAO" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/SSAORow" unique_id=1379764703]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -632,7 +632,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SSILLabel" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/SSILRow" unique_id=561888308]
+[node name="SSIL" type="Label" parent="UI/Margin/Main/Tabs/Lighting/Body/SSILRow" unique_id=561888308]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -679,7 +679,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="BloomLabel" type="Label" parent="UI/Margin/Main/Tabs/Effects/Body/BloomRow" unique_id=813551206]
+[node name="Bloom" type="Label" parent="UI/Margin/Main/Tabs/Effects/Body/BloomRow" unique_id=813551206]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -707,7 +707,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="VolumetricFogLabel" type="Label" parent="UI/Margin/Main/Tabs/Effects/Body/VolumetricFogRow" unique_id=480335929]
+[node name="VolumetricFog" type="Label" parent="UI/Margin/Main/Tabs/Effects/Body/VolumetricFogRow" unique_id=480335929]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -746,7 +746,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MusicLabel" type="Label" parent="UI/Margin/Main/Tabs/Audio/Body/MusicRow" unique_id=1545441746]
+[node name="Music" type="Label" parent="UI/Margin/Main/Tabs/Audio/Body/MusicRow" unique_id=1545441746]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -774,7 +774,7 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="SFXLabel" type="Label" parent="UI/Margin/Main/Tabs/Audio/Body/SFXRow"]
+[node name="SFX" type="Label" parent="UI/Margin/Main/Tabs/Audio/Body/SFXRow"]
 custom_minimum_size = Vector2(350, 50)
 layout_mode = 2
 vertical_alignment = 1
@@ -813,7 +813,7 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="BackButton" type="Button" parent="UI/Actions" unique_id=1664479691]
+[node name="Back" type="Button" parent="UI/Actions" unique_id=1664479691]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -829,7 +829,7 @@ text = "Reset"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -837,7 +837,7 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="English" type="Button" parent="UI/Actions/LangBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -845,7 +845,7 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "English"
 
-[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Actions/Reset" to="." method="_on_reset_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]

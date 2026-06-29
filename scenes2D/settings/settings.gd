@@ -116,8 +116,8 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var sfx_enabled: Button = %SFXEnabled
 
 @onready var tabs: TabContainer = %Tabs
-@onready var portuguese_button: Button = %PortugueseButton
-@onready var english_button: Button = %EnglishButton
+@onready var portuguese_button: Button = %Portuguese
+@onready var english_button: Button = %English
 
 @onready var _rows: Array = []
 
@@ -558,7 +558,7 @@ func _apply_settings() -> void:
 	# redimensionamento manual do usuário quando ele só muda outras opções já em modo Janela.
 	var prev_mode := get_window().mode
 	var new_mode: int = Settings.config_file.get_value("video", "display_mode")
-	get_window().mode = new_mode
+	get_window().mode = new_mode as Window.Mode
 	if new_mode == Window.MODE_WINDOWED and prev_mode != Window.MODE_WINDOWED:
 		Settings.apply_window_resolution(get_window())
 	DisplayServer.window_set_vsync_mode(Settings.config_file.get_value("video", "vsync"))

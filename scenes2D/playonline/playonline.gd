@@ -23,13 +23,13 @@ var _opt_buttons: Array[OptionButton] = []
 @onready var address: LineEdit = %Address
 @onready var port_history: OptionButton = %PortHistory
 @onready var address_history: OptionButton = %AddressHistory
-@onready var manage_rooms_button: Button = $UI/Margin/Main/FormCenter/VBox/ButtonsRow/ManageRoomsButton
-@onready var join_rooms_button: Button = $UI/Margin/Main/FormCenter/VBox/ButtonsRow/JoinRoomsButton
+@onready var manage_rooms_button: Button = $UI/Inset/Main/Form/Fields/ButtonsRow/ManageRooms
+@onready var join_rooms_button: Button = $UI/Inset/Main/Form/Fields/ButtonsRow/JoinRooms
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
-@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
+@onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
+@onready var english_button: Button = $UI/Actions/LangBar/English
 
 
 func _ready() -> void:
@@ -375,7 +375,7 @@ func _on_rooms_connect_failed() -> void:
 # Regra do projeto: priorizar resposta/FPS sem comprometer a experiência — daí os trade-offs
 # ficarem explícitos para o jogador. Ver [[net_config]] / [[sistemas/salas]].
 func _build_optimization_options() -> void:
-	var vbox: VBoxContainer = $UI/Margin/Main/FormCenter/VBox
+	var vbox: VBoxContainer = $UI/Inset/Main/Form/Fields
 	var anchor: Node = vbox.get_node_or_null("ButtonsRow")
 	if anchor == null:
 		return

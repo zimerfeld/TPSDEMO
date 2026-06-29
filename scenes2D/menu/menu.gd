@@ -19,7 +19,7 @@ var _quit_dialog: FloatingWindow = null
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 @onready var ui: Control = $UI
-@onready var main: Control = %VBox
+@onready var main: Control = %MenuColumn
 @onready var play_button: Button = main.get_node(^"PlayRow/Play")
 @onready var play_online_button: Button = main.get_node(^"PlayOnlineRow/PlayOnline")
 @onready var settings_button: Button = main.get_node(^"SettingsRow/Settings")
@@ -29,8 +29,8 @@ var _quit_dialog: FloatingWindow = null
 @onready var loading_progress: ProgressBar = loading.get_node(^"Progress")
 @onready var loading_done_timer: Timer = loading.get_node(^"DoneTimer")
 
-@onready var portuguese_button: Button = %PortugueseButton
-@onready var english_button: Button = %EnglishButton
+@onready var portuguese_button: Button = %Portuguese
+@onready var english_button: Button = %English
 
 
 func _ready() -> void:

@@ -31,7 +31,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("5")
 
-[node name="BackgroundTexture" type="TextureRect" parent="UI"]
+[node name="Background" type="TextureRect" parent="UI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -122,7 +122,7 @@ offset_bottom = 1.0
 mouse_filter = 2
 color = Color(1, 0.745098, 0.447059, 0.42)
 
-[node name="TitleLabel" type="Label" parent="UI" unique_id=269015257]
+[node name="Title" type="Label" parent="UI" unique_id=269015257]
 layout_mode = 1
 anchors_preset = 10
 anchor_left = 0.0
@@ -136,7 +136,7 @@ theme_override_font_sizes/font_size = 42
 text = "ZIMARO"
 horizontal_alignment = 1
 
-[node name="SubtitleLabel" type="Label" parent="UI"]
+[node name="Subtitle" type="Label" parent="UI"]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -160,40 +160,40 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="MenuPanel" type="PanelContainer" parent="UI/MenuCenter"]
+[node name="MenuCard" type="PanelContainer" parent="UI/MenuCenter"]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 
-[node name="MenuMargin" type="MarginContainer" parent="UI/MenuCenter/MenuPanel"]
+[node name="MenuInset" type="MarginContainer" parent="UI/MenuCenter/MenuCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 50
 theme_override_constants/margin_top = 30
 theme_override_constants/margin_right = 50
 theme_override_constants/margin_bottom = 30
 
-[node name="VBox" type="VBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin" unique_id=2018224844]
+[node name="MenuColumn" type="VBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset" unique_id=2018224844]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="MenuReadout" type="Label" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
+[node name="MenuReadout" type="Label" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.513726, 0.921569, 1, 0.92)
 theme_override_font_sizes/font_size = 18
 text = "MENU PRINCIPAL // PROTOCOLO ATIVO"
 horizontal_alignment = 1
 
-[node name="MenuHint" type="Label" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
+[node name="MenuHint" type="Label" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.901961, 0.941176, 1, 0.84)
 theme_override_font_sizes/font_size = 16
 text = "Selecione a rota de entrada para a arena."
 horizontal_alignment = 1
 
-[node name="PlayRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
+[node name="PlayRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
 
-[node name="Play" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/PlayRow" unique_id=2068058598]
+[node name="Play" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/PlayRow" unique_id=2068058598]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -201,10 +201,10 @@ theme_override_font_sizes/font_size = 30
 text = "PLAY"
 alignment = 1
 
-[node name="PlayOnlineRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
+[node name="PlayOnlineRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
 
-[node name="PlayOnline" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/PlayOnlineRow" unique_id=1771290010]
+[node name="PlayOnline" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/PlayOnlineRow" unique_id=1771290010]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -212,10 +212,10 @@ theme_override_font_sizes/font_size = 30
 text = "PLAY ONLINE"
 alignment = 1
 
-[node name="SettingsRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
+[node name="SettingsRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
 
-[node name="Settings" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/SettingsRow" unique_id=1736245222]
+[node name="Settings" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/SettingsRow" unique_id=1736245222]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -223,10 +223,10 @@ theme_override_font_sizes/font_size = 30
 text = "SETTINGS"
 alignment = 1
 
-[node name="DeveloperRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
+[node name="DeveloperRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
 
-[node name="Developer" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/DeveloperRow" unique_id=299022428]
+[node name="Developer" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/DeveloperRow" unique_id=299022428]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -234,10 +234,10 @@ theme_override_font_sizes/font_size = 30
 text = "MODO DEVELOPER"
 alignment = 1
 
-[node name="QuitRow" type="HBoxContainer" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox"]
+[node name="QuitRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
 
-[node name="Quit" type="Button" parent="UI/MenuCenter/MenuPanel/MenuMargin/VBox/QuitRow" unique_id=1164533481]
+[node name="Quit" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/QuitRow" unique_id=1164533481]
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -259,12 +259,12 @@ custom_minimum_size = Vector2(0, 3)
 layout_mode = 2
 color = Color(1, 0.741176, 0.439216, 0.9)
 
-[node name="StatusLabel" type="Label" parent="UI/StatusFrame"]
+[node name="Status" type="Label" parent="UI/StatusFrame"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "ARENA DE TREINO // MENU PRINCIPAL"
 
-[node name="HintLabel" type="Label" parent="UI/StatusFrame"]
+[node name="Hint" type="Label" parent="UI/StatusFrame"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.745098, 0.85098, 0.937255, 0.72)
 theme_override_font_sizes/font_size = 14
@@ -322,7 +322,7 @@ alignment = 1
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar" unique_id=1700000002]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar" unique_id=1700000002]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -330,7 +330,7 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar" unique_id=1700000003]
+[node name="English" type="Button" parent="UI/Actions/LangBar" unique_id=1700000003]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -353,7 +353,7 @@ offset_bottom = -120.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="LoadingLabel" type="Label" parent="UI/Loading" unique_id=46745870]
+[node name="Message" type="Label" parent="UI/Loading" unique_id=46745870]
 layout_mode = 2
 text = "Loading..."
 
@@ -366,11 +366,11 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
-[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/PlayRow/Play" to="." method="_on_play_pressed"]
-[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/PlayOnlineRow/PlayOnline" to="." method="_on_play_online_pressed"]
-[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/SettingsRow/Settings" to="." method="_on_settings_pressed"]
-[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/DeveloperRow/Developer" to="." method="_on_developer_pressed"]
-[connection signal="pressed" from="UI/MenuCenter/MenuPanel/MenuMargin/VBox/QuitRow/Quit" to="." method="_on_quit_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/PlayRow/Play" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/PlayOnlineRow/PlayOnline" to="." method="_on_play_online_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/SettingsRow/Settings" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/DeveloperRow/Developer" to="." method="_on_developer_pressed"]
+[connection signal="pressed" from="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/QuitRow/Quit" to="." method="_on_quit_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

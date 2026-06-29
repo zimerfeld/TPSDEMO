@@ -68,7 +68,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("5")
 
-[node name="Margin" type="MarginContainer" parent="UI"]
+[node name="Inset" type="MarginContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -81,19 +81,19 @@ theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 110
 
-[node name="Main" type="VBoxContainer" parent="UI/Margin"]
+[node name="Main" type="VBoxContainer" parent="UI/Inset"]
 layout_mode = 2
 size_flags_vertical = 0
 mouse_filter = 2
 theme_override_constants/separation = 20
 
-[node name="TitleLabel" type="Label" parent="UI/Margin/Main" unique_id=1699398886]
+[node name="Title" type="Label" parent="UI/Inset/Main" unique_id=1699398886]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "ESCOLHA SEU PERSONAGEM"
 horizontal_alignment = 1
 
-[node name="NameLabel" type="Label" parent="UI" unique_id=1189056919]
+[node name="Name" type="Label" parent="UI" unique_id=1189056919]
 unique_name_in_owner = true
 layout_mode = 1
 anchor_top = 0.82
@@ -151,13 +151,13 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="BackButton" type="Button" parent="UI/Actions" unique_id=1719511959]
+[node name="Back" type="Button" parent="UI/Actions" unique_id=1719511959]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
-[node name="PlayButton" type="Button" parent="UI/Actions" unique_id=106792872]
+[node name="Play" type="Button" parent="UI/Actions" unique_id=106792872]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -167,7 +167,7 @@ text = "Jogar"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -175,7 +175,7 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="English" type="Button" parent="UI/Actions/LangBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -198,7 +198,7 @@ offset_bottom = -120.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="LoadingLabel" type="Label" parent="UI/Loading" unique_id=2004861435]
+[node name="LoadingText" type="Label" parent="UI/Loading" unique_id=2004861435]
 layout_mode = 2
 text = "Loading..."
 
@@ -215,8 +215,8 @@ one_shot = true
 
 [connection signal="pressed" from="UI/ArrowLeft" to="." method="_on_left_pressed"]
 [connection signal="pressed" from="UI/ArrowRight" to="." method="_on_right_pressed"]
-[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/PlayButton" to="." method="_on_play_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/Play" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

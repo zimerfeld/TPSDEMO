@@ -202,20 +202,31 @@ A tela developer organiza os toggles em **duas colunas**, cujos tooltips usam co
 distintas para você diferenciá-los:
 
 - **Debug 2D** (rótulos/tooltips amarelo claro) — master `debug_2d` mais os interruptores
-  dependentes `Type` / `Name` / `Id` / `Tab`. Controla o overlay 2D (uma borda colorida + um tooltip
-  TYPE/Name/ID/TAB) em cada `Control`. Os tooltips 2D aparecem em **todas as telas, sem exceção** —
-  inclusive Models e o editor de Dano (que saem do overlay **3D** via `no_debug_overlay`) — e
-  também sobre o **rótulo do nome da cena** (topo direito, ao lado do título). O tooltip fica à
-  direita de cada controle, exceto o do **TitleLabel**, que fica **centralizado abaixo do texto**; os
-  tooltips são mantidos **dentro da tela e sem sobreposição** por uma separação 2D (afastam-se em vez de
-  empilhar ou sair pela borda), e controles dentro de um **`SubViewport`** (ex.: o preview da tela
-  Controles 2D) são mapeados para a posição real na tela, então a borda/tooltip não fica mais deslocada.
+  dependentes `Type` / `Name` / `Id` / `Path` / `Tab`. Controla o overlay 2D (uma borda colorida + um
+  tooltip TYPE/Name/ID/PATH/TAB, uma linha por valor, na mesma ordem dos toggles) sobre os `Control`. Funciona como um **inspetor por hover**: a borda e o tooltip
+  aparecem **só no controle sob o cursor** — o mais **específico** (interno) entre os que o mouse
+  cobre — e **todos os demais ficam ocultos**; sem nada sob o cursor, nada aparece. A borda do
+  controle apontado **acende** com um realce de iluminação (cor mais clara, mais grossa e um brilho
+  pulsante); se ele estiver **dentro de outro controle**, o **host** (contêiner) também mostra o seu
+  overlay — borda com **brilho bem mais fraco** e o seu próprio tooltip — e os dois tooltips (host e
+  filho) são **afastados para não se sobreporem**. Vale em **todas as telas, sem exceção** — inclusive Models e o editor de Dano (que saem
+  do overlay **3D** via `no_debug_overlay`) — e também sobre o **rótulo do nome da cena** (topo
+  direito, ao lado do título). Cada tooltip escolhe um dos **quatro cantos** do controle, testando-os em
+  ordem e ficando no primeiro que cabe **inteiro na tela**: (1) à direita do canto **superior-direito**
+  → (2) à esquerda do **superior-esquerdo** → (3) à direita do **inferior-direito** → (4) à esquerda do
+  **inferior-esquerdo**. O tooltip do controle apontado é posicionado **primeiro**; o do **host** vem
+  **depois** e ainda **evita sobrepor** o do filho (corrige o caso "o overlay do pai colide" ao apontar
+  um contêiner). Vale para **todo** controle, inclusive o **título** da cena (o label `Title`). Controles dentro de um
+  **`SubViewport`** (ex.: o preview da tela Controles 2D) são mapeados para a posição real na tela,
+  então a borda/tooltip não fica deslocada.
   Em **qualquer cena**, com uma **janela flutuante aberta** (ex.: as janelas **Dano**/**IA**/afastamento-escala
   da tela Models, ou qualquer `FloatingWindow`/diálogo de confirmação), o Debug 2D **esconde os tooltips
   da UI que a chamou** atrás dela — só os controles **dentro** da janela flutuante mantêm o overlay, para
   não poluir a tela; abrir, fechar ou alternar janelas atualiza isso ao vivo. A linha **Tab** (branca,
   `show_tab`) mostra o **índice de Tab/foco** de cada controle na cena 2D ativa (`-` para
-  controles não focáveis). Além da tela developer, toda tela 2D com a barra **Actions** no rodapé
+  controles não focáveis). A linha **Path** (azul claro, `show_path`) mostra o **caminho do controle na
+  árvore da cena** (ex.: `UI/Margin/Main`), servindo para **diferenciar controles com o mesmo
+  Type/Name**. Além da tela developer, toda tela 2D com a barra **Actions** no rodapé
   ganha um toggle **Debug 2D** (`CheckButton`, injetado pelo `DebugOverlay`) para ligar/desligar o
   master sem sair da cena (a developer mantém o seu próprio par). Uma barra Actions na posição padrão
   foi adicionada também ao **menu** e aos **levels de gameplay** (sob o `TitleCanvas` de cada um), para

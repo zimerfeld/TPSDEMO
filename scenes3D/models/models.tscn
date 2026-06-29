@@ -64,7 +64,7 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="UI/Margin/Main"]
+[node name="Title" type="Label" parent="UI/Margin/Main"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Modelos 3D"
@@ -196,7 +196,7 @@ visible = false
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="SubMemberLabel" type="Label" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+[node name="SubMember" type="Label" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
@@ -241,61 +241,61 @@ size_flags_horizontal = 8
 size_flags_vertical = 0
 theme_override_constants/separation = 8
 
-[node name="MalhaCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Malha" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Malha"
 
-[node name="RotateToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Rotate" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Rotação"
 
-[node name="AnimationToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Animation" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Animação"
 
-[node name="EffectsToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Effects" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Efeitos especiais"
 
-[node name="AudioToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Audio" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Audio"
 
-[node name="CollidersToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Colliders" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisor de Membro"
 
-[node name="LabelsToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Labels" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Membro"
 
-[node name="SubColliderToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="SubCollider" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisor de Sub-membro"
 
-[node name="SubMemberLabelToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="SubMemberLabel" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Sub-membro"
 
-[node name="AuxHighlightToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="AuxHighlight" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
@@ -306,31 +306,31 @@ layout_mode = 2
 size_flags_horizontal = 8
 theme_override_constants/separation = 6
 
-[node name="OssoCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="Osso" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Esqueleto"
 
-[node name="SkeletonLinesCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="SkeletonLines" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Linhas do Esqueleto"
 
-[node name="TypeCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="Type" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Tipo"
 
-[node name="NameCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="Name" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Nome"
 
-[node name="IdCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="Id" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
@@ -358,7 +358,7 @@ layout_mode = 2
 layout_mode = 2
 mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="UI/DamagePanel/Main/TitleBar/TitleRow"]
+[node name="Title" type="Label" parent="UI/DamagePanel/Main/TitleBar/TitleRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -416,7 +416,7 @@ layout_mode = 2
 layout_mode = 2
 mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="UI/AIPanel/Main/AITitleBar/TitleRow"]
+[node name="Title" type="Label" parent="UI/AIPanel/Main/AITitleBar/TitleRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -466,7 +466,7 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="BackButton" type="Button" parent="UI/Actions"]
+[node name="Back" type="Button" parent="UI/Actions"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
@@ -491,21 +491,21 @@ text = "Inteligência Artificial"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="English" type="Button" parent="UI/Actions/LangBar"]
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "English"
 
-[node name="SceneNameLabel" type="Label" parent="UI"]
+[node name="SceneName" type="Label" parent="UI"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 6
@@ -528,6 +528,6 @@ theme_override_font_sizes/font_size = 13
 text = "Models"
 vertical_alignment = 1
 
-[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]

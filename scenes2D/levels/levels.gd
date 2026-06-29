@@ -10,15 +10,15 @@ const LevelTemplateDialogScene := preload("res://scenes2D/level_templates/level_
 
 var loading_path: String = ""
 
-@onready var level1_button: Button = %Level1Button
-@onready var level2_button: Button = %Level2Button
-@onready var level_base_button: Button = %LevelBaseButton
-@onready var back_button: Button = %BackButton
+@onready var level1_button: Button = %Level1
+@onready var level2_button: Button = %Level2
+@onready var level_base_button: Button = %LevelBase
+@onready var back_button: Button = %Back
 @onready var loading: HBoxContainer = %Loading
 @onready var loading_progress: ProgressBar = %Progress
 @onready var loading_done_timer: Timer = %DoneTimer
-@onready var portuguese_button: Button = %PortugueseButton
-@onready var english_button: Button = %EnglishButton
+@onready var portuguese_button: Button = %Portuguese
+@onready var english_button: Button = %English
 
 var _template_dialog: Window = null
 var _template_buttons: Dictionary = {}
@@ -101,9 +101,9 @@ func _on_back_pressed() -> void:
 
 func _add_template_buttons() -> void:
 	var rows := {
-		LEVEL_1_PATH: %Level1Button.get_parent(),
-		LEVEL_2_PATH: %Level2Button.get_parent(),
-		LEVEL_BASE_PATH: %LevelBaseButton.get_parent(),
+		LEVEL_1_PATH: %Level1.get_parent(),
+		LEVEL_2_PATH: %Level2.get_parent(),
+		LEVEL_BASE_PATH: %LevelBase.get_parent(),
 	}
 	for level_path in rows:
 		var btn := Button.new()

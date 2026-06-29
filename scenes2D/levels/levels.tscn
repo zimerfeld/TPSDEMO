@@ -40,7 +40,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2")
 
-[node name="Margin" type="MarginContainer" parent="UI"]
+[node name="Inset" type="MarginContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -52,26 +52,26 @@ theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 110
 
-[node name="Main" type="VBoxContainer" parent="UI/Margin"]
+[node name="Main" type="VBoxContainer" parent="UI/Inset"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="TitleLabel" type="Label" parent="UI/Margin/Main" unique_id=634348711]
+[node name="Title" type="Label" parent="UI/Inset/Main" unique_id=634348711]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Níveis"
 horizontal_alignment = 1
 
-[node name="VBox" type="VBoxContainer" parent="UI/Margin/Main" unique_id=412148386]
+[node name="LevelsColumn" type="VBoxContainer" parent="UI/Inset/Main" unique_id=412148386]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 16
 
-[node name="Level1Row" type="HBoxContainer" parent="UI/Margin/Main/VBox"]
+[node name="Level1Row" type="HBoxContainer" parent="UI/Inset/Main/LevelsColumn"]
 layout_mode = 2
 
-[node name="Level1Button" type="Button" parent="UI/Margin/Main/VBox/Level1Row" unique_id=1572114992]
+[node name="Level1" type="Button" parent="UI/Inset/Main/LevelsColumn/Level1Row" unique_id=1572114992]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
@@ -80,10 +80,10 @@ theme_override_font_sizes/font_size = 30
 text = "Level 1"
 alignment = 0
 
-[node name="Level2Row" type="HBoxContainer" parent="UI/Margin/Main/VBox"]
+[node name="Level2Row" type="HBoxContainer" parent="UI/Inset/Main/LevelsColumn"]
 layout_mode = 2
 
-[node name="Level2Button" type="Button" parent="UI/Margin/Main/VBox/Level2Row" unique_id=1572114993]
+[node name="Level2" type="Button" parent="UI/Inset/Main/LevelsColumn/Level2Row" unique_id=1572114993]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
@@ -92,10 +92,10 @@ theme_override_font_sizes/font_size = 30
 text = "Level 2"
 alignment = 0
 
-[node name="LevelBaseRow" type="HBoxContainer" parent="UI/Margin/Main/VBox"]
+[node name="LevelBaseRow" type="HBoxContainer" parent="UI/Inset/Main/LevelsColumn"]
 layout_mode = 2
 
-[node name="LevelBaseButton" type="Button" parent="UI/Margin/Main/VBox/LevelBaseRow" unique_id=1771458778]
+[node name="LevelBase" type="Button" parent="UI/Inset/Main/LevelsColumn/LevelBaseRow" unique_id=1771458778]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
@@ -120,7 +120,7 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="BackButton" type="Button" parent="UI/Actions" unique_id=1391874588]
+[node name="Back" type="Button" parent="UI/Actions" unique_id=1391874588]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
@@ -131,7 +131,7 @@ text = "Voltar"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -139,7 +139,7 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="English" type="Button" parent="UI/Actions/LangBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -162,7 +162,7 @@ offset_bottom = -120.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="LoadingLabel" type="Label" parent="UI/Loading" unique_id=118881584]
+[node name="Status" type="Label" parent="UI/Loading" unique_id=118881584]
 layout_mode = 2
 text = "Loading..."
 
@@ -177,10 +177,10 @@ unique_name_in_owner = true
 wait_time = 0.5
 one_shot = true
 
-[connection signal="pressed" from="UI/Margin/Main/VBox/Level1Row/Level1Button" to="." method="_on_level_1_pressed"]
-[connection signal="pressed" from="UI/Margin/Main/VBox/Level2Row/Level2Button" to="." method="_on_level_2_pressed"]
-[connection signal="pressed" from="UI/Margin/Main/VBox/LevelBaseRow/LevelBaseButton" to="." method="_on_level_base_pressed"]
-[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Inset/Main/LevelsColumn/Level1Row/Level1" to="." method="_on_level_1_pressed"]
+[connection signal="pressed" from="UI/Inset/Main/LevelsColumn/Level2Row/Level2" to="." method="_on_level_2_pressed"]
+[connection signal="pressed" from="UI/Inset/Main/LevelsColumn/LevelBaseRow/LevelBase" to="." method="_on_level_base_pressed"]
+[connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

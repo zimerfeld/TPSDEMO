@@ -56,7 +56,7 @@ theme_override_constants/margin_bottom = 110
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="TitleLabel" type="Label" parent="UI/Margin/Main" unique_id=1999006960]
+[node name="Title" type="Label" parent="UI/Margin/Main" unique_id=1999006960]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Modo Desenvolvedor"
@@ -69,7 +69,7 @@ columns = 3
 theme_override_constants/h_separation = 20
 theme_override_constants/v_separation = 8
 
-[node name="FPSLabel" type="Label" parent="UI/Margin/Main/General" unique_id=871871927]
+[node name="FPS" type="Label" parent="UI/Margin/Main/General" unique_id=871871927]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "HUD FPS:"
@@ -89,7 +89,7 @@ layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
-[node name="PerformanceHUDLabel" type="Label" parent="UI/Margin/Main/General"]
+[node name="PerformanceHUD" type="Label" parent="UI/Margin/Main/General"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Monitor de Saúde:"
@@ -120,7 +120,7 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="Debug2DLabel" type="Label" parent="UI/Margin/Main/Col2D/Debug2DRow"]
+[node name="Debug2D" type="Label" parent="UI/Margin/Main/Col2D/Debug2DRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
@@ -145,7 +145,7 @@ text = "Enabled"
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowTypeLabel" type="Label" parent="UI/Margin/Main/Col2D/ShowTypeRow"]
+[node name="ShowType" type="Label" parent="UI/Margin/Main/Col2D/ShowTypeRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
@@ -170,7 +170,7 @@ text = "Enabled"
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowNameLabel" type="Label" parent="UI/Margin/Main/Col2D/ShowNameRow"]
+[node name="ShowName" type="Label" parent="UI/Margin/Main/Col2D/ShowNameRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
@@ -195,7 +195,7 @@ text = "Enabled"
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowIDLabel" type="Label" parent="UI/Margin/Main/Col2D/ShowIDRow"]
+[node name="ShowID" type="Label" parent="UI/Margin/Main/Col2D/ShowIDRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
@@ -216,11 +216,36 @@ layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
+[node name="ShowPathRow" type="HBoxContainer" parent="UI/Margin/Main/Col2D"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ShowPath" type="Label" parent="UI/Margin/Main/Col2D/ShowPathRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.45, 1)
+theme_override_font_sizes/font_size = 28
+text = "Path"
+
+[node name="Disabled" type="Button" parent="UI/Margin/Main/Col2D/ShowPathRow"]
+modulate = Color(0.376471, 1, 0.376471, 1)
+custom_minimum_size = Vector2(130, 50)
+layout_mode = 2
+toggle_mode = true
+text = "Disabled"
+
+[node name="Enabled" type="Button" parent="UI/Margin/Main/Col2D/ShowPathRow"]
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(130, 50)
+layout_mode = 2
+toggle_mode = true
+text = "Enabled"
+
 [node name="ShowTabRow" type="HBoxContainer" parent="UI/Margin/Main/Col2D"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="ShowTabLabel" type="Label" parent="UI/Margin/Main/Col2D/ShowTabRow"]
+[node name="ShowTab" type="Label" parent="UI/Margin/Main/Col2D/ShowTabRow"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.45, 1)
@@ -255,19 +280,19 @@ offset_bottom = -50.0
 theme_override_constants/separation = 40
 alignment = 1
 
-[node name="BackButton" type="Button" parent="UI/Actions" unique_id=844862653]
+[node name="Back" type="Button" parent="UI/Actions" unique_id=844862653]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Voltar"
 
-[node name="Models3DButton" type="Button" parent="UI/Actions"]
+[node name="Models3D" type="Button" parent="UI/Actions"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Modelos 3D"
 
-[node name="Controls2DButton" type="Button" parent="UI/Actions"]
+[node name="Controls2D" type="Button" parent="UI/Actions"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
@@ -277,22 +302,22 @@ text = "Controles 2D"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="English" type="Button" parent="UI/Actions/LangBar"]
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "English"
 
-[connection signal="pressed" from="UI/Actions/Models3DButton" to="." method="_on_models_pressed"]
-[connection signal="pressed" from="UI/Actions/Controls2DButton" to="." method="_on_controls_pressed"]
-[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/Models3D" to="." method="_on_models_pressed"]
+[connection signal="pressed" from="UI/Actions/Controls2D" to="." method="_on_controls_pressed"]
+[connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]

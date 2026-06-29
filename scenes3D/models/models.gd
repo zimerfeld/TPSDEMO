@@ -309,7 +309,7 @@ var _zoom_target: float = 0.0
 @onready var cbo_skeleton: OptionButton = %cboSkeleton
 # Rótulo da row de sub-membro: gerenciado em código (sempre "Sub-membro:" agora que os ossos avulsos
 # têm o dropdown próprio "Esqueleto"); fica no SKIP_GROUP do Locale, retraduzido por código.
-@onready var sub_member_label: Label = %SubMemberLabel
+@onready var sub_member_label: Label = %SubMember
 # Dropdowns de TIPO DE GEOMETRIA (collider) à direita de Membro/Sub-membro/Esqueleto. Visíveis só com
 # um item REAL escolhido na row; "Selecione..." = sem collider (no MEMBRO REMOVE o collider; em
 # sub-membro/avulso só deixa de aplicar override). A escolha vai p/ LimbConfig.collider_shape e é
@@ -319,23 +319,23 @@ var _zoom_target: float = 0.0
 @onready var cbo_skeleton_geo: OptionButton = %cboSkeletonGeo
 # Raiz da UI (Control) onde a janela flutuante de Afastamento/Escala é anexada (como os painéis Dano/IA).
 @onready var ui_root: Control = $UI
-@onready var rotate_toggle: CheckButton = %RotateToggle
-@onready var animation_toggle: CheckButton = %AnimationToggle
-@onready var audio_toggle: CheckButton = %AudioToggle
-@onready var colliders_toggle: CheckButton = %CollidersToggle
-@onready var labels_toggle: CheckButton = %LabelsToggle
-@onready var type_check: CheckButton = %TypeCheck
-@onready var name_check: CheckButton = %NameCheck
-@onready var id_check: CheckButton = %IdCheck
-@onready var osso_check: CheckButton = %OssoCheck
+@onready var rotate_toggle: CheckButton = %Rotate
+@onready var animation_toggle: CheckButton = %Animation
+@onready var audio_toggle: CheckButton = %Audio
+@onready var colliders_toggle: CheckButton = %Colliders
+@onready var labels_toggle: CheckButton = %Labels
+@onready var type_check: CheckButton = %Type
+@onready var name_check: CheckButton = %Name
+@onready var id_check: CheckButton = %Id
+@onready var osso_check: CheckButton = %Osso
 @onready var damage_button: Button = %DamageButton
 @onready var ai_button: Button = %AIButton
-@onready var aux_highlight_toggle: CheckButton = %AuxHighlightToggle
-@onready var sub_member_label_toggle: CheckButton = %SubMemberLabelToggle
-@onready var sub_collider_toggle: CheckButton = %SubColliderToggle
-@onready var malha_check: CheckButton = %MalhaCheck
-@onready var skeleton_lines_check: CheckButton = %SkeletonLinesCheck
-@onready var effects_toggle: CheckButton = %EffectsToggle
+@onready var aux_highlight_toggle: CheckButton = %AuxHighlight
+@onready var sub_member_label_toggle: CheckButton = %SubMemberLabel
+@onready var sub_collider_toggle: CheckButton = %SubCollider
+@onready var malha_check: CheckButton = %Malha
+@onready var skeleton_lines_check: CheckButton = %SkeletonLines
+@onready var effects_toggle: CheckButton = %Effects
 @onready var damage_panel: PanelContainer = %DamagePanel
 @onready var ai_panel: PanelContainer = %AIPanel
 # Editor de dano em ÁRVORE (Tree): galhos = membros, folhas = sub-membros sob seu dono. Colunas:
@@ -349,12 +349,12 @@ var _zoom_target: float = 0.0
 @onready var ai_list: VBoxContainer = %AIList
 @onready var ai_titlebar: PanelContainer = %AITitleBar
 @onready var ai_close_button: Button = %AICloseButton
-@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
+@onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
+@onready var english_button: Button = $UI/Actions/LangBar/English
 # Rótulo LOCAL do nome da cena (nó no .tscn). Mantido OCULTO (ver _ready) — o nome da cena é
 # mostrado pelo watermark GLOBAL de debug_overlay.gd (topo direito, ao lado do título). Nó
-# preservado só para não quebrar a referência %SceneNameLabel.
-@onready var scene_name_label: Label = %SceneNameLabel
+# preservado só para não quebrar a referência %SceneName.
+@onready var scene_name_label: Label = %SceneName
 
 
 func _ready() -> void:
@@ -3300,18 +3300,18 @@ func _fill_sub_member_item(item: TreeItem, model_key: String, group: String, bon
 	# sem precisar selecioná-lo + um botão grande no footer (ver _on_damage_tree_button).
 	if _trash_icon != null:
 		item.add_button(0, _trash_icon, _TRASH_BTN_ID, false, Locale.tr_key("Remover sub-membro"))
-	var owner := LimbConfig.sub_member_owner(model_key, bone)
-	if owner == "":
-		owner = str(_sub_member_owner_map().get(group, ""))
-	item.set_metadata(0, {"group": group, "bone": bone, "owner": owner})
-	_fill_damage_cells(item, model_key, group, owner)
+	var owner_group := LimbConfig.sub_member_owner(model_key, bone)
+	if owner_group == "":
+		owner_group = str(_sub_member_owner_map().get(group, ""))
+	item.set_metadata(0, {"group": group, "bone": bone, "owner": owner_group})
+	_fill_damage_cells(item, model_key, group, owner_group)
 	# Col 3: DONO como dropdown (range com texto separado por vírgula = menu de opções).
 	var choices := _owner_choices()
 	var texts := PackedStringArray()
 	var sel := 0
 	for i in choices.size():
 		texts.append(str(choices[i]["label"]))
-		if str(choices[i]["group"]) == owner:
+		if str(choices[i]["group"]) == owner_group:
 			sel = i
 	item.set_cell_mode(3, TreeItem.CELL_MODE_RANGE)
 	item.set_text(3, ",".join(texts))
@@ -3349,7 +3349,7 @@ func _on_damage_tree_edited() -> void:
 	var col := damage_tree.get_edited_column()
 	var group := str(meta.get("group", ""))
 	var bone := str(meta.get("bone", ""))
-	var owner := str(meta.get("owner", ""))
+	var owner_group := str(meta.get("owner", ""))
 	var model_key := _current_model_key()
 	if col == 1:
 		var on := item.is_checked(1)
@@ -3358,7 +3358,7 @@ func _on_damage_tree_edited() -> void:
 			LimbConfig.set_multiplier(model_key, group, 1.0 + item.get_range(2) / 100.0)
 		else:
 			LimbConfig.clear_multiplier(model_key, group)
-			item.set_range(2, (LimbConfig.effective_multiplier(model_key, group, _current_classifier(), owner) - 1.0) * 100.0)
+			item.set_range(2, (LimbConfig.effective_multiplier(model_key, group, _current_classifier(), owner_group) - 1.0) * 100.0)
 		_restamp_damage_metas()
 		_refresh_tree_inherited()
 	elif col == 2:
@@ -3368,7 +3368,7 @@ func _on_damage_tree_edited() -> void:
 		_restamp_damage_metas()
 		_refresh_tree_inherited()
 	elif col == 3:
-		_on_tree_owner_edited(model_key, item, bone, owner)
+		_on_tree_owner_edited(model_key, item, bone, owner_group)
 
 
 # Reassocia o DONO de um sub-membro (col 3): pede CONFIRMAÇÃO (só agrupamento lógico, não mexe na

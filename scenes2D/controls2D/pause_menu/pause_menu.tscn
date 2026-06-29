@@ -48,7 +48,7 @@ theme_override_font_sizes/font_size = 28
 text = "PAUSED"
 horizontal_alignment = 1
 
-[node name="ResumeBtn" type="Button" parent="Dimmer/PauseMenu"]
+[node name="Resume" type="Button" parent="Dimmer/PauseMenu"]
 layout_mode = 2
 text = "RESUME"
 
@@ -57,7 +57,7 @@ custom_minimum_size = Vector2(0, 1)
 layout_mode = 2
 color = Color(1, 0.176, 0.584, 0.3)
 
-[node name="SettingsBtn" type="Button" parent="Dimmer/PauseMenu"]
+[node name="Settings" type="Button" parent="Dimmer/PauseMenu"]
 layout_mode = 2
 text = "SETTINGS"
 
@@ -66,37 +66,37 @@ custom_minimum_size = Vector2(0, 1)
 layout_mode = 2
 color = Color(1, 0.176, 0.584, 0.3)
 
-[node name="QuitBtn" type="Button" parent="Dimmer/PauseMenu"]
+[node name="Quit" type="Button" parent="Dimmer/PauseMenu"]
 layout_mode = 2
 text = "QUIT"
 
-[node name="SettingsPanel" type="PanelContainer" parent="Dimmer/PauseMenu"]
+[node name="SettingsCard" type="PanelContainer" parent="Dimmer/PauseMenu"]
 visible = false
 layout_mode = 2
 
-[node name="SettingsContent" type="VBoxContainer" parent="Dimmer/PauseMenu/SettingsPanel"]
+[node name="SettingsContent" type="VBoxContainer" parent="Dimmer/PauseMenu/SettingsCard"]
 layout_mode = 2
 
-[node name="VolumeLabel" type="Label" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+[node name="VolumeCaption" type="Label" parent="Dimmer/PauseMenu/SettingsCard/SettingsContent"]
 layout_mode = 2
 text = "MASTER VOLUME"
 
-[node name="VolumeSlider" type="HSlider" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+[node name="Volume" type="HSlider" parent="Dimmer/PauseMenu/SettingsCard/SettingsContent"]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 value = 80.0
 
-[node name="SensLabel" type="Label" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+[node name="SensitivityCaption" type="Label" parent="Dimmer/PauseMenu/SettingsCard/SettingsContent"]
 layout_mode = 2
 text = "MOUSE SENSITIVITY"
 
-[node name="SensSlider" type="HSlider" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+[node name="Sensitivity" type="HSlider" parent="Dimmer/PauseMenu/SettingsCard/SettingsContent"]
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 min_value = 1.0
 value = 50.0
 
-[node name="FullscreenCheck" type="CheckBox" parent="Dimmer/PauseMenu/SettingsPanel/SettingsContent"]
+[node name="Fullscreen" type="CheckBox" parent="Dimmer/PauseMenu/SettingsCard/SettingsContent"]
 layout_mode = 2
 text = "FULLSCREEN"
 
@@ -210,7 +210,7 @@ metadata/_ops = [{
 "rect": Rect2(48, 48, 10, 10)
 }]
 
-[node name="BuildLabel" type="Label" parent="Dimmer/PauseMenu"]
+[node name="Build" type="Label" parent="Dimmer/PauseMenu"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.22745098, 0.2509804, 0.33333334, 1)
 theme_override_font_sizes/font_size = 10

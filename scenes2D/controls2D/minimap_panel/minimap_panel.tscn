@@ -49,12 +49,12 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("3")
 
-[node name="MinimapLabel" type="Label" parent="Content"]
+[node name="Minimap" type="Label" parent="Content"]
 layout_mode = 2
 text = "MINIMAP"
 horizontal_alignment = 1
 
-[node name="CoordLabel" type="Label" parent="Content"]
+[node name="Coord" type="Label" parent="Content"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.22745098, 0.2509804, 0.33333334, 1)
 theme_override_font_sizes/font_size = 10

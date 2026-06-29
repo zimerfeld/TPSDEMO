@@ -9,6 +9,7 @@
 	"Type": "Tipo",
 	"Name": "Nome",
 	"Id": "Id",
+	"Path": "Caminho",
 	"Members": "Membros",
 	"Skeleton": "Esqueleto",
 	"Mesh": "Malha",
