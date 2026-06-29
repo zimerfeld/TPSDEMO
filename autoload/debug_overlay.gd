@@ -5,6 +5,14 @@ const _TOOLTIP_GAP := 4.0
 # Intensidade do realce da borda do "host" (controle que contém o apontado), relativa ao realce
 # pleno (1.0). Bem fraco de propósito: só situa o controle dentro do contêiner sem competir com ele.
 const _HOST_GLOW := 0.18
+
+# Empilhamento (z_index) dentro do canvas do overlay. Os TOOLTIPS (texto) ficam SEMPRE acima das
+# BORDAS realçadas — inclusive da borda grossa/brilhante do controle apontado — para que o texto do
+# pai e do filho permaneça legível mesmo quando o tooltip é projetado para dentro da área do controle.
+const _Z_BORDER_HOST := 0
+const _Z_BORDER_HOVERED := 1
+const _Z_TOOLTIP_HOST := 2
+const _Z_TOOLTIP_HOVERED := 3
 const _Debug2DToggle := preload("res://scenes2D/controls2D/debug2d_toggle.gd")
 
 # Janelas flutuantes (Dano/IA/Afastamento-Escala etc.) entram neste grupo. Enquanto QUALQUER uma
@@ -224,7 +232,8 @@ func _active_screen_name() -> String:
 
 
 # Injeta (uma vez) o toggle de Debug 2D na barra "Actions" da tela ativa. Toda cena 2D com uma
-# Actions ganha o controle — exceto a developer, que já tem o seu próprio par Desativado/Ativado.
+# Actions ganha o controle — exceto a developer, que injeta o SEU próprio (developer.gd) para mantê-lo
+# em sincronia com o par Desativado/Ativado da sua coluna Debug 2D.
 # Idempotente: não duplica; telas sem Actions (ex.: menu, levels de gameplay) são ignoradas.
 func _ensure_debug2d_toggle(screen: Node) -> void:
 	# is_instance_valid: a tela pode ter sido liberada entre o call_deferred e esta execução.
@@ -373,7 +382,8 @@ func _show_overlay_for(inst_id: int, tab_visible: bool) -> void:
 # + brilho (shadow colorido, sem deslocamento) pulsando suavemente. O `host_id` (controle que CONTÉM
 # o apontado) recebe o MESMO efeito, porém com intensidade bem menor (`_HOST_GLOW`), só p/ situar o
 # controle no seu contêiner. Os demais voltam ao estado normal UMA vez (flag glow_on) — evita
-# reescrever o StyleBox de todos a cada frame. O apontado sobe de z_index (1), o host fica abaixo (0).
+# reescrever o StyleBox de todos a cada frame. Empilhamento: os TOOLTIPS (texto) ficam SEMPRE acima
+# das BORDAS (ver _Z_*), para o texto do pai e do filho seguir legível mesmo projetado sobre o realce.
 func _apply_border_glow(hovered_id: int, host_id: int) -> void:
 	var pulse: float = 0.5 + 0.5 * sin(fmod(_glow_phase * 5.0, TAU))
 	for inst_id in _overlay_map:
@@ -384,21 +394,21 @@ func _apply_border_glow(hovered_id: int, host_id: int) -> void:
 			continue
 		if inst_id == hovered_id and border.visible:
 			_set_border_lit(style, entry.color, pulse, 1.0)
-			border.z_index = 1
+			border.z_index = _Z_BORDER_HOVERED
 			if is_instance_valid(entry.tooltip):
-				entry.tooltip.z_index = 1
+				entry.tooltip.z_index = _Z_TOOLTIP_HOVERED
 			entry.glow_on = true
 		elif inst_id == host_id and border.visible:
 			_set_border_lit(style, entry.color, pulse, _HOST_GLOW)
-			border.z_index = 0
+			border.z_index = _Z_BORDER_HOST
 			if is_instance_valid(entry.tooltip):
-				entry.tooltip.z_index = 0
+				entry.tooltip.z_index = _Z_TOOLTIP_HOST
 			entry.glow_on = true
 		elif entry.get("glow_on", false):
 			_set_border_normal(style, entry.color)
-			border.z_index = 0
+			border.z_index = _Z_BORDER_HOST
 			if is_instance_valid(entry.tooltip):
-				entry.tooltip.z_index = 0
+				entry.tooltip.z_index = _Z_TOOLTIP_HOST
 			entry.glow_on = false
 
 
@@ -488,9 +498,12 @@ func _place_one_tooltip(inst_id: int, vp: Vector2, avoid: Array) -> Rect2:
 #   2) à esquerda do canto superior-esquerdo;
 #   3) à direita do canto inferior-direito;
 #   4) à esquerda do canto inferior-esquerdo.
-# Retorna o primeiro que cabe INTEIRO na tela E não sobrepõe nenhum rect de `avoid`. Se nenhum atende
-# aos dois, relaxa: aceita o primeiro que ao menos cabe na tela. Último recurso: prende o canto
-# preferido (1) à viewport.
+# Retorna o primeiro canto EXTERNO que cabe INTEIRO na tela E não sobrepõe nenhum rect de `avoid`.
+# Se nenhum atende aos dois (caso típico do host: contêiner grande cujos 4 cantos externos esbarram
+# na tela ou no tooltip do filho já fixado), PROJETA o tooltip PARA DENTRO da área do controle, num
+# ponto que caiba na tela e não colida — garantindo a regra de nunca sobrepor pai × filho. Só se nem
+# isso couber é que relaxa (aceita o primeiro que ao menos cabe na tela); último recurso: prende o
+# canto preferido (1) à viewport.
 func _pick_corner(rect: Rect2, size: Vector2, vp: Vector2, avoid: Array) -> Vector2:
 	var g := _TOOLTIP_GAP
 	var candidates: Array = [
@@ -502,10 +515,33 @@ func _pick_corner(rect: Rect2, size: Vector2, vp: Vector2, avoid: Array) -> Vect
 	for pos in candidates:
 		if _fits_viewport(pos, size, vp) and not _overlaps_any(pos, size, avoid):
 			return pos
+	# Nenhum canto externo serve sem colisão: reposiciona o tooltip PARA DENTRO da área do controle.
+	var inside := _project_into_rect(rect, size, vp, avoid)
+	if inside.x >= 0.0:    # x<0 é sentinela de "não há ponto interno livre"
+		return inside
 	for pos in candidates:
 		if _fits_viewport(pos, size, vp):
 			return pos
 	return _clamp_pos(candidates[0], size, vp)
+
+
+# Projeta o tooltip PARA DENTRO da área do controle: procura um ponto interno — começando pelos 4
+# cantos internos do rect — que caiba INTEIRO na tela E não sobreponha nenhum rect de `avoid`. É o
+# recurso para o host (contêiner que envolve o controle apontado) quando os 4 cantos externos não
+# servem: como o rect do host é grande, sobra espaço interno longe do tooltip do filho. Devolve o
+# ponto, ou Vector2(-1, -1) quando a área interna não comporta o tooltip sem colidir.
+func _project_into_rect(rect: Rect2, size: Vector2, vp: Vector2, avoid: Array) -> Vector2:
+	var g := _TOOLTIP_GAP
+	var inner: Array = [
+		Vector2(rect.position.x + g, rect.position.y + g),             # canto interno sup-esq
+		Vector2(rect.end.x - size.x - g, rect.position.y + g),         # canto interno sup-dir
+		Vector2(rect.position.x + g, rect.end.y - size.y - g),         # canto interno inf-esq
+		Vector2(rect.end.x - size.x - g, rect.end.y - size.y - g),     # canto interno inf-dir
+	]
+	for pos in inner:
+		if _fits_viewport(pos, size, vp) and not _overlaps_any(pos, size, avoid):
+			return pos
+	return Vector2(-1.0, -1.0)
 
 
 # True se o rect (pos+size) cabe inteiro dentro da viewport (0,0)–(vp).

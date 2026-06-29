@@ -158,7 +158,7 @@ em terceira pessoa. Em alto nível, oferece:
   Especiais" aparecem só na visão montada "Modelo completo". "Efeitos Especiais" lista, após
   "Selecione…", a opção **"Todos"** e exibe efeitos de todos os tipos que existirem (luzes/
   luminosidade, fumaça, partículas, decals, névoa…); escolher um item isola um único efeito.
-  Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Parte) reseta
+  Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Malha) reseta
   todos os dropdowns abaixo dele para "Selecione…". **Todas as escolhas dos seletores são
   persistidas** (junto com os toggles), e ao reabrir a tela a cadeia é restaurada exatamente como foi
   deixada — sem auto-selecionar nenhum item: o primeiro seletor sem escolha salva fica em "Selecione…"
@@ -216,7 +216,9 @@ distintas para você diferenciá-los:
   → (2) à esquerda do **superior-esquerdo** → (3) à direita do **inferior-direito** → (4) à esquerda do
   **inferior-esquerdo**. O tooltip do controle apontado é posicionado **primeiro**; o do **host** vem
   **depois** e ainda **evita sobrepor** o do filho (corrige o caso "o overlay do pai colide" ao apontar
-  um contêiner). Vale para **todo** controle, inclusive o **título** da cena (o label `Title`). Controles dentro de um
+  um contêiner). Quando **nenhum dos quatro cantos externos** cabe sem colidir, o tooltip é **projetado
+  para dentro da área do próprio controle** (um dos quatro cantos internos livres) — garantindo que pai e
+  filho **nunca** se sobreponham. Vale para **todo** controle, inclusive o **título** da cena (o label `Title`). Controles dentro de um
   **`SubViewport`** (ex.: o preview da tela Controles 2D) são mapeados para a posição real na tela,
   então a borda/tooltip não fica deslocada.
   Em **qualquer cena**, com uma **janela flutuante aberta** (ex.: as janelas **Dano**/**IA**/afastamento-escala

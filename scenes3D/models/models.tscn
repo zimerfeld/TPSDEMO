@@ -78,7 +78,6 @@ theme_override_constants/separation = 40
 
 [node name="Selectors" type="VBoxContainer" parent="UI/Margin/Main/Body"]
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 0
 theme_override_constants/separation = 16
 
@@ -91,7 +90,7 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Categoria:"
 
-[node name="cboCategory" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/CategoryRow"]
+[node name="Category" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/CategoryRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -105,7 +104,7 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Prefixo:"
 
-[node name="cboPrefix" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/PrefixRow"]
+[node name="Prefix" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/PrefixRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -119,7 +118,7 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Modelo:"
 
-[node name="cboModels" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/ModelRow"]
+[node name="Models" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/ModelRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -131,9 +130,9 @@ theme_override_constants/separation = 16
 [node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/MeshRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-text = "Parte:"
+text = "Malha:"
 
-[node name="cboMeshes" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MeshRow"]
+[node name="Meshes" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MeshRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -148,7 +147,7 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Animação:"
 
-[node name="cboAnimations" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/AnimationRow"]
+[node name="Animations" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/AnimationRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -163,7 +162,7 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Efeitos Especiais:"
 
-[node name="cboEffects" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/EffectsRow"]
+[node name="EffectsList" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/EffectsRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -179,12 +178,12 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Membro:"
 
-[node name="cboMembers" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
+[node name="Members" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="cboMemberGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
+[node name="MemberGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(190, 50)
@@ -202,12 +201,12 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Sub-membro:"
 
-[node name="cboSubMembers" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+[node name="SubMembers" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="cboSubMemberGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+[node name="SubMemberGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(190, 50)
@@ -224,16 +223,21 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Esqueleto:"
 
-[node name="cboSkeleton" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+[node name="Skeleton" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="cboSkeletonGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+[node name="SkeletonGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(190, 50)
 layout_mode = 2
+
+[node name="Spacer" type="Control" parent="UI/Margin/Main/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
 
 [node name="Toggles" type="VBoxContainer" parent="UI/Margin/Main/Body"]
 layout_mode = 2
@@ -241,7 +245,7 @@ size_flags_horizontal = 8
 size_flags_vertical = 0
 theme_override_constants/separation = 8
 
-[node name="Malha" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Mesh" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
@@ -271,19 +275,19 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "Audio"
 
-[node name="Colliders" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="MemberLimbCollider" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisor de Membro"
 
-[node name="Labels" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="MemberLabel" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Membro"
 
-[node name="SubCollider" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="SubMemberLimbCollider" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
@@ -295,7 +299,7 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "Sub-membro"
 
-[node name="AuxHighlight" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="SkeletonLimbCollider" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
@@ -306,7 +310,7 @@ layout_mode = 2
 size_flags_horizontal = 8
 theme_override_constants/separation = 6
 
-[node name="Osso" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="SkeletonLabel" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8

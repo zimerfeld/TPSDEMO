@@ -146,6 +146,26 @@ a `_unhandled_input`.
 > `%`-acessores em `models.gd` acompanham; as variáveis (`malha_check`, `osso_check`, `type_check`…) e
 > os métodos `_show_*` **não** mudaram.
 
+> [!important] Nomes de nó → inglês descritivo (2026-06-29)
+> Renomeação dos **controles** da tela Models (só nomes de nó; **textos exibidos e persistência
+> inalterados**):
+> - **Dropdowns:** prefixo `cbo` removido — `cboCategory→Category`, `cboPrefix→Prefix`,
+>   `cboModels→Models`, `cboMeshes→Meshes`, `cboAnimations→Animations`,
+>   **`cboEffects→EffectsList`** (não pôde virar `Effects`: já é o nó do `CheckButton` de efeitos),
+>   `cboMembers→Members`, `cboMemberGeo→MemberGeo`, `cboSubMembers→SubMembers`,
+>   `cboSubMemberGeo→SubMemberGeo`, `cboSkeleton→Skeleton`, `cboSkeletonGeo→SkeletonGeo`.
+> - **Toggles (`CheckButton`):** `Malha→Mesh`, `Colliders→MemberLimbCollider`, `Labels→MemberLabel`,
+>   `SubCollider→SubMemberLimbCollider`, `AuxHighlight→SkeletonLimbCollider`, `Osso→SkeletonLabel`.
+> - **Gizmo de eixos:** `AxisGizmoOverlay→AxisGizmo` (o `SubViewportContainer`).
+> - **Label do dropdown de malha:** texto **"Parte:" → "Malha:"** (`Mesh:` em en; chave em
+>   `models.{pt,en}.json` migrada de `Parte:` para `Malha:`).
+> - **VBox `Selectors`:** perdeu o `size_flags_horizontal = 3` (deixou de esticar a linha toda) e
+>   ganhou um irmão **`Spacer`** (expand-fill) antes de `Toggles`, encolhendo a coluna ~à metade e
+>   mantendo os toggles fixos à direita.
+>
+> Os `%`-acessores em `models.gd` acompanham; as **variáveis** GDScript (`cbo_*`, `*_check`,
+> `*_toggle`) e os métodos `_show_*` **não** mudaram.
+
 Toggles atuais (ordem/nomes em 2026-06-23): **Malha · Rotação · Animação · Efeitos especiais · Audio ·
 Colisor de Membro · Membro · Colisor de Submembro · Submembros · Colisor de Esqueleto ·
 [Esqueleto · Linhas do Esqueleto · Tipo · Nome · ID]**. (Renomeados de "Colisores

@@ -290,23 +290,23 @@ var _gizmo_node: Node3D = null
 # _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
 var _zoom: float = 0.0
 var _zoom_target: float = 0.0
-@onready var cbo_category: OptionButton = %cboCategory
-@onready var cbo_prefix: OptionButton = %cboPrefix
-@onready var cbo_models: OptionButton = %cboModels
-@onready var cbo_meshes: OptionButton = %cboMeshes
+@onready var cbo_category: OptionButton = %Category
+@onready var cbo_prefix: OptionButton = %Prefix
+@onready var cbo_models: OptionButton = %Models
+@onready var cbo_meshes: OptionButton = %Meshes
 @onready var animation_row: HBoxContainer = %AnimationRow
-@onready var cbo_animations: OptionButton = %cboAnimations
+@onready var cbo_animations: OptionButton = %Animations
 @onready var effects_row: HBoxContainer = %EffectsRow
-@onready var cbo_effects: OptionButton = %cboEffects
+@onready var cbo_effects: OptionButton = %EffectsList
 @onready var member_row: HBoxContainer = %MemberRow
-@onready var cbo_members: OptionButton = %cboMembers
+@onready var cbo_members: OptionButton = %Members
 @onready var sub_member_row: HBoxContainer = %SubMemberRow
-@onready var cbo_sub_members: OptionButton = %cboSubMembers
+@onready var cbo_sub_members: OptionButton = %SubMembers
 # Dropdown "Esqueleto" (ossos avulsos), exibido SÓ no modo "Todos os membros". Fica ABAIXO do editor
 # de collider (Save) — quando um sub-membro está selecionado, o editor aparece e empurra o Esqueleto
 # para baixo dele; sem sub-membro selecionado o editor some e o Esqueleto fica logo abaixo de Submembros.
 @onready var skeleton_row: HBoxContainer = %SkeletonRow
-@onready var cbo_skeleton: OptionButton = %cboSkeleton
+@onready var cbo_skeleton: OptionButton = %Skeleton
 # Rótulo da row de sub-membro: gerenciado em código (sempre "Sub-membro:" agora que os ossos avulsos
 # têm o dropdown próprio "Esqueleto"); fica no SKIP_GROUP do Locale, retraduzido por código.
 @onready var sub_member_label: Label = %SubMember
@@ -314,26 +314,26 @@ var _zoom_target: float = 0.0
 # um item REAL escolhido na row; "Selecione..." = sem collider (no MEMBRO REMOVE o collider; em
 # sub-membro/avulso só deixa de aplicar override). A escolha vai p/ LimbConfig.collider_shape e é
 # lida na construção dos colliders (spawn). Ver _refresh_collider_editors / _on_*_geo_selected.
-@onready var cbo_member_geo: OptionButton = %cboMemberGeo
-@onready var cbo_sub_member_geo: OptionButton = %cboSubMemberGeo
-@onready var cbo_skeleton_geo: OptionButton = %cboSkeletonGeo
+@onready var cbo_member_geo: OptionButton = %MemberGeo
+@onready var cbo_sub_member_geo: OptionButton = %SubMemberGeo
+@onready var cbo_skeleton_geo: OptionButton = %SkeletonGeo
 # Raiz da UI (Control) onde a janela flutuante de Afastamento/Escala é anexada (como os painéis Dano/IA).
 @onready var ui_root: Control = $UI
 @onready var rotate_toggle: CheckButton = %Rotate
 @onready var animation_toggle: CheckButton = %Animation
 @onready var audio_toggle: CheckButton = %Audio
-@onready var colliders_toggle: CheckButton = %Colliders
-@onready var labels_toggle: CheckButton = %Labels
+@onready var colliders_toggle: CheckButton = %MemberLimbCollider
+@onready var labels_toggle: CheckButton = %MemberLabel
 @onready var type_check: CheckButton = %Type
 @onready var name_check: CheckButton = %Name
 @onready var id_check: CheckButton = %Id
-@onready var osso_check: CheckButton = %Osso
+@onready var osso_check: CheckButton = %SkeletonLabel
 @onready var damage_button: Button = %DamageButton
 @onready var ai_button: Button = %AIButton
-@onready var aux_highlight_toggle: CheckButton = %AuxHighlight
+@onready var aux_highlight_toggle: CheckButton = %SkeletonLimbCollider
 @onready var sub_member_label_toggle: CheckButton = %SubMemberLabel
-@onready var sub_collider_toggle: CheckButton = %SubCollider
-@onready var malha_check: CheckButton = %Malha
+@onready var sub_collider_toggle: CheckButton = %SubMemberLimbCollider
+@onready var malha_check: CheckButton = %Mesh
 @onready var skeleton_lines_check: CheckButton = %SkeletonLines
 @onready var effects_toggle: CheckButton = %Effects
 @onready var damage_panel: PanelContainer = %DamagePanel
@@ -539,7 +539,7 @@ const _GIZMO_NEG_BALL: float = 0.115  # bola da ponta - (apagada)
 
 func _setup_axis_gizmo() -> void:
 	var container := SubViewportContainer.new()
-	container.name = "AxisGizmoOverlay"
+	container.name = "AxisGizmo"
 	container.stretch = true
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.set_anchors_preset(Control.PRESET_TOP_LEFT)
