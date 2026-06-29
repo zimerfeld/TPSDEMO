@@ -2389,7 +2389,7 @@ func _refresh_ai_panel() -> void:
 		toggle.name = "Enabled"
 		toggle.text = str(def.get("label", ""))
 		toggle.button_pressed = AIConfigLib.behavior_enabled(model_key, bkey)
-		toggle.tooltip_text = Locale.tr_key(str(def.get("description", "")))
+		# Sem tooltip: a descrição já aparece como o rótulo logo ABAIXO do checkbutton (não duplicar).
 		toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		toggle.toggled.connect(_on_ai_behavior_toggled.bind(model_key, bkey))
 		content.add_child(toggle)
@@ -2397,7 +2397,6 @@ func _refresh_ai_panel() -> void:
 		desc.name = "Description"
 		desc.text = str(def.get("description", ""))
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		desc.tooltip_text = Locale.tr_key(str(def.get("description", "")))
 		desc.add_theme_color_override("font_color", Color(1, 1, 1, 0.72))
 		desc.add_theme_font_size_override("font_size", 14)
 		content.add_child(desc)

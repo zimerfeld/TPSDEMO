@@ -169,6 +169,9 @@ a `_unhandled_input`.
 >   Controles criados em código agora têm nome (antes `@label@…`/`@optionbutton@…`): `Separator`,
 >   `OwnerHint`, `AddArea` (grid), `AddTitle`/`OwnerTitle`/`Pad`, `Bone`/`Owner`/`Add`; e os itens da
 >   lista de IA: `<chave>`/`Content`/`Enabled`/`Description`.
+> - **AIPanel — tooltips removidos:** cada checkbutton de comportamento já mostra a descrição como
+>   **rótulo logo abaixo** dele, então o `tooltip_text` (que duplicava a descrição) saiu do toggle **e**
+>   do `Description` — a regra "texto só no rótulo abaixo, sem tooltip duplicado".
 > - **Label do dropdown de malha:** texto **"Parte:" → "Malha:"** (`Mesh:` em en; chave em
 >   `models.{pt,en}.json` migrada de `Parte:` para `Malha:`).
 > - **VBox `Selectors`:** perdeu o `size_flags_horizontal = 3` (deixou de esticar a linha toda) e
