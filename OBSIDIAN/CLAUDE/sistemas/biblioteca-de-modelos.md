@@ -146,6 +146,41 @@ a `_unhandled_input`.
 > `%`-acessores em `models.gd` acompanham; as variáveis (`malha_check`, `osso_check`, `type_check`…) e
 > os métodos `_show_*` **não** mudaram.
 
+> [!important] Nomes de nó → inglês descritivo (2026-06-29)
+> Renomeação dos **controles** da tela Models (só nomes de nó; **textos exibidos e persistência
+> inalterados**):
+> - **Dropdowns:** prefixo `cbo` removido — `cboCategory→Category`, `cboPrefix→Prefix`,
+>   `cboModels→Models`, `cboMeshes→Meshes`, `cboAnimations→Animations`,
+>   **`cboEffects→EffectsList`** (não pôde virar `Effects`: já é o nó do `CheckButton` de efeitos),
+>   `cboMembers→Members`, `cboMemberGeo→MemberGeo`, `cboSubMembers→SubMembers`,
+>   `cboSubMemberGeo→SubMemberGeo`, `cboSkeleton→Skeleton`, `cboSkeletonGeo→SkeletonGeo`.
+> - **Toggles (`CheckButton`):** `Malha→Mesh`, `Colliders→MemberLimbCollider`, `Labels→MemberLabel`,
+>   `SubCollider→SubMemberLimbCollider`, `AuxHighlight→SkeletonLimbCollider`, `Osso→SkeletonLabel`.
+> - **Gizmo de eixos:** `AxisGizmoOverlay→AxisGizmo` (o `SubViewportContainer`).
+> - **Botões/painéis de Dano e IA (sem o sufixo de tipo):** `DamageButton→Damage`, `AIButton→AI`,
+>   `DamagePanel→Damage` (janela), `CloseButton→Close`, `AICloseButton→AIClose`, `DamageTree→Limbs`.
+>   **Colisão de nome:** o botão **e** a janela viram "Damage" (pais diferentes, OK como nó), mas o
+>   `%Damage` único fica com a **janela**; o **botão** é resolvido por caminho (`$UI/Actions/Damage`,
+>   sem `unique_name`). `AIPanel` ficou como está (não pedido), então `%AI` (botão) não colide.
+> - **Footer do painel Dano redesenhado:** a seção "Adicionar sub-membro" virou um **`GridContainer`
+>   de 3 colunas** (osso · dono · botão) para os cabeçalhos ficarem na MESMA largura dos dropdowns
+>   abaixo. O **tooltip** do dropdown de dono ("Membro-dono…") deixou de ser tooltip e virou um
+>   **rótulo visível `OwnerHint`** de largura total acima da seção (chave nova nos `models.{pt,en}.json`).
+>   Controles criados em código agora têm nome (antes `@label@…`/`@optionbutton@…`): `Separator`,
+>   `OwnerHint`, `AddArea` (grid), `AddTitle`/`OwnerTitle`/`Pad`, `Bone`/`Owner`/`Add`; e os itens da
+>   lista de IA: `<chave>`/`Content`/`Enabled`/`Description`.
+> - **AIPanel — tooltips removidos:** cada checkbutton de comportamento já mostra a descrição como
+>   **rótulo logo abaixo** dele, então o `tooltip_text` (que duplicava a descrição) saiu do toggle **e**
+>   do `Description` — a regra "texto só no rótulo abaixo, sem tooltip duplicado".
+> - **Label do dropdown de malha:** texto **"Parte:" → "Malha:"** (`Mesh:` em en; chave em
+>   `models.{pt,en}.json` migrada de `Parte:` para `Malha:`).
+> - **VBox `Selectors`:** perdeu o `size_flags_horizontal = 3` (deixou de esticar a linha toda) e
+>   ganhou um irmão **`Spacer`** (expand-fill) antes de `Toggles`, encolhendo a coluna ~à metade e
+>   mantendo os toggles fixos à direita.
+>
+> Os `%`-acessores em `models.gd` acompanham; as **variáveis** GDScript (`cbo_*`, `*_check`,
+> `*_toggle`) e os métodos `_show_*` **não** mudaram.
+
 Toggles atuais (ordem/nomes em 2026-06-23): **Malha · Rotação · Animação · Efeitos especiais · Audio ·
 Colisor de Membro · Membro · Colisor de Submembro · Submembros · Colisor de Esqueleto ·
 [Esqueleto · Linhas do Esqueleto · Tipo · Nome · ID]**. (Renomeados de "Colisores

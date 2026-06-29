@@ -4,9 +4,10 @@ extends CheckButton
 ## cena. Lê/grava Settings("game","debug_2d") e atualiza o DebugOverlay na hora — espelha o que a
 ## tela developer já faz, mas como um único controle pronto para ser injetado em qualquer Actions.
 ##
-## A tela developer NÃO usa este controle (ela tem seu próprio par Desativado/Ativado). O
-## DebugOverlay injeta uma instância deste toggle na barra Actions de cada tela ativa — ver
-## DebugOverlay._ensure_debug2d_toggle.
+## O DebugOverlay injeta uma instância deste toggle na barra Actions de cada tela ativa — ver
+## DebugOverlay._ensure_debug2d_toggle. A tela developer também o usa, mas o injeta ela mesma
+## (developer._ensure_actions_debug2d), para mantê-lo em sincronia com o seu par Desativado/Ativado
+## da coluna Debug 2D — por isso o DebugOverlay a pula.
 
 const _CONFIG_KEY := "debug_2d"
 

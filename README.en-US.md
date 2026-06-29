@@ -154,7 +154,7 @@ third-person shooter sandbox. At a high level it offers:
   view. "Efeitos Especiais" lists, right after "Selecione…", a **"Todos"** option and shows every
   kind of effect the model has (lights/luminosity, smoke, particles, decals, fog…); picking one
   isolates a single effect. Picking a
-  value in any selector (Categoria → Prefixo → Modelo → Parte) resets every dropdown below it to
+  value in any selector (Categoria → Prefixo → Modelo → Malha) resets every dropdown below it to
   "Selecione…". **Every
   selector choice is persisted** (alongside the toggles), and reopening the screen restores the
   chain exactly as it was left — without auto-selecting any item: the first selector with no saved
@@ -213,7 +213,9 @@ light colors so you can tell them apart:
   **top-left** → (3) right of the **bottom-right** → (4) left of the **bottom-left**. The pointed
   control's tooltip is placed **first**; the **host**'s tooltip is placed **after** and additionally
   **avoids overlapping** the child's (fixing the "parent overlay collides" case when you hover a
-  container). This applies to **every** control, including the scene **title** (the `Title` label). Controls hosted inside a
+  container). When **none of the four outer corners** fits without colliding, the tooltip is **projected
+  inside the control's own area** (one of its four free inner corners) — guaranteeing parent and child
+  **never** overlap. This applies to **every** control, including the scene **title** (the `Title` label). Controls hosted inside a
   **`SubViewport`** (e.g. the Controls 2D preview) are mapped to their real on-screen position so the
   border/tooltip no longer drifts. In **any scene**, with a
   **floating window open** (e.g. Models' **Damage**/**AI**/offset-scale windows, or any `FloatingWindow`/

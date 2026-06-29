@@ -49,7 +49,11 @@ aplicam na hora (`DebugOverlay.refresh()`).
   `_ensure_debug2d_toggle(screen)`, que injeta (idempotente) um `Debug2DToggle`
   (`scenes2D/controls2D/debug2d_toggle.gd`, um `CheckButton`; o **nó** se chama `Debug2D` — sem o sufixo
   "Toggle", padrão 2026-06-28) na `HBoxContainer` **Actions** da tela —
-  **menos a developer** (`scene_file_path` termina em `developer.tscn`, que já tem o seu próprio par).
+  **menos a developer**, que o `_ensure_debug2d_toggle` pula de propósito. **A developer também passou a
+  ter o toggle na Actions (2026-06-29):** ela mesma o injeta (`developer._ensure_actions_debug2d`), na
+  **mesma posição padrão** (último item da Actions), e o mantém **em sincronia** com o seu par
+  Desativado/Ativado da coluna Debug 2D — toggler um reflete no outro e reavalia as sub-linhas
+  (`_on_actions_debug2d_toggled` ⇄ `_on_toggle("debug_2d")`). Por gerenciar o seu, o DebugOverlay a pula.
   O **menu** e os **levels de gameplay** (level_1/2/base) também ganharam uma barra Actions na posição
   padrão (no menu sob `UI`; nos levels sob o `TitleCanvas`), então o toggle os alcança quando são a
   tela ativa (solo offline). Telas sem nenhuma Actions são ignoradas. O toggle lê/grava
@@ -60,10 +64,14 @@ aplicam na hora (`DebugOverlay.refresh()`).
   função `_pick_corner`, que tenta 4 cantos do controle **nesta ordem de prioridade**, escolhendo o
   primeiro que cabe **inteiro na tela**: (1) à **direita do canto superior-direito** → (2) à
   **esquerda do canto superior-esquerdo** → (3) à **direita do canto inferior-direito** → (4) à
-  **esquerda do canto inferior-esquerdo**. Se nenhum couber, relaxa para o 1º que ao menos cabe; último
-  recurso, prende o canto preferido (1) à viewport (`_clamp_pos`). **O tooltip do host, além de caber,
-  evita SOBREPOR o do apontado** (que já foi fixado primeiro) — corrige o bug "o overlay do pai está
-  colidindo" ao apontar um contêiner (ex.: `VBoxContainer` "main"). Substituiu a antiga separação
+  **esquerda do canto inferior-esquerdo**. **Se nenhum canto externo couber sem colidir, PROJETA o
+  tooltip PARA DENTRO da área do controle (2026-06-29):** `_project_into_rect` procura um dos **4 cantos
+  internos** do rect (sup-esq → sup-dir → inf-esq → inf-dir) que caiba na tela E não sobreponha os rects
+  já fixados — como o rect do host costuma ser grande (contêiner), sobra espaço interno longe do tooltip
+  do filho, garantindo a regra de **nunca** sobrepor pai × filho. Só se nem o interior couber é que relaxa
+  para o 1º que ao menos cabe; último recurso, prende o canto preferido (1) à viewport (`_clamp_pos`).
+  **O tooltip do host, além de caber, evita SOBREPOR o do apontado** (que já foi fixado primeiro) —
+  corrige o bug "o overlay do pai está colidindo" ao apontar um contêiner (ex.: `VBoxContainer` "main"). Substituiu a antiga separação
   iterativa 2D (`_resolve_tooltip_layout`), desnecessária agora que só há 2 tooltips visíveis (apontado
   + host) no inspetor por hover. **O título da cena (`Title`) também segue a regra dos 4 cantos**
   (2026-06-28) — deixou de ter layout próprio (o antigo caso especial `is_title`, que o centralizava
@@ -79,14 +87,18 @@ aplicam na hora (`DebugOverlay.refresh()`).
 - **Realce por iluminação no controle apontado (2026-06-28):** `_apply_border_glow` acende a borda do
   controle exibido: cor mais clara (`color.lightened(0.5)`), borda mais grossa (`_BORDER_WIDTH + 2`)
   e um **brilho** (shadow colorido sem deslocamento) **pulsando** suavemente (`sin(_glow_phase)`,
-  amplitude 6→12 px). O aceso sobe de `z_index` (borda + tooltip). Os demais voltam ao normal **uma
+  amplitude 6→12 px). **Empilhamento (`_Z_*`, 2026-06-29):** os **tooltips** (texto) ficam **SEMPRE
+  acima das bordas** — mesmo da borda grossa/brilhante do apontado — para o texto do pai e do filho
+  seguir **legível** inclusive quando o tooltip é projetado para dentro da área do controle. Ordem:
+  borda host (0) < borda apontado (1) < tooltip host (2) < tooltip apontado (3). Os demais voltam ao normal **uma
   vez** (flag `glow_on` na entrada do `_overlay_map`), então só 1 `StyleBox` é reescrito por frame.
   Vale em **toda cena 2D** (mesma varredura global do Debug 2D).
   - **Realce fraco do host (2026-06-28):** se o controle apontado estiver **dentro de outro**, o
     "host" (ancestral `Control` mais próximo rastreado — `_host_id_of`) também recebe overlay, com a
     **borda** no MESMO efeito porém em intensidade bem menor (`_HOST_GLOW = 0.18`: borda/brilho/largura
     escalados por esse fator em `_set_border_lit(..., intensity)`), só p/ situar o controle no
-    contêiner. O host fica em `z_index 0`, abaixo do apontado (`1`).
+    contêiner. As **bordas** ficam abaixo dos **tooltips** (ver "Empilhamento" acima): borda do host (0)
+    abaixo da do apontado (1), e ambos os tooltips (host 2, apontado 3) acima das duas bordas.
   - **Tooltip do host também aparece, sem colidir com o filho (2026-06-28):** o overlay do apontado e
     o do host são montados pelo mesmo helper `_show_overlay_for(inst_id, tab_visible)` (borda + tooltip
     + linhas Type/Name/Id/Tab), então o **host exibe seu tooltip** igual ao filho. Como há 2 tooltips
