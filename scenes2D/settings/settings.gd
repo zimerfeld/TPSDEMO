@@ -71,7 +71,7 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var scale_filter_fsr2: Button = %ScaleFilterFSR2
 @onready var scale_filter_metalfx_temporal: Button = %ScaleFilterMetalFXTemporal
 
-@onready var video_resolution_dropdown: OptionButton = %VideoResolutionDropdown
+@onready var video_resolution_dropdown: OptionButton = %VideoResolutions
 
 @onready var taa_disabled: Button = %TAADisabled
 @onready var taa_enabled: Button = %TAAEnabled
@@ -205,20 +205,18 @@ func _ready() -> void:
 	Locale.language_changed.connect(_on_language_changed)
 	_update_language_buttons()
 
-	# Foco inicial no Tab = 1 + anel de Tab na ordem de leitura (deferido: espera o layout/abas
-	# assentarem). Cada aba do TabContainer tem seus próprios controles, e só os da aba VISÍVEL entram
-	# no anel — re-liga ao TROCAR de aba. Também re-liga quando o DebugOverlay injeta o toggle Debug 2D.
-	UINav.focus_tab_one.call_deferred(self)
-	_wire_tab_order.call_deferred()
-	tabs.tab_changed.connect(func(_t: int) -> void: _wire_tab_order.call_deferred())
-	($UI/Actions as HBoxContainer).child_entered_tree.connect(
-		func(_n: Node) -> void: _wire_tab_order.call_deferred())
+	# Foco inicial na 1ª ABA (regra do TabContainer 2026-06-30): começa no 1º controle da aba 0.
+	# O Tab/Shift+Tab atravessa as abas em sequência (ver _input → UINav.tab_container_focus_step); por
+	# isso a cena NÃO monta um anel fechado — a navegação por Tab é tratada explicitamente, recalculando
+	# a ordem global (todas as abas + Voltar/Reset/idioma/Debug2D) a cada passo.
+	_focus_first_tab_control.call_deferred()
 
 
-# (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — re-chamável quando o conjunto de
-# focáveis muda (troca de aba, toggle injetado, botão de idioma habilitando/desabilitando).
-func _wire_tab_order() -> void:
-	UINav.wire_tab_ring(self)
+# Foca o 1º controle da sequência de Tab (1º focável da aba 0). Deferido: espera o layout assentar.
+func _focus_first_tab_control() -> void:
+	var order := UINav.collect_focus_order_with_tabs(self, tabs)
+	if not order.is_empty():
+		order[0].grab_focus()
 
 
 # Translate each tab's title from its (English) node name via the active dictionary.
@@ -236,9 +234,8 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
-	# O idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar sem ele.
-	if is_node_ready():
-		_wire_tab_order.call_deferred()
+	# O idioma ativo fica desabilitado e sai da sequência de Tab automaticamente: a ordem global é
+	# recalculada (ignorando desabilitados) a cada passo de Tab — ver UINav.tab_container_focus_step.
 
 
 func _on_portuguese_pressed() -> void:
@@ -695,7 +692,32 @@ func _on_back_pressed() -> void:
 	emit_signal("replace_main_scene", load(MENU_PATH))
 
 
+# True se há alguma janela flutuante VISÍVEL (diálogo de confirmação, gerenciador de música…) — nesse
+# caso o Tab/Shift+Tab é da janela, não da navegação por abas do fundo.
+func _floating_window_open() -> bool:
+	for n in get_tree().get_nodes_in_group(DebugOverlay.FLOATING_WINDOW_GROUP):
+		if n is Control and (n as Control).is_visible_in_tree():
+			return true
+	return false
+
+
 func _input(input_event: InputEvent) -> void:
+	# Tab/Shift+Tab atravessam as abas do TabContainer em sequência (regra do projeto 2026-06-30):
+	# dentro da aba anda esquerda→direita/cima→baixo; no último controle da aba pula p/ a próxima aba e
+	# realça o 1º controle dela; só sai p/ Voltar/Reset/idioma quando está no último controle da última
+	# aba. Tratado explicitamente (consumindo o evento) para o foco automático do Godot não fechar o
+	# ciclo cedo dentro da aba visível.
+	# Com uma janela flutuante aberta (ex.: confirmar resolução/reset), o Tab pertence ao anel DELA —
+	# não atravessamos as abas do fundo. A janela tem seu próprio anel de foco (wire_focus_ring).
+	if not _floating_window_open():
+		if input_event.is_action_pressed(&"ui_focus_next"):
+			if UINav.tab_container_focus_step(self, tabs, true):
+				get_viewport().set_input_as_handled()
+			return
+		if input_event.is_action_pressed(&"ui_focus_prev"):
+			if UINav.tab_container_focus_step(self, tabs, false):
+				get_viewport().set_input_as_handled()
+			return
 	if input_event.is_action_pressed(&"quit"):
 		# ESC encerra primeiro um campo em edição; só o 2º ESC volta ao menu.
 		if UINav.cancel_active_edit(get_viewport()):

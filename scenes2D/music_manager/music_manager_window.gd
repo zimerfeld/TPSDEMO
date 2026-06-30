@@ -70,9 +70,11 @@ func _build_ui(content: VBoxContainer) -> void:
 	# ── Ouvir qualquer faixa ─────────────────────────────────────────────
 	root.add_child(_section_title("Ouvir faixa"))
 	var listen_row := HBoxContainer.new()
+	listen_row.name = "ListenRow"
 	listen_row.add_theme_constant_override("separation", 8)
 	root.add_child(listen_row)
 	_listen_picker = OptionButton.new()
+	_listen_picker.name = "ListenPicker"
 	_listen_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	listen_row.add_child(_listen_picker)
 	# Persiste a faixa escolhida para ouvir → restaurada na próxima abertura (persistir estado).
@@ -86,21 +88,26 @@ func _build_ui(content: VBoxContainer) -> void:
 	_add_button(listen_row, "⏸ Pausar", func() -> void: MusicManager.pause_preview())
 	_add_button(listen_row, "⏹ Parar", func() -> void: MusicManager.stop_preview())
 
-	root.add_child(HSeparator.new())
+	var listen_separator := HSeparator.new()
+	listen_separator.name = "ListenSeparator"
+	root.add_child(listen_separator)
 
 	# ── Atribuição por cena/level ────────────────────────────────────────
 	root.add_child(_section_title("Trilha por cena / level"))
 	var hint := Label.new()
+	hint.name = "Hint"
 	hint.text = "\"%s\" = sem música (silêncio, padrão). \"%s\" toca Audios/<nome-da-cena>. Ou escolha uma faixa." % [SELECT_LABEL, DEFAULT_LABEL]
 	hint.modulate = Color(1, 1, 1, 0.7)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(hint)
 
 	var scroll := ScrollContainer.new()
+	scroll.name = "TracksScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	root.add_child(scroll)
 	var list := VBoxContainer.new()
+	list.name = "TracksList"
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 6)
 	scroll.add_child(list)
@@ -108,13 +115,16 @@ func _build_ui(content: VBoxContainer) -> void:
 	for scene in MusicManager.scene_list():
 		var key := String(scene["key"])
 		var row := HBoxContainer.new()
+		row.name = "TrackRow_%s" % key
 		row.add_theme_constant_override("separation", 8)
 		list.add_child(row)
 		var lbl := Label.new()
+		lbl.name = "TrackLabel_%s" % key
 		lbl.text = String(scene["label"])
 		lbl.custom_minimum_size.x = 230
 		row.add_child(lbl)
 		var picker := OptionButton.new()
+		picker.name = "TrackPicker_%s" % key
 		picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_populate_scene_picker(picker)
 		picker.item_selected.connect(_on_scene_track_selected.bind(key, picker))
@@ -204,6 +214,7 @@ func _select_value(picker: OptionButton, value: String) -> void:
 
 func _section_title(text: String) -> Label:
 	var l := Label.new()
+	l.name = "SectionTitle_%s" % text
 	l.text = text
 	l.add_theme_font_size_override("font_size", 22)
 	return l
@@ -211,6 +222,7 @@ func _section_title(text: String) -> Label:
 
 func _add_button(parent: Control, text: String, cb: Callable) -> Button:
 	var b := Button.new()
+	b.name = "ActionButton_%s" % text
 	b.text = text
 	b.pressed.connect(cb)
 	parent.add_child(b)

@@ -34,8 +34,11 @@ aplicam na hora (`DebugOverlay.refresh()`).
     o mesmo Type/Name** na mesma cena. Preenchida a cada frame em `_show_overlay_for` (só p/ o controle
     apontado e seu host).
   - **Linha Tab** (`ShowTabRow` → `show_tab`, **última** sub-linha, abaixo de `ShowPathRow`): mostra o
-    **índice de Tab/foco** de cada controle (`TAB: n`, ou `TAB: -` se não focável). O índice é a ordem REAL de
-    navegação: o `_compute_tab_indices` parte do início da cadeia (`_tab_chain_start`) e segue
+    **índice de Tab/foco** de cada controle (`TAB: n`, ou `TAB: -` se não focável). **Valor ESPERADO em
+    primeiro lugar (2026-06-30):** se o controle declara `metadata/tab_order` (ver
+    [[convencoes/navegacao-tab]]), a linha exibe esse número (`UINav.tab_order_of`), para a ordem ser
+    previsível e independer da cadeia viva. **Sem** o metadado, cai no índice CALCULADO: o
+    `_compute_tab_indices` parte do início da cadeia (`_tab_chain_start`) e segue
     `find_next_valid_focus()` numerando 1, 2, 3… **Com janela flutuante aberta** (fundo suprimido) numera
     a cadeia DA JANELA começando **depois do ×**, então o **× recebe o MAIOR `TAB: n`** (fica por último
     no anel — ver [[fluxo-de-cenas]]); sem janela, parte do 1º focável (`UINav.first_focusable`) da tela
@@ -150,11 +153,25 @@ aplicam na hora (`DebugOverlay.refresh()`).
   aberta nada muda. **Vale em QUALQUER cena (2026-06-27):** a classe reutilizável `FloatingWindow`
   (`scenes2D/controls2D/floating_window/`) entra no grupo sozinha no seu `_ready`, então toda janela
   baseada nela — incluindo os diálogos de confirmação do `FloatingDialog` — já dispara a supressão em
-  qualquer tela. Em Models, como o `damage_panel` (Dano) e o `ai_panel` (IA) **não** são `FloatingWindow`
-  (são `PanelContainer` próprios), eles entram no grupo **explicitamente** (`add_to_group` no
-  `_setup_damage_window`/`_setup_ai_window`); a `FloatingWindow` de Afastamento/Escala se registra
+  qualquer tela. Em Models, o **editor de IA** virou uma `FloatingWindow` runtime (2026-06-30, ver
+  abaixo) e se registra sozinha; já o `damage_panel` (Dano) segue `PanelContainer` próprio (ligado ao
+  sistema de dano por membro), então entra no grupo **explicitamente** (`add_to_group` no
+  `_setup_damage_window`); a `FloatingWindow` de Afastamento/Escala se registra
   sozinha. Abrir/fechar/alternar janelas atualiza a supressão na hora, pois é decidida pela
   visibilidade ao vivo (ver [[sistemas/dano-localizado]], [[sistemas/biblioteca-de-modelos]]).
+- **Gap p/ identificar a janela + Debug2D acionável sob o backdrop (2026-06-30):** regra do projeto —
+  toda `FloatingWindow` agora deixa um **anel/margem mínima** (`_WINDOW_CONTENT_GAP = 4 px`,
+  `content_margin` no stylebox do `Window`) entre a borda e o conteúdo/titlebar, para o mouse passar
+  por esse espaço e o Debug 2D **apontar a própria janela**. E, mesmo com a janela **modal** (backdrop
+  bloqueando o fundo), um clique sobre o `Debug2DToggle` da cena que a carregou **liga/desliga os
+  overlays**: a `FloatingWindow._input` detecta o clique sobre o retângulo do toggle (via grupo
+  `Debug2DToggle.GROUP` = `&"debug2d_toggle"`) e o aciona antes de o backdrop engolir o evento.
+  Em Models: o **editor de IA** virou uma `FloatingWindow` runtime **não-modal** (`_ensure_ai_window`,
+  `remember_position_key = "ai_window"`), então herda **tudo** — gap, anel de foco, ESC, supressão e o
+  click-forward. O **Dano** segue `PanelContainer` próprio (ligado ao dano por membro): recebeu o
+  **mesmo gap** (`content_margin = 4` no `win_style` de `_setup_damage_window`); o **click-forward** não
+  se aplica a ele — é **não-modal** (sem backdrop), então o `Debug2DToggle` da barra Actions de Models já
+  fica clicável com ele aberto.
 
 ## Inspeção 3D → tela Models
 

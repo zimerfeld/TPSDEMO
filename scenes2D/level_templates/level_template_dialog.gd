@@ -65,9 +65,11 @@ func _build_ui(content: VBoxContainer) -> void:
 	root.add_theme_constant_override("separation", 10)
 
 	var top := HBoxContainer.new()
+	top.name = "TopRow"
 	top.add_theme_constant_override("separation", 8)
 	root.add_child(top)
 	_template_picker = OptionButton.new()
+	_template_picker.name = "TemplatePicker"
 	_template_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_template_picker.item_selected.connect(_on_template_selected)
 	top.add_child(_template_picker)
@@ -76,14 +78,19 @@ func _build_ui(content: VBoxContainer) -> void:
 	_add_button(top, "Remover", _remove_template)
 
 	_name_edit = LineEdit.new()
+	_name_edit.name = "NameField"
 	_name_edit.placeholder_text = "Nome do template"
 	root.add_child(_labeled("Nome", _name_edit))
 
-	root.add_child(HSeparator.new())
+	var entry_separator := HSeparator.new()
+	entry_separator.name = "EntrySeparator"
+	root.add_child(entry_separator)
 	var entry_row := HBoxContainer.new()
+	entry_row.name = "EntryRow"
 	entry_row.add_theme_constant_override("separation", 8)
 	root.add_child(entry_row)
 	_entry_picker = OptionButton.new()
+	_entry_picker.name = "EntryPicker"
 	_entry_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_entry_picker.item_selected.connect(_on_entry_selected)
 	entry_row.add_child(_entry_picker)
@@ -93,6 +100,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	_add_button(entry_row, "Remover Entrada", _remove_entry)
 
 	var grid := GridContainer.new()
+	grid.name = "FieldsGrid"
 	grid.columns = 2
 	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	grid.add_theme_constant_override("h_separation", 12)
@@ -100,20 +108,32 @@ func _build_ui(content: VBoxContainer) -> void:
 	root.add_child(grid)
 
 	_kind_picker = _picker(["character", "structure"])
+	_kind_picker.name = "KindPicker"
 	_kind_picker.item_selected.connect(func(_idx: int) -> void:
 		_save_entry_fields()
 		_refresh_model_picker())
 	_model_picker = OptionButton.new()
+	_model_picker.name = "ModelPicker"
 	_faction_picker = _picker(["friendly", "enemy", "neutral"])
+	_faction_picker.name = "FactionPicker"
 	_count_spin = _spin(1, 64, 1, 1)
+	_count_spin.name = "CountSpin"
 	_placement_picker = _picker(["random", "coordinates", "formation"])
+	_placement_picker.name = "PlacementPicker"
 	_positions_edit = _line("x,y,z; x,y,z")
+	_positions_edit.name = "PositionsField"
 	_random_center_edit = _line("0,1,0")
+	_random_center_edit.name = "RandomCenterField"
 	_random_size_edit = _line("34,0,34")
+	_random_size_edit.name = "RandomSizeField"
 	_formation_picker = _picker(["line", "circle", "wedge", "grid"])
+	_formation_picker.name = "FormationPicker"
 	_formation_origin_edit = _line("0,1,0")
+	_formation_origin_edit.name = "FormationOriginField"
 	_spacing_spin = _spin(0.5, 50, 0.5, 4)
+	_spacing_spin.name = "SpacingSpin"
 	_rotation_spin = _spin(-360, 360, 5, 0)
+	_rotation_spin.name = "RotationSpin"
 	_add_grid_row(grid, "Tipo", _kind_picker)
 	_add_grid_row(grid, "Modelo", _model_picker)
 	_add_grid_row(grid, "Facção", _faction_picker)
@@ -348,6 +368,7 @@ func _picker(values: Array[String]) -> OptionButton:
 
 func _spin(min_value: float, max_value: float, step: float, value: float) -> SpinBox:
 	var s := SpinBox.new()
+	s.focus_mode = Control.FOCUS_ALL   # SpinBox não é FOCUS_ALL por padrão → entraria no anel de Tab como "TAB: -"
 	s.min_value = min_value
 	s.max_value = max_value
 	s.step = step
@@ -363,8 +384,10 @@ func _line(placeholder: String) -> LineEdit:
 
 func _labeled(label_text: String, control: Control) -> HBoxContainer:
 	var row := HBoxContainer.new()
+	row.name = "LabeledRow_%s" % label_text
 	row.add_theme_constant_override("separation", 8)
 	var label := Label.new()
+	label.name = "FieldLabel_%s" % label_text
 	label.text = label_text
 	label.custom_minimum_size.x = 120
 	row.add_child(label)
@@ -375,6 +398,7 @@ func _labeled(label_text: String, control: Control) -> HBoxContainer:
 
 func _add_grid_row(grid: GridContainer, label_text: String, control: Control) -> void:
 	var label := Label.new()
+	label.name = "GridLabel_%s" % label_text
 	label.text = label_text
 	grid.add_child(label)
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -383,6 +407,7 @@ func _add_grid_row(grid: GridContainer, label_text: String, control: Control) ->
 
 func _add_button(parent: Control, text: String, callable: Callable) -> Button:
 	var b := Button.new()
+	b.name = "ActionButton_%s" % text
 	b.text = text
 	b.pressed.connect(callable)
 	parent.add_child(b)

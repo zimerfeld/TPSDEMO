@@ -61,11 +61,13 @@ func _rewire_tab() -> void:
 func _build_ui() -> void:
 	var inner := _make_panel("Salas disponíveis no servidor")
 	var info := Label.new()
+	info.name = "Info"
 	info.text = "Escolha uma sala para entrar:"
 	info.add_theme_font_size_override("font_size", 18)
 	inner.add_child(info)
 	_rooms_list = _make_rooms_list(inner)
 	_empty_hint = Label.new()
+	_empty_hint.name = "EmptyHint"
 	_empty_hint.text = "Nenhuma sala em execução."
 	_empty_hint.add_theme_font_size_override("font_size", 16)
 	inner.add_child(_empty_hint)
@@ -91,13 +93,16 @@ func _make_client_row(r: Dictionary) -> Control:
 	var path: String = String(r["level_path"])
 	var players: int = int(r.get("players", 0))
 	var row := HBoxContainer.new()
+	row.name = "RoomRow_%d" % id
 	row.add_theme_constant_override("separation", 8)
 	var lbl := Label.new()
+	lbl.name = "RoomLabel"
 	lbl.text = "Sala #%d — %s  (%d jogador%s)" % [
 		id, RoomManager.level_label(path), players, "" if players == 1 else "es"]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var play_btn := Button.new()
+	play_btn.name = "PlayButton"
 	play_btn.text = "Jogar"
 	play_btn.pressed.connect(_on_play_room.bind(id, path))
 	row.add_child(play_btn)
@@ -201,12 +206,14 @@ func _input(event: InputEvent) -> void:
 # e botão Voltar de tamanho normal e centralizado, no padrão da playonline/menu.
 func _make_panel(title_text: String) -> VBoxContainer:
 	_panel = Control.new()
+	_panel.name = "Panel"
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_panel)
 	# Fundo: MESMA textura cyberpunk do menu, porém com IDENTIDADE de CLIENTE — graduação FRIA (ciano)
 	# + anéis de "radar" CONTRAINDO para dentro (CONECTA-SE ao servidor). Contrasta com o host
 	# (quente + anéis expandindo). mouse_filter IGNORE p/ os cliques chegarem aos botões.
 	var bg_tex := TextureRect.new()
+	bg_tex.name = "Background"
 	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg_tex.texture = load("res://scenes2D/menu/menu_surreal_training_bg.png")
 	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -215,30 +222,36 @@ func _make_panel(title_text: String) -> VBoxContainer:
 	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(bg_tex)
 	var veil := ColorRect.new()
+	veil.name = "Veil"
 	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	veil.color = Color(0.008, 0.03, 0.06, 0.62)      # véu escuro frio
 	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(veil)
 	_panel.add_child(_make_signal_layer(Color(0.2, 0.72, 1.0, 1.0), -1.0))  # anéis ciano CONTRAINDO
 	var margin := MarginContainer.new()
+	margin.name = "Margin"
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 40)
 	_panel.add_child(margin)
 	var outer := VBoxContainer.new()
+	outer.name = "Content"
 	outer.add_theme_constant_override("separation", 14)
 	margin.add_child(outer)
 	var title := Label.new()
+	title.name = "Title"
 	title.text = title_text
 	title.add_theme_font_size_override("font_size", 28)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	outer.add_child(title)
 	# Área central: VBox de largura máx. 900, centralizada horizontalmente (a lista fica aqui).
 	var center := HBoxContainer.new()
+	center.name = "Center"
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.alignment = BoxContainer.ALIGNMENT_CENTER
 	outer.add_child(center)
 	var inner := VBoxContainer.new()
+	inner.name = "Inner"
 	inner.custom_minimum_size = Vector2(900, 0)
 	inner.add_theme_constant_override("separation", 14)
 	center.add_child(inner)
@@ -249,6 +262,7 @@ func _make_panel(title_text: String) -> VBoxContainer:
 	outer.add_child(actions)
 	_actions_bar = actions
 	var back_btn := Button.new()
+	back_btn.name = "BackButton"
 	back_btn.text = "Voltar"
 	back_btn.custom_minimum_size = Vector2(200, 50)
 	back_btn.pressed.connect(_go_back)
@@ -260,6 +274,7 @@ func _make_panel(title_text: String) -> VBoxContainer:
 # expande (host transmite) / -1 contrai (cliente conecta). `aspect` mantém os anéis circulares.
 func _make_signal_layer(color: Color, dir: float) -> ColorRect:
 	var rect := ColorRect.new()
+	rect.name = "SignalLayer"
 	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mat := ShaderMaterial.new()
@@ -274,10 +289,12 @@ func _make_signal_layer(color: Color, dir: float) -> ColorRect:
 
 func _make_rooms_list(parent: VBoxContainer) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
+	scroll.name = "RoomsScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.custom_minimum_size = Vector2(0, 360)
 	parent.add_child(scroll)
 	var list := VBoxContainer.new()
+	list.name = "RoomsList"
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 8)
 	scroll.add_child(list)

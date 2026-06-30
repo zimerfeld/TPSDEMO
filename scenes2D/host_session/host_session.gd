@@ -68,6 +68,7 @@ func _rewire_tab() -> void:
 
 func _build_ui() -> void:
 	_room_view = TextureRect.new()
+	_room_view.name = "RoomView"
 	_room_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_room_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_room_view.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -78,10 +79,12 @@ func _build_ui() -> void:
 	var inner := _make_panel("Servidor — Salas ativas")
 
 	var start_row := HBoxContainer.new()
+	start_row.name = "StartRow"
 	start_row.add_theme_constant_override("separation", 12)
 	start_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	inner.add_child(start_row)
 	_level_picker = OptionButton.new()
+	_level_picker.name = "LevelPicker"
 	_level_picker.add_item("Selecione...")  # item 0 = sentinela (sem metadata; convenção do projeto)
 	for lv in LEVELS:
 		_level_picker.add_item(String(lv["label"]))
@@ -90,21 +93,26 @@ func _build_ui() -> void:
 	_level_picker.item_selected.connect(func(_idx: int) -> void: _refresh_template_picker())
 	start_row.add_child(_level_picker)
 	_template_picker = OptionButton.new()
+	_template_picker.name = "TemplatePicker"
 	_template_picker.custom_minimum_size = Vector2(260, 44)
 	start_row.add_child(_template_picker)
 	var manage_templates_btn := Button.new()
+	manage_templates_btn.name = "ManageTemplatesButton"
 	manage_templates_btn.text = "Templates"
 	manage_templates_btn.custom_minimum_size = Vector2(130, 44)
 	manage_templates_btn.pressed.connect(_open_template_dialog_for_selected_level)
 	start_row.add_child(manage_templates_btn)
 	var start_btn := Button.new()
+	start_btn.name = "StartButton"
 	start_btn.text = "Iniciar Sala"
 	start_btn.custom_minimum_size = Vector2(160, 44)
 	start_btn.pressed.connect(_on_start_pressed)
 	start_row.add_child(start_btn)
 	_refresh_template_picker()
 
-	inner.add_child(HSeparator.new())
+	var start_separator := HSeparator.new()
+	start_separator.name = "StartSeparator"
+	inner.add_child(start_separator)
 	_rooms_list = _make_rooms_list(inner, "Salas em execução:")
 
 	_hint = _make_hint("")
@@ -254,8 +262,10 @@ func _refresh_rooms() -> void:
 func _make_server_row(room: Dictionary) -> Control:
 	var id: int = int(room["id"])
 	var row := HBoxContainer.new()
+	row.name = "RoomRow_%d" % id
 	row.add_theme_constant_override("separation", 8)
 	var lbl := Label.new()
+	lbl.name = "RoomLabel_%d" % id
 	# Conexões (clientes remotos) ativas nesta sala. Atualiza ao vivo: o RoomManager emite
 	# rooms_changed em join_room/leave_room/_on_peer_disconnected → _refresh_rooms remonta as linhas.
 	var conns: int = RoomManager.connections_in_room(id)
@@ -268,6 +278,7 @@ func _make_server_row(room: Dictionary) -> Control:
 	# desabilitados (o host só gerencia as salas; iniciar/parar/reiniciar seguem funcionando).
 	var render_off: bool = not NetConfig.host_render_observed
 	var play_btn := Button.new()
+	play_btn.name = "PlayButton_%d" % id
 	play_btn.text = "Jogar"
 	play_btn.disabled = render_off
 	if render_off:
@@ -275,6 +286,7 @@ func _make_server_row(room: Dictionary) -> Control:
 	play_btn.pressed.connect(_on_play_room.bind(id))
 	row.add_child(play_btn)
 	var observe_btn := Button.new()
+	observe_btn.name = "ObserveButton_%d" % id
 	observe_btn.text = "Observando" if id == _observing_id else "Observar"
 	observe_btn.disabled = (id == _observing_id) or render_off
 	if render_off:
@@ -282,10 +294,12 @@ func _make_server_row(room: Dictionary) -> Control:
 	observe_btn.pressed.connect(_set_observing.bind(id))
 	row.add_child(observe_btn)
 	var restart_btn := Button.new()
+	restart_btn.name = "RestartButton_%d" % id
 	restart_btn.text = "Reiniciar"
 	restart_btn.pressed.connect(_on_restart_room.bind(id))
 	row.add_child(restart_btn)
 	var stop_btn := Button.new()
+	stop_btn.name = "StopButton_%d" % id
 	stop_btn.text = "Parar"
 	stop_btn.pressed.connect(func() -> void: RoomManager.stop_room(id))
 	row.add_child(stop_btn)
@@ -357,12 +371,14 @@ func _input(event: InputEvent) -> void:
 # e botão Voltar de tamanho normal e centralizado, no padrão da playonline/menu.
 func _make_panel(title_text: String) -> VBoxContainer:
 	_panel = Control.new()
+	_panel.name = "ManagePanel"
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_panel)
 	# Fundo: MESMA textura cyberpunk do menu, porém com IDENTIDADE de HOST — graduação QUENTE (âmbar)
 	# + anéis de "radar" EXPANDINDO para fora (o servidor TRANSMITE / é a fonte). Contrasta com o
 	# cliente (frio + anéis contraindo). mouse_filter IGNORE p/ os cliques chegarem aos botões.
 	var bg_tex := TextureRect.new()
+	bg_tex.name = "Background"
 	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg_tex.texture = load("res://scenes2D/menu/menu_surreal_training_bg.png")
 	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -371,30 +387,36 @@ func _make_panel(title_text: String) -> VBoxContainer:
 	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(bg_tex)
 	var veil := ColorRect.new()
+	veil.name = "Veil"
 	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	veil.color = Color(0.06, 0.035, 0.012, 0.62)    # véu escuro quente
 	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(veil)
 	_panel.add_child(_make_signal_layer(Color(1.0, 0.62, 0.16, 1.0), 1.0))  # anéis âmbar EXPANDINDO
 	var margin := MarginContainer.new()
+	margin.name = "Margin"
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 40)
 	_panel.add_child(margin)
 	var outer := VBoxContainer.new()
+	outer.name = "Content"
 	outer.add_theme_constant_override("separation", 14)
 	margin.add_child(outer)
 	var title := Label.new()
+	title.name = "Title"
 	title.text = title_text
 	title.add_theme_font_size_override("font_size", 28)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	outer.add_child(title)
 	# Área central: VBox de largura máx. 900, centralizada horizontalmente (as listas ficam aqui).
 	var center := HBoxContainer.new()
+	center.name = "CenterRow"
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.alignment = BoxContainer.ALIGNMENT_CENTER
 	outer.add_child(center)
 	var inner := VBoxContainer.new()
+	inner.name = "CenterColumn"
 	inner.custom_minimum_size = Vector2(900, 0)
 	inner.add_theme_constant_override("separation", 14)
 	center.add_child(inner)
@@ -405,6 +427,7 @@ func _make_panel(title_text: String) -> VBoxContainer:
 	outer.add_child(actions)
 	_actions_bar = actions
 	var back_btn := Button.new()
+	back_btn.name = "BackButton"
 	back_btn.text = "Voltar"
 	back_btn.custom_minimum_size = Vector2(200, 50)
 	back_btn.pressed.connect(_go_back)
@@ -416,6 +439,7 @@ func _make_panel(title_text: String) -> VBoxContainer:
 # expande (host transmite) / -1 contrai (cliente conecta). `aspect` mantém os anéis circulares.
 func _make_signal_layer(color: Color, dir: float) -> ColorRect:
 	var rect := ColorRect.new()
+	rect.name = "SignalLayer"
 	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mat := ShaderMaterial.new()
@@ -431,14 +455,17 @@ func _make_signal_layer(color: Color, dir: float) -> ColorRect:
 func _make_rooms_list(parent: VBoxContainer, header: String) -> VBoxContainer:
 	if header != "":
 		var h := Label.new()
+		h.name = "RoomsHeader"
 		h.text = header
 		h.add_theme_font_size_override("font_size", 18)
 		parent.add_child(h)
 	var scroll := ScrollContainer.new()
+	scroll.name = "RoomsScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.custom_minimum_size = Vector2(0, 360)
 	parent.add_child(scroll)
 	var list := VBoxContainer.new()
+	list.name = "RoomsList"
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 8)
 	scroll.add_child(list)
@@ -447,6 +474,7 @@ func _make_rooms_list(parent: VBoxContainer, header: String) -> VBoxContainer:
 
 func _make_hint(text: String) -> Label:
 	var lbl := Label.new()
+	lbl.name = "Hint"
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 14)
 	lbl.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)

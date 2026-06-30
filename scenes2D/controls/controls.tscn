@@ -62,7 +62,8 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Controle:"
 
-[node name="cboControl" type="OptionButton" parent="UI/Inset/Main/Selectors/ControlRow"]
+[node name="Controls" type="OptionButton" parent="UI/Inset/Main/Selectors/ControlRow"]
+metadata/tab_order = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(360, 50)
 layout_mode = 2
@@ -97,6 +98,7 @@ grow_vertical = 0
 alignment = 1
 
 [node name="Back" type="Button" parent="UI/Actions"]
+metadata/tab_order = 2
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -107,6 +109,7 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 3
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -114,6 +117,7 @@ theme_override_font_sizes/font_size = 20
 text = "Português"
 
 [node name="English" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 4
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3

@@ -7,6 +7,48 @@
 
 ---
 
+## Ordem EXPLÍCITA de Tab — `metadata/tab_order` (2026-06-30)
+
+Regra do projeto: **mesmo com o auto-Tab do Godot aplicado, declarar a ordem ESPERADA de Tab e
+exibi-la no Debug Overlay**, para previsibilidade do ciclo. Mecanismo escolhido: **metadata por nó**.
+
+- Cada controle interativo carrega `metadata/tab_order = N` (1-based) no `.tscn`, na **ordem de
+  leitura** (topo→baixo, esquerda→direita) — que é a própria ordem de árvore/documento. Ex. (cena
+  `menu`): `Play=1, PlayOnline=2, Settings=3, Developer=4, Quit=5, Portuguese=6, English=7`; o toggle
+  **Debug 2D** é injetado em runtime e recebe `tab_order = maior declarado da tela + 1`
+  (`DebugOverlay._max_declared_tab_order`), ficando sempre por ÚLTIMO (menu `8`, chooseplayer `7`…).
+  **Containers de linha (`*Row`)** que envolvem um único controle podem **espelhar** o mesmo `tab_order`
+  do seu controle só para EXIBIÇÃO (ex.: `menu` `PlayRow=1`…`QuitRow=5`); como não são focáveis, não
+  entram no anel. **Controles criados em runtime** (ex.: botões de Template em `levels`) recebem `name`
+  próprio + `tab_order` via `set_meta` na criação (senão apareceriam como `@Button@N` e sem número).
+- **`UINav.collect_focusables`** agora ordena por `tab_order` (crescente) e, entre os SEM metadado (ou
+  empatados), pela ordem de árvore — então `wire_tab_ring` monta o anel exatamente nessa ordem. Como o
+  metadado replica a ordem de árvore que já era usada, **não há mudança de comportamento** nas telas
+  que já ligavam o anel; só ficou explícito.
+- **Debug 2D mostra o valor ESPERADO:** a linha Tab usa `UINav.tab_order_of(ctrl)` — se há
+  `tab_order`, exibe esse número; senão cai no índice CALCULADO pela cadeia viva (`_tab_index_map`).
+- Aplicado em: `menu`, `chooseplayer`, `controls`, `developer`, `levels`, `playonline`, `settings`
+  (numerado **atravessando as abas**, ver abaixo), `pause_menu` e `models` (3D).
+
+## TabContainer — Tab atravessa as abas (2026-06-30)
+
+Regra do projeto para o controle `TabContainer` (hoje só `settings`):
+
+1. A **1ª aba** é o foco inicial ao entrar com Tab.
+2. Dentro da aba, Tab anda **esquerda→direita, cima→baixo**.
+3. No **último controle de uma aba**, Tab **troca para a próxima aba** e realça o **1º controle** dela.
+4. Só **sai** do `TabContainer` (vai para Voltar/Reset/idioma/Debug2D) quando se está no **último
+   controle da ÚLTIMA aba** e Tab é pressionado de novo.
+
+Implementação: a cena trata Tab/Shift+Tab no `_input` chamando **`UINav.tab_container_focus_step(self,
+tabs, forward)`** (consumindo o evento). O helper monta a **ordem global** com
+**`collect_focus_order_with_tabs`** — focáveis antes do TabContainer → aba 0 → … → aba N-1 → focáveis
+depois — usando **`collect_focusables_ignoring_visibility`** para varrer as abas OCULTAS; ao cruzar a
+fronteira de uma aba, troca `current_tab` e foca o alvo (deferido). `settings` deixou de montar um anel
+fechado (`wire_tab_ring`) e de re-ligar em `tab_changed`/idioma — a ordem é recalculada a cada passo
+(ignora desabilitados, então o idioma ativo sai sozinho). Com uma **janela flutuante aberta**, o Tab é
+da janela (anel próprio) — `settings._input` não atravessa as abas (`_floating_window_open`).
+
 ## Por que o Debug 2D mostra `TAB: -` em alguns controles?
 
 A linha branca **"Tab"** do [[sistemas/debug-overlay]] é calculada por `DebugOverlay._compute_tab_indices`:
@@ -23,6 +65,15 @@ controle a controle até **fechar o ciclo** (voltar a um já numerado). Cada con
    (geometria/`focus_next`). Quando os focáveis estão em **contêineres separados** (várias `HBox`/colunas),
    esses vizinhos automáticos **podem não encadear todos** ou **fechar o ciclo cedo** → o passeio termina
    antes de visitar o resto, que aparece como `TAB: -` **mesmo sendo focável**.
+3. **`SpinBox` NÃO é `FOCUS_ALL` por padrão (2026-06-30)** — diferente de `Button`/`LineEdit`/`OptionButton`,
+   o `SpinBox` nasce sem `focus_mode = FOCUS_ALL`, então o `collect_focusables` o IGNORA e o Tab o pula
+   (ex.: `playonline` pulava do `PlayerName`=1 direto para `PortHistories`=3, sem parar no `Port`=2).
+   **Corrigir definindo `focus_mode = 2` (FOCUS_ALL)** no `.tscn`, ou `sp.focus_mode = Control.FOCUS_ALL`
+   nos `SpinBox` criados em código (diálogo de templates, linhas Afastamento/Rotação/Escala de Models).
+
+> **Telas com colunas:** o ciclo de Tab é por COLUNA — percorre todos os controles de uma coluna (de cima
+> para baixo) antes de passar para a próxima. Como `collect_focusables` segue a ordem de árvore (e o
+> `tab_order` declarado), basta que cada coluna seja um contêiner próprio na ordem de leitura.
 
 **Conclusão:** se um controle **focável** aparece sem número, a tela provavelmente **ainda não liga o anel**.
 Chamar **`UINav.wire_tab_ring(self)`** amarra `focus_next`/`focus_previous` num **anel fechado
@@ -44,6 +95,10 @@ incremental de 1**. (Rótulos/containers continuam, corretamente, em `TAB: -`.)
 | **`first_focusable`** | `first_focusable(node) → Control` | 1º `Control` focável (FOCUS_ALL, visível, `BaseButton` não-`disabled`) em ordem de árvore. Base de `focus_first` e usado pelo **DebugOverlay** para achar o início da cadeia de Tab. |
 | **`collect_focusables`** | `collect_focusables(root) → Array[Control]` | **Todos** os focáveis sob `root` em ordem de árvore. Base de `wire_tab_ring`/`tab_one_control`. Ignora `is_queued_for_deletion()`. |
 | **`cancel_active_edit`** | `cancel_active_edit(viewport, fallback=null) → bool` | **Regra do ESC**: se o foco está num `LineEdit` (inclui o editor interno de um `SpinBox`), encerra a edição e devolve o foco ao `fallback`, retornando `true` (o chamador consome o ESC e **não** volta de tela). Só o **2º ESC** navega de volta. |
+| **`tab_order_of`** | `tab_order_of(ctrl) → int` | Valor declarado de `metadata/tab_order` (1-based) ou um sentinela grande se ausente. Base da ordenação de `collect_focusables` e da linha Tab do Debug 2D (valor ESPERADO). |
+| **`collect_focusables_ignoring_visibility`** | `… → Array[Control]` | Como `collect_focusables`, mas **ignora visibilidade** — varre os focáveis de uma aba OCULTA do `TabContainer`. |
+| **`collect_focus_order_with_tabs`** | `(scene_root, tab_container) → Array[Control]` | Ordem GLOBAL de foco com cada aba expandida em sequência (ocultas incluídas): antes → aba 0 → … → aba N-1 → depois. |
+| **`tab_container_focus_step`** | `(scene_root, tab_container, forward) → bool` | Um passo de Tab/Shift+Tab atravessando as abas (regra do TabContainer). Troca a aba visível quando o alvo está noutra aba. Chamada do `_input` da cena. |
 
 ### Padrão de uso numa tela (cópia pronta)
 
@@ -82,14 +137,14 @@ func _input(e: InputEvent) -> void:
 | `client_session` | ✅ | ✅ | — | — | — |
 | `floating_window` | ✅ (`last=×`) | — | ✅ (no parent ao fechar) | ✅ (`last=×`) | — |
 | `chooseplayer` | ✅ | ✅ | — | — | ✅ |
-| `settings` | ✅ (+ `tab_changed`) | ✅ | — | — | ✅ |
+| `settings` | — (usa `tab_container_focus_step`) | — (foca 1º da aba 0) | — | — | ✅ |
 | `developer` | ✅ (+ sub-toggles) | ✅ | — | — | ✅ |
 | `controls` | ✅ | ✅ | — | — | ✅ |
 | `debug_overlay` (autoload) | — | — | — | — | — (usa `first_focusable`) |
 
 > `collect_focusables` não tem chamador direto de cena (é interno de `wire_tab_ring`/`tab_one_control`).
-> **Casos especiais de re-ligar (2026-06-29):** `settings` re-liga no `TabContainer.tab_changed` (cada aba
-> tem seus próprios focáveis e só os da aba VISÍVEL entram no anel); `developer` re-liga no
+> **Casos especiais de re-ligar (2026-06-29):** `settings` **não** usa mais o anel — trata Tab no
+> `_input` atravessando as abas (ver "TabContainer" acima, 2026-06-30); `developer` re-liga no
 > `_update_subrows_enabled` (as sub-toggles do Debug 2D entram/saem do anel conforme o master liga/desliga).
 
 ---

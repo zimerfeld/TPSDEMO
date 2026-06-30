@@ -264,7 +264,20 @@ func _ensure_debug2d_toggle(screen: Node) -> void:
 	var toggle := _Debug2DToggle.new()
 	toggle.name = "Debug2D"
 	toggle.text = "Debug 2D"
+	# TAB explícito: o toggle é o ÚLTIMO da tela → maior tab_order declarado + 1 (ex.: chooseplayer 7,
+	# menu 8). Sem isso o Debug 2D mostraria o índice calculado (ou "-"). Ver [[convencoes/navegacao-tab]].
+	toggle.set_meta(UINav.TAB_ORDER_META, _max_declared_tab_order(screen) + 1)
 	actions.add_child(toggle)
+
+
+# Maior tab_order DECLARADO (metadata/tab_order) entre os Controls da tela, ou 0 se nenhum.
+func _max_declared_tab_order(screen: Node) -> int:
+	var m := 0
+	for n in screen.find_children("*", "Control", true, false):
+		var o: int = UINav.tab_order_of(n)
+		if o < (1 << 30) and o > m:
+			m = o
+	return m
 
 
 func _process(delta: float) -> void:
@@ -381,8 +394,15 @@ func _show_overlay_for(inst_id: int, tab_visible: bool) -> void:
 	entry.id_lbl.visible = _line_visible_2d("id")
 	entry.tab_lbl.visible = tab_visible
 	if tab_visible:
-		var ti: int = _tab_index_map.get(inst_id, -1)
-		entry.tab_lbl.text = "TAB: %d" % ti if ti > 0 else "TAB: -"
+		# Preferimos o valor ESPERADO declarado no .tscn (metadata/tab_order) — assim a linha Tab é
+		# previsível e independe da cadeia de foco viva. Sem o metadado, cai no índice CALCULADO pela
+		# cadeia real (find_next_valid_focus). Ver UINav.TAB_ORDER_META / [[convencoes/navegacao-tab]].
+		var declared := UINav.tab_order_of(ctrl)
+		if declared < (1 << 30):
+			entry.tab_lbl.text = "TAB: %d" % declared
+		else:
+			var ti: int = _tab_index_map.get(inst_id, -1)
+			entry.tab_lbl.text = "TAB: %d" % ti if ti > 0 else "TAB: -"
 	var path_visible := _line_visible_2d("path")
 	entry.path_lbl.visible = path_visible
 	if path_visible:

@@ -107,6 +107,7 @@ text = "PLAYER"
 horizontal_alignment = 1
 
 [node name="ArrowLeft" type="Button" parent="UI" unique_id=820163476]
+metadata/tab_order = 1
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -120,6 +121,7 @@ theme_override_font_sizes/font_size = 50
 text = "<"
 
 [node name="ArrowRight" type="Button" parent="UI" unique_id=18537713]
+metadata/tab_order = 2
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
@@ -152,12 +154,14 @@ theme_override_constants/separation = 60
 alignment = 1
 
 [node name="Back" type="Button" parent="UI/Actions" unique_id=1719511959]
+metadata/tab_order = 3
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
 [node name="Play" type="Button" parent="UI/Actions" unique_id=106792872]
+metadata/tab_order = 4
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -168,6 +172,7 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -176,6 +181,7 @@ theme_override_font_sizes/font_size = 20
 text = "Português"
 
 [node name="English" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 6
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2

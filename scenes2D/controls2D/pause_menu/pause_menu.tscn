@@ -49,6 +49,7 @@ text = "PAUSED"
 horizontal_alignment = 1
 
 [node name="Resume" type="Button" parent="Dimmer/PauseMenu"]
+metadata/tab_order = 1
 layout_mode = 2
 text = "RESUME"
 
@@ -58,6 +59,7 @@ layout_mode = 2
 color = Color(1, 0.176, 0.584, 0.3)
 
 [node name="Settings" type="Button" parent="Dimmer/PauseMenu"]
+metadata/tab_order = 2
 layout_mode = 2
 text = "SETTINGS"
 
@@ -67,6 +69,7 @@ layout_mode = 2
 color = Color(1, 0.176, 0.584, 0.3)
 
 [node name="Quit" type="Button" parent="Dimmer/PauseMenu"]
+metadata/tab_order = 3
 layout_mode = 2
 text = "QUIT"
 
@@ -82,6 +85,7 @@ layout_mode = 2
 text = "MASTER VOLUME"
 
 [node name="Volume" type="HSlider" parent="Dimmer/PauseMenu/SettingsCard/SettingsContent"]
+metadata/tab_order = 4
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 value = 80.0
@@ -91,12 +95,14 @@ layout_mode = 2
 text = "MOUSE SENSITIVITY"
 
 [node name="Sensitivity" type="HSlider" parent="Dimmer/PauseMenu/SettingsCard/SettingsContent"]
+metadata/tab_order = 5
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 min_value = 1.0
 value = 50.0
 
 [node name="Fullscreen" type="CheckBox" parent="Dimmer/PauseMenu/SettingsCard/SettingsContent"]
+metadata/tab_order = 6
 layout_mode = 2
 text = "FULLSCREEN"
 

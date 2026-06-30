@@ -102,6 +102,7 @@ theme_override_font_sizes/font_size = 26
 text = "Player name:"
 
 [node name="PlayerName" type="LineEdit" parent="UI/Inset/Main/Form/Fields/NameRow"]
+metadata/tab_order = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(560, 50)
 layout_mode = 2
@@ -122,15 +123,18 @@ theme_override_font_sizes/font_size = 26
 text = "Port:"
 
 [node name="Port" type="SpinBox" parent="UI/Inset/Main/Form/Fields/PortRow"]
+metadata/tab_order = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
+focus_mode = 2
 size_flags_horizontal = 3
 min_value = 1.0
 max_value = 65535.0
 value = 4383.0
 
-[node name="PortHistory" type="OptionButton" parent="UI/Inset/Main/Form/Fields/PortRow"]
+[node name="PortHistories" type="OptionButton" parent="UI/Inset/Main/Form/Fields/PortRow"]
+metadata/tab_order = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 50)
 layout_mode = 2
@@ -148,6 +152,7 @@ theme_override_font_sizes/font_size = 26
 text = "IP Address/Domain:"
 
 [node name="Address" type="LineEdit" parent="UI/Inset/Main/Form/Fields/AddressRow"]
+metadata/tab_order = 4
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
@@ -155,7 +160,8 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 30
 text = "127.0.0.1"
 
-[node name="AddressHistory" type="OptionButton" parent="UI/Inset/Main/Form/Fields/AddressRow"]
+[node name="AddressHistories" type="OptionButton" parent="UI/Inset/Main/Form/Fields/AddressRow"]
+metadata/tab_order = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 50)
 layout_mode = 2
@@ -167,12 +173,14 @@ theme_override_constants/separation = 60
 alignment = 1
 
 [node name="ManageRooms" type="Button" parent="UI/Inset/Main/Form/Fields/ButtonsRow"]
+metadata/tab_order = 6
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Gerenciar Salas"
 
 [node name="JoinRooms" type="Button" parent="UI/Inset/Main/Form/Fields/ButtonsRow"]
+metadata/tab_order = 7
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
@@ -195,6 +203,7 @@ theme_override_constants/separation = 60
 alignment = 1
 
 [node name="Back" type="Button" parent="UI/Actions"]
+metadata/tab_order = 8
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -205,6 +214,7 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 9
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -212,6 +222,7 @@ theme_override_font_sizes/font_size = 20
 text = "Português"
 
 [node name="English" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 10
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -250,8 +261,8 @@ one_shot = true
 
 [connection signal="focus_exited" from="UI/Inset/Main/Form/Fields/NameRow/PlayerName" to="." method="_on_player_name_focus_exited"]
 [connection signal="text_submitted" from="UI/Inset/Main/Form/Fields/NameRow/PlayerName" to="." method="_on_player_name_submitted"]
-[connection signal="item_selected" from="UI/Inset/Main/Form/Fields/PortRow/PortHistory" to="." method="_on_port_history_item_selected"]
-[connection signal="item_selected" from="UI/Inset/Main/Form/Fields/AddressRow/AddressHistory" to="." method="_on_address_history_item_selected"]
+[connection signal="item_selected" from="UI/Inset/Main/Form/Fields/PortRow/PortHistories" to="." method="_on_port_history_item_selected"]
+[connection signal="item_selected" from="UI/Inset/Main/Form/Fields/AddressRow/AddressHistories" to="." method="_on_address_history_item_selected"]
 [connection signal="text_submitted" from="UI/Inset/Main/Form/Fields/AddressRow/Address" to="." method="_on_address_text_submitted"]
 [connection signal="focus_exited" from="UI/Inset/Main/Form/Fields/AddressRow/Address" to="." method="_on_address_focus_exited"]
 [connection signal="pressed" from="UI/Inset/Main/Form/Fields/ButtonsRow/ManageRooms" to="." method="_on_manage_rooms_pressed"]

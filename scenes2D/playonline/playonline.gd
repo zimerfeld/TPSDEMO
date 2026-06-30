@@ -21,8 +21,8 @@ var _opt_buttons: Array[OptionButton] = []
 @onready var player_name_field: LineEdit = %PlayerName
 @onready var port: SpinBox = %Port
 @onready var address: LineEdit = %Address
-@onready var port_history: OptionButton = %PortHistory
-@onready var address_history: OptionButton = %AddressHistory
+@onready var port_history: OptionButton = %PortHistories
+@onready var address_history: OptionButton = %AddressHistories
 @onready var manage_rooms_button: Button = $UI/Inset/Main/Form/Fields/ButtonsRow/ManageRooms
 @onready var join_rooms_button: Button = $UI/Inset/Main/Form/Fields/ButtonsRow/JoinRooms
 @onready var loading: HBoxContainer = $UI/Loading
@@ -397,6 +397,7 @@ func _build_optimization_options() -> void:
 		return
 
 	var sep := HSeparator.new()
+	sep.name = "OptimizationSeparator"
 	vbox.add_child(sep)
 	vbox.move_child(sep, anchor.get_index())
 
@@ -404,6 +405,7 @@ func _build_optimization_options() -> void:
 	# Texto CANÔNICO (pt). O auto-localizer do Locale traduz Labels ao entrarem na árvore e re-traduz
 	# no troca-idioma (guarda o canônico em meta). Passar tr_key aqui gravaria o canônico ERRADO
 	# quando a cena nasce em EN → não voltaria p/ pt. Vale p/ title/hint/escopo/nome do controle.
+	title.name = "OptimizationTitle"
 	title.text = "Otimização"
 	title.add_theme_font_size_override("font_size", 24)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -412,6 +414,7 @@ func _build_optimization_options() -> void:
 
 	# Dica do trade-off interpolação×taxa (as duas se combinam para qualidade).
 	var hint := Label.new()
+	hint.name = "OptimizationHint"
 	hint.text = "Cada opção atua no lado indicado. Responsivo combina melhor com 60 Hz."
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.modulate = Color(1, 1, 1, 0.7)
@@ -423,6 +426,7 @@ func _build_optimization_options() -> void:
 	# 3 colunas que deixam o ESCOPO explícito e batem com os botões abaixo: HOST à esquerda (sobre
 	# "Gerenciar Salas"), HOST+CLIENTE no meio, CLIENTE à direita (sobre "Entrar em Salas").
 	var cols := HBoxContainer.new()
+	cols.name = "ColumnsRow"
 	cols.add_theme_constant_override("separation", 24)
 	cols.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(cols)
@@ -452,10 +456,12 @@ func _build_optimization_options() -> void:
 # `parent`. O badge deixa explícito de que lado a opção atua (host / cliente / ambos).
 func _make_opt_column(parent: HBoxContainer, scope_key: String, scope_color: Color, label_key: String, items: Array, selected: int) -> OptionButton:
 	var col := VBoxContainer.new()
+	col.name = "Column_%s" % scope_key
 	col.custom_minimum_size = Vector2(300, 0)
 	col.add_theme_constant_override("separation", 6)
 
 	var scope := Label.new()
+	scope.name = "ScopeLabel"
 	scope.text = scope_key   # canônico (pt) — Locale auto-traduz/re-traduz (ver nota em _build_...)
 	scope.add_theme_font_size_override("font_size", 16)
 	scope.add_theme_color_override("font_color", scope_color)
@@ -463,6 +469,7 @@ func _make_opt_column(parent: HBoxContainer, scope_key: String, scope_color: Col
 	col.add_child(scope)
 
 	var lbl := Label.new()
+	lbl.name = "OptionLabel"
 	lbl.text = label_key   # canônico (pt) — Locale auto-traduz/re-traduz
 	lbl.add_theme_font_size_override("font_size", 18)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -470,6 +477,7 @@ func _make_opt_column(parent: HBoxContainer, scope_key: String, scope_color: Col
 	col.add_child(lbl)
 
 	var opt := OptionButton.new()
+	opt.name = "OptionPicker"
 	opt.custom_minimum_size = Vector2(0, 48)
 	opt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for it in items:

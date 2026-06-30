@@ -116,17 +116,23 @@ func _on_back_pressed() -> void:
 
 
 func _add_template_buttons() -> void:
+	# Cada botão de template fica à DIREITA do botão do level, na mesma linha. Recebe NOME próprio
+	# (senão o Godot os auto-nomeia "@Button@2/3…", que aparecia no Debug 2D) e o tab_order da ordem
+	# de leitura (level → seu template): Level1=1, Level1Template=2, Level2=3, … (ver levels.tscn).
 	var rows := {
-		LEVEL_1_PATH: %Level1.get_parent(),
-		LEVEL_2_PATH: %Level2.get_parent(),
-		LEVEL_BASE_PATH: %LevelBase.get_parent(),
+		LEVEL_1_PATH: {"row": %Level1.get_parent(), "name": "Level1Template", "tab": 2},
+		LEVEL_2_PATH: {"row": %Level2.get_parent(), "name": "Level2Template", "tab": 4},
+		LEVEL_BASE_PATH: {"row": %LevelBase.get_parent(), "name": "LevelBaseTemplate", "tab": 6},
 	}
 	for level_path in rows:
+		var info: Dictionary = rows[level_path]
 		var btn := Button.new()
+		btn.name = info["name"]
+		btn.set_meta(UINav.TAB_ORDER_META, info["tab"])
 		btn.text = _template_button_text(level_path)
 		btn.custom_minimum_size = Vector2(220, 50)
 		btn.pressed.connect(_open_template_dialog.bind(level_path))
-		rows[level_path].add_child(btn)
+		(info["row"] as Node).add_child(btn)
 		_template_buttons[level_path] = btn
 
 

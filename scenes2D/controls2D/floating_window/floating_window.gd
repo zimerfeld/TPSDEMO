@@ -76,12 +76,24 @@ func _ready() -> void:
 
 
 # Estilo da janela (preto opaco + borda) e da barra de título — igual aos painéis Dano/IA.
+# Margem interna (px) entre a borda da janela e o seu conteúdo (barra de título + corpo). Cria um
+# "anel" vazio, pertencente à própria janela, por onde o mouse passa para IDENTIFICÁ-LA no Debug 2D
+# (regra do projeto 2026-06-30) — sem ele a barra de título cobre a borda e o overlay nunca aponta a
+# janela em si.
+const _WINDOW_CONTENT_GAP := 10.0
+
+
 func _apply_window_style() -> void:
 	var win_style := StyleBoxFlat.new()
 	win_style.bg_color = Color(0, 0, 0, 1)
 	win_style.border_color = Color(1, 1, 1, 0.18)
 	win_style.set_border_width_all(1)
 	win_style.set_corner_radius_all(4)
+	# Gap mínimo: o conteúdo recua da borda, expondo um anel hoverável que o Debug 2D aponta como a janela.
+	win_style.content_margin_left = _WINDOW_CONTENT_GAP
+	win_style.content_margin_right = _WINDOW_CONTENT_GAP
+	win_style.content_margin_top = _WINDOW_CONTENT_GAP
+	win_style.content_margin_bottom = _WINDOW_CONTENT_GAP
 	_window.add_theme_stylebox_override("panel", win_style)
 	var tb_style := StyleBoxFlat.new()
 	tb_style.bg_color = Color(0.16, 0.16, 0.2, 1)
@@ -136,6 +148,9 @@ func get_content() -> VBoxContainer:
 # `pressed`. A largura uniforme é (re)aplicada por set_uniform_footer_widths() ao abrir/trocar idioma.
 func add_footer_button(src_text: String) -> Button:
 	var btn := Button.new()
+	# Nome explícito (senão o Godot auto-nomearia "@Button@N", visível no Debug 2D). Deriva do texto-fonte;
+	# o set_name do Godot já remove caracteres inválidos de nome de nó.
+	btn.name = "Footer_" + src_text
 	btn.add_to_group(Locale.SKIP_GROUP)
 	btn.set_meta("loc_key", src_text)
 	btn.text = Locale.tr_key(src_text)
@@ -304,10 +319,31 @@ func _grab_initial_focus() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible or not is_inside_tree() or _closing:
 		return
+	# Regra do projeto (2026-06-30): com a janela aberta (mesmo modal, sob o backdrop) o toggle Debug 2D
+	# da cena que a carregou continua acionável — um clique sobre ele liga/desliga os overlays. Tratado
+	# aqui (antes do GUI) para o backdrop não engolir o clique.
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var toggle := _debug2d_toggle_at((event as InputEventMouseButton).global_position)
+		if toggle != null:
+			toggle.button_pressed = not toggle.button_pressed
+			get_viewport().set_input_as_handled()
+			return
 	if close_on_escape and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("quit")):
 		canceled.emit()
 		close()
 		get_viewport().set_input_as_handled()
+
+
+# Toggle Debug 2D (da cena de fundo, fora desta janela) cujo retângulo contém `pos`, ou null. Permite
+# acioná-lo mesmo coberto pelo backdrop modal. Ignora toggles dentro da própria janela.
+func _debug2d_toggle_at(pos: Vector2) -> CheckButton:
+	for n in get_tree().get_nodes_in_group(Debug2DToggle.GROUP):
+		if n is CheckButton and is_instance_valid(n) and not is_ancestor_of(n):
+			var btn := n as CheckButton
+			if btn.is_visible_in_tree() and btn.get_global_rect().has_point(pos):
+				return btn
+	return null
 
 
 func _on_close_pressed() -> void:
