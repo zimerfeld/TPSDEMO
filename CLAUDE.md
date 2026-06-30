@@ -1,0 +1,19 @@
+# Regras do projeto ZIMARO
+
+> Regras específicas deste projeto (não valem para outros projetos).
+
+## Regras ativas
+
+- (2026-06-27) Sempre encerrar o programa Zimaro em execução e fechar o editor do Godot antes de começar qualquer operação no código.
+- (2026-06-29) Toda tela/cena 2D deve aplicar o padrão de navegação por foco: `UINav.focus_tab_one` (foco inicial no Tab=1) + helper `_wire_tab_order` (que chama `UINav.wire_tab_ring(self)`), religando o anel no sinal `child_entered_tree` da barra `Actions` (quando o toggle Debug 2D é injetado) e dentro de `_update_language_buttons` (quando o botão do idioma ativo é desabilitado e sai do anel).
+- (2026-06-29) Garantir que TODAS as cenas 2D liguem `UINav.wire_tab_ring(self)` e que todo controle de interface de interação com o usuário (botão, campo, dropdown, slider, etc.) seja focável (propriedade/ordem de TAB definida), de modo que o Debug 2D numere `TAB: 1..N` sem deixar controles interativos como `TAB: -`. Ver [[convencoes/navegacao-tab]].
+- (2026-06-30) Todo `OptionButton` deve ter o `Name` no plural.
+- (2026-06-30) Mesmo com o recurso automático de controle de TAB do Godot aplicado, definir explicitamente a ordem de TAB esperada e exibi-la no Debug Overlay, para ter previsibilidade do ciclo. Ex. (cena `menu`): `playrow TAB: 1`, `playonlinerow TAB: 2`, `settingsrow TAB: 3`, `developerrow TAB: 4`, `quitrow TAB: 5`, `portuguese TAB: 6`, `english TAB: 7`, `debug2d TAB: 8`.
+- (2026-06-30) Todas as janelas flutuantes e controles de container precisam ter uma margem mínima entre os controles do container e a titlebar, de modo que dê para passar o mouse sobre esse espaço (gap) e identificar a janela no Debug Overlay.
+- (2026-06-30) Ao abrir uma janela flutuante, deve ser possível clicar no `CheckButton` Debug2D da cena que a carregou para ligar/desligar os debug overlays.
+- (2026-06-30) Sequência de TAB para o controle `TabContainer`: (1) a primeira aba é o foco inicial ao entrar no controle com TAB; (2) navegar pelos controles da aba da esquerda para a direita, de cima para baixo; (3) ao ativar o foco no último controle da aba, navegar para a próxima aba e realçar o primeiro controle dentro dela, e assim por diante; (4) só sair o foco do `TabContainer` (indo para o próximo TAB definido na cena/janela) quando estiver no último controle interativo da última aba e a tecla TAB for pressionada novamente.
+- (2026-06-30) O valor de TAB deve ser aplicado de forma incremental de 1, apenas nos controles que têm interação com o usuário, na ordem de leitura DENTRO de cada container: da esquerda para a direita e de cima para baixo. Ao chegar no último controle de um container, seguir para o próximo container (também da esquerda para a direita, de cima para baixo) e numerar seus controles na mesma ordem.
+- (2026-06-30) Todos os `OptionButton` e `SpinBox` também devem ter valor de TAB associado sequencialmente (são controles de interação e não podem ficar como `TAB: -`).
+- (2026-06-30) Em telas com COLUNAS, aplicar o ciclo de TAB por coluna: percorrer todos os controles de uma coluna (de cima para baixo) antes de passar para a próxima coluna.
+- (2026-06-30) Os cliques nos botões da `LangBar` (idiomas) também devem ser permitidos com janelas/painéis flutuantes abertos — mesmo comportamento do `CheckButton` Debug2D (clique acionável mesmo sob o backdrop modal).
+- (2026-06-30) Controles desabilitados (`disabled`) não podem receber foco de TAB (ficam fora do anel de navegação).

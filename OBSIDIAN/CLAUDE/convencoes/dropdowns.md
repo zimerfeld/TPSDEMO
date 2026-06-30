@@ -26,6 +26,21 @@
    valor **inexistente hoje** (escolha salva sumiu da biblioteca, "não há mais
    dados") → **desabilita esse combo e os de baixo**. Nunca auto-seleciona item.
 
+## Nomeação dos nós (2026-06-30)
+
+Todo `OptionButton` deve ter o **`Name` no plural** (regra do projeto) — o dropdown representa uma
+**coleção** de opções. Renomeados nesta convenção:
+
+| Cena | Antes → Depois |
+|---|---|
+| `controls.tscn` | `cboControl` → **`Controls`** (cai o prefixo `cbo`) |
+| `playonline.tscn` | `PortHistory` → **`PortHistories`** · `AddressHistory` → **`AddressHistories`** |
+| `settings.tscn` | `VideoResolutionDropdown` → **`VideoResolutions`** (cai o sufixo de tipo `Dropdown`) |
+| `models.tscn` | `Category`→`Categories` · `Prefix`→`Prefixes` · `EffectsList`→`EffectsLists` · `MemberGeo`→`MemberGeos` · `SubMemberGeo`→`SubMemberGeos` · `Skeleton`→`Skeletons` · `SkeletonGeo`→`SkeletonGeos` |
+
+Já estavam no plural (sem mudança): `Models`, `Meshes`, `Animations`, `Members`, `SubMembers`. Os
+acessores `%Nome` no `.gd` e as `from=` das `[connection]` do `.tscn` acompanharam o nome.
+
 ## Casos especiais
 
 - **Filtros "mostrar tudo"** (ex.: o antigo `"Todos"` do dropdown de prefixo em

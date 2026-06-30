@@ -36,6 +36,9 @@ var DEFAULTS := {
 		show_name = false,
 		# Linha "Tab" (branca): índice de Tab/foco de cada controle 2D.
 		show_tab = false,
+		# Linha "Path" (azul claro): caminho do controle na árvore da cena ativa — diferencia
+		# controles com mesmo Type/Name.
+		show_path = false,
 		# Performance HUD overlay (top bar; Developer screen). The crash/freeze PROTECTION
 		# is always-on via the StabilityGuard autoload and has no toggle.
 		performance_hud = false,

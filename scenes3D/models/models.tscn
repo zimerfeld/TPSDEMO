@@ -64,7 +64,7 @@ layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="UI/Margin/Main"]
+[node name="Title" type="Label" parent="UI/Margin/Main"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Modelos 3D"
@@ -78,7 +78,6 @@ theme_override_constants/separation = 40
 
 [node name="Selectors" type="VBoxContainer" parent="UI/Margin/Main/Body"]
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 0
 theme_override_constants/separation = 16
 
@@ -91,7 +90,8 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Categoria:"
 
-[node name="cboCategory" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/CategoryRow"]
+[node name="Categories" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/CategoryRow"]
+metadata/tab_order = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -105,7 +105,8 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Prefixo:"
 
-[node name="cboPrefix" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/PrefixRow"]
+[node name="Prefixes" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/PrefixRow"]
+metadata/tab_order = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -119,7 +120,8 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Modelo:"
 
-[node name="cboModels" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/ModelRow"]
+[node name="Models" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/ModelRow"]
+metadata/tab_order = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -131,9 +133,10 @@ theme_override_constants/separation = 16
 [node name="Label" type="Label" parent="UI/Margin/Main/Body/Selectors/MeshRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-text = "Parte:"
+text = "Malha:"
 
-[node name="cboMeshes" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MeshRow"]
+[node name="Meshes" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MeshRow"]
+metadata/tab_order = 4
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -148,7 +151,8 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Animação:"
 
-[node name="cboAnimations" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/AnimationRow"]
+[node name="Animations" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/AnimationRow"]
+metadata/tab_order = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -163,7 +167,8 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Efeitos Especiais:"
 
-[node name="cboEffects" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/EffectsRow"]
+[node name="EffectsLists" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/EffectsRow"]
+metadata/tab_order = 6
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
@@ -179,12 +184,14 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Membro:"
 
-[node name="cboMembers" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
+[node name="Members" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
+metadata/tab_order = 7
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="cboMemberGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
+[node name="MemberGeos" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/MemberRow"]
+metadata/tab_order = 8
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(190, 50)
@@ -196,18 +203,20 @@ visible = false
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="SubMemberLabel" type="Label" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+[node name="SubMember" type="Label" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Sub-membro:"
 
-[node name="cboSubMembers" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+[node name="SubMembers" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+metadata/tab_order = 9
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="cboSubMemberGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+[node name="SubMemberGeos" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SubMemberRow"]
+metadata/tab_order = 10
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(190, 50)
@@ -224,16 +233,23 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Esqueleto:"
 
-[node name="cboSkeleton" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+[node name="Skeletons" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+metadata/tab_order = 11
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 
-[node name="cboSkeletonGeo" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+[node name="SkeletonGeos" type="OptionButton" parent="UI/Margin/Main/Body/Selectors/SkeletonRow"]
+metadata/tab_order = 12
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(190, 50)
 layout_mode = 2
+
+[node name="Spacer" type="Control" parent="UI/Margin/Main/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
 
 [node name="Toggles" type="VBoxContainer" parent="UI/Margin/Main/Body"]
 layout_mode = 2
@@ -241,61 +257,71 @@ size_flags_horizontal = 8
 size_flags_vertical = 0
 theme_override_constants/separation = 8
 
-[node name="MalhaCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Mesh" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 13
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Malha"
 
-[node name="RotateToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Rotate" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 14
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Rotação"
 
-[node name="AnimationToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Animation" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 15
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Animação"
 
-[node name="EffectsToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Effects" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 16
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Efeitos especiais"
 
-[node name="AudioToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="Audio" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 17
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Audio"
 
-[node name="CollidersToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="MemberLimbCollider" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 18
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisor de Membro"
 
-[node name="LabelsToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="MemberLabel" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 19
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Membro"
 
-[node name="SubColliderToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="SubMemberLimbCollider" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 20
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Colisor de Sub-membro"
 
-[node name="SubMemberLabelToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="SubMemberLabel" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 21
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Sub-membro"
 
-[node name="AuxHighlightToggle" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+[node name="SkeletonLimbCollider" type="CheckButton" parent="UI/Margin/Main/Body/Toggles"]
+metadata/tab_order = 22
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
@@ -306,37 +332,42 @@ layout_mode = 2
 size_flags_horizontal = 8
 theme_override_constants/separation = 6
 
-[node name="OssoCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="SkeletonLabel" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+metadata/tab_order = 23
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Esqueleto"
 
-[node name="SkeletonLinesCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="SkeletonLines" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+metadata/tab_order = 24
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Linhas do Esqueleto"
 
-[node name="TypeCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="Type" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+metadata/tab_order = 25
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Tipo"
 
-[node name="NameCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="Name" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+metadata/tab_order = 26
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "Nome"
 
-[node name="IdCheck" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+[node name="Id" type="CheckButton" parent="UI/Margin/Main/Body/Toggles/LabelLinesRow"]
+metadata/tab_order = 27
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
 text = "ID"
 
-[node name="DamagePanel" type="PanelContainer" parent="UI"]
+[node name="Damage" type="PanelContainer" parent="UI"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
@@ -346,33 +377,34 @@ offset_top = 90.0
 offset_right = 1600.0
 offset_bottom = 710.0
 
-[node name="Main" type="VBoxContainer" parent="UI/DamagePanel"]
+[node name="Main" type="VBoxContainer" parent="UI/Damage"]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="TitleBar" type="PanelContainer" parent="UI/DamagePanel/Main"]
+[node name="TitleBar" type="PanelContainer" parent="UI/Damage/Main"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="TitleRow" type="HBoxContainer" parent="UI/DamagePanel/Main/TitleBar"]
+[node name="TitleRow" type="HBoxContainer" parent="UI/Damage/Main/TitleBar"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="UI/DamagePanel/Main/TitleBar/TitleRow"]
+[node name="Title" type="Label" parent="UI/Damage/Main/TitleBar/TitleRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 text = "Dano"
 theme_override_font_sizes/font_size = 16
 
-[node name="CloseButton" type="Button" parent="UI/DamagePanel/Main/TitleBar/TitleRow"]
+[node name="Close" type="Button" parent="UI/Damage/Main/TitleBar/TitleRow"]
+metadata/tab_order = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(34, 28)
 layout_mode = 2
 text = "×"
 theme_override_font_sizes/font_size = 20
 
-[node name="Margin" type="MarginContainer" parent="UI/DamagePanel/Main"]
+[node name="Margin" type="MarginContainer" parent="UI/Damage/Main"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/margin_left = 12
@@ -380,75 +412,20 @@ theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="Content" type="VBoxContainer" parent="UI/DamagePanel/Main/Margin"]
+[node name="Content" type="VBoxContainer" parent="UI/Damage/Main/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="DamageTree" type="Tree" parent="UI/DamagePanel/Main/Margin/Content"]
+[node name="Limbs" type="Tree" parent="UI/Damage/Main/Margin/Content"]
+metadata/tab_order = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Footer" type="VBoxContainer" parent="UI/DamagePanel/Main/Margin/Content"]
+[node name="Footer" type="VBoxContainer" parent="UI/Damage/Main/Margin/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 4
-
-[node name="AIPanel" type="PanelContainer" parent="UI"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 0
-offset_left = 840.0
-offset_top = 90.0
-offset_right = 1600.0
-offset_bottom = 710.0
-
-[node name="Main" type="VBoxContainer" parent="UI/AIPanel"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="AITitleBar" type="PanelContainer" parent="UI/AIPanel/Main"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="TitleRow" type="HBoxContainer" parent="UI/AIPanel/Main/AITitleBar"]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="TitleLabel" type="Label" parent="UI/AIPanel/Main/AITitleBar/TitleRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-text = "Inteligência Artificial"
-theme_override_font_sizes/font_size = 16
-
-[node name="AICloseButton" type="Button" parent="UI/AIPanel/Main/AITitleBar/TitleRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(34, 28)
-layout_mode = 2
-text = "×"
-theme_override_font_sizes/font_size = 20
-
-[node name="Margin" type="MarginContainer" parent="UI/AIPanel/Main"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
-
-[node name="AIScroll" type="ScrollContainer" parent="UI/AIPanel/Main/Margin"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-follow_focus = true
-
-[node name="AIList" type="VBoxContainer" parent="UI/AIPanel/Main/Margin/AIScroll"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 10
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
@@ -466,20 +443,22 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="BackButton" type="Button" parent="UI/Actions"]
+[node name="Back" type="Button" parent="UI/Actions"]
+metadata/tab_order = 30
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Voltar"
 
-[node name="DamageButton" type="Button" parent="UI/Actions"]
-unique_name_in_owner = true
+[node name="Damage" type="Button" parent="UI/Actions"]
+metadata/tab_order = 31
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Dano"
 
-[node name="AIButton" type="Button" parent="UI/Actions"]
+[node name="AI" type="Button" parent="UI/Actions"]
+metadata/tab_order = 32
 unique_name_in_owner = true
 disabled = true
 custom_minimum_size = Vector2(300, 50)
@@ -491,21 +470,23 @@ text = "Inteligência Artificial"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 33
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="English" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 34
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "English"
 
-[node name="SceneNameLabel" type="Label" parent="UI"]
+[node name="SceneName" type="Label" parent="UI"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 6
@@ -528,6 +509,6 @@ theme_override_font_sizes/font_size = 13
 text = "Models"
 vertical_alignment = 1
 
-[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]

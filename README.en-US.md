@@ -154,7 +154,7 @@ third-person shooter sandbox. At a high level it offers:
   view. "Efeitos Especiais" lists, right after "Selecione…", a **"Todos"** option and shows every
   kind of effect the model has (lights/luminosity, smoke, particles, decals, fog…); picking one
   isolates a single effect. Picking a
-  value in any selector (Categoria → Prefixo → Modelo → Parte) resets every dropdown below it to
+  value in any selector (Categoria → Prefixo → Modelo → Malha) resets every dropdown below it to
   "Selecione…". **Every
   selector choice is persisted** (alongside the toggles), and reopening the screen restores the
   chain exactly as it was left — without auto-selecting any item: the first selector with no saved
@@ -199,19 +199,32 @@ The developer screen lays the toggles out in **two columns**, whose tooltips use
 light colors so you can tell them apart:
 
 - **Debug 2D** (light-yellow labels/tooltips) — master `debug_2d` plus the dependent line
-  switches `Type` / `Name` / `Id` / `Tab`. Controls the 2D overlay (a colored border + a
-  TYPE/Name/ID/TAB tooltip) on every `Control`, in **every scene with no exception** — including Models
-  and the Damage editor (which opt out of the **3D** overlay via `no_debug_overlay`) — and also over
-  the **scene-name label** (top-right, beside the title). The tooltip sits to the right of each control,
-  except the **TitleLabel**, whose tooltip is **centered below its text**; tooltips are kept **on-screen
-  and non-overlapping** by a 2D separation pass (they nudge apart instead of stacking or running off the
-  edge), and controls hosted inside a **`SubViewport`** (e.g. the Controls 2D preview) are mapped to
-  their real on-screen position so the border/tooltip no longer drifts. In **any scene**, with a
+  switches `Type` / `Name` / `Id` / `Path` / `Tab`. Controls the 2D overlay (a colored border + a
+  TYPE/Name/ID/PATH/TAB tooltip, one line per value, in the same order as the toggles) over the `Control`s. It works as a **hover inspector**: the border and
+  tooltip show **only for the control under the cursor** — the **most specific** (innermost) one the
+  mouse covers — and **every other control stays hidden**; with nothing under the cursor, nothing
+  shows. The pointed control's border **lights up** with a glow highlight (lighter, thicker, pulsing);
+  if it sits **inside another control**, that **host** (container) also shows its overlay — a border
+  with a **much fainter glow** plus its own tooltip — and the two tooltips (host and child) are **nudged
+  apart so they don't overlap**. It works in **every scene with no exception** — including Models and the Damage editor (which opt out
+  of the **3D** overlay via `no_debug_overlay`) — and also over the **scene-name label** (top-right,
+  beside the title). Each tooltip picks one of the control's **four corners**, trying them in order and taking the
+  first that fits **fully on-screen**: (1) right of the **top-right** corner → (2) left of the
+  **top-left** → (3) right of the **bottom-right** → (4) left of the **bottom-left**. The pointed
+  control's tooltip is placed **first**; the **host**'s tooltip is placed **after** and additionally
+  **avoids overlapping** the child's (fixing the "parent overlay collides" case when you hover a
+  container). When **none of the four outer corners** fits without colliding, the tooltip is **projected
+  inside the control's own area** (one of its four free inner corners) — guaranteeing parent and child
+  **never** overlap. This applies to **every** control, including the scene **title** (the `Title` label). Controls hosted inside a
+  **`SubViewport`** (e.g. the Controls 2D preview) are mapped to their real on-screen position so the
+  border/tooltip no longer drifts. In **any scene**, with a
   **floating window open** (e.g. Models' **Damage**/**AI**/offset-scale windows, or any `FloatingWindow`/
   confirmation dialog), Debug 2D **hides the tooltips of the calling UI behind it** — only controls
   **inside** the floating window keep their overlay, to avoid cluttering the screen; opening, closing or
   switching windows updates this live. The **Tab** line (white, `show_tab`) reports each control's
-  keyboard **tab/focus index** in the active 2D scene (`-` for non-focusable controls). Besides the
+  keyboard **tab/focus index** in the active 2D scene (`-` for non-focusable controls). The **Path**
+  line (light blue, `show_path`) shows the control's **path in the scene tree** (e.g. `UI/Margin/Main`),
+  to **tell apart controls that share the same Type/Name**. Besides the
   developer screen, every 2D screen with a footer **Actions** bar carries a **Debug 2D** toggle
   (`CheckButton`, injected by `DebugOverlay`) so you can flip the master on/off without leaving the scene
   (the developer screen keeps its own pair). A standard-position Actions bar was also added to the

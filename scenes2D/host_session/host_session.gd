@@ -22,24 +22,38 @@ const LevelTemplateDialogScene := preload("res://scenes2D/level_templates/level_
 var _observing_id: int = -1        # sala observada (-1 = grade)
 var _playing_id: int = -1          # sala em que o host JOGA (-1 = não joga)
 
-var _room_view: TextureRect
-var _panel: Control
-var _level_picker: OptionButton
-var _template_picker: OptionButton
-var _rooms_list: VBoxContainer
-var _hint: Label
 var _confirm_dialog: FloatingWindow = null
-var _template_dialog: Window = null
+var _template_dialog: LevelTemplateDialog = null
+
+# Scaffold ESTÁTICO no .tscn (2026-06-30): RoomView/painel/pickers/lista/Voltar/Actions vêm da cena; o
+# código só popula os pickers + as linhas de sala (dinâmicas) e religa o foco. Antes a tela inteira era
+# montada em runtime.
+@onready var _room_view: TextureRect = %RoomView
+@onready var _panel: Control = %ManagePanel
+@onready var _level_picker: OptionButton = %LevelPicker
+@onready var _template_picker: OptionButton = %TemplatePicker
+@onready var _rooms_list: VBoxContainer = %RoomsList
+@onready var _hint: Label = %Hint
+@onready var _actions_bar: HBoxContainer = %Actions
+@onready var _back_button: Button = %BackButton
+@onready var _manage_templates_button: Button = %ManageTemplatesButton
+@onready var _start_button: Button = %StartButton
+@onready var _signal_layer: ColorRect = %SignalLayer
 
 
 func _ready() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Tema do projeto (mesmo da playonline/menu) → botões/labels/dropdowns/painéis com o visual
-	# cyberpunk consistente. Propaga p/ toda a UI montada em código (filhos herdam o theme da raiz).
-	theme = load("res://themes/ui_theme.tres")
-	# A raiz não captura mouse (o painel/botões sim); ao esconder o painel, o jogo recebe o input.
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_build_ui()
+	# Tema/mouse_filter e todo o scaffold vêm do .tscn. Ajusta só o aspecto dos anéis do shader (depende
+	# da viewport); ring_color/dir já estão no material da cena. Depois popula os pickers e conecta tudo.
+	var mat := _signal_layer.material as ShaderMaterial
+	if mat != null:
+		var sz: Vector2 = get_viewport().get_visible_rect().size
+		mat.set_shader_parameter("aspect", sz.x / maxf(sz.y, 1.0))
+	_populate_level_picker()
+	_level_picker.item_selected.connect(func(_idx: int) -> void: _refresh_template_picker())
+	_manage_templates_button.pressed.connect(_open_template_dialog_for_selected_level)
+	_start_button.pressed.connect(_on_start_pressed)
+	_back_button.pressed.connect(_go_back)
+	_refresh_template_picker()
 	RoomManager.rooms_changed.connect(_refresh_rooms)
 	_refresh_rooms()
 	# Voltou do ChoosePlayer para JOGAR numa sala? spawna o player do host e entra em modo de jogo.
@@ -50,52 +64,43 @@ func _ready() -> void:
 		_set_playing(rid)
 	else:
 		_set_observing(-1)
+	# Toggle "Debug 2D" na barra Actions (injetado pelo DebugOverlay como nas demais telas) + sequência
+	# de Tab. Re-liga ao injetar o toggle e ao remontar as salas; foco inicial no controle de Tab = 1.
+	_actions_bar.child_entered_tree.connect(func(_n: Node) -> void: _rewire_tab.call_deferred())
+	_rewire_tab.call_deferred()
+	UINav.focus_tab_one.call_deferred(self)
 
 
-# ───────────────────────────── UI (grade de gerência) ─────────────────────────────
-
-func _build_ui() -> void:
-	_room_view = TextureRect.new()
-	_room_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_room_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_room_view.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	_room_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_room_view.visible = false
-	add_child(_room_view)
-
-	var inner := _make_panel("Servidor — Salas ativas")
-
-	var start_row := HBoxContainer.new()
-	start_row.add_theme_constant_override("separation", 12)
-	start_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	inner.add_child(start_row)
-	_level_picker = OptionButton.new()
+# Popula o seletor de level (estático no .tscn): sentinela "Selecione..." (item 0) + os LEVELS, cada um
+# carregando seu caminho na metadata do item.
+func _populate_level_picker() -> void:
+	_level_picker.clear()
 	_level_picker.add_item("Selecione...")  # item 0 = sentinela (sem metadata; convenção do projeto)
 	for lv in LEVELS:
 		_level_picker.add_item(String(lv["label"]))
 		_level_picker.set_item_metadata(_level_picker.item_count - 1, String(lv["path"]))
-	_level_picker.custom_minimum_size = Vector2(220, 44)
-	_level_picker.item_selected.connect(func(_idx: int) -> void: _refresh_template_picker())
-	start_row.add_child(_level_picker)
-	_template_picker = OptionButton.new()
-	_template_picker.custom_minimum_size = Vector2(260, 44)
-	start_row.add_child(_template_picker)
-	var manage_templates_btn := Button.new()
-	manage_templates_btn.text = "Templates"
-	manage_templates_btn.custom_minimum_size = Vector2(130, 44)
-	manage_templates_btn.pressed.connect(_open_template_dialog_for_selected_level)
-	start_row.add_child(manage_templates_btn)
-	var start_btn := Button.new()
-	start_btn.text = "Iniciar Sala"
-	start_btn.custom_minimum_size = Vector2(160, 44)
-	start_btn.pressed.connect(_on_start_pressed)
-	start_row.add_child(start_btn)
-	_refresh_template_picker()
 
-	inner.add_child(HSeparator.new())
-	_rooms_list = _make_rooms_list(inner, "Salas em execução:")
 
-	_hint = _make_hint("")
+# (Re)liga a sequência de Tab da grade NUMERANDO em ordem de leitura (lista variável): pickers/botões da
+# StartRow (1-4) → botões habilitados de cada linha de sala (Jogar/Observar/Reiniciar/Parar) → Voltar →
+# Debug 2D. Botões desabilitados (ex.: "servidor puro") ficam fora. Numerar por código é necessário pois
+# o nº de salas varia em runtime. Idempotente: re-chamada quando as salas/visibilidade mudam.
+func _rewire_tab() -> void:
+	var i := 1
+	for c in [_level_picker, _template_picker, _manage_templates_button, _start_button]:
+		(c as Control).set_meta(UINav.TAB_ORDER_META, i)
+		i += 1
+	for row in _rooms_list.get_children():
+		for child in row.get_children():
+			if child is BaseButton and not (child as BaseButton).disabled:
+				(child as Control).set_meta(UINav.TAB_ORDER_META, i)
+				i += 1
+	_back_button.set_meta(UINav.TAB_ORDER_META, i)
+	i += 1
+	var dbg := _actions_bar.get_node_or_null("Debug2D")
+	if dbg != null:
+		(dbg as Control).set_meta(UINav.TAB_ORDER_META, i)
+	UINav.wire_tab_ring(self)
 
 
 func _on_start_pressed() -> void:
@@ -235,13 +240,17 @@ func _refresh_rooms() -> void:
 		return
 	for room in RoomManager.get_rooms():
 		_rooms_list.add_child(_make_server_row(room))
+	# As linhas de sala mudaram (novos botões Jogar/Observar/Reiniciar/Parar) → re-liga a sequência.
+	_rewire_tab.call_deferred()
 
 
 func _make_server_row(room: Dictionary) -> Control:
 	var id: int = int(room["id"])
 	var row := HBoxContainer.new()
+	row.name = "RoomRow_%d" % id
 	row.add_theme_constant_override("separation", 8)
 	var lbl := Label.new()
+	lbl.name = "RoomLabel_%d" % id
 	# Conexões (clientes remotos) ativas nesta sala. Atualiza ao vivo: o RoomManager emite
 	# rooms_changed em join_room/leave_room/_on_peer_disconnected → _refresh_rooms remonta as linhas.
 	var conns: int = RoomManager.connections_in_room(id)
@@ -254,6 +263,7 @@ func _make_server_row(room: Dictionary) -> Control:
 	# desabilitados (o host só gerencia as salas; iniciar/parar/reiniciar seguem funcionando).
 	var render_off: bool = not NetConfig.host_render_observed
 	var play_btn := Button.new()
+	play_btn.name = "PlayButton_%d" % id
 	play_btn.text = "Jogar"
 	play_btn.disabled = render_off
 	if render_off:
@@ -261,6 +271,7 @@ func _make_server_row(room: Dictionary) -> Control:
 	play_btn.pressed.connect(_on_play_room.bind(id))
 	row.add_child(play_btn)
 	var observe_btn := Button.new()
+	observe_btn.name = "ObserveButton_%d" % id
 	observe_btn.text = "Observando" if id == _observing_id else "Observar"
 	observe_btn.disabled = (id == _observing_id) or render_off
 	if render_off:
@@ -268,10 +279,12 @@ func _make_server_row(room: Dictionary) -> Control:
 	observe_btn.pressed.connect(_set_observing.bind(id))
 	row.add_child(observe_btn)
 	var restart_btn := Button.new()
+	restart_btn.name = "RestartButton_%d" % id
 	restart_btn.text = "Reiniciar"
 	restart_btn.pressed.connect(_on_restart_room.bind(id))
 	row.add_child(restart_btn)
 	var stop_btn := Button.new()
+	stop_btn.name = "StopButton_%d" % id
 	stop_btn.text = "Parar"
 	stop_btn.pressed.connect(func() -> void: RoomManager.stop_room(id))
 	row.add_child(stop_btn)
@@ -334,108 +347,3 @@ func _input(event: InputEvent) -> void:
 			(room["viewport"] as SubViewport).push_input(event)
 
 
-# ───────────────────────────── helpers de UI ─────────────────────────────
-
-# Monta a tela de gerência inteira (tela cheia) e devolve a VBox CENTRALIZADA onde vão as listas.
-# Escondida enquanto o host OBSERVA/JOGA (aí o SubViewport ocupa a tela). Fundo na MESMA cor navy das
-# outras telas — o ui_theme só estiliza Button/Label, não dá fundo; sem isto sobrava o cinza padrão
-# do PanelContainer (era o "estilo de cores não aplicado"). Conteúdo centralizado (largura máx. 900)
-# e botão Voltar de tamanho normal e centralizado, no padrão da playonline/menu.
-func _make_panel(title_text: String) -> VBoxContainer:
-	_panel = Control.new()
-	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(_panel)
-	# Fundo: MESMA textura cyberpunk do menu, porém com IDENTIDADE de HOST — graduação QUENTE (âmbar)
-	# + anéis de "radar" EXPANDINDO para fora (o servidor TRANSMITE / é a fonte). Contrasta com o
-	# cliente (frio + anéis contraindo). mouse_filter IGNORE p/ os cliques chegarem aos botões.
-	var bg_tex := TextureRect.new()
-	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg_tex.texture = load("res://scenes2D/menu/menu_surreal_training_bg.png")
-	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg_tex.modulate = Color(1.0, 0.82, 0.5, 0.98)   # graduação QUENTE (âmbar) = HOST
-	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(bg_tex)
-	var veil := ColorRect.new()
-	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	veil.color = Color(0.06, 0.035, 0.012, 0.62)    # véu escuro quente
-	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(veil)
-	_panel.add_child(_make_signal_layer(Color(1.0, 0.62, 0.16, 1.0), 1.0))  # anéis âmbar EXPANDINDO
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 40)
-	_panel.add_child(margin)
-	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 14)
-	margin.add_child(outer)
-	var title := Label.new()
-	title.text = title_text
-	title.add_theme_font_size_override("font_size", 28)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	outer.add_child(title)
-	# Área central: VBox de largura máx. 900, centralizada horizontalmente (as listas ficam aqui).
-	var center := HBoxContainer.new()
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	outer.add_child(center)
-	var inner := VBoxContainer.new()
-	inner.custom_minimum_size = Vector2(900, 0)
-	inner.add_theme_constant_override("separation", 14)
-	center.add_child(inner)
-	# Voltar: tamanho fixo e centralizado embaixo (não mais full-width), como nas outras telas.
-	var actions := HBoxContainer.new()
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	outer.add_child(actions)
-	var back_btn := Button.new()
-	back_btn.text = "Voltar"
-	back_btn.custom_minimum_size = Vector2(200, 50)
-	back_btn.pressed.connect(_go_back)
-	actions.add_child(back_btn)
-	return inner
-
-
-# Camada de "radar/sinal": ColorRect em tela cheia com o shader de anéis concêntricos. `dir` = +1
-# expande (host transmite) / -1 contrai (cliente conecta). `aspect` mantém os anéis circulares.
-func _make_signal_layer(color: Color, dir: float) -> ColorRect:
-	var rect := ColorRect.new()
-	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://themes/session_signal_bg.gdshader")
-	mat.set_shader_parameter("ring_color", color)
-	mat.set_shader_parameter("dir", dir)
-	var sz: Vector2 = get_viewport().get_visible_rect().size
-	mat.set_shader_parameter("aspect", sz.x / maxf(sz.y, 1.0))
-	rect.material = mat
-	return rect
-
-
-func _make_rooms_list(parent: VBoxContainer, header: String) -> VBoxContainer:
-	if header != "":
-		var h := Label.new()
-		h.text = header
-		h.add_theme_font_size_override("font_size", 18)
-		parent.add_child(h)
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 360)
-	parent.add_child(scroll)
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 8)
-	scroll.add_child(list)
-	return list
-
-
-func _make_hint(text: String) -> Label:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", 14)
-	lbl.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	lbl.position.y = 12
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lbl.visible = false
-	add_child(lbl)
-	return lbl

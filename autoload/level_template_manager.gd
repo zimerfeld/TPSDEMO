@@ -221,7 +221,10 @@ func _formation_positions(entry: Dictionary, count: int) -> Array[Vector3]:
 	elif formation == "grid":
 		var cols := ceili(sqrt(float(count)))
 		for i in range(count):
-			out.append(origin + Vector3(float(i % cols) * spacing, 0.0, float(i / cols) * spacing))
+			# i / cols é divisão inteira PROPOSITAL: dá a linha (row) da grade.
+			@warning_ignore("integer_division")
+			var grid_row := i / cols
+			out.append(origin + Vector3(float(i % cols) * spacing, 0.0, float(grid_row) * spacing))
 	else:
 		for i in range(count):
 			out.append(origin + Vector3(float(i) * spacing, 0.0, 0.0))

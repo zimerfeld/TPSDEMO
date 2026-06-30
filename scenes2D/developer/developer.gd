@@ -16,6 +16,7 @@ const _TOGGLES: Dictionary = {
 	"ShowTypeRow": "show_type",
 	"ShowNameRow": "show_name",
 	"ShowIDRow": "show_id",
+	"ShowPathRow": "show_path",
 	"ShowTabRow": "show_tab",
 }
 
@@ -30,7 +31,7 @@ const _GENERAL_TOGGLES: Dictionary = {
 # Sub-rows do Debug 2D: só fazem efeito enquanto o master (Debug 2D) está ligado; seus
 # botões ficam acinzentados (disabled) caso contrário, deixando a dependência clara.
 const _DEBUG2D_SUBROWS: Array[String] = [
-	"ShowTypeRow", "ShowNameRow", "ShowIDRow", "ShowTabRow",
+	"ShowTypeRow", "ShowNameRow", "ShowIDRow", "ShowPathRow", "ShowTabRow",
 ]
 
 # The theme has no "disabled" Button stylebox and the buttons carry a green/yellow
@@ -44,8 +45,13 @@ const _BASE_MODULATE_META := &"_base_modulate"
 # fator (mantém o matiz). Sobreposto pelo estado "disabled" (acinzentado) das sub-linhas do Debug 2D.
 const OPTION_DIM_FACTOR: float = 0.42
 
-@onready var portuguese_button: Button = $UI/Actions/LangBar/PortugueseButton
-@onready var english_button: Button = $UI/Actions/LangBar/EnglishButton
+@onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
+@onready var english_button: Button = $UI/Actions/LangBar/English
+
+# Toggle "Debug 2D" reutilizável injetado na barra Actions, na MESMA posição padrão das demais telas
+# (último item, à direita). Espelha o par Desativado/Ativado da coluna Debug 2D: os dois controlam a
+# mesma chave `debug_2d` e são mantidos em sincronia (ver _ensure_actions_debug2d / _sync_*).
+var _actions_debug2d: Debug2DToggle = null
 
 
 func _ready() -> void:
@@ -89,10 +95,24 @@ func _ready() -> void:
 	# As sub-toggles do Debug 2D só valem com o master (Debug 2D) ligado.
 	_update_subrows_enabled()
 
+	# Toggle "Debug 2D" na barra Actions (igual às outras telas), sincronizado com o par da coluna.
+	_ensure_actions_debug2d()
+
 	_update_language_buttons()
 
-	# Foco inicial para a navegação por setas do teclado.
-	UINav.focus_first.call_deferred(self)
+	# Foco inicial no Tab = 1 + anel de Tab na ordem de leitura. Re-liga quando o DebugOverlay (ou esta
+	# tela) injeta o toggle "Debug 2D" na barra Actions. As sub-toggles do Debug 2D entram/saem do anel
+	# conforme o master liga/desliga — _update_subrows_enabled também re-liga (ver lá).
+	UINav.focus_tab_one.call_deferred(self)
+	_wire_tab_order.call_deferred()
+	($UI/Actions as HBoxContainer).child_entered_tree.connect(
+		func(_n: Node) -> void: _wire_tab_order.call_deferred())
+
+
+# (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — re-chamável quando o conjunto de
+# focáveis muda (toggle injetado, idioma habilitando/desabilitando, sub-toggles do Debug 2D).
+func _wire_tab_order() -> void:
+	UINav.wire_tab_ring(self)
 
 
 # Grey out the button for the language already active (same pattern as the menu).
@@ -100,6 +120,9 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	# O idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar sem ele.
+	if is_node_ready():
+		_wire_tab_order.call_deferred()
 
 
 func _on_portuguese_pressed() -> void:
@@ -116,10 +139,45 @@ func _row(row_name: String) -> HBoxContainer:
 	return $UI.find_child(row_name, true, false) as HBoxContainer
 
 
+# Injeta o toggle "Debug 2D" reutilizável (Debug2DToggle) na barra Actions, no MESMO lugar padrão das
+# outras telas: como último item (à direita, depois da LangBar), igual ao que o DebugOverlay anexa nas
+# demais. O DebugOverlay PULA a developer de propósito (ela gerencia o seu aqui), para os dois ficarem
+# em sincronia com o par Desativado/Ativado da coluna. O próprio Debug2DToggle grava `debug_2d` e
+# atualiza o DebugOverlay; só refletimos a mudança no par e nas sub-linhas via _on_actions_debug2d_toggled.
+func _ensure_actions_debug2d() -> void:
+	var actions := $UI/Actions
+	if actions.has_node("Debug2D"):
+		return
+	var toggle := Debug2DToggle.new()
+	toggle.name = "Debug2D"
+	# Texto definido ANTES de add_child para o auto-localizador (Locale) capturá-lo como fonte.
+	toggle.text = "Debug 2D"
+	actions.add_child(toggle)
+	toggle.toggled.connect(_on_actions_debug2d_toggled)
+	_actions_debug2d = toggle
+
+
+# O toggle da barra Actions mudou: ele mesmo já gravou a chave e atualizou o DebugOverlay; aqui só
+# espelhamos o novo estado no par Desativado/Ativado da coluna (sem disparar handlers) e reavaliamos as
+# sub-linhas, mantendo os dois controles do Debug 2D coerentes na mesma tela.
+func _on_actions_debug2d_toggled(toggled_on: bool) -> void:
+	var row := _row("Debug2DRow")
+	var enabled_btn := row.get_node("Enabled") as BaseButton
+	var disabled_btn := row.get_node("Disabled") as BaseButton
+	enabled_btn.set_pressed_no_signal(toggled_on)
+	disabled_btn.set_pressed_no_signal(not toggled_on)
+	_style_toggle_button(enabled_btn)
+	_style_toggle_button(disabled_btn)
+	_update_subrows_enabled()
+
+
 # Grey out the Debug 2D sub-toggle buttons unless the Debug 2D master is enabled.
 func _update_subrows_enabled() -> void:
 	var on_2d: bool = Settings.config_file.get_value("game", "debug_2d", false)
 	_set_subrows_disabled(_DEBUG2D_SUBROWS, not on_2d)
+	# As sub-toggles (des)habilitadas entram/saem do anel de Tab — re-liga p/ a numeração fechar de 1.
+	if is_node_ready():
+		_wire_tab_order.call_deferred()
 
 
 func _set_subrows_disabled(rows: Array[String], is_disabled: bool) -> void:
@@ -131,7 +189,7 @@ func _set_subrows_disabled(rows: Array[String], is_disabled: bool) -> void:
 				(child as BaseButton).disabled = is_disabled
 				_style_toggle_button(child as BaseButton)
 			elif child is Control:
-				# O rótulo (ShowTypeLabel/…/ShowTabLabel) também está "ligado" ao Debug 2D: escurece
+				# O rótulo (ShowType/…/ShowTab) também está "ligado" ao Debug 2D: escurece
 				# junto para a linha INTEIRA refletir o estado desativado, restaurando a cor original
 				# quando reativada (o tema não tem estilo "disabled" próprio).
 				var ctrl := child as Control
@@ -179,6 +237,9 @@ func _on_toggle(button_pressed: bool, key: String) -> void:
 	# Toggling the Debug 2D master enables/disables its dependent sub-toggle buttons.
 	if key == "debug_2d":
 		_update_subrows_enabled()
+		# Espelha o novo estado no toggle da barra Actions (sem disparar o handler dele).
+		if _actions_debug2d != null:
+			_actions_debug2d.set_pressed_no_signal(button_pressed)
 
 
 func _on_models_pressed() -> void:

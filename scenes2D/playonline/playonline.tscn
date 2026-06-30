@@ -59,7 +59,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4")
 
-[node name="Margin" type="MarginContainer" parent="UI"]
+[node name="Inset" type="MarginContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -71,37 +71,38 @@ theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 110
 
-[node name="Main" type="VBoxContainer" parent="UI/Margin"]
+[node name="Main" type="VBoxContainer" parent="UI/Inset"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="TitleLabel" type="Label" parent="UI/Margin/Main"]
+[node name="Title" type="Label" parent="UI/Inset/Main"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Jogar Online"
 horizontal_alignment = 1
 
-[node name="FormCenter" type="CenterContainer" parent="UI/Margin/Main"]
+[node name="Form" type="CenterContainer" parent="UI/Inset/Main"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="VBox" type="VBoxContainer" parent="UI/Margin/Main/FormCenter"]
+[node name="Fields" type="VBoxContainer" parent="UI/Inset/Main/Form"]
 custom_minimum_size = Vector2(960, 0)
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="NameRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
+[node name="NameRow" type="HBoxContainer" parent="UI/Inset/Main/Form/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="NameLabel" type="Label" parent="UI/Margin/Main/FormCenter/VBox/NameRow"]
+[node name="NameCaption" type="Label" parent="UI/Inset/Main/Form/Fields/NameRow"]
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 26
 text = "Player name:"
 
-[node name="PlayerName" type="LineEdit" parent="UI/Margin/Main/FormCenter/VBox/NameRow"]
+[node name="PlayerName" type="LineEdit" parent="UI/Inset/Main/Form/Fields/NameRow"]
+metadata/tab_order = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(560, 50)
 layout_mode = 2
@@ -110,44 +111,48 @@ theme_override_font_sizes/font_size = 30
 max_length = 16
 placeholder_text = "Jogador"
 
-[node name="PortRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
+[node name="PortRow" type="HBoxContainer" parent="UI/Inset/Main/Form/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="PortLabel" type="Label" parent="UI/Margin/Main/FormCenter/VBox/PortRow"]
+[node name="PortCaption" type="Label" parent="UI/Inset/Main/Form/Fields/PortRow"]
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 26
 text = "Port:"
 
-[node name="Port" type="SpinBox" parent="UI/Margin/Main/FormCenter/VBox/PortRow"]
+[node name="Port" type="SpinBox" parent="UI/Inset/Main/Form/Fields/PortRow"]
+metadata/tab_order = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
+focus_mode = 2
 size_flags_horizontal = 3
 min_value = 1.0
 max_value = 65535.0
 value = 4383.0
 
-[node name="PortHistory" type="OptionButton" parent="UI/Margin/Main/FormCenter/VBox/PortRow"]
+[node name="PortHistories" type="OptionButton" parent="UI/Inset/Main/Form/Fields/PortRow"]
+metadata/tab_order = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
-[node name="AddressRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
+[node name="AddressRow" type="HBoxContainer" parent="UI/Inset/Main/Form/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="AddressLabel" type="Label" parent="UI/Margin/Main/FormCenter/VBox/AddressRow"]
+[node name="AddressCaption" type="Label" parent="UI/Inset/Main/Form/Fields/AddressRow"]
 custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 26
 text = "IP Address/Domain:"
 
-[node name="Address" type="LineEdit" parent="UI/Margin/Main/FormCenter/VBox/AddressRow"]
+[node name="Address" type="LineEdit" parent="UI/Inset/Main/Form/Fields/AddressRow"]
+metadata/tab_order = 4
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
@@ -155,24 +160,127 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 30
 text = "127.0.0.1"
 
-[node name="AddressHistory" type="OptionButton" parent="UI/Margin/Main/FormCenter/VBox/AddressRow"]
+[node name="AddressHistories" type="OptionButton" parent="UI/Inset/Main/Form/Fields/AddressRow"]
+metadata/tab_order = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
-[node name="ButtonsRow" type="HBoxContainer" parent="UI/Margin/Main/FormCenter/VBox"]
+[node name="OptimizationSeparator" type="HSeparator" parent="UI/Inset/Main/Form/Fields"]
+layout_mode = 2
+
+[node name="OptimizationTitle" type="Label" parent="UI/Inset/Main/Form/Fields"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Otimização"
+horizontal_alignment = 1
+
+[node name="OptimizationHint" type="Label" parent="UI/Inset/Main/Form/Fields"]
+modulate = Color(1, 1, 1, 0.7)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Cada opção atua no lado indicado. Responsivo combina melhor com 60 Hz."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ColumnsRow" type="HBoxContainer" parent="UI/Inset/Main/Form/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="HostColumn" type="VBoxContainer" parent="UI/Inset/Main/Form/Fields/ColumnsRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ScopeLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.7, 0.25, 1)
+theme_override_font_sizes/font_size = 16
+text = "SÓ NO HOST"
+horizontal_alignment = 1
+
+[node name="OptionLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Render do host"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="HostRenderPicker" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/tab_order = 6
+
+[node name="BothColumn" type="VBoxContainer" parent="UI/Inset/Main/Form/Fields/ColumnsRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ScopeLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 1, 0.6, 1)
+theme_override_font_sizes/font_size = 16
+text = "HOST + CLIENTE"
+horizontal_alignment = 1
+
+[node name="OptionLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Taxa de sincronização"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="SyncRatePicker" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/tab_order = 7
+
+[node name="ClientColumn" type="VBoxContainer" parent="UI/Inset/Main/Form/Fields/ColumnsRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ScopeLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "SÓ NO CLIENTE"
+horizontal_alignment = 1
+
+[node name="OptionLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Suavização ↔ Resposta"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="InterpPicker" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/tab_order = 8
+
+[node name="ButtonsRow" type="HBoxContainer" parent="UI/Inset/Main/Form/Fields"]
 layout_mode = 2
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="ManageRoomsButton" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ButtonsRow"]
+[node name="ManageRooms" type="Button" parent="UI/Inset/Main/Form/Fields/ButtonsRow"]
+metadata/tab_order = 9
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Gerenciar Salas"
 
-[node name="JoinRoomsButton" type="Button" parent="UI/Margin/Main/FormCenter/VBox/ButtonsRow"]
+[node name="JoinRooms" type="Button" parent="UI/Inset/Main/Form/Fields/ButtonsRow"]
+metadata/tab_order = 10
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
@@ -194,7 +302,8 @@ grow_vertical = 0
 theme_override_constants/separation = 60
 alignment = 1
 
-[node name="BackButton" type="Button" parent="UI/Actions"]
+[node name="Back" type="Button" parent="UI/Actions"]
+metadata/tab_order = 11
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -204,14 +313,16 @@ text = "Voltar"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 12
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="English" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 13
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -235,7 +346,7 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_constants/separation = 12
 
-[node name="LoadingLabel" type="Label" parent="UI/Loading"]
+[node name="LoadingCaption" type="Label" parent="UI/Loading"]
 layout_mode = 2
 text = "Loading..."
 
@@ -248,15 +359,15 @@ size_flags_vertical = 1
 wait_time = 0.5
 one_shot = true
 
-[connection signal="focus_exited" from="UI/Margin/Main/FormCenter/VBox/NameRow/PlayerName" to="." method="_on_player_name_focus_exited"]
-[connection signal="text_submitted" from="UI/Margin/Main/FormCenter/VBox/NameRow/PlayerName" to="." method="_on_player_name_submitted"]
-[connection signal="item_selected" from="UI/Margin/Main/FormCenter/VBox/PortRow/PortHistory" to="." method="_on_port_history_item_selected"]
-[connection signal="item_selected" from="UI/Margin/Main/FormCenter/VBox/AddressRow/AddressHistory" to="." method="_on_address_history_item_selected"]
-[connection signal="text_submitted" from="UI/Margin/Main/FormCenter/VBox/AddressRow/Address" to="." method="_on_address_text_submitted"]
-[connection signal="focus_exited" from="UI/Margin/Main/FormCenter/VBox/AddressRow/Address" to="." method="_on_address_focus_exited"]
-[connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/ManageRoomsButton" to="." method="_on_manage_rooms_pressed"]
-[connection signal="pressed" from="UI/Margin/Main/FormCenter/VBox/ButtonsRow/JoinRoomsButton" to="." method="_on_join_rooms_pressed"]
-[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="focus_exited" from="UI/Inset/Main/Form/Fields/NameRow/PlayerName" to="." method="_on_player_name_focus_exited"]
+[connection signal="text_submitted" from="UI/Inset/Main/Form/Fields/NameRow/PlayerName" to="." method="_on_player_name_submitted"]
+[connection signal="item_selected" from="UI/Inset/Main/Form/Fields/PortRow/PortHistories" to="." method="_on_port_history_item_selected"]
+[connection signal="item_selected" from="UI/Inset/Main/Form/Fields/AddressRow/AddressHistories" to="." method="_on_address_history_item_selected"]
+[connection signal="text_submitted" from="UI/Inset/Main/Form/Fields/AddressRow/Address" to="." method="_on_address_text_submitted"]
+[connection signal="focus_exited" from="UI/Inset/Main/Form/Fields/AddressRow/Address" to="." method="_on_address_focus_exited"]
+[connection signal="pressed" from="UI/Inset/Main/Form/Fields/ButtonsRow/ManageRooms" to="." method="_on_manage_rooms_pressed"]
+[connection signal="pressed" from="UI/Inset/Main/Form/Fields/ButtonsRow/JoinRooms" to="." method="_on_join_rooms_pressed"]
+[connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

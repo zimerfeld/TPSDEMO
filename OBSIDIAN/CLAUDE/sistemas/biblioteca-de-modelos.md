@@ -136,10 +136,55 @@ a `_unhandled_input`.
 
 ### Toggles (preferência + persistência)
 
+> [!note] Nós dos toggles sem o sufixo "Toggle" (2026-06-28)
+> Os nós `CheckButton` dos toggles tiveram o sufixo **"Toggle" removido do nome** (pedido p/ limpar os
+> tooltips do Debug 2D): `Rotate`, `Animation`, `Effects`, `Audio`, `Colliders`, `Labels`, `SubCollider`,
+> `SubMemberLabel`, `AuxHighlight` (antes `…Toggle`). Os `%`-acessores em `models.gd` acompanham; as
+> **variáveis** GDScript (`rotate_toggle`, `colliders_toggle`, …) e os métodos `_show_*` **não** mudaram.
+> **Sufixo "Check" também removido (2026-06-28):** os `CheckButton` cujo nome terminava em "Check"
+> perderam o sufixo: `Malha`, `Osso`, `SkeletonLines`, `Type`, `Name`, `Id` (antes `…Check`). Os
+> `%`-acessores em `models.gd` acompanham; as variáveis (`malha_check`, `osso_check`, `type_check`…) e
+> os métodos `_show_*` **não** mudaram.
+
+> [!important] Nomes de nó → inglês descritivo (2026-06-29)
+> Renomeação dos **controles** da tela Models (só nomes de nó; **textos exibidos e persistência
+> inalterados**):
+> - **Dropdowns:** prefixo `cbo` removido — `cboCategory→Category`, `cboPrefix→Prefix`,
+>   `cboModels→Models`, `cboMeshes→Meshes`, `cboAnimations→Animations`,
+>   **`cboEffects→EffectsList`** (não pôde virar `Effects`: já é o nó do `CheckButton` de efeitos),
+>   `cboMembers→Members`, `cboMemberGeo→MemberGeo`, `cboSubMembers→SubMembers`,
+>   `cboSubMemberGeo→SubMemberGeo`, `cboSkeleton→Skeleton`, `cboSkeletonGeo→SkeletonGeo`.
+> - **Toggles (`CheckButton`):** `Malha→Mesh`, `Colliders→MemberLimbCollider`, `Labels→MemberLabel`,
+>   `SubCollider→SubMemberLimbCollider`, `AuxHighlight→SkeletonLimbCollider`, `Osso→SkeletonLabel`.
+> - **Gizmo de eixos:** `AxisGizmoOverlay→AxisGizmo` (o `SubViewportContainer`).
+> - **Botões/painéis de Dano e IA (sem o sufixo de tipo):** `DamageButton→Damage`, `AIButton→AI`,
+>   `DamagePanel→Damage` (janela), `CloseButton→Close`, `AICloseButton→AIClose`, `DamageTree→Limbs`.
+>   **Colisão de nome:** o botão **e** a janela viram "Damage" (pais diferentes, OK como nó), mas o
+>   `%Damage` único fica com a **janela**; o **botão** é resolvido por caminho (`$UI/Actions/Damage`,
+>   sem `unique_name`). `AIPanel` ficou como está (não pedido), então `%AI` (botão) não colide.
+> - **Footer do painel Dano redesenhado:** a seção "Adicionar sub-membro" virou um **`GridContainer`
+>   de 3 colunas** (osso · dono · botão) para os cabeçalhos ficarem na MESMA largura dos dropdowns
+>   abaixo. O **tooltip** do dropdown de dono ("Membro-dono…") deixou de ser tooltip e virou um
+>   **rótulo visível `OwnerHint`** de largura total acima da seção (chave nova nos `models.{pt,en}.json`).
+>   Controles criados em código agora têm nome (antes `@label@…`/`@optionbutton@…`): `Separator`,
+>   `OwnerHint`, `AddArea` (grid), `AddTitle`/`OwnerTitle`/`Pad`, `Bone`/`Owner`/`Add`; e os itens da
+>   lista de IA: `<chave>`/`Content`/`Enabled`/`Description`.
+> - **AIPanel — tooltips removidos:** cada checkbutton de comportamento já mostra a descrição como
+>   **rótulo logo abaixo** dele, então o `tooltip_text` (que duplicava a descrição) saiu do toggle **e**
+>   do `Description` — a regra "texto só no rótulo abaixo, sem tooltip duplicado".
+> - **Label do dropdown de malha:** texto **"Parte:" → "Malha:"** (`Mesh:` em en; chave em
+>   `models.{pt,en}.json` migrada de `Parte:` para `Malha:`).
+> - **VBox `Selectors`:** perdeu o `size_flags_horizontal = 3` (deixou de esticar a linha toda) e
+>   ganhou um irmão **`Spacer`** (expand-fill) antes de `Toggles`, encolhendo a coluna ~à metade e
+>   mantendo os toggles fixos à direita.
+>
+> Os `%`-acessores em `models.gd` acompanham; as **variáveis** GDScript (`cbo_*`, `*_check`,
+> `*_toggle`) e os métodos `_show_*` **não** mudaram.
+
 Toggles atuais (ordem/nomes em 2026-06-23): **Malha · Rotação · Animação · Efeitos especiais · Audio ·
 Colisor de Membro · Membro · Colisor de Submembro · Submembros · Colisor de Esqueleto ·
 [Esqueleto · Linhas do Esqueleto · Tipo · Nome · ID]**. (Renomeados de "Colisores
-de X" → **"Colisor de X"**; `SubColliderToggle`/`SubMemberLabelToggle` movidos para o topo, logo
+de X" → **"Colisor de X"**; `SubCollider`/`SubMemberLabel` movidos para o topo, logo
 **abaixo de "Membro"**; **"Malha" promovido ao 1º da lista** e **"Dano" deixou de ser toggle** —
 virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 
@@ -164,19 +209,19 @@ virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 > Chaves novas em `models.{pt,en}.json`: `Tipo:`/`Nome:` (prefixos) + os toggles `Tipo`/`Nome`/`Linhas do Esqueleto`.
 
 > [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
-> - **Malha** (`MalhaCheck`, **1º toggle da lista** desde 2026-06-23, chave `show_malha`, default LIGADO):
+> - **Malha** (`Malha`, **1º toggle da lista** desde 2026-06-23, chave `show_malha`, default LIGADO):
 >   mostra/esconde a malha (`MeshInstance3D`) do modelo do preview (pula gizmos com nome `_…`). `_apply_malha_visibility`.
-> - **Linhas do Esqueleto** (`SkeletonLinesCheck`, abaixo de Id, chave `show_skeleton_lines`): desenha
+> - **Linhas do Esqueleto** (`SkeletonLines`, abaixo de Id, chave `show_skeleton_lines`): desenha
 >   as linhas brancas osso→pai do preview, refeitas todo frame pela pose viva (`_refresh_skeleton_lines`
 >   / `_update_skeleton_lines`, gizmo `_SkeletonLines`). É DIFERENTE de "Esqueleto" (que mostra o NOME
 >   do osso). Efeito **só nesta cena** (o preview). Ambos persistem na seção `models` do config.
 
 > [!note] Renomeações e novos toggles (2ª leva, 2026-06-22)
-> - **Colisores** → **Colisores de Membro** (`CollidersToggle`, `_show_colliders`).
-> - **Esqueleto** (o realce laranja, `AuxHighlightToggle`/`_show_aux_highlight`) → **Colisores de Esqueleto**.
-> - **SubMembro** (`OssoCheck`/`osso_check`/`_show_osso`, topo do `LabelLinesRow`) → **Esqueleto**; o
+> - **Colisores** → **Colisores de Membro** (`Colliders`, `_show_colliders`).
+> - **Esqueleto** (o realce laranja, `AuxHighlight`/`_show_aux_highlight`) → **Colisores de Esqueleto**.
+> - **SubMembro** (`Osso`/`osso_check`/`_show_osso`, topo do `LabelLinesRow`) → **Esqueleto**; o
 >   Label3D agora exibe **"Esqueleto: \<nome\>"** (antes só o nome do osso).
-> - **NOVO Colisores de Submembros** (`SubColliderToggle`/`_show_sub_colliders`, chave `show_sub_colliders`;
+> - **NOVO Colisores de Submembros** (`SubCollider`/`_show_sub_colliders`, chave `show_sub_colliders`;
 >   rótulo exibido **"Colisor de Sub-membro"/"Sub-member collider"** desde 2026-06-25):
 >   mostra/oculta SÓ o gizmo do limbcollider do sub-membro selecionado no dropdown (ramo de FOCO de
 >   `_refresh_member_overlays`; gizmo de PART_* segue ESTE toggle, gizmo de membro segue "Colisores de
@@ -185,7 +230,7 @@ virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 >   este toggle LIGADO, `_apply_colliders_visibility` mostra **TODOS** os gizmos de sub-membro de uma vez,
 >   independente de "Colisores de Membro" (helper `_should_show_all_sub_colliders`).
 >   O editor de afastamento/escala também aparece para sub-membros sob este toggle.
-> - **NOVO Submembros** (`SubMemberLabelToggle`/`_show_sub_member_label`, chave `show_sub_member_label`;
+> - **NOVO Submembros** (`SubMemberLabel`/`_show_sub_member_label`, chave `show_sub_member_label`;
 >   rótulo exibido **"Sub-membro"/"Sub-member"** desde 2026-06-25):
 >   Label3D **"Submembro: \<nome\>"** preso ao corpo do sub-membro selecionado
 >   (`_refresh_sub_member_labels`/`_label_sub_member`). Só no modo membro-específico. **Cor ROXA
@@ -194,13 +239,13 @@ virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 
 Histórico (1ª leva, 2026-06-22): "Dano por membro" virou **Dano**; "Realçar avulso" virou "Esqueleto";
 o toggle "Osso" virou "SubMembro" e foi ao topo do `LabelLinesRow` (o toggle "Rótulos" foi renomeado para
-**Membro** em 2026-06-21 — `LabelsToggle` no `.tscn`, traduzido "Member" em en; o antigo "Som" virou **Audio**; o
+**Membro** em 2026-06-21 — `Labels` no `.tscn`, traduzido "Member" em en; o antigo "Som" virou **Audio**; o
 toggle **Falas** foi REMOVIDO — o Audio agora cobre todos os emissores, inclusive vozes). Cada
 toggle é o **interruptor mestre** da sua categoria:
 
 > [!note] Cores dos rótulos 3D (`_LABEL_LINE_COLORS`)
 > Membro = ciano · **Tipo = ROSA (2026-06-23, antes laranja)** · Nome = verde · Id = amarelo ·
-> Osso/Esqueleto = laranja. O toggle **Tipo** (`TypeCheck`) tem o **texto rosa** via `font_color`
+> Osso/Esqueleto = laranja. O toggle **Tipo** (`Type`) tem o **texto rosa** via `font_color`
 > (`_apply_label_line_colors`, todos os estados); o **`modulate` foi REMOVIDO (2026-06-25)** para o
 > **fundo do toggle bater com os demais** (antes o `modulate` tingia o controle inteiro de rosa) —
 > mesmo padrão do toggle "Submembros".
@@ -213,7 +258,7 @@ toggle é o **interruptor mestre** da sua categoria:
 > cena** (Membro + os checkboxes Tipo/Nome/ID), não mais os sub-toggles globais. Foram-se o
 > `_debug3d_tooltips_enabled()` e toda leitura de `game/*` em `models.gd`.
 >
-> **Rótulo do nome da cena (2026-06-20 → OCULTADO 2026-06-21):** o `SceneNameLabel` local (nó no
+> **Rótulo do nome da cena (2026-06-20 → OCULTADO 2026-06-21):** o `SceneName` local (nó no
 > `.tscn`) hoje fica **sempre oculto** — o nome "Models" **não deve aparecer na janela de dano**. O
 > nó é preservado só para não quebrar `@onready`/referências; `_ready` faz `visible = false` e nada
 > mais o exibe. O nome da cena já é mostrado pelo **watermark GLOBAL** de `debug_overlay.gd` no
@@ -298,7 +343,7 @@ toggle é o **interruptor mestre** da sua categoria:
   2026-06-18) mostram **todos** (só com o toggle ligado). A visibilidade é aplicada por
   `_apply_effects_visibility` (`sel <= 1` = todos; `>1` = isolado) sem reconstruir o preview.
 - **Membro · Tipo · Nome · ID** (2026-06-21; o toggle **Membro** chamava-se "Rótulos" até
-  2026-06-21 — só o TEXTO mudou, o nó segue `LabelsToggle`/`labels_toggle`) — a pilha de tooltips de
+  2026-06-21 — só o TEXTO mudou, o nó segue `Labels`/`labels_toggle`) — a pilha de tooltips de
   membro (TYPE/Name/ID/Membro) agora é **toda local** à cena Models, sem nada do Debug 3D global.
   **Membro** (CheckButton) liga
   a linha "Membro: …"; **Tipo/Nome/ID** são 3 `CheckButton` (toggles) **empilhados verticalmente** no
@@ -316,7 +361,7 @@ toggle é o **interruptor mestre** da sua categoria:
     `modulate` do `Label3D` **e** ao texto do `CheckButton` que a controla (`_apply_label_line_colors`,
     cobrindo os estados normal/hover/pressed/focus), para o usuário ligar de relance o controle ao seu rótulo 3D.
   - **Toggle "Esqueleto" (rótulo do osso avulso; renomeado de "SubMembro"/"Osso" em 2026-06-22):** 1º `CheckButton` do `LabelLinesRow`
-    (`OssoCheck`/`osso_check` — nome de nó/var mantidos; **no TOPO**, logo abaixo do toggle "Membro" e acima de Tipo;
+    (`Osso`/`osso_check` — nome de nó/var mantidos; **no TOPO**, logo abaixo do toggle "Membro" e acima de Tipo;
     traduzido "Skeleton" em en — reusa a chave `Esqueleto`). Quando ligado **E** o filtro
     "Esqueleto" (modo "Todos os membros") tem um osso escolhido, desenha um **`Label3D` laranja**
     (billboard, sem depth-test) com **"Esqueleto: \<nome\>"** acima da sua região, preso via `BoneAttachment3D`.
@@ -335,12 +380,12 @@ toggle é o **interruptor mestre** da sua categoria:
 - **Dano** — aberto pelo **botão `DamageButton`** (à direita do "Voltar", em `UI/Actions`; texto "Dano"/"Damage").
   Antes era o toggle `DamageToggle` na lista; em 2026-06-23 virou **botão de ação dedicado** que invoca a tela de
   Dano (`_on_damage_button_pressed` → `_show_damage_panel = true` → `_refresh_damage_panel`); o `×` da janela fecha
-  (`_on_damage_close`). (Janela renomeada de "Dano por membro" em 2026-06-22; `TitleLabel` exibe "Dano".)
+  (`_on_damage_close`). (Janela renomeada de "Dano por membro" em 2026-06-22; o título `Title` exibe "Dano".)
   — **JANELA FLUTUANTE (estado em 2026-06-21):** o `DamagePanel` é uma **janela
   flutuante arrastável**, de **fundo PRETO OPACO**, **600×660**, com **todos os controles DENTRO dela**
   (os campos de valor NÃO flutuam mais sobre o modelo 3D — revertido em 2026-06-21).
   - **Janela (estilo Windows):** estrutura `DamagePanel(PanelContainer, âncora top-left) →
-    Main(VBox) → TitleBar(PanelContainer) → TitleRow[TitleLabel(IGNORE) + CloseButton ×] · Margin →
+    Main(VBox) → TitleBar(PanelContainer) → TitleRow[Title(IGNORE) + CloseButton ×] · Margin →
     Scroll → VBox → Rows`. `_setup_damage_window` (em `_ready`) dá ao `DamagePanel` um `StyleBoxFlat`
     **preto opaco** (alpha 1) e estiliza a `TitleBar` (cinza-escuro opaco), põe `CURSOR_MOVE` e conecta
     `gui_input`→`_on_damage_titlebar_input` (clique-arrasta move `damage_panel.position`, preso à
@@ -399,6 +444,23 @@ toggle é o **interruptor mestre** da sua categoria:
     (`content.theme_override_constants.separation = 6`, acesso por ponto que não existe em GDScript),
     então a janela de IA NUNCA abria (erro em runtime antes de `ai_panel.visible = true`); trocado por
     `add_theme_constant_override("separation", 6)`. Ver `_on_damage_button_pressed`/`_on_ai_button_pressed`.
+  - **Editor de IA virou `FloatingWindow` (2026-06-30):** o painel IA deixou de ser um `PanelContainer`
+    do `.tscn` (com barra/×/arraste/posição manuais) e passou a ser uma **`FloatingWindow` runtime
+    não-modal**, criada sob demanda em `_ensure_ai_window` (`remember_position_key = "ai_window"`,
+    `min_window_size = (420,480)`). O conteúdo (ScrollContainer + `ai_list`) é repovoado por
+    `_populate_ai_list`; abrir = `_open_ai_window` (`popup_centered`), fechar = `_close_ai_window`
+    (×/ESC disparam `closed` → `_on_ai_window_closed` zera as refs). Assim a IA herda gap, anel de
+    foco/ESC, supressão do Debug 2D de fundo e o click-forward do toggle (ver [[sistemas/debug-overlay]]).
+    Removidos do `models.gd`: `ai_panel`/`ai_titlebar`/`ai_close_button`, `_setup_ai_window`,
+    `_on_ai_titlebar_input`, `_save_ai_panel_pos`, `_on_ai_close` e o drag manual; o subtree `UI/AIPanel`
+    saiu do `.tscn`. O **Dano** segue `PanelContainer` próprio (ligado ao dano por membro), com o gap
+    aplicado à parte. `_pointer_over_model_window` agora cobre a IA via `pointer_over_any_window()`.
+  - **Foco/Tab da janela Dano + foco inicial da tela (2026-06-30):** o `_ready` passou a focar o
+    controle de Tab = 1 (`UINav.focus_tab_one` → 1ª por `tab_order` = Categorias). A **janela Dano** ganhou
+    anel de foco LOCAL (`UINav.wire_tab_ring(damage_panel, damage_close_button)` em `_refresh_damage_panel`,
+    com o **× sempre por último**): `Limbs` 1 → `Bone` 2 → `Owner` 3 → `Add` 4 → **× 5**; foca a árvore
+    `Limbs` ao abrir. `Bone`/`Owner`/`Add` (runtime) recebem `tab_order` por `set_meta`; `Limbs` e `Close`
+    têm `tab_order` 1 e 5 no `.tscn`.
   Aparece para **QUALQUER modelo em "Modelo completo"**
   (`_supports_damage_editor`); `_refresh_damage_panel` repopula ao trocar de modelo e some em mesh
   isolada. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta
@@ -475,7 +537,7 @@ toggle é o **interruptor mestre** da sua categoria:
     e o reset em `_on_member_selected` foram REMOVIDOS.)
   - **Toggle "Colisores de Esqueleto" (renomeado de "Realçar avulso"→"Esqueleto"→"Colisores de Esqueleto" em 2026-06-22) + "Todo o esqueleto" (2026-06-21; item antes "Todos os ossos avulsos"):** como os personagens são UMA
     malha skinada (partes não separáveis por nó), o filtro **DESTACA sem esconder**: o toggle
-    `AuxHighlightToggle` (`_show_aux_highlight`, persistido) desenha uma **forma laranja translúcida**
+    `AuxHighlight` (`_show_aux_highlight`, persistido) desenha uma **forma laranja translúcida**
     (sem depth-test, presa via `BoneAttachment3D`) sobre a região do osso avulso escolhido — AABB dos
     vértices DOMINANTES do osso via `LimbColliders.bone_vertex_box` (static). O item **"Todos os ossos
     avulsos"** (`ALL_AUX_VALUE`) no topo do filtro realça todos de uma vez; "Selecione..." / toggle off

@@ -551,16 +551,16 @@ const LIMB_RADIUS_RATIO := 0.32  # max capsule radius as a fraction of its lengt
 # (escolha do dropdown de geometria da tela Models, lida de LimbConfig) sobre a automática.
 # Returns a positioned/oriented CollisionShape3D. Static so the model browser can reuse
 # it for non-skeleton rigs (criatura).
-static func make_member_shape(group: String, box_aabb: AABB, head_kind: String = "sphere", torso_kind: String = "box", head_scale: float = 1.0, shape_override: String = "") -> CollisionShape3D:
+static func make_member_shape(group: String, box_aabb: AABB, head_kind: String = "sphere", torso_kind: String = "box", head_scale_arg: float = 1.0, shape_override: String = "") -> CollisionShape3D:
 	if shape_override == "sphere" or shape_override == "box" or shape_override == "capsule":
 		# Forma escolhida na tela Models, sobrepondo a automática. A cabeça mantém o head_scale e, em
 		# cápsula, o RAIO CHEIO (cap_radius=false) p/ abraçá-la; demais grupos usam o raio de membro.
 		if group == BodyParts.HEAD:
-			return make_shape(shape_override, _scaled_aabb(box_aabb, head_scale), shape_override != "capsule")
+			return make_shape(shape_override, _scaled_aabb(box_aabb, head_scale_arg), shape_override != "capsule")
 		return make_shape(shape_override, box_aabb)
 	if group == BodyParts.HEAD:
 		# head_scale aumenta o volume da cabeça em torno do centro (AABB escalado simétrico).
-		var head_aabb := _scaled_aabb(box_aabb, head_scale)
+		var head_aabb := _scaled_aabb(box_aabb, head_scale_arg)
 		# Head capsule keeps its FULL radius (cap_radius=false) so it hugs the roughly
 		# round head along its long axis, instead of pinching to a thin limb capsule.
 		if head_kind == "capsule":

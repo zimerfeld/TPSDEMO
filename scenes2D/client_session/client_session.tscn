@@ -1,10 +1,119 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes2D/client_session/client_session.gd" id="1"]
+[ext_resource type="Theme" path="res://themes/ui_theme.tres" id="2"]
+[ext_resource type="Texture2D" path="res://scenes2D/menu/menu_surreal_training_bg.png" id="3"]
+[ext_resource type="Shader" path="res://themes/session_signal_bg.gdshader" id="4"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_signal"]
+shader = ExtResource("4")
+shader_parameter/ring_color = Color(0.2, 0.72, 1, 1)
+shader_parameter/dir = -1.0
 
 [node name="ClientSession" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+mouse_filter = 2
+theme = ExtResource("2")
 script = ExtResource("1")
+
+[node name="Panel" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Background" type="TextureRect" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+modulate = Color(0.55, 0.86, 1, 0.98)
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Veil" type="ColorRect" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.008, 0.03, 0.06, 0.62)
+
+[node name="SignalLayer" type="ColorRect" parent="Panel"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_signal")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="Content" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Panel/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Salas disponíveis no servidor"
+horizontal_alignment = 1
+
+[node name="Center" type="HBoxContainer" parent="Panel/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Inner" type="VBoxContainer" parent="Panel/Margin/Content/Center"]
+custom_minimum_size = Vector2(900, 0)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Info" type="Label" parent="Panel/Margin/Content/Center/Inner"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Escolha uma sala para entrar:"
+
+[node name="RoomsScroll" type="ScrollContainer" parent="Panel/Margin/Content/Center/Inner"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RoomsList" type="VBoxContainer" parent="Panel/Margin/Content/Center/Inner/RoomsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="EmptyHint" type="Label" parent="Panel/Margin/Content/Center/Inner"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Nenhuma sala em execução."
+
+[node name="Actions" type="HBoxContainer" parent="Panel/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+
+[node name="BackButton" type="Button" parent="Panel/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+text = "Voltar"

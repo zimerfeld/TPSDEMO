@@ -185,8 +185,10 @@ por pixel, sem texturas) → sem custo relevante numa tela de menu. As sessões 
 ## Otimização escolhível antes da sala — `NetConfig` (2026-06-24)
 
 Autoload **`NetConfig`** (`autoload/net_config.gd`, persiste em `Settings`/seção `netopt`) + seletor na
-tela **playonline** (3 dropdowns, montados em código antes dos botões Host/Client). São prefs LOCAIS
-(não replicadas) — cada lado ajusta o que controla:
+tela **playonline** (3 dropdowns ESTÁTICOS no `.tscn` — colunas `HostColumn`/`BothColumn`/`ClientColumn`
+com `HostRenderPicker`/`SyncRatePicker`/`InterpPicker`, `tab_order` 6/7/8 antes dos botões Host/Client;
+o código só popula itens/seleção e conecta — `_build_optimization_options`/`_setup_opt_picker`, 2026-06-30,
+antes eram montados em runtime). São prefs LOCAIS (não replicadas) — cada lado ajusta o que controla:
 - **Suavização ↔ Resposta** — atraso de interpolação dos modelos remotos: Suave 100 ms / **Equilibrado
   60 ms (default)** / Responsivo 35 ms. Aplicado em `NetInterp.render_delay_ms` (agora `static var`).
 - **Taxa de sincronização** — 30 / 60 Hz. Vale dos DOIS lados, cada um na direção que envia: o

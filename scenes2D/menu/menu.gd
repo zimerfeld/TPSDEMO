@@ -19,7 +19,7 @@ var _quit_dialog: FloatingWindow = null
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 @onready var ui: Control = $UI
-@onready var main: Control = %VBox
+@onready var main: Control = %MenuColumn
 @onready var play_button: Button = main.get_node(^"PlayRow/Play")
 @onready var play_online_button: Button = main.get_node(^"PlayOnlineRow/PlayOnline")
 @onready var settings_button: Button = main.get_node(^"SettingsRow/Settings")
@@ -29,8 +29,8 @@ var _quit_dialog: FloatingWindow = null
 @onready var loading_progress: ProgressBar = loading.get_node(^"Progress")
 @onready var loading_done_timer: Timer = loading.get_node(^"DoneTimer")
 
-@onready var portuguese_button: Button = %PortugueseButton
-@onready var english_button: Button = %EnglishButton
+@onready var portuguese_button: Button = %Portuguese
+@onready var english_button: Button = %English
 
 
 func _ready() -> void:
@@ -48,7 +48,14 @@ func _ready() -> void:
 
 	_update_language_buttons()
 
-	play_button.grab_focus()
+	# Foco inicial SEMPRE no controle de Tab = 1 (cabeça do anel), p/ as setas/Tab começarem do 1º (Play).
+	UINav.focus_tab_one.call_deferred(self)
+	# Tab incremental de 1 na ordem de leitura: Play → Play Online → Settings → Developer → Sair →
+	# Português → English → Debug 2D. Re-liga quando o DebugOverlay injeta o toggle "Debug 2D" na barra
+	# Actions (ele entra DEPOIS do _ready do menu), para o toggle fechar a sequência.
+	_wire_tab_order.call_deferred()
+	($UI/Actions as HBoxContainer).child_entered_tree.connect(
+		func(_n: Node) -> void: _wire_tab_order.call_deferred())
 
 
 # Headless auto-host: vai direto para playonline (que auto-hospeda o level_base).
@@ -58,11 +65,21 @@ func _start_online_headless() -> void:
 	emit_signal("replace_main_scene", load(PLAYONLINE_PATH))
 
 
+# (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — pode ser chamado quantas vezes
+# o conjunto de focáveis mudar (toggle injetado, botão de idioma habilitando/desabilitando).
+func _wire_tab_order() -> void:
+	UINav.wire_tab_ring(self)
+
+
 # Grey out the button for the language already active so the current choice is clear.
 func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	# O botão do idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar
+	# sem ele. call_deferred: o estado disabled já assentou quando o anel é remontado.
+	if is_node_ready():
+		_wire_tab_order.call_deferred()
 
 
 func _process(_delta: float) -> void:

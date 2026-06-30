@@ -107,7 +107,7 @@ text = "// VITALS"
 [node name="HpHeader" type="HBoxContainer" parent="Content"]
 layout_mode = 2
 
-[node name="HealthLabel" type="Label" parent="Content/HpHeader"]
+[node name="Health" type="Label" parent="Content/HpHeader"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.91764706, 1, 1)
 text = "HP"
@@ -129,7 +129,7 @@ show_percentage = false
 [node name="ShHeader" type="HBoxContainer" parent="Content"]
 layout_mode = 2
 
-[node name="ShieldLabel" type="Label" parent="Content/ShHeader"]
+[node name="Shield" type="Label" parent="Content/ShHeader"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7019608, 0.4, 1, 1)
 text = "SH"

@@ -23,19 +23,29 @@ var _model_rot_y: float = 0.0
 var _loading_path: String = ""
 
 @onready var model_holder: Node3D = $ModelHolder
-@onready var character_name_label: Label = %NameLabel
+@onready var character_name_label: Label = %Name
 @onready var loading: HBoxContainer = %Loading
 @onready var loading_progress: ProgressBar = %Progress
 @onready var loading_done_timer: Timer = %DoneTimer
-@onready var portuguese_button: Button = %PortugueseButton
-@onready var english_button: Button = %EnglishButton
+@onready var portuguese_button: Button = %Portuguese
+@onready var english_button: Button = %English
 
 
 func _ready() -> void:
 	_load_character(current_index)
 	_update_language_buttons()
-	# Foco inicial para a navegação por setas do teclado.
-	UINav.focus_first.call_deferred(self)
+	# Foco inicial no Tab = 1 + anel de Tab na ordem de leitura. Re-liga quando o DebugOverlay injeta
+	# o toggle "Debug 2D" na barra Actions (entra DEPOIS do _ready).
+	UINav.focus_tab_one.call_deferred(self)
+	_wire_tab_order.call_deferred()
+	($UI/Actions as HBoxContainer).child_entered_tree.connect(
+		func(_n: Node) -> void: _wire_tab_order.call_deferred())
+
+
+# (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — re-chamável quando o conjunto
+# de focáveis muda (toggle injetado, botão de idioma habilitando/desabilitando).
+func _wire_tab_order() -> void:
+	UINav.wire_tab_ring(self)
 
 
 # Grey out the button for the language already active (same pattern as the menu).
@@ -43,6 +53,9 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	# O idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar sem ele.
+	if is_node_ready():
+		_wire_tab_order.call_deferred()
 
 
 func _on_portuguese_pressed() -> void:

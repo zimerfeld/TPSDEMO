@@ -3,7 +3,7 @@
 	"Categoria:": "Categoria:",
 	"Prefixo:": "Prefixo:",
 	"Modelo:": "Modelo:",
-	"Parte:": "Parte:",
+	"Malha:": "Malha:",
 	"Animação:": "Animação:",
 	"Efeitos Especiais:": "Efeitos Especiais:",
 	"Membro:": "Membro:",
@@ -87,6 +87,7 @@
 	"Outros sub-membros": "Outros sub-membros",
 	"(sem ossos auxiliares)": "(sem ossos auxiliares)",
 	"Para Membro Dono": "Para Membro Dono",
+	"Membro-dono (agrupa o dano; não mexe na malha)": "Membro-dono (agrupa o dano; não mexe na malha)",
 	"Esfera": "Esfera",
 	"Caixa": "Caixa",
 	"Cápsula": "Cápsula"

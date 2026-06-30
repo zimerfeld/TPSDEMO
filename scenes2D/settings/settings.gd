@@ -71,7 +71,7 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var scale_filter_fsr2: Button = %ScaleFilterFSR2
 @onready var scale_filter_metalfx_temporal: Button = %ScaleFilterMetalFXTemporal
 
-@onready var video_resolution_dropdown: OptionButton = %VideoResolutionDropdown
+@onready var video_resolution_dropdown: OptionButton = %VideoResolutions
 
 @onready var taa_disabled: Button = %TAADisabled
 @onready var taa_enabled: Button = %TAAEnabled
@@ -116,8 +116,8 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 @onready var sfx_enabled: Button = %SFXEnabled
 
 @onready var tabs: TabContainer = %Tabs
-@onready var portuguese_button: Button = %PortugueseButton
-@onready var english_button: Button = %EnglishButton
+@onready var portuguese_button: Button = %Portuguese
+@onready var english_button: Button = %English
 
 @onready var _rows: Array = []
 
@@ -125,8 +125,8 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 # if the user cancels the confirmation popup.
 var _current_resolution_index: int = 0
 
-# Janela do Gerenciador de Música (aberta ao habilitar "Música"); reusada se já estiver aberta.
-var _music_manager_window: Window = null
+# Controlador do Gerenciador de Música (aberto ao habilitar "Música"); reusado entre aberturas.
+var _music_manager_window: MusicManagerWindow = null
 
 # VolumeBars (equalizador) à direita das linhas Música / Efeitos de Som na aba Audio.
 var _music_volume: VolumeBar = null
@@ -205,8 +205,18 @@ func _ready() -> void:
 	Locale.language_changed.connect(_on_language_changed)
 	_update_language_buttons()
 
-	# Foco inicial para a navegação por setas (deferido: espera o layout/abas assentarem).
-	UINav.focus_first.call_deferred(self)
+	# Foco inicial na 1ª ABA (regra do TabContainer 2026-06-30): começa no 1º controle da aba 0.
+	# O Tab/Shift+Tab atravessa as abas em sequência (ver _input → UINav.tab_container_focus_step); por
+	# isso a cena NÃO monta um anel fechado — a navegação por Tab é tratada explicitamente, recalculando
+	# a ordem global (todas as abas + Voltar/Reset/idioma/Debug2D) a cada passo.
+	_focus_first_tab_control.call_deferred()
+
+
+# Foca o 1º controle da sequência de Tab (1º focável da aba 0). Deferido: espera o layout assentar.
+func _focus_first_tab_control() -> void:
+	var order := UINav.collect_focus_order_with_tabs(self, tabs)
+	if not order.is_empty():
+		order[0].grab_focus()
 
 
 # Translate each tab's title from its (English) node name via the active dictionary.
@@ -224,6 +234,8 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	# O idioma ativo fica desabilitado e sai da sequência de Tab automaticamente: a ordem global é
+	# recalculada (ignorando desabilitados) a cada passo de Tab — ver UINav.tab_container_focus_step.
 
 
 func _on_portuguese_pressed() -> void:
@@ -558,7 +570,7 @@ func _apply_settings() -> void:
 	# redimensionamento manual do usuário quando ele só muda outras opções já em modo Janela.
 	var prev_mode := get_window().mode
 	var new_mode: int = Settings.config_file.get_value("video", "display_mode")
-	get_window().mode = new_mode
+	get_window().mode = new_mode as Window.Mode
 	if new_mode == Window.MODE_WINDOWED and prev_mode != Window.MODE_WINDOWED:
 		Settings.apply_window_resolution(get_window())
 	DisplayServer.window_set_vsync_mode(Settings.config_file.get_value("video", "vsync"))
@@ -648,11 +660,10 @@ func _on_reset_pressed() -> void:
 # Abre (ou traz à frente) o Gerenciador de Música: ouvir faixas e atribuir/remover a trilha de cada
 # cena/level. Disparado ao habilitar "Música" na aba Audio.
 func _open_music_manager() -> void:
-	if _music_manager_window != null and is_instance_valid(_music_manager_window):
-		_music_manager_window.grab_focus()
-		return
-	_music_manager_window = MusicManagerWindow.new()
-	add_child(_music_manager_window)
+	# O controlador persiste entre aberturas; ele cria a janela flutuante (ou a ignora se já aberta).
+	if _music_manager_window == null or not is_instance_valid(_music_manager_window):
+		_music_manager_window = MusicManagerWindow.new()
+		add_child(_music_manager_window)
 	_music_manager_window.popup_centered()
 
 
@@ -681,7 +692,32 @@ func _on_back_pressed() -> void:
 	emit_signal("replace_main_scene", load(MENU_PATH))
 
 
+# True se há alguma janela flutuante VISÍVEL (diálogo de confirmação, gerenciador de música…) — nesse
+# caso o Tab/Shift+Tab é da janela, não da navegação por abas do fundo.
+func _floating_window_open() -> bool:
+	for n in get_tree().get_nodes_in_group(DebugOverlay.FLOATING_WINDOW_GROUP):
+		if n is Control and (n as Control).is_visible_in_tree():
+			return true
+	return false
+
+
 func _input(input_event: InputEvent) -> void:
+	# Tab/Shift+Tab atravessam as abas do TabContainer em sequência (regra do projeto 2026-06-30):
+	# dentro da aba anda esquerda→direita/cima→baixo; no último controle da aba pula p/ a próxima aba e
+	# realça o 1º controle dela; só sai p/ Voltar/Reset/idioma quando está no último controle da última
+	# aba. Tratado explicitamente (consumindo o evento) para o foco automático do Godot não fechar o
+	# ciclo cedo dentro da aba visível.
+	# Com uma janela flutuante aberta (ex.: confirmar resolução/reset), o Tab pertence ao anel DELA —
+	# não atravessamos as abas do fundo. A janela tem seu próprio anel de foco (wire_focus_ring).
+	if not _floating_window_open():
+		if input_event.is_action_pressed(&"ui_focus_next"):
+			if UINav.tab_container_focus_step(self, tabs, true):
+				get_viewport().set_input_as_handled()
+			return
+		if input_event.is_action_pressed(&"ui_focus_prev"):
+			if UINav.tab_container_focus_step(self, tabs, false):
+				get_viewport().set_input_as_handled()
+			return
 	if input_event.is_action_pressed(&"quit"):
 		# ESC encerra primeiro um campo em edição; só o 2º ESC volta ao menu.
 		if UINav.cancel_active_edit(get_viewport()):

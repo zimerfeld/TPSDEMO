@@ -26,7 +26,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2")
 
-[node name="Margin" type="MarginContainer" parent="UI"]
+[node name="Inset" type="MarginContainer" parent="UI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -38,42 +38,43 @@ theme_override_constants/margin_top = 24
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 110
 
-[node name="Main" type="VBoxContainer" parent="UI/Margin"]
+[node name="Main" type="VBoxContainer" parent="UI/Inset"]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="TitleLabel" type="Label" parent="UI/Margin/Main"]
+[node name="Title" type="Label" parent="UI/Inset/Main"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 40
 text = "Controles 2D"
 horizontal_alignment = 1
 
-[node name="Selectors" type="VBoxContainer" parent="UI/Margin/Main"]
+[node name="Selectors" type="VBoxContainer" parent="UI/Inset/Main"]
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 12
 
-[node name="ControlRow" type="HBoxContainer" parent="UI/Margin/Main/Selectors"]
+[node name="ControlRow" type="HBoxContainer" parent="UI/Inset/Main/Selectors"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="UI/Margin/Main/Selectors/ControlRow"]
+[node name="Caption" type="Label" parent="UI/Inset/Main/Selectors/ControlRow"]
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 text = "Controle:"
 
-[node name="cboControl" type="OptionButton" parent="UI/Margin/Main/Selectors/ControlRow"]
+[node name="Controls" type="OptionButton" parent="UI/Inset/Main/Selectors/ControlRow"]
+metadata/tab_order = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(360, 50)
 layout_mode = 2
 
-[node name="PreviewContainer" type="SubViewportContainer" parent="UI/Margin/Main"]
+[node name="Preview" type="SubViewportContainer" parent="UI/Inset/Main"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="UI/Margin/Main/PreviewContainer"]
+[node name="SubViewport" type="SubViewport" parent="UI/Inset/Main/Preview"]
 unique_name_in_owner = true
 transparent_bg = true
 disable_3d = true
@@ -96,7 +97,8 @@ grow_horizontal = 2
 grow_vertical = 0
 alignment = 1
 
-[node name="BackButton" type="Button" parent="UI/Actions"]
+[node name="Back" type="Button" parent="UI/Actions"]
+metadata/tab_order = 2
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -106,20 +108,22 @@ text = "Voltar"
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PortugueseButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 3
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Português"
 
-[node name="EnglishButton" type="Button" parent="UI/Actions/LangBar"]
+[node name="English" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 4
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "English"
 
-[connection signal="pressed" from="UI/Actions/BackButton" to="." method="_on_back_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/PortugueseButton" to="." method="_on_portuguese_pressed"]
-[connection signal="pressed" from="UI/Actions/LangBar/EnglishButton" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]

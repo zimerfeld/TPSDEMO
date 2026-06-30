@@ -20,6 +20,7 @@ extends Control
 
 signal closed            ## Fechou (qualquer caminho), já com o foco anterior restaurado.
 signal close_requested   ## Antes de fechar — deixa o dono reagir (× e ESC passam por aqui).
+@warning_ignore("unused_signal")  ## Emitido externamente pelo FloatingDialog (win.confirmed.emit()).
 signal confirmed         ## Enter/botão OK (usado pelo FloatingDialog).
 signal canceled          ## ESC/×/botão Cancelar (usado pelo FloatingDialog).
 
@@ -50,8 +51,8 @@ var _pointer_inside: bool = false
 @onready var _window: PanelContainer = %Window
 @onready var _titlebar: PanelContainer = %TitleBar
 @onready var _left_pad: Control = %LeftPad
-@onready var _title_label: Label = %TitleLabel
-@onready var _close_button: Button = %CloseButton
+@onready var _title_label: Label = %Title
+@onready var _close_button: Button = %Close
 @onready var _content: VBoxContainer = %Content
 @onready var _footer: HBoxContainer = %Footer
 
@@ -75,12 +76,24 @@ func _ready() -> void:
 
 
 # Estilo da janela (preto opaco + borda) e da barra de título — igual aos painéis Dano/IA.
+# Margem interna (px) entre a borda da janela e o seu conteúdo (barra de título + corpo). Cria um
+# "anel" vazio, pertencente à própria janela, por onde o mouse passa para IDENTIFICÁ-LA no Debug 2D
+# (regra do projeto 2026-06-30) — sem ele a barra de título cobre a borda e o overlay nunca aponta a
+# janela em si.
+const _WINDOW_CONTENT_GAP := 10.0
+
+
 func _apply_window_style() -> void:
 	var win_style := StyleBoxFlat.new()
 	win_style.bg_color = Color(0, 0, 0, 1)
 	win_style.border_color = Color(1, 1, 1, 0.18)
 	win_style.set_border_width_all(1)
 	win_style.set_corner_radius_all(4)
+	# Gap mínimo: o conteúdo recua da borda, expondo um anel hoverável que o Debug 2D aponta como a janela.
+	win_style.content_margin_left = _WINDOW_CONTENT_GAP
+	win_style.content_margin_right = _WINDOW_CONTENT_GAP
+	win_style.content_margin_top = _WINDOW_CONTENT_GAP
+	win_style.content_margin_bottom = _WINDOW_CONTENT_GAP
 	_window.add_theme_stylebox_override("panel", win_style)
 	var tb_style := StyleBoxFlat.new()
 	tb_style.bg_color = Color(0.16, 0.16, 0.2, 1)
@@ -135,6 +148,9 @@ func get_content() -> VBoxContainer:
 # `pressed`. A largura uniforme é (re)aplicada por set_uniform_footer_widths() ao abrir/trocar idioma.
 func add_footer_button(src_text: String) -> Button:
 	var btn := Button.new()
+	# Nome explícito (senão o Godot auto-nomearia "@Button@N", visível no Debug 2D). Deriva do texto-fonte;
+	# o set_name do Godot já remove caracteres inválidos de nome de nó.
+	btn.name = "Footer_" + src_text
 	btn.add_to_group(Locale.SKIP_GROUP)
 	btn.set_meta("loc_key", src_text)
 	btn.text = Locale.tr_key(src_text)
@@ -162,6 +178,8 @@ func popup_centered() -> void:
 	_backdrop.visible = modal
 	if is_inside_tree():
 		_prev_focus = get_viewport().gui_get_focus_owner()
+	# Prende o Tab DENTRO da janela (o × passa a ser alcançável) — feito aqui, já com o rodapé montado.
+	wire_focus_ring()
 	_layout.call_deferred()
 	_grab_initial_focus.call_deferred()
 
@@ -274,12 +292,22 @@ static func pointer_over_any_window() -> bool:
 
 # ── Foco / teclado ───────────────────────────────────────────────────────────
 
+# Liga o foco por Tab/Shift+Tab num ANEL FECHADO: controles do conteúdo → botões do rodapé → × (Close)
+# → de volta ao 1º. O × fica SEMPRE por ÚLTIMO (maior valor de Tab da janela), passando `last` ao
+# helper compartilhado — mesmo o × vindo ANTES na árvore. Sem o anel o Tab vaza para a UI de fundo (a
+# janela é descendente da tela) e o × nunca é alcançado. Inclui QUALQUER controle focável do conteúdo
+# (OptionButton, LineEdit, …), não só os botões do rodapé. As setas seguem os vizinhos do Godot.
+# Público: o dono re-liga após mudar os controles do conteúdo (ex.: campos que habilitam/desabilitam).
+func wire_focus_ring() -> void:
+	UINav.wire_tab_ring(self, _close_button)
+
+
 func _grab_initial_focus() -> void:
 	if not is_inside_tree() or not visible:
 		return
-	var first := UINav.first_focusable(_footer)
-	if first == null:
-		first = UINav.first_focusable(_content)
+	# Foco inicial no controle de Tab = 1 (cabeça do anel): 1º focável do conteúdo/rodapé, com o × por
+	# último (excluído daqui). Cai no × só se a janela não tiver nenhum outro focável.
+	var first := UINav.tab_one_control(self, _close_button)
 	if first == null:
 		first = _close_button
 	if first != null:
@@ -291,10 +319,51 @@ func _grab_initial_focus() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible or not is_inside_tree() or _closing:
 		return
+	# Regra do projeto (2026-06-30): com a janela aberta (mesmo modal, sob o backdrop) alguns controles da
+	# cena de fundo continuam acionáveis por clique — o toggle Debug 2D (liga/desliga overlays) e os botões
+	# da LangBar (troca de idioma). Tratado aqui (antes do GUI) para o backdrop não engolir o clique.
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
+			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		var btn := _clickthrough_button_at((event as InputEventMouseButton).global_position)
+		if btn != null:
+			if btn.toggle_mode:
+				btn.button_pressed = not btn.button_pressed   # CheckButton (Debug 2D) → dispara `toggled`
+			else:
+				btn.pressed.emit()                            # Button (idioma) → dispara `pressed`
+			get_viewport().set_input_as_handled()
+			return
 	if close_on_escape and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("quit")):
 		canceled.emit()
 		close()
 		get_viewport().set_input_as_handled()
+
+
+# Controle da cena de FUNDO (fora desta janela) que segue acionável mesmo coberto pelo backdrop modal e
+# cujo retângulo contém `pos`: o toggle Debug 2D (grupo) OU um botão da barra `LangBar` (idiomas). Ignora
+# controles desta própria janela e os `disabled` (regra: desabilitado não recebe clique/foco). Null se nada.
+func _clickthrough_button_at(pos: Vector2) -> BaseButton:
+	for n in get_tree().get_nodes_in_group(Debug2DToggle.GROUP):
+		if n is BaseButton and is_instance_valid(n) and not is_ancestor_of(n) \
+				and (n as Control).is_visible_in_tree() and not (n as BaseButton).disabled \
+				and (n as Control).get_global_rect().has_point(pos):
+			return n as BaseButton
+	var scene := get_tree().current_scene
+	return _langbar_button_at(scene, pos) if scene != null else null
+
+
+# Botão (idioma) de alguma barra chamada "LangBar" na cena de fundo cujo retângulo contém `pos`, ou null.
+# Pula botões desta janela e os `disabled` (ex.: o idioma já ativo).
+func _langbar_button_at(node: Node, pos: Vector2) -> BaseButton:
+	for child in node.get_children():
+		if String(child.name) == "LangBar":
+			for b in child.get_children():
+				if b is BaseButton and not is_ancestor_of(b) and (b as Control).is_visible_in_tree() \
+						and not (b as BaseButton).disabled and (b as Control).get_global_rect().has_point(pos):
+					return b as BaseButton
+		var found := _langbar_button_at(child, pos)
+		if found != null:
+			return found
+	return null
 
 
 func _on_close_pressed() -> void:
