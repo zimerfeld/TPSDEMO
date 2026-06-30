@@ -51,8 +51,20 @@ func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		_on_manage_rooms_pressed.call_deferred()
 		return
-	# Foco inicial para a navegação por setas do teclado (não em headless, sem UI).
-	manage_rooms_button.grab_focus.call_deferred()
+	# Sequência de Tab na ordem de leitura: Nome (1) → Porta (2) → Histórico de porta (3) → IP (4) →
+	# Histórico de IP (5) → 3 OptionButtons de otimização (6-8) → Gerenciar/Entrar (9-10) → Voltar (11)
+	# → Português (12) → English (13) → Debug 2D (14). Re-liga quando o DebugOverlay injeta o toggle
+	# "Debug 2D" na barra Actions (ele entra DEPOIS do _ready), p/ o toggle fechar a sequência.
+	UINav.focus_tab_one.call_deferred(self)
+	_wire_tab_order.call_deferred()
+	($UI/Actions as HBoxContainer).child_entered_tree.connect(
+		func(_n: Node) -> void: _wire_tab_order.call_deferred())
+
+
+# (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — pode ser chamado quantas vezes
+# o conjunto de focáveis mudar (toggle injetado, botão de idioma habilitando/desabilitando).
+func _wire_tab_order() -> void:
+	UINav.wire_tab_ring(self)
 
 
 # Carrega o nome salvo no campo e no PlayerSelection (que o RoomManager/NetSpawn leem ao spawnar).
@@ -261,6 +273,10 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	# O botão do idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar
+	# sem ele. call_deferred: o estado disabled já assentou quando o anel é remontado.
+	if is_node_ready():
+		_wire_tab_order.call_deferred()
 
 
 func _on_portuguese_pressed() -> void:

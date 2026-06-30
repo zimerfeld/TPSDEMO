@@ -41,6 +41,12 @@ aplicam na hora (`DebugOverlay.refresh()`).
     no anel — ver [[fluxo-de-cenas]]); sem janela, parte do 1º focável (`UINav.first_focusable`) da tela
     ativa. Recalculado a cada frame **só** enquanto a linha Tab está visível (a ordem de foco muda
     conforme controles aparecem/somem).
+    - **Por que alguns controles ficam `TAB: -`?** Dois motivos: (1) **não são focáveis** — `Label`,
+      `ColorRect`, `Panel`, containers, título da cena, o **idioma ativo** (`disabled`): correto/esperado;
+      (2) **são focáveis, mas a cadeia não os alcança** — em telas **sem** `UINav.wire_tab_ring`, o
+      `find_next_valid_focus()` segue os vizinhos automáticos do Godot, que podem não encadear todos os
+      contêineres e fechar o ciclo cedo, deixando focáveis sem número. **Ligar o anel**
+      (`UINav.wire_tab_ring(self)`) faz todos receberem `TAB: 1..N`. Detalhe em [[convencoes/navegacao-tab]].
 - Botões **Modelos 3D** / **Controles 2D** (navegação).
 
 ## Debug 2D — detalhes

@@ -43,8 +43,18 @@ func _ready() -> void:
 	cbo_control.select(0)
 	_on_control_selected(0)
 
-	# Foco inicial para a navegação por setas do teclado.
-	UINav.focus_first.call_deferred(self)
+	# Foco inicial no Tab = 1 + anel de Tab na ordem de leitura. Re-liga quando o DebugOverlay injeta
+	# o toggle "Debug 2D" na barra Actions (entra DEPOIS do _ready).
+	UINav.focus_tab_one.call_deferred(self)
+	_wire_tab_order.call_deferred()
+	($UI/Actions as HBoxContainer).child_entered_tree.connect(
+		func(_n: Node) -> void: _wire_tab_order.call_deferred())
+
+
+# (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — re-chamável quando o conjunto
+# de focáveis muda (toggle injetado, botão de idioma habilitando/desabilitando).
+func _wire_tab_order() -> void:
+	UINav.wire_tab_ring(self)
 
 
 func _on_language_changed(_lang: String) -> void:
@@ -56,6 +66,9 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	# O idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar sem ele.
+	if is_node_ready():
+		_wire_tab_order.call_deferred()
 
 
 func _on_portuguese_pressed() -> void:

@@ -82,13 +82,21 @@ Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas*
   em foco**: telas chamam `UINav.focus_tab_one(self)`; a `FloatingWindow` foca em `_grab_initial_focus`
   o `UINav.tab_one_control(self, _close_button)` (1º do conteúdo/rodapé, NUNCA o ×, que é o último).
   `tab_one_control(root, last)` = cabeça do anel = `collect_focusables(root)` menos `last`, 1º item.
-- **Ordem de Tab do `menu` = ordem da árvore (2026-06-29)** — a sequência desejada
+- **Ordem de Tab do `menu` (2026-06-29)** — a sequência desejada
   **Play (1) → PlayOnline (2) → Settings (3) → Developer (4) → Quit (5) → Português (6) → English (7)
-  → Debug 2D (8)** sai **naturalmente da ordem da árvore**: os 5 botões do `MenuColumn`, depois a
-  `LangBar` (Actions) e por fim o **toggle `Debug2D`** que o DebugOverlay injeta no FIM da `Actions`.
-  Por isso **NÃO** há `focus_next`/`focus_previous` no `.tscn` (uma tentativa anterior de fechar o anel
-  nos 5 botões EXCLUÍA idioma/Debug2D — foi revertida). Como o `Debug2D` é injetado em runtime, amarrar
-  foco explícito a ele seria frágil; a ordem de árvore já entrega o 1–8 e inclui o injetado como 8.
+  → Debug 2D (8)** é a própria **ordem da árvore** (os 5 botões do `MenuColumn`, depois a `LangBar` da
+  `Actions` e por fim o **toggle `Debug2D`** que o DebugOverlay injeta no FIM da `Actions`). Agora o
+  `menu.gd` **liga o anel** com `UINav.wire_tab_ring(self)` (helper `_wire_tab_order`) no `_ready`
+  (deferido), igual à `levels` e às sessões — fechando `1 → … → 8 → 1` com índices incrementais de 1.
+  **Não** há `focus_next`/`focus_previous` no `.tscn` (uma tentativa anterior de hardcodar o anel nos 5
+  botões EXCLUÍA idioma/Debug2D — foi revertida); o anel é montado em runtime para incluir o `Debug2D`
+  injetado e respeitar o idioma ativo (que fica desabilitado/fora do anel). **Re-liga** quando o
+  DebugOverlay injeta o toggle na `Actions` (sinal `child_entered_tree`) e quando um botão de idioma
+  habilita/desabilita (`_update_language_buttons`). Foco inicial no Tab = 1 via `UINav.focus_tab_one`.
+- **Helpers de navegação `UINav` — ver [[convencoes/navegacao-tab]]** — nota dedicada com a tabela de
+  cada helper (`wire_tab_ring`, `focus_tab_one`, `tab_one_control`, `focus_first`, `first_focusable`,
+  `collect_focusables`, `cancel_active_edit`), a **matriz cena×helper**, a explicação do `TAB: -` do
+  Debug 2D e a lista de outros helpers do projeto (FloatingDialog/FloatingWindow/Locale/CrashHandler).
 - **Anel de Tab compartilhado — `UINav.wire_tab_ring(root, last=null)` (2026-06-29)** — helper único
   que coleta **todos** os controles focáveis sob `root` em **ordem de árvore** (= ordem de leitura: cada
   controle do topo p/ baixo e, numa linha/HBox, da esquerda p/ a direita) via `collect_focusables` e
@@ -112,6 +120,15 @@ Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas*
   Template Base (6) → Voltar (7) → Português (8) → English (9) → Debug 2D (10)**, ordem de leitura.
   Re-liga quando o DebugOverlay **injeta o toggle `Debug2D`** na `Actions` (sinal `child_entered_tree`)
   e quando um botão de idioma **habilita/desabilita** (o idioma ativo fica fora do anel).
+- **Ordem de Tab da `playonline` (2026-06-29)** — a tela liga o anel com `UINav.wire_tab_ring(self)`
+  (helper `_wire_tab_order`) no `_ready` (deferido), ordem de leitura: **Player name (1) → Porta/spin (2)
+  → Histórico de porta (3) → IP/Domínio (4) → Histórico de IP (5) → otimização: Render do host (6),
+  Taxa de sync (7), Suavização↔Resposta (8) → Gerenciar Salas (9) → Entrar em Salas (10) → Voltar (11)
+  → Português (12) → English (13) → Debug 2D (14)**. As 3 colunas de otimização são criadas em
+  `_build_optimization_options` ANTES de ligar o anel, então já entram na sequência. Re-liga quando o
+  DebugOverlay **injeta o toggle `Debug2D`** na `Actions` (sinal `child_entered_tree`) e quando um botão
+  de idioma **habilita/desabilita** (`_update_language_buttons`). Foco inicial no Tab = 1 via
+  `UINav.focus_tab_one`. (Antes a tela só fazia `manage_rooms_button.grab_focus()`, sem anel explícito.)
 - **Tab + Debug 2D em `host_session` / `client_session` (2026-06-29)** — telas montadas em código que
   antes NÃO tinham o toggle "Debug 2D" (a barra de Voltar era um `HBoxContainer` sem nome). Agora essa
   barra se chama **`Actions`**, então o DebugOverlay **injeta o `Debug2D`** nela como nas demais telas.
@@ -119,6 +136,14 @@ Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas*
   de sala** (`_refresh_rooms`, listas dinâmicas) e ao injetar o toggle. Sequência de leitura: controles
   da grade (level/template/Iniciar no host; lista no cliente) → linhas de sala → **Voltar** → **Debug 2D**;
   foco inicial no Tab = 1. `collect_focusables` ignora nós `is_queued_for_deletion()` (linhas recém-liberadas).
+- **Anel de Tab nas telas restantes — `chooseplayer` / `settings` / `developer` / `controls` (2026-06-29)**
+  — as quatro telas que ainda usavam só `UINav.focus_first` passaram ao padrão `focus_tab_one` +
+  `_wire_tab_order` (→ `UINav.wire_tab_ring(self)`), re-ligando no `child_entered_tree` da `Actions`
+  (toggle Debug 2D) e no `_update_language_buttons`. Casos extras: **`settings`** re-liga no
+  `TabContainer.tab_changed` (só os focáveis da aba VISÍVEL entram no anel); **`developer`** re-liga no
+  `_update_subrows_enabled` (as sub-toggles do Debug 2D entram/saem do anel com o master). Com isso,
+  **todas as telas cheias** ligam o anel — vira regra do projeto (`CLAUDE.md`). Resta só o overlay
+  `pause_menu` (opcional). Detalhes/matriz em [[convencoes/navegacao-tab]].
 - **Regra do ESC** (ação `quit`, mapeada a Esc + Select do gamepad) — sempre **interrompe primeiro o
   preenchimento de um campo/seleção** antes de voltar de tela. No `_input` de cada tela:
   `if UINav.cancel_active_edit(get_viewport(), <fallback>): consome e RETORNA`. `cancel_active_edit`
