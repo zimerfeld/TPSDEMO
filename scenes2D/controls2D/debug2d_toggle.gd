@@ -11,8 +11,13 @@ extends CheckButton
 
 const _CONFIG_KEY := "debug_2d"
 
+## Grupo de todos os toggles Debug 2D vivos. As janelas flutuantes (modais) usam isto para deixar o
+## toggle da cena que as carregou ACIONÁVEL mesmo por baixo do backdrop. Ver FloatingWindow._input.
+const GROUP := &"debug2d_toggle"
+
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	if text.strip_edges() == "":
 		text = "Debug 2D"
 	# Reflete o estado salvo SEM disparar o handler (conecta depois de set_pressed).

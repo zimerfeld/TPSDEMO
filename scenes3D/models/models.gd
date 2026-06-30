@@ -254,9 +254,6 @@ const _TRASH_BTN_ID := 0
 # Arraste da janela flutuante de dano (clique e arraste na barra de título).
 var _damage_panel_dragging: bool = false
 var _damage_panel_drag_offset: Vector2 = Vector2.ZERO
-# Arraste da janela flutuante de IA.
-var _ai_panel_dragging: bool = false
-var _ai_panel_drag_offset: Vector2 = Vector2.ZERO
 
 # Janela flutuante REUTILIZÁVEL (FloatingWindow) de Afastamento/Escala do collider do item escolhido
 # nos dropdowns Membro/Sub-membro/Esqueleto. _dialog_group é o grupo em edição; cada mudança persiste
@@ -290,14 +287,14 @@ var _gizmo_node: Node3D = null
 # _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
 var _zoom: float = 0.0
 var _zoom_target: float = 0.0
-@onready var cbo_category: OptionButton = %Category
-@onready var cbo_prefix: OptionButton = %Prefix
+@onready var cbo_category: OptionButton = %Categories
+@onready var cbo_prefix: OptionButton = %Prefixes
 @onready var cbo_models: OptionButton = %Models
 @onready var cbo_meshes: OptionButton = %Meshes
 @onready var animation_row: HBoxContainer = %AnimationRow
 @onready var cbo_animations: OptionButton = %Animations
 @onready var effects_row: HBoxContainer = %EffectsRow
-@onready var cbo_effects: OptionButton = %EffectsList
+@onready var cbo_effects: OptionButton = %EffectsLists
 @onready var member_row: HBoxContainer = %MemberRow
 @onready var cbo_members: OptionButton = %Members
 @onready var sub_member_row: HBoxContainer = %SubMemberRow
@@ -306,7 +303,7 @@ var _zoom_target: float = 0.0
 # de collider (Save) — quando um sub-membro está selecionado, o editor aparece e empurra o Esqueleto
 # para baixo dele; sem sub-membro selecionado o editor some e o Esqueleto fica logo abaixo de Submembros.
 @onready var skeleton_row: HBoxContainer = %SkeletonRow
-@onready var cbo_skeleton: OptionButton = %Skeleton
+@onready var cbo_skeleton: OptionButton = %Skeletons
 # Rótulo da row de sub-membro: gerenciado em código (sempre "Sub-membro:" agora que os ossos avulsos
 # têm o dropdown próprio "Esqueleto"); fica no SKIP_GROUP do Locale, retraduzido por código.
 @onready var sub_member_label: Label = %SubMember
@@ -314,9 +311,9 @@ var _zoom_target: float = 0.0
 # um item REAL escolhido na row; "Selecione..." = sem collider (no MEMBRO REMOVE o collider; em
 # sub-membro/avulso só deixa de aplicar override). A escolha vai p/ LimbConfig.collider_shape e é
 # lida na construção dos colliders (spawn). Ver _refresh_collider_editors / _on_*_geo_selected.
-@onready var cbo_member_geo: OptionButton = %MemberGeo
-@onready var cbo_sub_member_geo: OptionButton = %SubMemberGeo
-@onready var cbo_skeleton_geo: OptionButton = %SkeletonGeo
+@onready var cbo_member_geo: OptionButton = %MemberGeos
+@onready var cbo_sub_member_geo: OptionButton = %SubMemberGeos
+@onready var cbo_skeleton_geo: OptionButton = %SkeletonGeos
 # Raiz da UI (Control) onde a janela flutuante de Afastamento/Escala é anexada (como os painéis Dano/IA).
 @onready var ui_root: Control = $UI
 @onready var rotate_toggle: CheckButton = %Rotate
@@ -339,7 +336,6 @@ var _zoom_target: float = 0.0
 @onready var skeleton_lines_check: CheckButton = %SkeletonLines
 @onready var effects_toggle: CheckButton = %Effects
 @onready var damage_panel: PanelContainer = %Damage
-@onready var ai_panel: PanelContainer = %AIPanel
 # Editor de dano em ÁRVORE (Tree): galhos = membros, folhas = sub-membros sob seu dono. Colunas:
 # Nome | Definir (check) | Bônus % (range) | Dono (dropdown, só sub-membros). Footer abaixo da
 # árvore = linha "Adicionar sub-membro" + botão "Remover sub-membro".
@@ -348,9 +344,11 @@ var _zoom_target: float = 0.0
 # Barra de título (área de arraste) e botão fechar (×, estilo Windows) da janela flutuante de dano.
 @onready var damage_titlebar: PanelContainer = %TitleBar
 @onready var damage_close_button: Button = %Close
-@onready var ai_list: VBoxContainer = %AIList
-@onready var ai_titlebar: PanelContainer = %AITitleBar
-@onready var ai_close_button: Button = %AIClose
+# Janela flutuante de IA: agora é uma FloatingWindow runtime (não-modal), criada sob demanda em
+# _ensure_ai_window — herda gap, anel de foco, ESC, supressão e o click-forward do Debug 2D. `ai_list`
+# é o VBox de conteúdo dentro dela, repovoado por _populate_ai_list.
+var _ai_window: FloatingWindow = null
+var ai_list: VBoxContainer = null
 @onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
 @onready var english_button: Button = $UI/Actions/LangBar/English
 # Rótulo LOCAL do nome da cena (nó no .tscn). Mantido OCULTO (ver _ready) — o nome da cena é
@@ -450,7 +448,6 @@ func _ready() -> void:
 	sub_member_label.add_to_group(Locale.SKIP_GROUP)
 	_setup_damage_window()
 	_setup_damage_tree()
-	_setup_ai_window()
 
 	# Pinta o texto de cada toggle de linha com a mesma cor do rótulo 3D que ele controla.
 	_apply_label_line_colors()
@@ -464,6 +461,8 @@ func _ready() -> void:
 	# visit, and no real item is ever auto-selected.
 	_restore_selection_chain()
 	_refresh_ai_actions()
+	# Foco inicial no controle de Tab = 1 (1º por tab_order = Categorias), p/ as setas/Tab começarem dele.
+	UINav.focus_tab_one.call_deferred(self)
 
 
 func _on_language_changed(_lang: String) -> void:
@@ -686,9 +685,6 @@ func _process(delta: float) -> void:
 	if _damage_panel_dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		_damage_panel_dragging = false
 		_save_damage_panel_pos()
-	if _ai_panel_dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		_ai_panel_dragging = false
-		_save_ai_panel_pos()
 
 
 # Sequential gating: each dropdown below Categoria stays DISABLED until the one
@@ -1627,30 +1623,37 @@ func _open_or_update_collider_dialog(group: String, label: String) -> void:
 # mudança persiste + aplica ao vivo.
 func _build_collider_dialog_content(dlg: FloatingWindow) -> void:
 	var content := dlg.get_content()
-	var off := _make_vec3_row(content, "Afastamento:", -10.0, 10.0, 0.01, 0.0)
+	var off := _make_vec3_row(content, "Afastamento:", -10.0, 10.0, 0.01, 0.0, "Offset")
 	_dlg_off_x = off[0]; _dlg_off_y = off[1]; _dlg_off_z = off[2]
-	var rot := _make_vec3_row(content, "Rotação:", -360.0, 360.0, 1.0, 0.0)
+	var rot := _make_vec3_row(content, "Rotação:", -360.0, 360.0, 1.0, 0.0, "Rotation")
 	_dlg_rot_x = rot[0]; _dlg_rot_y = rot[1]; _dlg_rot_z = rot[2]
-	var sc := _make_vec3_row(content, "Escala:", 0.05, 20.0, 0.05, 1.0)
+	var sc := _make_vec3_row(content, "Escala:", 0.05, 20.0, 0.05, 1.0, "Scale")
 	_dlg_scale_x = sc[0]; _dlg_scale_y = sc[1]; _dlg_scale_z = sc[2]
 	for sp in [_dlg_off_x, _dlg_off_y, _dlg_off_z, _dlg_rot_x, _dlg_rot_y, _dlg_rot_z, _dlg_scale_x, _dlg_scale_y, _dlg_scale_z]:
 		(sp as SpinBox).value_changed.connect(_on_dialog_field_changed)
 
 
 # Linha "rótulo: X[ ] Y[ ] Z[ ]" de 3 SpinBox; devolve os 3. Rótulos auto-localizados pelo Locale.
-func _make_vec3_row(parent: Control, label_text: String, mn: float, mx: float, step: float, default_v: float) -> Array:
+# `base_name` nomeia os nós (ex.: "Offset" → OffsetRow/OffsetLabel/OffsetXAxis/OffsetX…) p/ não ficarem
+# como "@SpinBox@N" no Debug 2D.
+func _make_vec3_row(parent: Control, label_text: String, mn: float, mx: float, step: float, default_v: float, base_name: String = "Vec") -> Array:
 	var row := HBoxContainer.new()
+	row.name = base_name + "Row"
 	row.add_theme_constant_override("separation", 8)
 	var lbl := Label.new()
+	lbl.name = base_name + "Label"
 	lbl.text = label_text
 	lbl.custom_minimum_size.x = 110
 	row.add_child(lbl)
 	var spins: Array = []
 	for axis in ["X", "Y", "Z"]:
 		var al := Label.new()
+		al.name = base_name + axis + "Axis"
 		al.text = axis
 		row.add_child(al)
 		var sp := SpinBox.new()
+		sp.name = base_name + axis
+		sp.focus_mode = Control.FOCUS_ALL   # SpinBox não é FOCUS_ALL por padrão → ficaria fora do anel de Tab
 		sp.custom_minimum_size = Vector2(90, 44)
 		sp.min_value = mn
 		sp.max_value = mx
@@ -2180,6 +2183,8 @@ func _on_damage_button_pressed() -> void:
 	# só ganha size real após o layout desta troca de visibilidade.
 	if damage_panel.visible:
 		_clamp_window_to_viewport.call_deferred(damage_panel)
+		# Foco inicial no 1º controle da janela (Tab = 1 = a árvore Limbs), só ao ABRIR.
+		UINav.focus_tab_one.call_deferred(damage_panel, damage_close_button)
 
 
 # Transforma o painel de dano numa JANELA FLUTUANTE estilo Windows: barra de título com fundo
@@ -2191,6 +2196,12 @@ func _setup_damage_window() -> void:
 	win_style.border_color = Color(1, 1, 1, 0.18)
 	win_style.set_border_width_all(1)
 	win_style.set_corner_radius_all(4)
+	# Gap mínimo (regra do projeto 2026-06-30): o conteúdo recua da borda, expondo um anel hoverável
+	# que o Debug 2D aponta como a própria janela (mesmo tratamento da FloatingWindow).
+	win_style.content_margin_left = 10
+	win_style.content_margin_right = 10
+	win_style.content_margin_top = 10
+	win_style.content_margin_bottom = 10
 	damage_panel.add_theme_stylebox_override("panel", win_style)
 	# Barra de título: cinza-escuro OPACO (contraste com o corpo preto), estilo janela do Windows.
 	var tb_style := StyleBoxFlat.new()
@@ -2278,91 +2289,87 @@ func _refresh_ai_actions() -> void:
 	ai_button.disabled = not supported
 	if not supported:
 		_show_ai_panel = false
-	if is_instance_valid(ai_panel):
-		ai_panel.visible = supported and _show_ai_panel
+		_close_ai_window()
 
 
 func _on_ai_button_pressed() -> void:
 	# Toggle: se a janela de IA JÁ está aberta, o mesmo botão a fecha.
-	if ai_panel.visible:
-		_show_ai_panel = false
-		_refresh_ai_panel()
+	if is_instance_valid(_ai_window) and _ai_window.visible:
+		_close_ai_window()
 		return
 	# IA SÓ para personagens (modelos com comportamentos definidos). Sem bloqueio mútuo: abrir a IA
 	# fecha o Dano (só UMA janela por vez), mas o botão nunca é bloqueado pela janela de Dano.
 	if not _supports_ai_editor():
 		return
 	_show_damage_panel = false
-	_show_ai_panel = true
 	_refresh_damage_panel()
-	_refresh_ai_panel()
-	if ai_panel.visible:
-		_clamp_window_to_viewport.call_deferred(ai_panel)
+	_open_ai_window()
 
 
-func _setup_ai_window() -> void:
-	var win_style := StyleBoxFlat.new()
-	win_style.bg_color = Color(0, 0, 0, 1)
-	win_style.border_color = Color(1, 1, 1, 0.18)
-	win_style.set_border_width_all(1)
-	win_style.set_corner_radius_all(4)
-	ai_panel.add_theme_stylebox_override("panel", win_style)
-	var tb_style := StyleBoxFlat.new()
-	tb_style.bg_color = Color(0.16, 0.16, 0.2, 1)
-	tb_style.border_color = Color(1, 1, 1, 0.12)
-	tb_style.border_width_bottom = 1
-	tb_style.content_margin_left = 10
-	tb_style.content_margin_right = 6
-	tb_style.content_margin_top = 4
-	tb_style.content_margin_bottom = 4
-	ai_titlebar.add_theme_stylebox_override("panel", tb_style)
-	ai_titlebar.mouse_default_cursor_shape = Control.CURSOR_MOVE
-	ai_titlebar.gui_input.connect(_on_ai_titlebar_input)
-	ai_close_button.tooltip_text = Locale.tr_key("Fechar")
-	FloatingWindow.style_close_button(ai_close_button)
-	ai_close_button.pressed.connect(_on_ai_close)
-	# Janela flutuante: com ela aberta, o Debug 2D some na UI de fundo que a chamou (ver DebugOverlay).
-	ai_panel.add_to_group(DebugOverlay.FLOATING_WINDOW_GROUP)
-	var saved_pos = Settings.config_file.get_value("models", "ai_panel_pos", ai_panel.position)
-	if saved_pos is Vector2:
-		var vp := get_viewport().get_visible_rect().size
-		var sz: Vector2 = ai_panel.size if ai_panel.size.x > 0 else ai_panel.get_rect().size
-		saved_pos.x = clampf(saved_pos.x, 0.0, maxf(0.0, vp.x - sz.x))
-		saved_pos.y = clampf(saved_pos.y, 0.0, maxf(0.0, vp.y - sz.y))
-		ai_panel.position = saved_pos
+# Cria (uma vez) a FloatingWindow de IA: NÃO-modal (não escurece/bloqueia o preview 3D), arrastável pela
+# barra de título, lembra a posição (Settings "windows/ai_window") e tem o × próprio. O conteúdo é um
+# ScrollContainer com o VBox `ai_list`, repovoado por _populate_ai_list. Como FloatingWindow, já herda o
+# gap, o anel de foco/ESC, a supressão do Debug 2D de fundo e o click-forward do toggle Debug 2D.
+func _ensure_ai_window() -> void:
+	if is_instance_valid(_ai_window):
+		return
+	_ai_window = preload("res://scenes2D/controls2D/floating_window/floating_window.tscn").instantiate()
+	_ai_window.modal = false
+	_ai_window.remember_position_key = "ai_window"
+	_ai_window.min_window_size = Vector2(420, 480)
+	_ai_window.title = "Inteligência Artificial"
+	$UI.add_child(_ai_window)
+	var scroll := ScrollContainer.new()
+	scroll.name = "AIScroll"
+	scroll.follow_focus = true
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.custom_minimum_size = Vector2(420, 440)
+	ai_list = VBoxContainer.new()
+	ai_list.name = "AIList"
+	ai_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ai_list.add_theme_constant_override("separation", 10)
+	scroll.add_child(ai_list)
+	_ai_window.get_content().add_child(scroll)
+	_ai_window.closed.connect(_on_ai_window_closed)
 
 
-func _save_ai_panel_pos() -> void:
-	Settings.config_file.set_value("models", "ai_panel_pos", ai_panel.position)
-	Settings.save_settings()
+func _open_ai_window() -> void:
+	_ensure_ai_window()
+	_show_ai_panel = true
+	_populate_ai_list()                # conteúdo ANTES do popup → o anel de foco já o inclui
+	_ai_window.popup_centered()        # restaura a posição salva (ou centraliza), prende à viewport e liga o anel
 
 
-func _on_ai_titlebar_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		_ai_panel_dragging = event.pressed
-		if event.pressed:
-			_ai_panel_drag_offset = ai_panel.position - ai_panel.get_global_mouse_position()
-		else:
-			_save_ai_panel_pos()
-	elif event is InputEventMouseMotion and _ai_panel_dragging:
-		var target := ai_panel.get_global_mouse_position() + _ai_panel_drag_offset
-		var vp := get_viewport().get_visible_rect().size
-		target.x = clampf(target.x, 0.0, maxf(0.0, vp.x - ai_panel.size.x))
-		target.y = clampf(target.y, 0.0, maxf(0.0, vp.y - ai_panel.size.y))
-		ai_panel.position = target
-
-
-func _on_ai_close() -> void:
-	_ai_panel_dragging = false
+func _close_ai_window() -> void:
+	if is_instance_valid(_ai_window):
+		_ai_window.close()   # idempotente; dispara `closed` → _on_ai_window_closed
 	_show_ai_panel = false
-	_refresh_ai_panel()
 
 
+# A FloatingWindow se autolibera ao fechar (×/ESC/close()); zera as referências e o estado.
+func _on_ai_window_closed() -> void:
+	_ai_window = null
+	ai_list = null
+	_show_ai_panel = false
+
+
+# (Re)povoa o conteúdo da janela de IA — um cartão por comportamento (toggle + descrição). Mantém a
+# visibilidade pela própria janela (open/close); aqui só reconstrói a lista.
 func _refresh_ai_panel() -> void:
+	if not _show_ai_panel or not _supports_ai_editor():
+		_close_ai_window()
+		return
+	_populate_ai_list()
+
+
+func _populate_ai_list() -> void:
+	if not is_instance_valid(ai_list):
+		return
 	for child in ai_list.get_children():
 		child.queue_free()
-	if not _show_ai_panel or not _supports_ai_editor():
-		ai_panel.visible = false
+	if not _supports_ai_editor():
 		return
 	var model_key := _current_model_key()
 	for def in AIConfigLib.behavior_definitions(model_key):
@@ -2400,7 +2407,6 @@ func _refresh_ai_panel() -> void:
 		desc.add_theme_color_override("font_color", Color(1, 1, 1, 0.72))
 		desc.add_theme_font_size_override("font_size", 14)
 		content.add_child(desc)
-	ai_panel.visible = true
 
 
 func _on_ai_behavior_toggled(pressed: bool, model_key: String, behavior_key: String) -> void:
@@ -3236,6 +3242,9 @@ func _refresh_damage_panel() -> void:
 			_fill_sub_member_item(damage_tree.create_item(oi), model_key, str(s["group"]), str(s["bone"]), str(s["label"]))
 	_build_damage_footer(model_key)
 	damage_panel.visible = true
+	# Anel de foco LOCAL da janela Dano (× sempre por último): Limbs 1 → Bone 2 → Owner 3 → Add 4 → × 5.
+	# Religado a cada refresh (o rodapé é reconstruído). O Tab fica preso na janela e alcança o ×.
+	UINav.wire_tab_ring(damage_panel, damage_close_button)
 
 
 # Configura o Tree do editor de dano (uma vez, em _ready): colunas, títulos visíveis, raiz oculta,
@@ -3462,6 +3471,7 @@ func _build_damage_footer(model_key: String) -> void:
 	# Linha 1 da grade (controles): dropdown de osso (expande) | dropdown de dono | botão Adicionar.
 	var picker := OptionButton.new()
 	picker.name = "Bone"
+	picker.set_meta(UINav.TAB_ORDER_META, 2)   # ring local da janela Dano: Limbs 1 → Bone 2 → Owner 3 → Add 4 → × 5
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL   # col 0 expande → "AddTitle" acompanha
 	var candidates := _aux_bone_candidates()
 	if candidates.is_empty():
@@ -3473,6 +3483,7 @@ func _build_damage_footer(model_key: String) -> void:
 	grid.add_child(picker)
 	var owner_btn := OptionButton.new()
 	owner_btn.name = "Owner"
+	owner_btn.set_meta(UINav.TAB_ORDER_META, 3)
 	for ch in _owner_choices():
 		var i := owner_btn.item_count
 		owner_btn.add_item(str(ch["label"]))
@@ -3481,6 +3492,7 @@ func _build_damage_footer(model_key: String) -> void:
 	grid.add_child(owner_btn)
 	var add_btn := Button.new()
 	add_btn.name = "Add"
+	add_btn.set_meta(UINav.TAB_ORDER_META, 4)
 	add_btn.text = "Adicionar"   # Button: auto-localizado pelo Locale
 	add_btn.disabled = candidates.is_empty()
 	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker, owner_btn))
@@ -4200,16 +4212,16 @@ func _input(input_event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-# True quando o ponteiro está sobre a janela flutuante de Dano ou IA (visível). A roda do mouse
-# leva esse evento ao _unhandled_input quando o scroll interno da janela está no limite (ou sobre
-# uma área sem rolagem); aqui a usamos para NÃO aplicar o zoom do 3D nesse caso.
+# True quando o ponteiro está sobre uma janela flutuante (visível). A roda do mouse leva esse evento
+# ao _unhandled_input quando o scroll interno da janela está no limite (ou sobre uma área sem rolagem);
+# aqui a usamos para NÃO aplicar o zoom do 3D nesse caso. A janela de IA é uma FloatingWindow (coberta
+# por pointer_over_any_window); o Dano é PanelContainer próprio, testado pelo seu retângulo.
 func _pointer_over_model_window() -> bool:
 	if FloatingWindow.pointer_over_any_window():
 		return true
-	for panel in [damage_panel, ai_panel]:
-		if is_instance_valid(panel) and panel.visible \
-				and panel.get_global_rect().has_point(panel.get_global_mouse_position()):
-			return true
+	if is_instance_valid(damage_panel) and damage_panel.visible \
+			and damage_panel.get_global_rect().has_point(damage_panel.get_global_mouse_position()):
+		return true
 	return false
 
 

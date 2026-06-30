@@ -192,8 +192,10 @@ horizontal_alignment = 1
 
 [node name="PlayRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
+metadata/tab_order = 1
 
 [node name="Play" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/PlayRow" unique_id=2068058598]
+metadata/tab_order = 1
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -203,8 +205,10 @@ alignment = 1
 
 [node name="PlayOnlineRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
+metadata/tab_order = 2
 
 [node name="PlayOnline" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/PlayOnlineRow" unique_id=1771290010]
+metadata/tab_order = 2
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -214,8 +218,10 @@ alignment = 1
 
 [node name="SettingsRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
+metadata/tab_order = 3
 
 [node name="Settings" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/SettingsRow" unique_id=1736245222]
+metadata/tab_order = 3
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -225,8 +231,10 @@ alignment = 1
 
 [node name="DeveloperRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
+metadata/tab_order = 4
 
 [node name="Developer" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/DeveloperRow" unique_id=299022428]
+metadata/tab_order = 4
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -236,8 +244,10 @@ alignment = 1
 
 [node name="QuitRow" type="HBoxContainer" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn"]
 layout_mode = 2
+metadata/tab_order = 5
 
 [node name="Quit" type="Button" parent="UI/MenuCenter/MenuCard/MenuInset/MenuColumn/QuitRow" unique_id=1164533481]
+metadata/tab_order = 5
 custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -323,6 +333,7 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="Portuguese" type="Button" parent="UI/Actions/LangBar" unique_id=1700000002]
+metadata/tab_order = 6
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -331,6 +342,7 @@ theme_override_font_sizes/font_size = 20
 text = "Português"
 
 [node name="English" type="Button" parent="UI/Actions/LangBar" unique_id=1700000003]
+metadata/tab_order = 7
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2

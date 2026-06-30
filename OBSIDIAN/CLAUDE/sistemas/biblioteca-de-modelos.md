@@ -444,6 +444,23 @@ toggle é o **interruptor mestre** da sua categoria:
     (`content.theme_override_constants.separation = 6`, acesso por ponto que não existe em GDScript),
     então a janela de IA NUNCA abria (erro em runtime antes de `ai_panel.visible = true`); trocado por
     `add_theme_constant_override("separation", 6)`. Ver `_on_damage_button_pressed`/`_on_ai_button_pressed`.
+  - **Editor de IA virou `FloatingWindow` (2026-06-30):** o painel IA deixou de ser um `PanelContainer`
+    do `.tscn` (com barra/×/arraste/posição manuais) e passou a ser uma **`FloatingWindow` runtime
+    não-modal**, criada sob demanda em `_ensure_ai_window` (`remember_position_key = "ai_window"`,
+    `min_window_size = (420,480)`). O conteúdo (ScrollContainer + `ai_list`) é repovoado por
+    `_populate_ai_list`; abrir = `_open_ai_window` (`popup_centered`), fechar = `_close_ai_window`
+    (×/ESC disparam `closed` → `_on_ai_window_closed` zera as refs). Assim a IA herda gap, anel de
+    foco/ESC, supressão do Debug 2D de fundo e o click-forward do toggle (ver [[sistemas/debug-overlay]]).
+    Removidos do `models.gd`: `ai_panel`/`ai_titlebar`/`ai_close_button`, `_setup_ai_window`,
+    `_on_ai_titlebar_input`, `_save_ai_panel_pos`, `_on_ai_close` e o drag manual; o subtree `UI/AIPanel`
+    saiu do `.tscn`. O **Dano** segue `PanelContainer` próprio (ligado ao dano por membro), com o gap
+    aplicado à parte. `_pointer_over_model_window` agora cobre a IA via `pointer_over_any_window()`.
+  - **Foco/Tab da janela Dano + foco inicial da tela (2026-06-30):** o `_ready` passou a focar o
+    controle de Tab = 1 (`UINav.focus_tab_one` → 1ª por `tab_order` = Categorias). A **janela Dano** ganhou
+    anel de foco LOCAL (`UINav.wire_tab_ring(damage_panel, damage_close_button)` em `_refresh_damage_panel`,
+    com o **× sempre por último**): `Limbs` 1 → `Bone` 2 → `Owner` 3 → `Add` 4 → **× 5**; foca a árvore
+    `Limbs` ao abrir. `Bone`/`Owner`/`Add` (runtime) recebem `tab_order` por `set_meta`; `Limbs` e `Close`
+    têm `tab_order` 1 e 5 no `.tscn`.
   Aparece para **QUALQUER modelo em "Modelo completo"**
   (`_supports_damage_editor`); `_refresh_damage_panel` repopula ao trocar de modelo e some em mesh
   isolada. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta

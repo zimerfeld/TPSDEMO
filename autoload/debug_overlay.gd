@@ -2,6 +2,11 @@ extends Node
 
 const _BORDER_WIDTH := 2
 const _TOOLTIP_GAP := 4.0
+
+# Layer dos canvases do overlay de debug. Fica ACIMA das janelas flutuantes (FloatingDialog usa um
+# CanvasLayer em 128), para o overlay de debug ser SEMPRE trazido à frente — inclusive sobre o diálogo
+# de confirmação. O canvas do watermark do nome da cena fica logo acima (_OVERLAY_LAYER + 1).
+const _OVERLAY_LAYER := 129
 # Intensidade do realce da borda do "host" (controle que contém o apontado), relativa ao realce
 # pleno (1.0). Bem fraco de propósito: só situa o controle dentro do contêiner sem competir com ele.
 const _HOST_GLOW := 0.18
@@ -132,15 +137,12 @@ func _line_visible_2d(kind: String) -> bool:
 	return false
 
 
-# Numera os controles na ordem real de navegação por Tab da tela ativa: parte do primeiro
-# focável (UINav) e segue find_next_valid_focus() até fechar o ciclo. Preenche _tab_index_map
-# (inst_id → índice 1-based). Controles não focáveis ficam de fora (mostram "TAB: -").
+# Numera os controles na ordem real de navegação por Tab: parte do início da cadeia ativa e segue
+# find_next_valid_focus() até fechar o ciclo. Preenche _tab_index_map (inst_id → índice 1-based).
+# Controles não focáveis ficam de fora (mostram "TAB: -").
 func _compute_tab_indices() -> void:
 	_tab_index_map.clear()
-	var screen := _active_screen_root()
-	if screen == null:
-		return
-	var cur: Control = UINav.first_focusable(screen)
+	var cur: Control = _tab_chain_start()
 	var idx := 1
 	var guard := 0
 	while cur != null and guard < 4096:
@@ -151,6 +153,22 @@ func _compute_tab_indices() -> void:
 		idx += 1
 		guard += 1
 		cur = cur.find_next_valid_focus()
+
+
+# Onde começar a numeração de Tab. Com janela(s) flutuante(s) aberta(s), numera a cadeia DA JANELA (o
+# fundo está suprimido): começa no 1º controle DEPOIS do × dela, para o × — que fica por último no anel
+# — receber o MAIOR índice. Sem janela, começa no 1º focável da tela ativa (ordem de leitura).
+func _tab_chain_start() -> Control:
+	var windows := _active_floating_windows()
+	if not windows.is_empty():
+		var win := windows.back() as Control
+		var close_btn := UINav.first_focusable(win)   # ordem de árvore: o botão × vem 1º
+		if close_btn == null:
+			return null
+		var after := close_btn.find_next_valid_focus()
+		return after if after != null else close_btn
+	var screen := _active_screen_root()
+	return UINav.first_focusable(screen) if screen != null else null
 
 
 # Janelas flutuantes VISÍVEIS agora (nós do FLOATING_WINDOW_GROUP). Nós já liberados/escondidos
@@ -185,7 +203,7 @@ func refresh() -> void:
 func _setup_scene_name_label() -> void:
 	if not is_instance_valid(_persistent_canvas):
 		_persistent_canvas = CanvasLayer.new()
-		_persistent_canvas.layer = 101
+		_persistent_canvas.layer = _OVERLAY_LAYER + 1
 		_persistent_canvas.name = "DebugSceneCanvas"
 		get_tree().root.add_child(_persistent_canvas)
 	_scene_name_label = Label.new()
@@ -246,7 +264,24 @@ func _ensure_debug2d_toggle(screen: Node) -> void:
 	var toggle := _Debug2DToggle.new()
 	toggle.name = "Debug2D"
 	toggle.text = "Debug 2D"
+	# TAB explícito: o toggle é o ÚLTIMO da tela → maior tab_order declarado + 1 (ex.: chooseplayer 7,
+	# menu 8). Só quando a tela declara tab_order (max > 0); em telas que numeram por código/ordem de
+	# árvore (ex.: client/host_session, que renumeram no seu _rewire_tab) NÃO marcamos aqui — senão o
+	# toggle viraria TAB 1 e iria para o início do anel. Ver [[convencoes/navegacao-tab]].
+	var max_order := _max_declared_tab_order(screen)
+	if max_order > 0:
+		toggle.set_meta(UINav.TAB_ORDER_META, max_order + 1)
 	actions.add_child(toggle)
+
+
+# Maior tab_order DECLARADO (metadata/tab_order) entre os Controls da tela, ou 0 se nenhum.
+func _max_declared_tab_order(screen: Node) -> int:
+	var m := 0
+	for n in screen.find_children("*", "Control", true, false):
+		var o: int = UINav.tab_order_of(n)
+		if o < (1 << 30) and o > m:
+			m = o
+	return m
 
 
 func _process(delta: float) -> void:
@@ -363,8 +398,15 @@ func _show_overlay_for(inst_id: int, tab_visible: bool) -> void:
 	entry.id_lbl.visible = _line_visible_2d("id")
 	entry.tab_lbl.visible = tab_visible
 	if tab_visible:
-		var ti: int = _tab_index_map.get(inst_id, -1)
-		entry.tab_lbl.text = "TAB: %d" % ti if ti > 0 else "TAB: -"
+		# Preferimos o valor ESPERADO declarado no .tscn (metadata/tab_order) — assim a linha Tab é
+		# previsível e independe da cadeia de foco viva. Sem o metadado, cai no índice CALCULADO pela
+		# cadeia real (find_next_valid_focus). Ver UINav.TAB_ORDER_META / [[convencoes/navegacao-tab]].
+		var declared := UINav.tab_order_of(ctrl)
+		if declared < (1 << 30):
+			entry.tab_lbl.text = "TAB: %d" % declared
+		else:
+			var ti: int = _tab_index_map.get(inst_id, -1)
+			entry.tab_lbl.text = "TAB: %d" % ti if ti > 0 else "TAB: -"
 	var path_visible := _line_visible_2d("path")
 	entry.path_lbl.visible = path_visible
 	if path_visible:
@@ -756,7 +798,7 @@ func _ensure_canvas() -> void:
 	if is_instance_valid(_canvas_layer):
 		return
 	_canvas_layer = CanvasLayer.new()
-	_canvas_layer.layer = 100
+	_canvas_layer.layer = _OVERLAY_LAYER
 	_canvas_layer.name = "DebugOverlayCanvas"
 	get_tree().root.add_child(_canvas_layer)
 

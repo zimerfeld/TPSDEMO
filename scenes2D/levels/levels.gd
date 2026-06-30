@@ -20,15 +20,27 @@ var loading_path: String = ""
 @onready var portuguese_button: Button = %Portuguese
 @onready var english_button: Button = %English
 
-var _template_dialog: Window = null
+var _template_dialog: LevelTemplateDialog = null
 var _template_buttons: Dictionary = {}
 
 
 func _ready() -> void:
 	_update_language_buttons()
 	_add_template_buttons()
-	# Foco inicial para a navegação por setas do teclado.
-	UINav.focus_first.call_deferred(self)
+	# Foco inicial SEMPRE no controle de Tab = 1 (cabeça do anel), p/ as setas/Tab começarem do 1º.
+	UINav.focus_tab_one.call_deferred(self)
+	# Tab incremental de 1 na ordem de leitura (Level/Template de cima p/ baixo, depois Voltar/idiomas).
+	# Re-liga quando o DebugOverlay injeta o toggle "Debug 2D" na barra Actions (ele entra DEPOIS),
+	# para o toggle entrar na mesma sequência de Tab.
+	_wire_tab_order.call_deferred()
+	($UI/Actions as HBoxContainer).child_entered_tree.connect(
+		func(_n: Node) -> void: _wire_tab_order.call_deferred())
+
+
+# (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — pode ser chamado quantas vezes
+# o conjunto de controles focáveis mudar (toggle injetado, botão de idioma habilitando/desabilitando).
+func _wire_tab_order() -> void:
+	UINav.wire_tab_ring(self)
 
 
 # Grey out the button for the language already active (same pattern as the menu).
@@ -36,6 +48,10 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	# O botão do idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar
+	# sem ele. call_deferred: o estado disabled já assentou quando o anel é remontado.
+	if is_node_ready():
+		_wire_tab_order.call_deferred()
 
 
 func _on_portuguese_pressed() -> void:
@@ -100,17 +116,23 @@ func _on_back_pressed() -> void:
 
 
 func _add_template_buttons() -> void:
+	# Cada botão de template fica à DIREITA do botão do level, na mesma linha. Recebe NOME próprio
+	# (senão o Godot os auto-nomeia "@Button@2/3…", que aparecia no Debug 2D) e o tab_order da ordem
+	# de leitura (level → seu template): Level1=1, Level1Template=2, Level2=3, … (ver levels.tscn).
 	var rows := {
-		LEVEL_1_PATH: %Level1.get_parent(),
-		LEVEL_2_PATH: %Level2.get_parent(),
-		LEVEL_BASE_PATH: %LevelBase.get_parent(),
+		LEVEL_1_PATH: {"row": %Level1.get_parent(), "name": "Level1Template", "tab": 2},
+		LEVEL_2_PATH: {"row": %Level2.get_parent(), "name": "Level2Template", "tab": 4},
+		LEVEL_BASE_PATH: {"row": %LevelBase.get_parent(), "name": "LevelBaseTemplate", "tab": 6},
 	}
 	for level_path in rows:
+		var info: Dictionary = rows[level_path]
 		var btn := Button.new()
+		btn.name = info["name"]
+		btn.set_meta(UINav.TAB_ORDER_META, info["tab"])
 		btn.text = _template_button_text(level_path)
 		btn.custom_minimum_size = Vector2(220, 50)
 		btn.pressed.connect(_open_template_dialog.bind(level_path))
-		rows[level_path].add_child(btn)
+		(info["row"] as Node).add_child(btn)
 		_template_buttons[level_path] = btn
 
 

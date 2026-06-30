@@ -13,21 +13,26 @@ const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn
 const CLIENT_SESSION_PATH: String = "res://scenes2D/client_session/client_session.tscn"
 
 var _playing_room: int = -1            # sala em que o cliente está jogando (-1 = navegando)
-
-var _panel: Control
-var _rooms_list: VBoxContainer
-var _empty_hint: Label
 var _confirm_dialog: FloatingWindow = null
+
+# Scaffold ESTÁTICO no .tscn (2026-06-30): título/info/lista/Voltar/Actions já vêm da cena; o código só
+# popula as linhas de sala (dinâmicas) e religa o foco. Antes a tela inteira era montada em runtime.
+@onready var _panel: Control = %Panel
+@onready var _rooms_list: VBoxContainer = %RoomsList
+@onready var _empty_hint: Label = %EmptyHint
+@onready var _actions_bar: HBoxContainer = %Actions
+@onready var _back_button: Button = %BackButton
+@onready var _signal_layer: ColorRect = %SignalLayer
 
 
 func _ready() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Tema do projeto (mesmo da playonline/menu) → botões/labels/dropdowns/painéis com o visual
-	# cyberpunk consistente. Propaga p/ toda a UI montada em código (filhos herdam o theme da raiz).
-	theme = load("res://themes/ui_theme.tres")
-	# A raiz não captura mouse (o painel/botões sim); ao esconder o painel, o jogo recebe o input.
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_build_ui()
+	# Tema, mouse_filter e todo o scaffold vêm do .tscn. Só o aspecto dos anéis do shader depende da
+	# viewport (mantém círculos); ring_color/dir já estão no material da cena.
+	var mat := _signal_layer.material as ShaderMaterial
+	if mat != null:
+		var sz: Vector2 = get_viewport().get_visible_rect().size
+		mat.set_shader_parameter("aspect", sz.x / maxf(sz.y, 1.0))
+	_back_button.pressed.connect(_go_back)
 	RoomManager.rooms_changed.connect(_refresh_rooms)
 	RoomManager.room_closed.connect(_on_room_closed)
 	RoomManager.room_restarted.connect(_on_room_restarted)
@@ -42,21 +47,29 @@ func _ready() -> void:
 	else:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		_refresh_rooms()
+	# Toggle "Debug 2D" na barra Actions (injetado pelo DebugOverlay como nas demais telas) + sequência
+	# de Tab. Re-liga ao injetar o toggle e ao remontar as salas; foco inicial no controle de Tab = 1.
+	_actions_bar.child_entered_tree.connect(func(_n: Node) -> void: _rewire_tab.call_deferred())
+	_rewire_tab.call_deferred()
+	UINav.focus_tab_one.call_deferred(self)
 
 
-# ───────────────────────────── UI (navegador) ─────────────────────────────
-
-func _build_ui() -> void:
-	var inner := _make_panel("Salas disponíveis no servidor")
-	var info := Label.new()
-	info.text = "Escolha uma sala para entrar:"
-	info.add_theme_font_size_override("font_size", 18)
-	inner.add_child(info)
-	_rooms_list = _make_rooms_list(inner)
-	_empty_hint = Label.new()
-	_empty_hint.text = "Nenhuma sala em execução."
-	_empty_hint.add_theme_font_size_override("font_size", 16)
-	inner.add_child(_empty_hint)
+# (Re)liga a sequência de Tab do navegador NUMERANDO em ordem de leitura (lista variável): botões
+# "Jogar" das salas 1..N → Voltar → Debug 2D. Idempotente: re-chamada quando a lista muda ou o toggle
+# é injetado. Numerar por código (e não no .tscn) é necessário porque o nº de salas varia em runtime.
+func _rewire_tab() -> void:
+	var i := 1
+	for row in _rooms_list.get_children():
+		var play := row.get_node_or_null("PlayButton")
+		if play is BaseButton:
+			(play as Control).set_meta(UINav.TAB_ORDER_META, i)
+			i += 1
+	_back_button.set_meta(UINav.TAB_ORDER_META, i)
+	i += 1
+	var dbg := _actions_bar.get_node_or_null("Debug2D")
+	if dbg != null:
+		(dbg as Control).set_meta(UINav.TAB_ORDER_META, i)
+	UINav.wire_tab_ring(self)
 
 
 func _refresh_rooms() -> void:
@@ -70,6 +83,8 @@ func _refresh_rooms() -> void:
 		_empty_hint.visible = rooms.is_empty()
 	for r in rooms:
 		_rooms_list.add_child(_make_client_row(r))
+	# As linhas de sala mudaram (novos botões "Jogar") → re-liga a sequência de Tab.
+	_rewire_tab.call_deferred()
 
 
 func _make_client_row(r: Dictionary) -> Control:
@@ -77,13 +92,16 @@ func _make_client_row(r: Dictionary) -> Control:
 	var path: String = String(r["level_path"])
 	var players: int = int(r.get("players", 0))
 	var row := HBoxContainer.new()
+	row.name = "RoomRow_%d" % id
 	row.add_theme_constant_override("separation", 8)
 	var lbl := Label.new()
+	lbl.name = "RoomLabel"
 	lbl.text = "Sala #%d — %s  (%d jogador%s)" % [
 		id, RoomManager.level_label(path), players, "" if players == 1 else "es"]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var play_btn := Button.new()
+	play_btn.name = "PlayButton"
 	play_btn.text = "Jogar"
 	play_btn.pressed.connect(_on_play_room.bind(id, path))
 	row.add_child(play_btn)
@@ -176,95 +194,5 @@ func _input(event: InputEvent) -> void:
 			_confirm_disconnect()       # jogando: confirma desconectar e volta ao navegador
 		else:
 			_go_back()                  # navegador: volta ao PlayOnline (fecha o peer)
-
-
-# ───────────────────────────── helpers de UI ─────────────────────────────
-
-# Monta o navegador inteiro (tela cheia) e devolve a VBox CENTRALIZADA onde vai a lista de salas.
-# Escondido enquanto o cliente JOGA (o nível ocupa a janela principal). Fundo na MESMA cor navy das
-# outras telas — o ui_theme só estiliza Button/Label, não dá fundo; sem isto sobrava o cinza padrão
-# do PanelContainer (era o "estilo de cores não aplicado"). Conteúdo centralizado (largura máx. 900)
-# e botão Voltar de tamanho normal e centralizado, no padrão da playonline/menu.
-func _make_panel(title_text: String) -> VBoxContainer:
-	_panel = Control.new()
-	_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(_panel)
-	# Fundo: MESMA textura cyberpunk do menu, porém com IDENTIDADE de CLIENTE — graduação FRIA (ciano)
-	# + anéis de "radar" CONTRAINDO para dentro (CONECTA-SE ao servidor). Contrasta com o host
-	# (quente + anéis expandindo). mouse_filter IGNORE p/ os cliques chegarem aos botões.
-	var bg_tex := TextureRect.new()
-	bg_tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg_tex.texture = load("res://scenes2D/menu/menu_surreal_training_bg.png")
-	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg_tex.modulate = Color(0.55, 0.86, 1.0, 0.98)   # graduação FRIA (ciano) = CLIENTE
-	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(bg_tex)
-	var veil := ColorRect.new()
-	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	veil.color = Color(0.008, 0.03, 0.06, 0.62)      # véu escuro frio
-	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(veil)
-	_panel.add_child(_make_signal_layer(Color(0.2, 0.72, 1.0, 1.0), -1.0))  # anéis ciano CONTRAINDO
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 40)
-	_panel.add_child(margin)
-	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 14)
-	margin.add_child(outer)
-	var title := Label.new()
-	title.text = title_text
-	title.add_theme_font_size_override("font_size", 28)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	outer.add_child(title)
-	# Área central: VBox de largura máx. 900, centralizada horizontalmente (a lista fica aqui).
-	var center := HBoxContainer.new()
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	outer.add_child(center)
-	var inner := VBoxContainer.new()
-	inner.custom_minimum_size = Vector2(900, 0)
-	inner.add_theme_constant_override("separation", 14)
-	center.add_child(inner)
-	# Voltar: tamanho fixo e centralizado embaixo (não mais full-width), como nas outras telas.
-	var actions := HBoxContainer.new()
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	outer.add_child(actions)
-	var back_btn := Button.new()
-	back_btn.text = "Voltar"
-	back_btn.custom_minimum_size = Vector2(200, 50)
-	back_btn.pressed.connect(_go_back)
-	actions.add_child(back_btn)
-	return inner
-
-
-# Camada de "radar/sinal": ColorRect em tela cheia com o shader de anéis concêntricos. `dir` = +1
-# expande (host transmite) / -1 contrai (cliente conecta). `aspect` mantém os anéis circulares.
-func _make_signal_layer(color: Color, dir: float) -> ColorRect:
-	var rect := ColorRect.new()
-	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://themes/session_signal_bg.gdshader")
-	mat.set_shader_parameter("ring_color", color)
-	mat.set_shader_parameter("dir", dir)
-	var sz: Vector2 = get_viewport().get_visible_rect().size
-	mat.set_shader_parameter("aspect", sz.x / maxf(sz.y, 1.0))
-	rect.material = mat
-	return rect
-
-
-func _make_rooms_list(parent: VBoxContainer) -> VBoxContainer:
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 360)
-	parent.add_child(scroll)
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 8)
-	scroll.add_child(list)
-	return list
 
 

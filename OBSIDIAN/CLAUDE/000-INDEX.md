@@ -70,6 +70,7 @@ Canais de doação configurados no repositório (badges no topo dos READMEs + bo
 | [[convencoes/dropdowns]] | Todo OptionButton começa com "Selecione..." (item 0, default); cascata reseta dependentes e a tela |
 | [[convencoes/ancoragem-ui]] | Barras de botões no rodapé usam BOTTOM_WIDE (largura total); resolução limitada à tela útil |
 | [[convencoes/layout-responsivo]] | Organizar controles com Containers (não offsets absolutos); esqueleto Margin→VBox→HBox; piloto: developer |
+| [[convencoes/navegacao-tab]] | Helpers `UINav` (foco/Tab): `wire_tab_ring` (anel), `focus_tab_one`, `focus_first`, `cancel_active_edit`; por que o Debug 2D mostra `TAB: -`; matriz cena×helper |
 
 ---
 

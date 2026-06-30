@@ -34,10 +34,22 @@ aplicam na hora (`DebugOverlay.refresh()`).
     o mesmo Type/Name** na mesma cena. Preenchida a cada frame em `_show_overlay_for` (só p/ o controle
     apontado e seu host).
   - **Linha Tab** (`ShowTabRow` → `show_tab`, **última** sub-linha, abaixo de `ShowPathRow`): mostra o
-    **índice de Tab/foco** de cada controle (`TAB: n`, ou `TAB: -` se não focável). O índice é a ordem REAL de
-    navegação: o `_compute_tab_indices` parte do 1º focável (`UINav.first_focusable`) da tela ativa e
-    segue `find_next_valid_focus()` numerando 1, 2, 3… Recalculado a cada frame **só** enquanto a
-    linha Tab está visível (a ordem de foco muda conforme controles aparecem/somem). Ver [[fluxo-de-cenas]].
+    **índice de Tab/foco** de cada controle (`TAB: n`, ou `TAB: -` se não focável). **Valor ESPERADO em
+    primeiro lugar (2026-06-30):** se o controle declara `metadata/tab_order` (ver
+    [[convencoes/navegacao-tab]]), a linha exibe esse número (`UINav.tab_order_of`), para a ordem ser
+    previsível e independer da cadeia viva. **Sem** o metadado, cai no índice CALCULADO: o
+    `_compute_tab_indices` parte do início da cadeia (`_tab_chain_start`) e segue
+    `find_next_valid_focus()` numerando 1, 2, 3… **Com janela flutuante aberta** (fundo suprimido) numera
+    a cadeia DA JANELA começando **depois do ×**, então o **× recebe o MAIOR `TAB: n`** (fica por último
+    no anel — ver [[fluxo-de-cenas]]); sem janela, parte do 1º focável (`UINav.first_focusable`) da tela
+    ativa. Recalculado a cada frame **só** enquanto a linha Tab está visível (a ordem de foco muda
+    conforme controles aparecem/somem).
+    - **Por que alguns controles ficam `TAB: -`?** Dois motivos: (1) **não são focáveis** — `Label`,
+      `ColorRect`, `Panel`, containers, título da cena, o **idioma ativo** (`disabled`): correto/esperado;
+      (2) **são focáveis, mas a cadeia não os alcança** — em telas **sem** `UINav.wire_tab_ring`, o
+      `find_next_valid_focus()` segue os vizinhos automáticos do Godot, que podem não encadear todos os
+      contêineres e fechar o ciclo cedo, deixando focáveis sem número. **Ligar o anel**
+      (`UINav.wire_tab_ring(self)`) faz todos receberem `TAB: 1..N`. Detalhe em [[convencoes/navegacao-tab]].
 - Botões **Modelos 3D** / **Controles 2D** (navegação).
 
 ## Debug 2D — detalhes
@@ -59,6 +71,12 @@ aplicam na hora (`DebugOverlay.refresh()`).
   tela ativa (solo offline). Telas sem nenhuma Actions são ignoradas. O toggle lê/grava
   `Settings("game","debug_2d")` e chama `DebugOverlay.refresh()`. Roda mesmo com o Debug 2D **desligado**
   (a chamada está ANTES do `if _canvas_layer == null: return`), senão não haveria como ligá-lo.
+- **Canvas SEMPRE à frente (2026-06-29):** os dois `CanvasLayer` do overlay subiram para
+  `_OVERLAY_LAYER = 129` (tooltips/bordas) e `130` (watermark do nome da cena), **acima das janelas
+  flutuantes** — o `FloatingDialog` monta o diálogo num `CanvasLayer` em **128** (ex.: "Deseja sair do
+  Zimaro ?"), que antes **cobria** o overlay (que estava em 100/101). Agora o Debug 2D é desenhado por
+  cima do diálogo (e, como é `MOUSE_FILTER_IGNORE`, não rouba clique). Fica abaixo apenas de nada — só o
+  crash overlay do `stability_guard` (128) também é alto, mas o debug, por pedido, vem à frente.
 - **Posição dos tooltips — regra dos 4 cantos (reescrito 2026-06-28):** `_layout_tooltips(hov, host)`
   posiciona **primeiro** o tooltip do controle **apontado** e **depois** o do **host**, cada um pela
   função `_pick_corner`, que tenta 4 cantos do controle **nesta ordem de prioridade**, escolhendo o
@@ -135,11 +153,27 @@ aplicam na hora (`DebugOverlay.refresh()`).
   aberta nada muda. **Vale em QUALQUER cena (2026-06-27):** a classe reutilizável `FloatingWindow`
   (`scenes2D/controls2D/floating_window/`) entra no grupo sozinha no seu `_ready`, então toda janela
   baseada nela — incluindo os diálogos de confirmação do `FloatingDialog` — já dispara a supressão em
-  qualquer tela. Em Models, como o `damage_panel` (Dano) e o `ai_panel` (IA) **não** são `FloatingWindow`
-  (são `PanelContainer` próprios), eles entram no grupo **explicitamente** (`add_to_group` no
-  `_setup_damage_window`/`_setup_ai_window`); a `FloatingWindow` de Afastamento/Escala se registra
+  qualquer tela. Em Models, o **editor de IA** virou uma `FloatingWindow` runtime (2026-06-30, ver
+  abaixo) e se registra sozinha; já o `damage_panel` (Dano) segue `PanelContainer` próprio (ligado ao
+  sistema de dano por membro), então entra no grupo **explicitamente** (`add_to_group` no
+  `_setup_damage_window`); a `FloatingWindow` de Afastamento/Escala se registra
   sozinha. Abrir/fechar/alternar janelas atualiza a supressão na hora, pois é decidida pela
   visibilidade ao vivo (ver [[sistemas/dano-localizado]], [[sistemas/biblioteca-de-modelos]]).
+- **Gap p/ identificar a janela + Debug2D acionável sob o backdrop (2026-06-30):** regra do projeto —
+  toda `FloatingWindow` agora deixa um **anel/margem mínima** (`_WINDOW_CONTENT_GAP = 4 px`,
+  `content_margin` no stylebox do `Window`) entre a borda e o conteúdo/titlebar, para o mouse passar
+  por esse espaço e o Debug 2D **apontar a própria janela**. E, mesmo com a janela **modal** (backdrop
+  bloqueando o fundo), um clique sobre certos controles da cena de fundo continua **acionável**:
+  `FloatingWindow._input` (`_clickthrough_button_at`) detecta o clique antes do backdrop e aciona o
+  controle — o **toggle Debug 2D** (grupo `Debug2DToggle.GROUP` = `&"debug2d_toggle"`, liga/desliga os
+  overlays) **e os botões da `LangBar`** (idiomas; regra 2026-06-30). `disabled` é ignorado (ex.: idioma
+  ativo). CheckButton dispara `toggled`; Button de idioma dispara `pressed`.
+  Em Models: o **editor de IA** virou uma `FloatingWindow` runtime **não-modal** (`_ensure_ai_window`,
+  `remember_position_key = "ai_window"`), então herda **tudo** — gap, anel de foco, ESC, supressão e o
+  click-forward. O **Dano** segue `PanelContainer` próprio (ligado ao dano por membro): recebeu o
+  **mesmo gap** (`content_margin = 4` no `win_style` de `_setup_damage_window`); o **click-forward** não
+  se aplica a ele — é **não-modal** (sem backdrop), então o `Debug2DToggle` da barra Actions de Models já
+  fica clicável com ele aberto.
 
 ## Inspeção 3D → tela Models
 

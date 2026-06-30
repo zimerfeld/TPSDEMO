@@ -72,6 +72,7 @@ theme_override_constants/separation = 16
 layout_mode = 2
 
 [node name="Level1" type="Button" parent="UI/Inset/Main/LevelsColumn/Level1Row" unique_id=1572114992]
+metadata/tab_order = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
@@ -84,6 +85,7 @@ alignment = 0
 layout_mode = 2
 
 [node name="Level2" type="Button" parent="UI/Inset/Main/LevelsColumn/Level2Row" unique_id=1572114993]
+metadata/tab_order = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
@@ -96,6 +98,7 @@ alignment = 0
 layout_mode = 2
 
 [node name="LevelBase" type="Button" parent="UI/Inset/Main/LevelsColumn/LevelBaseRow" unique_id=1771458778]
+metadata/tab_order = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
@@ -121,6 +124,7 @@ theme_override_constants/separation = 60
 alignment = 1
 
 [node name="Back" type="Button" parent="UI/Actions" unique_id=1391874588]
+metadata/tab_order = 7
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
@@ -132,6 +136,7 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 8
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -140,6 +145,7 @@ theme_override_font_sizes/font_size = 20
 text = "Português"
 
 [node name="English" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 9
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
