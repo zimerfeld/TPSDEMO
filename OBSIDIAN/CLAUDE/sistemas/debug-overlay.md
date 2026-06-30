@@ -163,9 +163,11 @@ aplicam na hora (`DebugOverlay.refresh()`).
   toda `FloatingWindow` agora deixa um **anel/margem mínima** (`_WINDOW_CONTENT_GAP = 4 px`,
   `content_margin` no stylebox do `Window`) entre a borda e o conteúdo/titlebar, para o mouse passar
   por esse espaço e o Debug 2D **apontar a própria janela**. E, mesmo com a janela **modal** (backdrop
-  bloqueando o fundo), um clique sobre o `Debug2DToggle` da cena que a carregou **liga/desliga os
-  overlays**: a `FloatingWindow._input` detecta o clique sobre o retângulo do toggle (via grupo
-  `Debug2DToggle.GROUP` = `&"debug2d_toggle"`) e o aciona antes de o backdrop engolir o evento.
+  bloqueando o fundo), um clique sobre certos controles da cena de fundo continua **acionável**:
+  `FloatingWindow._input` (`_clickthrough_button_at`) detecta o clique antes do backdrop e aciona o
+  controle — o **toggle Debug 2D** (grupo `Debug2DToggle.GROUP` = `&"debug2d_toggle"`, liga/desliga os
+  overlays) **e os botões da `LangBar`** (idiomas; regra 2026-06-30). `disabled` é ignorado (ex.: idioma
+  ativo). CheckButton dispara `toggled`; Button de idioma dispara `pressed`.
   Em Models: o **editor de IA** virou uma `FloatingWindow` runtime **não-modal** (`_ensure_ai_window`,
   `remember_position_key = "ai_window"`), então herda **tudo** — gap, anel de foco, ESC, supressão e o
   click-forward. O **Dano** segue `PanelContainer` próprio (ligado ao dano por membro): recebeu o

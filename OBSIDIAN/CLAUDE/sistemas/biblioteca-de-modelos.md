@@ -455,6 +455,12 @@ toggle é o **interruptor mestre** da sua categoria:
     `_on_ai_titlebar_input`, `_save_ai_panel_pos`, `_on_ai_close` e o drag manual; o subtree `UI/AIPanel`
     saiu do `.tscn`. O **Dano** segue `PanelContainer` próprio (ligado ao dano por membro), com o gap
     aplicado à parte. `_pointer_over_model_window` agora cobre a IA via `pointer_over_any_window()`.
+  - **Foco/Tab da janela Dano + foco inicial da tela (2026-06-30):** o `_ready` passou a focar o
+    controle de Tab = 1 (`UINav.focus_tab_one` → 1ª por `tab_order` = Categorias). A **janela Dano** ganhou
+    anel de foco LOCAL (`UINav.wire_tab_ring(damage_panel, damage_close_button)` em `_refresh_damage_panel`,
+    com o **× sempre por último**): `Limbs` 1 → `Bone` 2 → `Owner` 3 → `Add` 4 → **× 5**; foca a árvore
+    `Limbs` ao abrir. `Bone`/`Owner`/`Add` (runtime) recebem `tab_order` por `set_meta`; `Limbs` e `Close`
+    têm `tab_order` 1 e 5 no `.tscn`.
   Aparece para **QUALQUER modelo em "Modelo completo"**
   (`_supports_damage_editor`); `_refresh_damage_panel` repopula ao trocar de modelo e some em mesh
   isolada. **Não** é persistido (abre fechado). A chave do modelo = nome da pasta

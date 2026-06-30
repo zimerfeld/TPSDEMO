@@ -1,7 +1,7 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1782823802
+::res://::1782824718
 AIPrompts.txt::TextFile::-1::1780762580::0::1::::<><><>0<>0<><>::
-CLAUDE.md::TextFile::-1::1782823802::0::1::::<><><>0<>0<><>::
+CLAUDE.md::TextFile::-1::1782824718::0::1::::<><><>0<>0<><>::
 contagem de downloads.txt::TextFile::-1::1782413992::0::1::::<><><>0<>0<><>::
 default_bus_layout.tres::AudioBusLayout::1513395931677394583::1782744281::0::1::::<><><>0<>0<><>::
 export_presets.cfg::TextFile::-1::1782351917::0::1::::<><><>0<>0<><>::
@@ -177,9 +177,9 @@ Warriyo - Mortals (feat. Laura Brehm)  Future Trap  NCS - Copyright Free Music.m
 Wontolla, Kasger & Limitless - Miles Away  Drumstep  NCS - Copyright Free Music.mp3::AudioStreamMP3::3022392974842577632::1782424417::1782424417::1::::<><><>0<>0<>c5c9b8b9ec8af207815b355b28df4193<>res://.godot/imported/Wontolla, Kasger & Limitless - Miles Away  Drumstep  NCS - Copyright Free Music.mp3-1a4c3743a9bb807905c3b9e9f8eb1e8b.mp3str::
 Y&V - Lune  Electronic  NCS - Copyright Free Music.mp3::AudioStreamMP3::4446241135088001027::1782424417::1782424417::1::::<><><>0<>0<>cb3d1ba1f3d4288e972e2fc8f0dba87e<>res://.godot/imported/Y&V - Lune  Electronic  NCS - Copyright Free Music.mp3-108f0b24ad533112e8bec680ad85de37.mp3str::
 Zaza - Be Together  Electronic  NCS - Copyright Free Music.mp3::AudioStreamMP3::1967024169479640866::1782424417::1782424417::1::::<><><>0<>0<>e46cbeb96170c50bac78166e1dd09fd6<>res://.godot/imported/Zaza - Be Together  Electronic  NCS - Copyright Free Music.mp3-a56af936ff84246a79ba5264791ad4f0.mp3str::
-::res://autoload/::1782823200
+::res://autoload/::1782837305
 crash_handler.gd::GDScript::8020068175390062108::1782424417::0::1::::<>Node<><>0<>0<><>::
-debug_overlay.gd::GDScript::5598768243300575986::1782823200::0::1::::<>Node<><>0<>0<><>::
+debug_overlay.gd::GDScript::5598768243300575986::1782829022::0::1::::<>Node<><>0<>0<><>::
 level_template_manager.gd::GDScript::1812074226403152277::1782700965::0::1::::<>Node<><>0<>0<><>::
 locale.gd::GDScript::2098539873856337717::1782413989::0::1::::<>Node<><>0<>0<><>::
 music_manager.gd::GDScript::5140456997227066394::1782483071::0::1::::<>Node<><>0<>0<><>::
@@ -189,10 +189,10 @@ performance_hud.gd::GDScript::6103572712386556022::1782413990::0::1::::<>Node<><
 player_selection.gd::GDScript::8198692221097200293::1782492838::0::1::::<>Node<><>0<>0<><>::
 room_manager.gd::GDScript::2209925278945058947::1782565701::0::1::::<>Node<><>0<>0<><>::
 stability_guard.gd::GDScript::827762660584854590::1782413991::0::1::::<>Node<><>0<>0<><>::
-ui_nav.gd::GDScript::8066163686518468714::1782816271::0::1::::<>Node<><>0<>0<><>::
+ui_nav.gd::GDScript::8066163686518468714::1782837305::0::1::::<>Node<><>0<>0<><>::
 ::res://build/::1782262591
 icon.ico::OtherFile::-1::1781967641::0::1::::<><><>0<>0<><>::
-::res://build/windows/::1782823918
+::res://build/windows/::1782829429
 ::res://data/::1782413992
 limb_config.json::JSON::-1::1782413992::0::1::::<><><>0<>0<><>::
 ::res://effects_shared/::1782700965
@@ -605,23 +605,23 @@ player-gd.md::TextFile::-1::1782565701::0::1::::<><><>0<>0<><>::
 player-input-gd.md::TextFile::-1::1782413940::0::1::::<><><>0<>0<><>::
 red-robot-ai-gd.md::TextFile::-1::1782483071::0::1::::<><><>0<>0<><>::
 red-robot-gd.md::TextFile::-1::1782413941::0::1::::<><><>0<>0<><>::
-::res://OBSIDIAN/CLAUDE/convencoes/::1782823907
+::res://OBSIDIAN/CLAUDE/convencoes/::1782829476
 ancoragem-ui.md::TextFile::-1::1782700965::0::1::::<><><>0<>0<><>::
 dropdowns.md::TextFile::-1::1782817171::0::1::::<><><>0<>0<><>::
 formatacao.md::TextFile::-1::1782413941::0::1::::<><><>0<>0<><>::
 layout-responsivo.md::TextFile::-1::1782700965::0::1::::<><><>0<>0<><>::
-navegacao-tab.md::TextFile::-1::1782823907::0::1::::<><><>0<>0<><>::
-::res://OBSIDIAN/CLAUDE/fluxos/::1782782054
-fluxo-de-cenas.md::TextFile::-1::1782782054::0::1::::<><><>0<>0<><>::
+navegacao-tab.md::TextFile::-1::1782829476::0::1::::<><><>0<>0<><>::
+::res://OBSIDIAN/CLAUDE/fluxos/::1782829468
+fluxo-de-cenas.md::TextFile::-1::1782829468::0::1::::<><><>0<>0<><>::
 fluxo-de-input.md::TextFile::-1::1782413942::0::1::::<><><>0<>0<><>::
 fluxo-de-tiro.md::TextFile::-1::1782413942::0::1::::<><><>0<>0<><>::
-::res://OBSIDIAN/CLAUDE/sistemas/::1782817926
+::res://OBSIDIAN/CLAUDE/sistemas/::1782827709
 audio.md::TextFile::-1::1782769429::0::1::::<><><>0<>0<><>::
 biblioteca-de-modelos.md::TextFile::-1::1782817926::0::1::::<><><>0<>0<><>::
 build-windows.md::TextFile::-1::1782413943::0::1::::<><><>0<>0<><>::
 combate-tiro.md::TextFile::-1::1782483071::0::1::::<><><>0<>0<><>::
 dano-localizado.md::TextFile::-1::1782565701::0::1::::<><><>0<>0<><>::
-debug-overlay.md::TextFile::-1::1782817896::0::1::::<><><>0<>0<><>::
+debug-overlay.md::TextFile::-1::1782825440::0::1::::<><><>0<>0<><>::
 hospedagem-online.md::TextFile::-1::1782700965::0::1::::<><><>0<>0<><>::
 inimigos.md::TextFile::-1::1782483071::0::1::::<><><>0<>0<><>::
 localizacao.md::TextFile::-1::1782565701::0::1::::<><><>0<>0<><>::
@@ -629,7 +629,7 @@ multiplayer.md::TextFile::-1::1782413944::0::1::::<><><>0<>0<><>::
 performance-hud.md::TextFile::-1::1782413944::0::1::::<><><>0<>0<><>::
 player.md::TextFile::-1::1782483071::0::1::::<><><>0<>0<><>::
 recursos-nativos-godot.md::TextFile::-1::1782413945::0::1::::<><><>0<>0<><>::
-salas.md::TextFile::-1::1782424417::0::1::::<><><>0<>0<><>::
+salas.md::TextFile::-1::1782827709::0::1::::<><><>0<>0<><>::
 sistema-de-vida.md::TextFile::-1::1782413945::0::1::::<><><>0<>0<><>::
 ::res://scenes2D/::1782424417
 ::res://scenes2D/chooseplayer/::1782781973
@@ -638,9 +638,9 @@ chooseplayer.tscn::PackedScene::4750128530151895568::1782816622::0::1::::<><><>0
 ::res://scenes2D/chooseplayer/Resources/::1782414058
 chooseplayer.en.json::JSON::-1::1782414058::0::1::::<><><>0<>0<><>::
 chooseplayer.pt.json::JSON::-1::1782414058::0::1::::<><><>0<>0<><>::
-::res://scenes2D/client_session/::1782823607
-client_session.gd::GDScript::284601090265329339::1782823606::0::1::::<>Control<><>0<>0<><>::
-client_session.tscn::PackedScene::-1::1782414059::0::1::::<><><>0<>0<><>::res://scenes2D/client_session/client_session.gd
+::res://scenes2D/client_session/::1782829150
+client_session.gd::GDScript::284601090265329339::1782829150::0::1::::<>Control<><>0<>0<><>::
+client_session.tscn::PackedScene::-1::1782829059::0::1::::<><><>0<>0<><>::res://scenes2D/client_session/client_session.gd<>res://themes/ui_theme.tres<>res://scenes2D/menu/menu_surreal_training_bg.png<>res://themes/session_signal_bg.gdshader
 ::res://scenes2D/controls/::1782817162
 controls.gd::GDScript::2506016847827229326::1782817162::0::1::::<>Node<><>0<>0<><>::
 controls.tscn::PackedScene::-1::1782817161::0::1::::<><><>0<>0<><>::res://scenes2D/controls/controls.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres
@@ -670,8 +670,8 @@ crosshair.tscn::PackedScene::-1::1782414062::0::1::::<><><>0<>0<><>::res://scene
 ::res://scenes2D/controls2D/cyberpunk_hud/::1782414063
 cyberpunk_hud.gd::GDScript::499686203822934998::1782816622::0::1::::<>CanvasLayer<><>0<>0<><>::
 cyberpunk_hud.tscn::PackedScene::-1::1782414063::0::1::::<><><>0<>0<><>::res://scenes2D/controls2D/cyberpunk_hud/cyberpunk_hud.gd<>res://themes/cyberpunk.tres<>res://scenes2D/controls2D/vitals_panel/vitals_panel.tscn<>res://scenes2D/controls2D/minimap_panel/minimap_panel.tscn<>res://scenes2D/controls2D/ability_bar/ability_bar.tscn<>res://scenes2D/controls2D/credits_panel/credits_panel.tscn<>res://scenes2D/controls2D/log_feed/log_feed.tscn<>res://scenes2D/controls2D/crosshair/crosshair.tscn<>res://scenes2D/controls2D/scanlines/scanlines.tscn<>res://scenes2D/controls2D/pause_menu/pause_menu.tscn
-::res://scenes2D/controls2D/floating_window/::1782824264
-floating_window.gd::GDScript::3900884167278003992::1782824264::0::1::::FloatingWindow<>Control<><>0<>0<><>::
+::res://scenes2D/controls2D/floating_window/::1782825418
+floating_window.gd::GDScript::3900884167278003992::1782825418::0::1::::FloatingWindow<>Control<><>0<>0<><>::
 floating_window.tscn::PackedScene::-1::1782700965::0::1::::<><><>0<>0<><>::res://scenes2D/controls2D/floating_window/floating_window.gd<>res://themes/ui_theme.tres
 ::res://scenes2D/controls2D/log_feed/::1782700965
 log_feed.gd::GDScript::1337971838983879930::1782816622::0::1::::<>VBoxContainer<><>0<>0<><>::
@@ -715,9 +715,9 @@ developer.tscn::PackedScene::6714444820196828788::1782816622::0::1::::<><><>0<>0
 ::res://scenes2D/developer/Resources/::1782700965
 developer.en.json::JSON::-1::1782700965::0::1::::<><><>0<>0<><>::
 developer.pt.json::JSON::-1::1782700965::0::1::::<><><>0<>0<><>::
-::res://scenes2D/host_session/::1782823639
-host_session.gd::GDScript::1033553730063231628::1782823639::0::1::::<>Control<><>0<>0<><>::
-host_session.tscn::PackedScene::-1::1782414070::0::1::::<><><>0<>0<><>::res://scenes2D/host_session/host_session.gd
+::res://scenes2D/host_session/::1782829395
+host_session.gd::GDScript::1033553730063231628::1782829395::0::1::::<>Control<><>0<>0<><>::
+host_session.tscn::PackedScene::-1::1782829281::0::1::::<><><>0<>0<><>::res://scenes2D/host_session/host_session.gd<>res://themes/ui_theme.tres<>res://scenes2D/menu/menu_surreal_training_bg.png<>res://themes/session_signal_bg.gdshader
 ::res://scenes2D/levels/::1782823225
 levels.gd::GDScript::8380582057794343613::1782823211::0::1::::<>Node<><>0<>0<><>::
 levels.tscn::PackedScene::8230681047836425903::1782823225::0::1::::<><><>0<>0<><>::uid://drnu7yflp4xg4::::res://scenes2D/levels/levels.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres<>res://themes/backgrounds/levels_bg.gdshader
@@ -754,10 +754,10 @@ performance_bar.gd::GDScript::475329158874176594::1782816622::0::1::::<>Control<
 ::res://scenes2D/overlays/Resources/::1782414075
 overlays.en.json::JSON::-1::1782414075::0::1::::<><><>0<>0<><>::
 overlays.pt.json::JSON::-1::1782414075::0::1::::<><><>0<>0<><>::
-::res://scenes2D/playonline/::1782823852
+::res://scenes2D/playonline/::1782827654
 electric_wire.gd::GDScript::6542220921439454516::1782816622::0::1::::<>Control<><>0<>0<><>::
-playonline.gd::GDScript::6186035925105165097::1782823593::0::1::::<>Node<><>0<>0<><>::
-playonline.tscn::PackedScene::-1::1782823852::0::1::::<><><>0<>0<><>::res://scenes2D/playonline/playonline.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres<>res://themes/backgrounds/playonline_bg.gdshader<>res://scenes2D/playonline/electric_wire.gd
+playonline.gd::GDScript::6186035925105165097::1782827654::0::1::::<>Node<><>0<>0<><>::
+playonline.tscn::PackedScene::-1::1782827582::0::1::::<><><>0<>0<><>::res://scenes2D/playonline/playonline.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres<>res://themes/backgrounds/playonline_bg.gdshader<>res://scenes2D/playonline/electric_wire.gd
 ::res://scenes2D/playonline/Resources/::1782492838
 playonline.en.json::JSON::-1::1782492838::0::1::::<><><>0<>0<><>::
 playonline.pt.json::JSON::-1::1782492838::0::1::::<><><>0<>0<><>::
@@ -779,9 +779,9 @@ level_2.tscn::PackedScene::-1::1782700965::0::1::::<><><>0<>0<><>::res://scenes3
 level_base.gd::GDScript::4960781092139784172::1782816622::0::1::::<>Node3D<><>0<>0<><>::
 level_base.lmbake::LightmapGIData::8418303874976137457::1780851340::0::1::::<><><>0<>0<><>::uid://bwrkkvnq7ekgo::::res://level/level.exr
 level_base.tscn::PackedScene::4546746168046854455::1782700965::0::1::::<><><>0<>0<><>::uid://ccxbls23ev7u3::::res://scenes3D/level_base/level_base.gd<>res://library3D/geometry/scenes/props.tscn<>uid://bw86lhn5p1ovp::::res://library3D/geometry/giprobe_data.res<>res://library3D/propulsores/forklift/flying_forklift.tscn<>res://library3D/geometry/scenes/lights.tscn<>res://library3D/geometry/scenes/core.tscn<>res://library3D/geometry/scenes/structure.tscn<>uid://cnn46umvf55rs::::res://library3D/geometry/environment.tres
-::res://scenes3D/models/::1782824267
-models.gd::GDScript::2670394553313246587::1782824267::0::1::::<>Node<><>0<>0<><>::
-models.tscn::PackedScene::-1::1782817678::0::1::::<><><>0<>0<><>::res://scenes3D/models/models.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres
+::res://scenes3D/models/::1782837469
+models.gd::GDScript::2670394553313246587::1782837469::0::1::::<>Node<><>0<>0<><>::
+models.tscn::PackedScene::-1::1782837440::0::1::::<><><>0<>0<><>::res://scenes3D/models/models.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres
 ::res://scenes3D/models/Resources/::1782761164
 models.en.json::JSON::-1::1782761164::0::1::::<><><>0<>0<><>::
 models.pt.json::JSON::-1::1782761164::0::1::::<><><>0<>0<><>::

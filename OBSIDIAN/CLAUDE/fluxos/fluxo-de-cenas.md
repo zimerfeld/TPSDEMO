@@ -129,13 +129,14 @@ Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas*
   DebugOverlay **injeta o toggle `Debug2D`** na `Actions` (sinal `child_entered_tree`) e quando um botão
   de idioma **habilita/desabilita** (`_update_language_buttons`). Foco inicial no Tab = 1 via
   `UINav.focus_tab_one`. (Antes a tela só fazia `manage_rooms_button.grab_focus()`, sem anel explícito.)
-- **Tab + Debug 2D em `host_session` / `client_session` (2026-06-29)** — telas montadas em código que
-  antes NÃO tinham o toggle "Debug 2D" (a barra de Voltar era um `HBoxContainer` sem nome). Agora essa
-  barra se chama **`Actions`**, então o DebugOverlay **injeta o `Debug2D`** nela como nas demais telas.
-  Cada uma liga `UINav.wire_tab_ring(self)` (helper `_rewire_tab`) e **re-liga** ao remontar as **linhas
-  de sala** (`_refresh_rooms`, listas dinâmicas) e ao injetar o toggle. Sequência de leitura: controles
-  da grade (level/template/Iniciar no host; lista no cliente) → linhas de sala → **Voltar** → **Debug 2D**;
-  foco inicial no Tab = 1. `collect_focusables` ignora nós `is_queued_for_deletion()` (linhas recém-liberadas).
+- **Tab + Debug 2D em `host_session` / `client_session` (2026-06-29; estáticas em 2026-06-30)** — antes
+  eram telas montadas INTEIRAS em código. **Agora o scaffold fixo é ESTÁTICO no `.tscn`** (painel com
+  textura/véu/`SignalLayer` shader, título, `StartRow` com pickers no host, lista, barra **`Actions`** +
+  **`BackButton`**); o código só popula os pickers, monta as **linhas de sala** dinâmicas (`_refresh_rooms`)
+  e ajusta o `aspect` do shader. O DebugOverlay injeta o `Debug2D` na `Actions`. O **`tab_order` é numerado
+  por CÓDIGO** no `_rewire_tab` (não dá p/ fixar no `.tscn` porque o nº de salas varia): controles da grade
+  → botões habilitados de cada linha de sala (desabilitados ficam fora) → **Voltar** → **Debug 2D**; foco
+  inicial no Tab = 1. `collect_focusables` ignora `is_queued_for_deletion()` (linhas recém-liberadas).
 - **Anel de Tab nas telas restantes — `chooseplayer` / `settings` / `developer` / `controls` (2026-06-29)**
   — as quatro telas que ainda usavam só `UINav.focus_first` passaram ao padrão `focus_tab_one` +
   `_wire_tab_order` (→ `UINav.wire_tab_ring(self)`), re-ligando no `child_entered_tree` da `Actions`

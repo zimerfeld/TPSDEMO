@@ -397,7 +397,7 @@ text = "Dano"
 theme_override_font_sizes/font_size = 16
 
 [node name="Close" type="Button" parent="UI/Damage/Main/TitleBar/TitleRow"]
-metadata/tab_order = 28
+metadata/tab_order = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(34, 28)
 layout_mode = 2
@@ -417,6 +417,7 @@ layout_mode = 2
 theme_override_constants/separation = 6
 
 [node name="Limbs" type="Tree" parent="UI/Damage/Main/Margin/Content"]
+metadata/tab_order = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3

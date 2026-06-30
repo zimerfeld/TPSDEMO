@@ -265,8 +265,12 @@ func _ensure_debug2d_toggle(screen: Node) -> void:
 	toggle.name = "Debug2D"
 	toggle.text = "Debug 2D"
 	# TAB explícito: o toggle é o ÚLTIMO da tela → maior tab_order declarado + 1 (ex.: chooseplayer 7,
-	# menu 8). Sem isso o Debug 2D mostraria o índice calculado (ou "-"). Ver [[convencoes/navegacao-tab]].
-	toggle.set_meta(UINav.TAB_ORDER_META, _max_declared_tab_order(screen) + 1)
+	# menu 8). Só quando a tela declara tab_order (max > 0); em telas que numeram por código/ordem de
+	# árvore (ex.: client/host_session, que renumeram no seu _rewire_tab) NÃO marcamos aqui — senão o
+	# toggle viraria TAB 1 e iria para o início do anel. Ver [[convencoes/navegacao-tab]].
+	var max_order := _max_declared_tab_order(screen)
+	if max_order > 0:
+		toggle.set_meta(UINav.TAB_ORDER_META, max_order + 1)
 	actions.add_child(toggle)
 
 

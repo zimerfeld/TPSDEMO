@@ -461,6 +461,8 @@ func _ready() -> void:
 	# visit, and no real item is ever auto-selected.
 	_restore_selection_chain()
 	_refresh_ai_actions()
+	# Foco inicial no controle de Tab = 1 (1º por tab_order = Categorias), p/ as setas/Tab começarem dele.
+	UINav.focus_tab_one.call_deferred(self)
 
 
 func _on_language_changed(_lang: String) -> void:
@@ -2181,6 +2183,8 @@ func _on_damage_button_pressed() -> void:
 	# só ganha size real após o layout desta troca de visibilidade.
 	if damage_panel.visible:
 		_clamp_window_to_viewport.call_deferred(damage_panel)
+		# Foco inicial no 1º controle da janela (Tab = 1 = a árvore Limbs), só ao ABRIR.
+		UINav.focus_tab_one.call_deferred(damage_panel, damage_close_button)
 
 
 # Transforma o painel de dano numa JANELA FLUTUANTE estilo Windows: barra de título com fundo
@@ -3238,6 +3242,9 @@ func _refresh_damage_panel() -> void:
 			_fill_sub_member_item(damage_tree.create_item(oi), model_key, str(s["group"]), str(s["bone"]), str(s["label"]))
 	_build_damage_footer(model_key)
 	damage_panel.visible = true
+	# Anel de foco LOCAL da janela Dano (× sempre por último): Limbs 1 → Bone 2 → Owner 3 → Add 4 → × 5.
+	# Religado a cada refresh (o rodapé é reconstruído). O Tab fica preso na janela e alcança o ×.
+	UINav.wire_tab_ring(damage_panel, damage_close_button)
 
 
 # Configura o Tree do editor de dano (uma vez, em _ready): colunas, títulos visíveis, raiz oculta,
@@ -3464,6 +3471,7 @@ func _build_damage_footer(model_key: String) -> void:
 	# Linha 1 da grade (controles): dropdown de osso (expande) | dropdown de dono | botão Adicionar.
 	var picker := OptionButton.new()
 	picker.name = "Bone"
+	picker.set_meta(UINav.TAB_ORDER_META, 2)   # ring local da janela Dano: Limbs 1 → Bone 2 → Owner 3 → Add 4 → × 5
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL   # col 0 expande → "AddTitle" acompanha
 	var candidates := _aux_bone_candidates()
 	if candidates.is_empty():
@@ -3475,6 +3483,7 @@ func _build_damage_footer(model_key: String) -> void:
 	grid.add_child(picker)
 	var owner_btn := OptionButton.new()
 	owner_btn.name = "Owner"
+	owner_btn.set_meta(UINav.TAB_ORDER_META, 3)
 	for ch in _owner_choices():
 		var i := owner_btn.item_count
 		owner_btn.add_item(str(ch["label"]))
@@ -3483,6 +3492,7 @@ func _build_damage_footer(model_key: String) -> void:
 	grid.add_child(owner_btn)
 	var add_btn := Button.new()
 	add_btn.name = "Add"
+	add_btn.set_meta(UINav.TAB_ORDER_META, 4)
 	add_btn.text = "Adicionar"   # Button: auto-localizado pelo Locale
 	add_btn.disabled = candidates.is_empty()
 	add_btn.pressed.connect(func(): _on_sub_member_added(model_key, picker, owner_btn))

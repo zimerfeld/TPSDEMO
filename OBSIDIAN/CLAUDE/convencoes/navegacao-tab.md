@@ -96,7 +96,7 @@ incremental de 1**. (Rótulos/containers continuam, corretamente, em `TAB: -`.)
 | **`collect_focusables`** | `collect_focusables(root) → Array[Control]` | **Todos** os focáveis sob `root` em ordem de árvore. Base de `wire_tab_ring`/`tab_one_control`. Ignora `is_queued_for_deletion()`. |
 | **`cancel_active_edit`** | `cancel_active_edit(viewport, fallback=null) → bool` | **Regra do ESC**: se o foco está num `LineEdit` (inclui o editor interno de um `SpinBox`), encerra a edição e devolve o foco ao `fallback`, retornando `true` (o chamador consome o ESC e **não** volta de tela). Só o **2º ESC** navega de volta. |
 | **`tab_order_of`** | `tab_order_of(ctrl) → int` | Valor declarado de `metadata/tab_order` (1-based) ou um sentinela grande se ausente. Base da ordenação de `collect_focusables` e da linha Tab do Debug 2D (valor ESPERADO). |
-| **`collect_focusables_ignoring_visibility`** | `… → Array[Control]` | Como `collect_focusables`, mas **ignora visibilidade** — varre os focáveis de uma aba OCULTA do `TabContainer`. |
+| **`collect_focusables_ignoring_visibility`** | `… → Array[Control]` | Varre uma aba OCULTA do `TabContainer`: ignora que a aba-raiz esteja escondida, mas RESPEITA o flag PRÓPRIO `.visible` (controles escondidos por conta própria — ex.: botões MetalFX num SO sem suporte — ficam de FORA, senão o Tab tentaria focar um oculto e travava no fim da aba). |
 | **`collect_focus_order_with_tabs`** | `(scene_root, tab_container) → Array[Control]` | Ordem GLOBAL de foco com cada aba expandida em sequência (ocultas incluídas): antes → aba 0 → … → aba N-1 → depois. |
 | **`tab_container_focus_step`** | `(scene_root, tab_container, forward) → bool` | Um passo de Tab/Shift+Tab atravessando as abas (regra do TabContainer). Troca a aba visível quando o alvo está noutra aba. Chamada do `_input` da cena. |
 
@@ -133,8 +133,8 @@ func _input(e: InputEvent) -> void:
 | `menu` | ✅ | ✅ | — | — | ✅ |
 | `playonline` | ✅ | ✅ | — | — | ✅ |
 | `levels` | ✅ | ✅ | — | — | ✅ |
-| `host_session` | ✅ | ✅ | — | — | — |
-| `client_session` | ✅ | ✅ | — | — | — |
+| `host_session` | ✅ (scaffold estático; `tab_order` por código no `_rewire_tab`) | ✅ | — | — | — |
+| `client_session` | ✅ (scaffold estático; `tab_order` por código no `_rewire_tab`) | ✅ | — | — | — |
 | `floating_window` | ✅ (`last=×`) | — | ✅ (no parent ao fechar) | ✅ (`last=×`) | — |
 | `chooseplayer` | ✅ | ✅ | — | — | ✅ |
 | `settings` | — (usa `tab_container_focus_step`) | — (foca 1º da aba 0) | — | — | ✅ |

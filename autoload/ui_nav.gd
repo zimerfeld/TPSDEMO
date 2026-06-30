@@ -74,8 +74,10 @@ func collect_focusables(root: Node) -> Array[Control]:
 	return out
 
 
-# Como collect_focusables, mas IGNORA a visibilidade — usado para varrer os focáveis de uma aba OCULTA
-# do TabContainer (a sequência de Tab precisa abranger TODAS as abas, não só a visível). Ver
+# Como collect_focusables, mas para uma aba OCULTA do TabContainer: ignora que a aba-raiz esteja
+# escondida (a sequência de Tab abrange TODAS as abas), mas RESPEITA o flag PRÓPRIO `.visible` de cada
+# controle/contêiner — assim controles escondidos por conta própria (ex.: botões MetalFX num SO sem
+# suporte) ficam de FORA (senão o Tab tentaria focar um controle oculto e travaria). Ver
 # collect_focus_order_with_tabs.
 func collect_focusables_ignoring_visibility(root: Node) -> Array[Control]:
 	var out: Array[Control] = []
@@ -84,18 +86,21 @@ func collect_focusables_ignoring_visibility(root: Node) -> Array[Control]:
 	return out
 
 
+# respect_visibility=true: usa is_visible_in_tree (tela normal). false: usa o flag PRÓPRIO `.visible`
+# (modo "aba oculta" — a raiz da aba está escondida, mas seu conteúdo conta). Em ambos, um nó oculto é
+# pulado JUNTO com sua subárvore.
 func _collect_focusables_into(root: Node, out: Array[Control], respect_visibility: bool) -> void:
 	for child in root.get_children():
 		if child is Control:
 			var c := child as Control
-			var ok := c.focus_mode == Control.FOCUS_ALL and not c.is_queued_for_deletion()
-			if ok and respect_visibility and not c.is_visible_in_tree():
-				ok = false
-			if ok and c is BaseButton and (c as BaseButton).disabled:
-				ok = false
-			if ok:
+			var hidden := (not c.is_visible_in_tree()) if respect_visibility else (not c.visible)
+			if hidden or c.is_queued_for_deletion():
+				continue   # pula o controle E toda a sua subárvore
+			if c.focus_mode == Control.FOCUS_ALL and not (c is BaseButton and (c as BaseButton).disabled):
 				out.append(c)
-		_collect_focusables_into(child, out, respect_visibility)
+			_collect_focusables_into(c, out, respect_visibility)
+		else:
+			_collect_focusables_into(child, out, respect_visibility)
 
 
 # Ordena ESTAVELMENTE pelo metadado `tab_order`: os controles que o declaram vêm primeiro (crescente);

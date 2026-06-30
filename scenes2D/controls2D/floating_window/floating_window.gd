@@ -319,14 +319,17 @@ func _grab_initial_focus() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible or not is_inside_tree() or _closing:
 		return
-	# Regra do projeto (2026-06-30): com a janela aberta (mesmo modal, sob o backdrop) o toggle Debug 2D
-	# da cena que a carregou continua acionável — um clique sobre ele liga/desliga os overlays. Tratado
-	# aqui (antes do GUI) para o backdrop não engolir o clique.
+	# Regra do projeto (2026-06-30): com a janela aberta (mesmo modal, sob o backdrop) alguns controles da
+	# cena de fundo continuam acionáveis por clique — o toggle Debug 2D (liga/desliga overlays) e os botões
+	# da LangBar (troca de idioma). Tratado aqui (antes do GUI) para o backdrop não engolir o clique.
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed \
 			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
-		var toggle := _debug2d_toggle_at((event as InputEventMouseButton).global_position)
-		if toggle != null:
-			toggle.button_pressed = not toggle.button_pressed
+		var btn := _clickthrough_button_at((event as InputEventMouseButton).global_position)
+		if btn != null:
+			if btn.toggle_mode:
+				btn.button_pressed = not btn.button_pressed   # CheckButton (Debug 2D) → dispara `toggled`
+			else:
+				btn.pressed.emit()                            # Button (idioma) → dispara `pressed`
 			get_viewport().set_input_as_handled()
 			return
 	if close_on_escape and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("quit")):
@@ -335,14 +338,31 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-# Toggle Debug 2D (da cena de fundo, fora desta janela) cujo retângulo contém `pos`, ou null. Permite
-# acioná-lo mesmo coberto pelo backdrop modal. Ignora toggles dentro da própria janela.
-func _debug2d_toggle_at(pos: Vector2) -> CheckButton:
+# Controle da cena de FUNDO (fora desta janela) que segue acionável mesmo coberto pelo backdrop modal e
+# cujo retângulo contém `pos`: o toggle Debug 2D (grupo) OU um botão da barra `LangBar` (idiomas). Ignora
+# controles desta própria janela e os `disabled` (regra: desabilitado não recebe clique/foco). Null se nada.
+func _clickthrough_button_at(pos: Vector2) -> BaseButton:
 	for n in get_tree().get_nodes_in_group(Debug2DToggle.GROUP):
-		if n is CheckButton and is_instance_valid(n) and not is_ancestor_of(n):
-			var btn := n as CheckButton
-			if btn.is_visible_in_tree() and btn.get_global_rect().has_point(pos):
-				return btn
+		if n is BaseButton and is_instance_valid(n) and not is_ancestor_of(n) \
+				and (n as Control).is_visible_in_tree() and not (n as BaseButton).disabled \
+				and (n as Control).get_global_rect().has_point(pos):
+			return n as BaseButton
+	var scene := get_tree().current_scene
+	return _langbar_button_at(scene, pos) if scene != null else null
+
+
+# Botão (idioma) de alguma barra chamada "LangBar" na cena de fundo cujo retângulo contém `pos`, ou null.
+# Pula botões desta janela e os `disabled` (ex.: o idioma já ativo).
+func _langbar_button_at(node: Node, pos: Vector2) -> BaseButton:
+	for child in node.get_children():
+		if String(child.name) == "LangBar":
+			for b in child.get_children():
+				if b is BaseButton and not is_ancestor_of(b) and (b as Control).is_visible_in_tree() \
+						and not (b as BaseButton).disabled and (b as Control).get_global_rect().has_point(pos):
+					return b as BaseButton
+		var found := _langbar_button_at(child, pos)
+		if found != null:
+			return found
 	return null
 
 
