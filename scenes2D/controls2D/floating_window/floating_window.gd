@@ -163,6 +163,8 @@ func popup_centered() -> void:
 	_backdrop.visible = modal
 	if is_inside_tree():
 		_prev_focus = get_viewport().gui_get_focus_owner()
+	# Prende o Tab DENTRO da janela (o × passa a ser alcançável) — feito aqui, já com o rodapé montado.
+	wire_focus_ring()
 	_layout.call_deferred()
 	_grab_initial_focus.call_deferred()
 
@@ -275,12 +277,22 @@ static func pointer_over_any_window() -> bool:
 
 # ── Foco / teclado ───────────────────────────────────────────────────────────
 
+# Liga o foco por Tab/Shift+Tab num ANEL FECHADO: controles do conteúdo → botões do rodapé → × (Close)
+# → de volta ao 1º. O × fica SEMPRE por ÚLTIMO (maior valor de Tab da janela), passando `last` ao
+# helper compartilhado — mesmo o × vindo ANTES na árvore. Sem o anel o Tab vaza para a UI de fundo (a
+# janela é descendente da tela) e o × nunca é alcançado. Inclui QUALQUER controle focável do conteúdo
+# (OptionButton, LineEdit, …), não só os botões do rodapé. As setas seguem os vizinhos do Godot.
+# Público: o dono re-liga após mudar os controles do conteúdo (ex.: campos que habilitam/desabilitam).
+func wire_focus_ring() -> void:
+	UINav.wire_tab_ring(self, _close_button)
+
+
 func _grab_initial_focus() -> void:
 	if not is_inside_tree() or not visible:
 		return
-	var first := UINav.first_focusable(_footer)
-	if first == null:
-		first = UINav.first_focusable(_content)
+	# Foco inicial no controle de Tab = 1 (cabeça do anel): 1º focável do conteúdo/rodapé, com o × por
+	# último (excluído daqui). Cai no × só se a janela não tiver nenhum outro focável.
+	var first := UINav.tab_one_control(self, _close_button)
 	if first == null:
 		first = _close_button
 	if first != null:

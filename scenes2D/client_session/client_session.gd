@@ -18,6 +18,7 @@ var _panel: Control
 var _rooms_list: VBoxContainer
 var _empty_hint: Label
 var _confirm_dialog: FloatingWindow = null
+var _actions_bar: HBoxContainer = null   # barra "Actions" (Voltar + toggle Debug 2D injetado)
 
 
 func _ready() -> void:
@@ -42,6 +43,17 @@ func _ready() -> void:
 	else:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		_refresh_rooms()
+	# Toggle "Debug 2D" na barra Actions (injetado pelo DebugOverlay como nas demais telas) + sequência
+	# de Tab. Re-liga ao injetar o toggle e ao remontar as salas; foco inicial no controle de Tab = 1.
+	_actions_bar.child_entered_tree.connect(func(_n: Node) -> void: _rewire_tab.call_deferred())
+	_rewire_tab.call_deferred()
+	UINav.focus_tab_one.call_deferred(self)
+
+
+# (Re)liga a sequência de Tab do navegador na ordem de leitura (linhas de sala → Voltar → Debug 2D).
+# Idempotente: re-chamada quando a lista de salas muda ou o toggle é injetado.
+func _rewire_tab() -> void:
+	UINav.wire_tab_ring(self)
 
 
 # ───────────────────────────── UI (navegador) ─────────────────────────────
@@ -70,6 +82,8 @@ func _refresh_rooms() -> void:
 		_empty_hint.visible = rooms.is_empty()
 	for r in rooms:
 		_rooms_list.add_child(_make_client_row(r))
+	# As linhas de sala mudaram (novos botões "Jogar") → re-liga a sequência de Tab.
+	_rewire_tab.call_deferred()
 
 
 func _make_client_row(r: Dictionary) -> Control:
@@ -230,8 +244,10 @@ func _make_panel(title_text: String) -> VBoxContainer:
 	center.add_child(inner)
 	# Voltar: tamanho fixo e centralizado embaixo (não mais full-width), como nas outras telas.
 	var actions := HBoxContainer.new()
+	actions.name = "Actions"   # nome padrão p/ o DebugOverlay injetar o toggle "Debug 2D" (igual às outras telas)
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	outer.add_child(actions)
+	_actions_bar = actions
 	var back_btn := Button.new()
 	back_btn.text = "Voltar"
 	back_btn.custom_minimum_size = Vector2(200, 50)

@@ -53,3 +53,65 @@ func first_focusable(node: Node) -> Control:
 		if found != null:
 			return found
 	return null
+
+
+# TODOS os Controls focáveis (FOCUS_ALL, visíveis, BaseButton não desabilitado) sob `root`, em
+# ORDEM DE ÁRVORE — que é a ordem de leitura da tela (cada controle do topo para baixo e, dentro de
+# uma linha/HBox, da esquerda para a direita). Base do anel de Tab montado por wire_tab_ring.
+func collect_focusables(root: Node) -> Array[Control]:
+	var out: Array[Control] = []
+	_collect_focusables_into(root, out)
+	return out
+
+
+func _collect_focusables_into(root: Node, out: Array[Control]) -> void:
+	for child in root.get_children():
+		if child is Control:
+			var c := child as Control
+			var ok := c.focus_mode == Control.FOCUS_ALL and c.is_visible_in_tree() \
+					and not c.is_queued_for_deletion()
+			if ok and c is BaseButton and (c as BaseButton).disabled:
+				ok = false
+			if ok:
+				out.append(c)
+		_collect_focusables_into(child, out)
+
+
+# Liga o Tab/Shift+Tab num ANEL FECHADO seguindo a ordem de leitura (ordem de árvore) dos controles
+# focáveis sob `root`: 1 → 2 → … → N → 1 (e o inverso no Shift+Tab). Garante índices de Tab
+# INCREMENTAIS DE 1 (ver a linha "Tab" do DebugOverlay), começando no 1º controle do topo e seguindo
+# para a direita e depois para a linha de baixo. Reaplique se o conjunto de focáveis mudar (ex.: um
+# toggle injetado depois, ou um botão que troca de habilitado/desabilitado).
+# `last` (opcional): se informado e presente, vai para o FIM do anel — recebe o MAIOR índice de Tab e
+# é o último alcançado antes de voltar ao 1º (ex.: o botão × das janelas flutuantes, sempre por último).
+func wire_tab_ring(root: Node, last: Control = null) -> void:
+	var ring := collect_focusables(root)
+	if last != null and ring.has(last):
+		ring.erase(last)
+		ring.append(last)
+	var n := ring.size()
+	if n < 2:
+		return
+	for i in n:
+		var cur := ring[i]
+		cur.focus_next = cur.get_path_to(ring[(i + 1) % n])
+		cur.focus_previous = cur.get_path_to(ring[(i + n - 1) % n])
+
+
+# Controle de Tab = 1 (CABEÇA do anel): 1º focável em ordem de leitura sob `root`, exceto `last` (que
+# vai p/ o FIM do anel — ex.: o × das janelas flutuantes). Casa com a ordem montada por wire_tab_ring.
+# Null se não houver focável.
+func tab_one_control(root: Node, last: Control = null) -> Control:
+	var ring := collect_focusables(root)
+	if last != null:
+		ring.erase(last)
+	return ring[0] if not ring.is_empty() else null
+
+
+# Dá foco ao controle de Tab = 1 (cabeça do anel) sob `root` — usado ao ABRIR uma tela/janela para o
+# foco começar SEMPRE no 1º da sequência de Tab. Retorna o controle focado (ou null).
+func focus_tab_one(root: Node, last: Control = null) -> Control:
+	var head := tab_one_control(root, last)
+	if head != null:
+		head.grab_focus()
+	return head

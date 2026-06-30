@@ -63,7 +63,7 @@ models. `cyberpunkhud` é cena avulsa de preview, fora do fluxo de navegação.)
 - **models** — navegador/extrator de modelos 3D: Categoria → Modelo → Malha (malhas distintas), preview rotacionável, "Salvar como cena 3D" (extrai p/ `library/extracted/`) e botão "Exportados". Detalhes em [[sistemas/biblioteca-de-modelos]]
 - **Exported** (`library/extracted/Exported.tscn`) — galeria que exibe todas as cenas de `library/extracted/` lado a lado; volta para models
 - **chooseplayer** — escolhe personagem (modelo 3D girando) → levels
-- **levels** — Level 1 / Level 2 / Level Base, load assíncrono. `_select_level()` ramifica: **offline** carrega o nível direto; **online** (`PlayerSelection.online_mode`) guarda o caminho em `PlayerSelection.level_path` e abre `playonline`.
+- **levels** — Level 1 / Level 2 / Level Base, load assíncrono. `_select_level()` ramifica: **offline** carrega o nível direto; **online** (`PlayerSelection.online_mode`) guarda o caminho em `PlayerSelection.level_path` e abre `playonline`. Cada linha tem um botão de **template** que abre o **Gerenciador de Templates** (`scenes2D/level_templates/level_template_dialog.gd`, renomeado de "Templates de Level" em 2026-06-29; antes um `Window` nativo, **agora um controlador sobre `FloatingWindow`** — herda o tema 2D e o Debug 2D funciona sobre ele). A mesma janela é aberta pela tela `host_session`.
 - **playonline** — só **Host / Connect** (porta + endereço). **Não há seletor de nível**: o nível já foi escolhido na tela `levels` (fluxo online) e vem em `PlayerSelection.level_path`; `_selected_level()` faz fallback p/ `level_base` (ex.: servidor dedicado headless, que entra direto aqui). `_on_host_pressed`/`_on_connect_pressed` carregam esse nível. **Agora os 3 níveis são jogáveis online** — `level_1` e `level_2` ganharam `MultiplayerSpawner` + `PlayerSpawnpoints` (ver [[sistemas/multiplayer]]).
 
 ---
@@ -71,12 +71,54 @@ models. `cyberpunkhud` é cena avulsa de preview, fora do fluxo de navegação.)
 ## Navegação por teclado e ESC
 
 Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas** as telas 2D
-(`menu`, `settings`, `levels`, `chooseplayer`, `controls`, `developer`, `playonline`):
+(`menu`, `settings`, `levels`, `chooseplayer`, `controls`, `developer`, `playonline`,
+`host_session`, `client_session`):
 
 - **Setas do teclado** — o Godot já mapeia `ui_up/down/left/right` para as setas e calcula os
-  vizinhos de foco; só faltava o **foco inicial**. Cada tela chama `UINav.focus_first(self)` no
-  `_ready` (deferido) — dá foco ao 1º controle focável visível e não desabilitado, em ordem de
-  árvore. O `menu` já focava o botão Play; o `playonline` foca o botão **Host**.
+  vizinhos de foco; só faltava o **foco inicial**. Cada tela dá foco ao 1º controle focável no
+  `_ready` (deferido). `UINav.focus_first(self)` (1º em ordem de árvore) e `UINav.focus_tab_one(self)`
+  (cabeça do anel, via `tab_one_control`) são equivalentes p/ telas (sem `last` movido).
+- **Foco no Tab = 1 ao abrir (2026-06-29)** — **toda UI e janela** começa com o **controle de Tab = 1
+  em foco**: telas chamam `UINav.focus_tab_one(self)`; a `FloatingWindow` foca em `_grab_initial_focus`
+  o `UINav.tab_one_control(self, _close_button)` (1º do conteúdo/rodapé, NUNCA o ×, que é o último).
+  `tab_one_control(root, last)` = cabeça do anel = `collect_focusables(root)` menos `last`, 1º item.
+- **Ordem de Tab do `menu` = ordem da árvore (2026-06-29)** — a sequência desejada
+  **Play (1) → PlayOnline (2) → Settings (3) → Developer (4) → Quit (5) → Português (6) → English (7)
+  → Debug 2D (8)** sai **naturalmente da ordem da árvore**: os 5 botões do `MenuColumn`, depois a
+  `LangBar` (Actions) e por fim o **toggle `Debug2D`** que o DebugOverlay injeta no FIM da `Actions`.
+  Por isso **NÃO** há `focus_next`/`focus_previous` no `.tscn` (uma tentativa anterior de fechar o anel
+  nos 5 botões EXCLUÍA idioma/Debug2D — foi revertida). Como o `Debug2D` é injetado em runtime, amarrar
+  foco explícito a ele seria frágil; a ordem de árvore já entrega o 1–8 e inclui o injetado como 8.
+- **Anel de Tab compartilhado — `UINav.wire_tab_ring(root, last=null)` (2026-06-29)** — helper único
+  que coleta **todos** os controles focáveis sob `root` em **ordem de árvore** (= ordem de leitura: cada
+  controle do topo p/ baixo e, numa linha/HBox, da esquerda p/ a direita) via `collect_focusables` e
+  amarra `focus_next`/`focus_previous` num **anel fechado** `1 → 2 → … → N → 1`. Garante **índices de
+  Tab incrementais de 1** (linha "Tab" do [[sistemas/debug-overlay]]). O parâmetro **`last`** (opcional):
+  se informado, esse controle vai p/ o **FIM do anel** (maior índice) — usado pelo × das janelas
+  flutuantes. Reaplicável quando o conjunto de focáveis muda (toggle injetado, botão que habilita/desabilita).
+- **Foco contido nas janelas flutuantes — × por ÚLTIMO (2026-06-29)** — `FloatingWindow.wire_focus_ring()`
+  (público) delega a `UINav.wire_tab_ring(self, _close_button)`: o anel fica `conteúdo → rodapé → ×
+  (Close) → 1º`, com o **× sempre por ÚLTIMO** (maior valor de Tab da janela), mesmo o × vindo ANTES na
+  árvore. Montado no `popup_centered` (rodapé já criado); o dono re-liga via `_win.wire_focus_ring()` ao
+  habilitar/desabilitar campos. Inclui **qualquer controle focável** do conteúdo (OptionButton/LineEdit/
+  SpinBox), não só o rodapé. Sem o anel o Tab **vazava para a UI de fundo** e o **× nunca era alcançado**.
+  Para a **numeração** do Debug 2D refletir isso, `DebugOverlay._tab_chain_start` começa a contar **depois
+  do ×** quando há janela flutuante aberta (o fundo está suprimido), então o × recebe o **maior** `TAB: n`.
+  Vale para todo `FloatingDialog` (ex.: "Deseja sair do Zimaro ?") e p/ as janelas **Gerenciador de
+  Templates** / **Gerenciador de Música**. Os botões do rodapé têm **nome por papel** (antes `@Button@…`):
+  `confirm` → **`Yes`/`No`**, `alert` → **`Ok`** (o TEXTO segue traduzido; só o nó foi nomeado).
+- **Ordem de Tab da `levels` (2026-06-29)** — a tela liga o anel com `UINav.wire_tab_ring(self)` no
+  `_ready` (deferido): **Level 1 (1) → Template 1 (2) → Level 2 (3) → Template 2 (4) → Level Base (5) →
+  Template Base (6) → Voltar (7) → Português (8) → English (9) → Debug 2D (10)**, ordem de leitura.
+  Re-liga quando o DebugOverlay **injeta o toggle `Debug2D`** na `Actions` (sinal `child_entered_tree`)
+  e quando um botão de idioma **habilita/desabilita** (o idioma ativo fica fora do anel).
+- **Tab + Debug 2D em `host_session` / `client_session` (2026-06-29)** — telas montadas em código que
+  antes NÃO tinham o toggle "Debug 2D" (a barra de Voltar era um `HBoxContainer` sem nome). Agora essa
+  barra se chama **`Actions`**, então o DebugOverlay **injeta o `Debug2D`** nela como nas demais telas.
+  Cada uma liga `UINav.wire_tab_ring(self)` (helper `_rewire_tab`) e **re-liga** ao remontar as **linhas
+  de sala** (`_refresh_rooms`, listas dinâmicas) e ao injetar o toggle. Sequência de leitura: controles
+  da grade (level/template/Iniciar no host; lista no cliente) → linhas de sala → **Voltar** → **Debug 2D**;
+  foco inicial no Tab = 1. `collect_focusables` ignora nós `is_queued_for_deletion()` (linhas recém-liberadas).
 - **Regra do ESC** (ação `quit`, mapeada a Esc + Select do gamepad) — sempre **interrompe primeiro o
   preenchimento de um campo/seleção** antes de voltar de tela. No `_input` de cada tela:
   `if UINav.cancel_active_edit(get_viewport(), <fallback>): consome e RETORNA`. `cancel_active_edit`

@@ -125,8 +125,8 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 # if the user cancels the confirmation popup.
 var _current_resolution_index: int = 0
 
-# Janela do Gerenciador de Música (aberta ao habilitar "Música"); reusada se já estiver aberta.
-var _music_manager_window: Window = null
+# Controlador do Gerenciador de Música (aberto ao habilitar "Música"); reusado entre aberturas.
+var _music_manager_window: MusicManagerWindow = null
 
 # VolumeBars (equalizador) à direita das linhas Música / Efeitos de Som na aba Audio.
 var _music_volume: VolumeBar = null
@@ -648,11 +648,10 @@ func _on_reset_pressed() -> void:
 # Abre (ou traz à frente) o Gerenciador de Música: ouvir faixas e atribuir/remover a trilha de cada
 # cena/level. Disparado ao habilitar "Música" na aba Audio.
 func _open_music_manager() -> void:
-	if _music_manager_window != null and is_instance_valid(_music_manager_window):
-		_music_manager_window.grab_focus()
-		return
-	_music_manager_window = MusicManagerWindow.new()
-	add_child(_music_manager_window)
+	# O controlador persiste entre aberturas; ele cria a janela flutuante (ou a ignora se já aberta).
+	if _music_manager_window == null or not is_instance_valid(_music_manager_window):
+		_music_manager_window = MusicManagerWindow.new()
+		add_child(_music_manager_window)
 	_music_manager_window.popup_centered()
 
 

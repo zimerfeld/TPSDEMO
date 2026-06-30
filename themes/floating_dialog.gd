@@ -24,8 +24,12 @@ const MESSAGE_WIDTH: float = 560.0
 # Confirmação (dois botões). Devolve o FloatingWindow já aberto sobre `parent`.
 static func confirm(parent: Node, title: String, text: String, ok_text: String = "Sim", cancel_text: String = "Não") -> FloatingWindow:
 	var win := _build(parent, title, text)
+	# Nome por PAPEL (não pelo texto, que é traduzido): toda janela Sim/Não tem os mesmos "Yes"/"No"
+	# (antes ficavam com nome automático @Button@…). O texto exibido segue `ok_text`/`cancel_text`.
 	var ok := win.add_footer_button(ok_text)
+	ok.name = "Yes"
 	var cancel := win.add_footer_button(cancel_text)
+	cancel.name = "No"
 	ok.pressed.connect(func() -> void: win.confirmed.emit(); win.close())
 	cancel.pressed.connect(func() -> void: win.canceled.emit(); win.close())
 	win.popup_centered()
@@ -36,6 +40,7 @@ static func confirm(parent: Node, title: String, text: String, ok_text: String =
 static func alert(parent: Node, title: String, text: String, ok_text: String = "OK") -> FloatingWindow:
 	var win := _build(parent, title, text)
 	var ok := win.add_footer_button(ok_text)
+	ok.name = "Ok"   # mesmo padrão: nome fixo em vez do automático @Button@…
 	ok.pressed.connect(func() -> void: win.confirmed.emit(); win.close())
 	win.popup_centered()
 	return win

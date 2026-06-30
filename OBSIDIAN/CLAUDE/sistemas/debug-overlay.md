@@ -35,9 +35,12 @@ aplicam na hora (`DebugOverlay.refresh()`).
     apontado e seu host).
   - **Linha Tab** (`ShowTabRow` → `show_tab`, **última** sub-linha, abaixo de `ShowPathRow`): mostra o
     **índice de Tab/foco** de cada controle (`TAB: n`, ou `TAB: -` se não focável). O índice é a ordem REAL de
-    navegação: o `_compute_tab_indices` parte do 1º focável (`UINav.first_focusable`) da tela ativa e
-    segue `find_next_valid_focus()` numerando 1, 2, 3… Recalculado a cada frame **só** enquanto a
-    linha Tab está visível (a ordem de foco muda conforme controles aparecem/somem). Ver [[fluxo-de-cenas]].
+    navegação: o `_compute_tab_indices` parte do início da cadeia (`_tab_chain_start`) e segue
+    `find_next_valid_focus()` numerando 1, 2, 3… **Com janela flutuante aberta** (fundo suprimido) numera
+    a cadeia DA JANELA começando **depois do ×**, então o **× recebe o MAIOR `TAB: n`** (fica por último
+    no anel — ver [[fluxo-de-cenas]]); sem janela, parte do 1º focável (`UINav.first_focusable`) da tela
+    ativa. Recalculado a cada frame **só** enquanto a linha Tab está visível (a ordem de foco muda
+    conforme controles aparecem/somem).
 - Botões **Modelos 3D** / **Controles 2D** (navegação).
 
 ## Debug 2D — detalhes
@@ -59,6 +62,12 @@ aplicam na hora (`DebugOverlay.refresh()`).
   tela ativa (solo offline). Telas sem nenhuma Actions são ignoradas. O toggle lê/grava
   `Settings("game","debug_2d")` e chama `DebugOverlay.refresh()`. Roda mesmo com o Debug 2D **desligado**
   (a chamada está ANTES do `if _canvas_layer == null: return`), senão não haveria como ligá-lo.
+- **Canvas SEMPRE à frente (2026-06-29):** os dois `CanvasLayer` do overlay subiram para
+  `_OVERLAY_LAYER = 129` (tooltips/bordas) e `130` (watermark do nome da cena), **acima das janelas
+  flutuantes** — o `FloatingDialog` monta o diálogo num `CanvasLayer` em **128** (ex.: "Deseja sair do
+  Zimaro ?"), que antes **cobria** o overlay (que estava em 100/101). Agora o Debug 2D é desenhado por
+  cima do diálogo (e, como é `MOUSE_FILTER_IGNORE`, não rouba clique). Fica abaixo apenas de nada — só o
+  crash overlay do `stability_guard` (128) também é alto, mas o debug, por pedido, vem à frente.
 - **Posição dos tooltips — regra dos 4 cantos (reescrito 2026-06-28):** `_layout_tooltips(hov, host)`
   posiciona **primeiro** o tooltip do controle **apontado** e **depois** o do **host**, cada um pela
   função `_pick_corner`, que tenta 4 cantos do controle **nesta ordem de prioridade**, escolhendo o

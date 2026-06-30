@@ -1,19 +1,21 @@
 class_name LevelTemplateDialog
-extends Window
+extends Node
+
+## Controlador do "Gerenciador de Templates" de cada level: monta o formulário (escolha/edição de
+## templates e suas entradas de spawn) DENTRO da janela flutuante reutilizável (FloatingWindow), num
+## CanvasLayer no topo. Assim os controles herdam o tema 2D do projeto e o Debug 2D funciona sobre a
+## janela (a FloatingWindow entra no grupo do DebugOverlay), igual às demais janelas flutuantes.
 
 signal templates_changed
 
-const LEVELS := [
-	{"label": "Level 1", "path": "res://scenes3D/level_1/level_1.tscn"},
-	{"label": "Level 2", "path": "res://scenes3D/level_2/level_2.tscn"},
-	{"label": "Level Base", "path": "res://scenes3D/level_base/level_base.tscn"},
-]
+const FLOATING_SCENE := preload("res://scenes2D/controls2D/floating_window/floating_window.tscn")
 
 var _level_path := ""
 var _template: Dictionary = {}
 var _entry_index := -1
 var _model_options: Array[Dictionary] = []
 
+var _win: FloatingWindow = null
 var _template_picker: OptionButton
 var _name_edit: LineEdit
 var _entry_picker: OptionButton
@@ -31,36 +33,36 @@ var _spacing_spin: SpinBox
 var _rotation_spin: SpinBox
 
 
-func _ready() -> void:
-	title = "Templates de Level"
-	# Larga o suficiente para os rótulos da coluna 1, os campos da coluna 2 e as linhas de botões
-	# caberem inteiros — sem cortar controles nem exibir só parte deles.
-	size = Vector2i(1200, 720)
-	min_size = Vector2i(1040, 600)
-	close_requested.connect(hide)
-	_build_ui()
-
-
 func popup_for_level(level_path: String) -> void:
 	_level_path = level_path
 	if _template.is_empty():
 		_load_active_or_first()
+	_open_window()
 	_refresh_template_picker()
 	_refresh_template_fields()
-	popup_centered()
 
 
-func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_bottom", 14)
-	add_child(margin)
-	var root := VBoxContainer.new()
+# Monta a janela flutuante (num CanvasLayer no topo), constrói o formulário no seu conteúdo e os
+# botões de ação no rodapé, e a centraliza. O CanvasLayer é liberado junto quando a janela fecha.
+# Larga o suficiente para os rótulos da coluna 1, os campos da coluna 2 e as linhas de botões caberem.
+func _open_window() -> void:
+	if is_instance_valid(_win):
+		_win.close()
+	var layer := CanvasLayer.new()
+	layer.layer = 128
+	_win = FLOATING_SCENE.instantiate()
+	_win.min_window_size = Vector2(1040, 640)
+	layer.add_child(_win)
+	add_child(layer)
+	_win.set_title("Gerenciador de Templates")
+	_win.closed.connect(layer.queue_free)
+	_build_ui(_win.get_content())
+	_win.popup_centered()
+
+
+func _build_ui(content: VBoxContainer) -> void:
+	var root := content
 	root.add_theme_constant_override("separation", 10)
-	margin.add_child(root)
 
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 8)
@@ -85,8 +87,9 @@ func _build_ui() -> void:
 	_entry_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_entry_picker.item_selected.connect(_on_entry_selected)
 	entry_row.add_child(_entry_picker)
-	_add_button(entry_row, "+ Personagem", func() -> void: _add_entry("character"))
-	_add_button(entry_row, "+ Estrutura", func() -> void: _add_entry("structure"))
+	# Um único botão: adiciona uma entrada (personagem por padrão); o Tipo é trocável depois pelo
+	# seletor "Tipo" do grid (que repovoa o "Modelo" conforme personagem/estrutura).
+	_add_button(entry_row, "Adicionar Entrada", func() -> void: _add_entry("character"))
 	_add_button(entry_row, "Remover Entrada", _remove_entry)
 
 	var grid := GridContainer.new()
@@ -124,14 +127,10 @@ func _build_ui() -> void:
 	_add_grid_row(grid, "Espaçamento", _spacing_spin)
 	_add_grid_row(grid, "Rotação Y", _rotation_spin)
 
-	root.add_child(HSeparator.new())
-	var actions := HBoxContainer.new()
-	actions.alignment = BoxContainer.ALIGNMENT_END
-	actions.add_theme_constant_override("separation", 8)
-	root.add_child(actions)
-	_add_button(actions, "Salvar", _save_template)
-	_add_button(actions, "Salvar e Usar Neste Level", _save_and_use)
-	_add_button(actions, "Fechar", hide)
+	# Ações no RODAPÉ da janela flutuante (largura uniforme, traduzidas — igual às demais janelas).
+	_win.add_footer_button("Salvar").pressed.connect(_save_template)
+	_win.add_footer_button("Salvar e Usar Neste Level").pressed.connect(_save_and_use)
+	_win.add_footer_button("Fechar").pressed.connect(_win.close)
 
 
 func _load_active_or_first() -> void:
@@ -185,6 +184,11 @@ func _refresh_entry_fields() -> void:
 			control.editable = has_entry
 		elif control is OptionButton:
 			control.disabled = not has_entry
+	# Re-liga o anel de Tab agora que os campos do grid mudaram de habilitado/desabilitado: assim a
+	# sequência (topo → nome → entrada → grid → rodapé → ×) inclui TODOS os controles focáveis atuais,
+	# de cima p/ baixo e da esquerda p/ a direita, com o × por ÚLTIMO. call_deferred: o estado assentou.
+	if is_instance_valid(_win):
+		_win.wire_focus_ring.call_deferred()
 	if not has_entry:
 		return
 	var e := _entries()[_entry_index] as Dictionary

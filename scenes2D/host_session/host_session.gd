@@ -29,7 +29,8 @@ var _template_picker: OptionButton
 var _rooms_list: VBoxContainer
 var _hint: Label
 var _confirm_dialog: FloatingWindow = null
-var _template_dialog: Window = null
+var _template_dialog: LevelTemplateDialog = null
+var _actions_bar: HBoxContainer = null   # barra "Actions" (Voltar + toggle Debug 2D injetado)
 
 
 func _ready() -> void:
@@ -50,6 +51,17 @@ func _ready() -> void:
 		_set_playing(rid)
 	else:
 		_set_observing(-1)
+	# Toggle "Debug 2D" na barra Actions (injetado pelo DebugOverlay como nas demais telas) + sequência
+	# de Tab. Re-liga ao injetar o toggle e ao remontar as salas; foco inicial no controle de Tab = 1.
+	_actions_bar.child_entered_tree.connect(func(_n: Node) -> void: _rewire_tab.call_deferred())
+	_rewire_tab.call_deferred()
+	UINav.focus_tab_one.call_deferred(self)
+
+
+# (Re)liga a sequência de Tab da grade de gerência na ordem de leitura (level/template/Iniciar →
+# linhas de sala → Voltar → Debug 2D). Idempotente: re-chamada quando as salas/visibilidade mudam.
+func _rewire_tab() -> void:
+	UINav.wire_tab_ring(self)
 
 
 # ───────────────────────────── UI (grade de gerência) ─────────────────────────────
@@ -235,6 +247,8 @@ func _refresh_rooms() -> void:
 		return
 	for room in RoomManager.get_rooms():
 		_rooms_list.add_child(_make_server_row(room))
+	# As linhas de sala mudaram (novos botões Jogar/Observar/Reiniciar/Parar) → re-liga a sequência.
+	_rewire_tab.call_deferred()
 
 
 func _make_server_row(room: Dictionary) -> Control:
@@ -386,8 +400,10 @@ func _make_panel(title_text: String) -> VBoxContainer:
 	center.add_child(inner)
 	# Voltar: tamanho fixo e centralizado embaixo (não mais full-width), como nas outras telas.
 	var actions := HBoxContainer.new()
+	actions.name = "Actions"   # nome padrão p/ o DebugOverlay injetar o toggle "Debug 2D" (igual às outras telas)
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	outer.add_child(actions)
+	_actions_bar = actions
 	var back_btn := Button.new()
 	back_btn.text = "Voltar"
 	back_btn.custom_minimum_size = Vector2(200, 50)

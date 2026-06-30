@@ -48,8 +48,11 @@ cena. Faixas inclusas: `Audios/menu.ogg`, `Audios/level_base.ogg`. Ver `Audios/R
 ### Gerenciador de Música (Settings → Música → Enabled)
 
 Clicar em **Música: Enabled** na aba Audio abre o **Gerenciador de Música**
-(`scenes2D/music_manager/music_manager_window.gd`, um `Window` montado em código como a janela de
-Templates de Level). Permite:
+(`scenes2D/music_manager/music_manager_window.gd`). Desde 2026-06-29 é um **controlador** que monta o
+formulário DENTRO da **janela flutuante reutilizável** (`FloatingWindow`), num `CanvasLayer` no topo —
+mesmo padrão da janela **Gerenciador de Templates** (level templates). Assim herda o tema 2D do
+projeto e o **Debug 2D funciona sobre ela** (a `FloatingWindow` entra no grupo do `DebugOverlay`),
+igual às demais janelas flutuantes. Permite:
 
 - **Ouvir** qualquer faixa de `Audios/` (player de pré-escuta separado; pausa o fundo enquanto toca).
   Cada botão **▶ Tocar** tem ao lado um **⏸ Pausar** e um **⏹ Parar** (2026-06-25) — tanto na linha
@@ -64,9 +67,10 @@ As atribuições viram **overrides** persistidos em `Settings` (seção `[music]
 atribuição reaplica **na hora** se for a cena tocando. `MusicManager` expõe `list_tracks()`,
 `scene_list()`, `assignment_of()`, `set_assignment()`, `effective_track()`, `preview()`,
 `preview_or_resume()`/`pause_preview()`/`resume_preview()` (2026-06-25), `stop_preview()`. Abre via
-`button_down` do botão Enabled (abre mesmo com a música já ligada).
-A janela usa `FloatingWindow.pointer_over_any_window()`? Não — é um `Window` nativo; quem usa esse
-helper são as cenas 3D (ver [[sistemas/biblioteca-de-modelos]]).
+`button_down` do botão Enabled (abre mesmo com a música já ligada). Os botões de ação ficam no
+**rodapé** da `FloatingWindow` (**🎲 Sortear faixas** e **Fechar**); fechar (× / ESC / Fechar) para a
+pré-escuta. O controlador persiste na tela Settings entre aberturas; a janela em si se autolibera ao
+fechar.
 
 **Sortear + persistência de estado (2026-06-25):** o rodapé tem um botão **"🎲 Sortear faixas"**
 (no lugar do 2º "Parar" — já há um em "Ouvir faixa") que atribui uma faixa **aleatória** de
