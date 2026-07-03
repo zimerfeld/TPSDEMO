@@ -114,7 +114,7 @@ e a cada mudança de opção.
 
 ### Volume por bus — VolumeBar (2026-06-25)
 
-À direita de cada linha (Música/SFX) há um **`VolumeBar`** (`scenes2D/controls2D/volume_bar/`,
+À direita de cada linha (Música/SFX) há um **`VolumeBar`** (`controls2D/volume_bar/`,
 `class_name VolumeBar`), controle de volume **reutilizável** desenhado como **equalizador** (10
 segmentos, gradiente verde→amarelo→vermelho) que o usuário **clica/arrasta** para ajustar de
 **1 a 100** (emite `value_changed`). `settings.gd` cria os dois em código (`_add_volume_bar`),

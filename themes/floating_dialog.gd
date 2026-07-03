@@ -2,7 +2,7 @@ class_name FloatingDialog
 extends RefCounted
 
 ## Fábrica das janelas de confirmação/aviso do jogo, construídas sobre a cena reutilizável
-## FloatingWindow (controle2D em scenes2D/controls2D/floating_window). Substitui o antigo
+## FloatingWindow (controle2D em controls2D/floating_window). Substitui o antigo
 ## UIDialogs + ConfirmationDialog/AcceptDialog nativos, padronizando o visual:
 ##   • mensagem CENTRALIZADA; botões de LARGURA UNIFORME; botão × igual ao das outras janelas;
 ##   • fundo modal (escurece + bloqueia o resto da UI); ESC = cancela; Enter = confirma (botão OK
@@ -16,7 +16,7 @@ extends RefCounted
 ##   dlg.canceled.connect(_on_nao)       # Cancelar / × / ESC          (opcional)
 ##   dlg.closed.connect(_on_fechou)      # sempre, ao terminar         (opcional)
 
-const SCENE := preload("res://scenes2D/controls2D/floating_window/floating_window.tscn")
+const SCENE := preload("res://controls2D/floating_window/floating_window.tscn")
 const MESSAGE_FONT_SIZE: int = 28
 const MESSAGE_WIDTH: float = 560.0
 

@@ -1,4 +1,4 @@
-# library3D/characters/enemies/enemy_health_bar.gd
+# controls2D/enemy_health_bar.gd
 
 **Criado em:** 2026-06-06
 **Estende:** `CanvasLayer`
@@ -25,7 +25,7 @@ static var _instance = null
 static func get_shared(parent: Node):
     if _instance != null and is_instance_valid(_instance):
         return _instance
-    _instance = (preload("res://library3D/characters/enemies/enemy_health_bar.gd")).new()
+    _instance = (preload("res://controls2D/enemy_health_bar.gd")).new()
     parent.add_child(_instance)   # parent = get_tree().current_scene
     return _instance
 ```
@@ -94,7 +94,7 @@ Guardas:
 
 ---
 
-## Caminho: `library3D/characters/enemies/enemy_health_bar.gd`
+## Caminho: `controls2D/enemy_health_bar.gd`
 
 ---
 

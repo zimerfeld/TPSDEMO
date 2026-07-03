@@ -99,7 +99,8 @@ Sessão grande, tudo validado em jogo no `.exe` (166 MB, 60 FPS) — **aguarda c
 - **Velocidade dos inimigos terrestres calibrada em padrões reais** (pesquisa: caminhada ~1,4 m/s,
   trote ~3, corrida 4,5): red_robot strafe 4,25→**2,4**, pressão 5,2→**3,2**, fuga 6,0→**3,8** +
   **aceleração suave** (`manual_accel` 6/s) no movimento manual — sem deslizar, com peso.
-- **ManageTemplatesButton (host_session) corrigido**: alerta quando nenhum level está selecionado
+- **ManageTemplates (host_session) corrigido** (botão renomeado de `ManageTemplatesButton` na
+  varredura de 2026-07-03): alerta quando nenhum level está selecionado
   (antes retorno silencioso = "botão quebrado"); validado hospedando sala em **127.0.0.1:4383**.
 - **Tela `levels` em grade responsiva**: `GridContainer` 3 colunas (Level fixo 300 px | Template |
   Cenário), colunas dos gerenciadores com `SIZE_EXPAND_FILL` **dividindo o resto da tela meio a
@@ -107,6 +108,55 @@ Sessão grande, tudo validado em jogo no `.exe` (166 MB, 60 FPS) — **aguarda c
 - **`build_windows.ps1` blindado**: apaga `.godot/exported/` antes de todo export — o cache não
   invalida quando um `.tscn` muda e o exe saía com **cena velha** (custou um ciclo de diagnóstico
   com sondas headless e marcadores no binário). Ver [[sistemas/build-windows]].
+
+---
+
+## 🟢 P0.10 — Reparo da reorganização de pastas (refs → caminhos planos) — PRONTO p/ review (2026-07-03)
+
+O projeto estava numa **reorganização de pastas pela metade**: os arquivos dos personagens voltaram
+aos caminhos **planos** (`characters/player/`, `red_robot/`, `criatura_alada/`, `playera/`), mas muitas
+referências ainda apontavam para os caminhos reorganizados (`characters/players/…`, `characters/enemies/…`).
+As com `uid://` resolviam, mas as por **string pura quebravam**: os `_spawnable_scenes` de `level_1`/`level_2`
+(personagens não spawnavam) e o `load(player.glb)` do `chooseplayer` (tela de escolha falhava). Detectado
+pelos erros de recurso no build (já presentes desde o 1º build da sessão — **pré-existente**, não do
+auto-fit). **Corrigido** com 4 reescritas de caminho em **24 arquivos** (~101 ocorrências):
+`players/player/→player/`, `players/playera/→playera/`, `enemies/red_robot/→red_robot/`,
+`enemies/criatura_alada/→criatura_alada/`. **Preservado de propósito** `enemies/enemy_health_bar.gd`
+(único arquivo que genuinamente ficou em `enemies/`, referenciado por red_robot/criatura). Validado
+headless (sem erros de recurso) + rebuild. **Aguarda commit.**
+
+---
+
+## 🟢 P0.9 — Auto-fit da cápsula de locomoção por modelo — PRONTO p/ review (2026-07-03)
+
+O **bloqueio físico** entre personagens deixou de usar uma cápsula default (0,5×2,0) igual p/ todos e
+passou a ser **proporcional ao modelo**, derivado dos mesmos boxes de membro que o `LimbColliders` já
+mede — mantendo **1 shape por personagem** (barato, estável, determinístico p/ o netcode). Novo método
+`LimbColliders.fit_locomotion_capsule` (raio = footprint tronco+pernas; altura = extensão vertical;
+base ancorada no chão; no-op se não há membros → preserva a cápsula autorada). Ligado em `player.gd` e
+`red_robot.gd` após `build_for`. A criatura_alada (voadora, sem `LimbColliders` no gameplay) segue com
+a cápsula autorada. **Validado** por sonda headless determinística (raio 0,250 ≠ braços 0,575; altura
+1,800; base 0,000 — 3/3 OK). Detalhes: [[sistemas/dano-localizado]] · [[sistemas/player]]. Respondeu à
+pergunta do usuário sobre usar os LimbColliders p/ bloqueio físico (dano localizado já funcionava
+assim). **Aguarda commit.**
+
+---
+
+## 🟢 P0.8 — Pulo variável + varredura de nomes de controles — PRONTO p/ review (2026-07-03)
+
+- **Pulo variável (hold/release):** segurar **espaço** = animação do salto completa + distância máxima
+  (arco balístico integral, comportamento anterior preservado); **soltar no meio da subida** = corte
+  SUAVE do pulo (amortecimento exponencial `JUMP_CUT_DAMPING = 14.0/s` na velocidade vertical — sem
+  tranco) e a animação transiciona para `jump_down` no ápice antecipado. Implementação: novo estado
+  sincronizado `jump_held` no `PlayerInputSynchronizer` (semeado `true` no RPC `jump()` p/ não cortar
+  o 1º frame por atraso de replicação; replicado no `SceneReplicationConfig` do InputSynchronizer),
+  corte restrito a pulos reais via flag `_jump_active` (cair de borda NÃO é amortecido). Bots não
+  pulam (IA), logo não são afetados. Ver [[sistemas/player]].
+- **Varredura de nomes dos controles 2D:** concluída (detalhes no item P2 riscado abaixo). Duas novas
+  regras de projeto no `CLAUDE.md` (sem repetir Type/siglas no Name; revisar dependências ao alterar
+  controle) e regra global de limpeza de código morto reforçada (após toda inclusão/deleção/modificação).
+- Validação: jogo headless 300 frames **sem erro**; consistência `%UniqueName`×`.tscn` verificada
+  em host_session/client_session/playonline. **Aguarda commit do usuário.**
 
 ---
 
@@ -171,9 +221,18 @@ andamento) e **parametrização** (UI, adiada por decisão do usuário). Context
 - **Layout responsivo (containers):** migrar as demais telas 2D do posicionamento por offsets absolutos
   para o esqueleto `Margin → VBox → HBox` com `stretch` desativado. **Piloto concluído: `developer`.**
   Replicar para menu/settings/chooseplayer/levels/playonline/sessions. Ver [[convencoes/layout-responsivo]].
-- **Renomear controles 2D (sweep):** dar nomes em inglês/papel, sem repetir o Tipo, a todos os controles.
-  **Feito: `menu`.** Resto das telas via workflow. Preservar `TitleLabel`/`Actions`. Ver
-  [[convencoes/navegacao-tab]] e a memória *"rename 2D controls sweep"*.
+- ~~**Renomear controles 2D (sweep)**~~ — ✅ **CONCLUÍDO em 2026-07-03** (todas as telas): sem repetir o
+  Type no Name, sem siglas de tipo, `OptionButton` no plural; `Actions` preservado (o DebugOverlay o
+  busca por nome). Regras registradas no `CLAUDE.md` do projeto. Renames: `BackButton→Back` (host/client
+  session), `StartButton→Start`, `ManageTemplatesButton→ManageTemplates`, `LevelPicker→Levels`,
+  `TemplatePicker→Templates`, `HostRenderPicker→HostRenderModes`, `SyncRatePicker→SyncRates`,
+  `InterpPicker→Interpolations`, `ScopeLabel→Scope`/`OptionLabel→Caption` (playonline ×3 colunas),
+  7×`Label→Caption` (selectors da models), linhas de sala (`RoomLabel→RoomInfo`, `PlayButton→Play`,
+  `Observe/Restart/Stop` sem sufixo Button), diálogo de templates (`ModelBox→ModelColumn`,
+  `ModelValueLabel→ModelValue`, `CountSpin→Count`, `EntryPicker→Entries`, `FactionPickers→Factions`,
+  `PlacementPicker→Placements`, `FolderPickers%d→Folders%d`), music manager (`ListenPicker→ListenTracks`,
+  `TrackLabel_→Track_`, `TrackPicker_→Tracks_`), janela Dano da models (`Bone→Bones`, `Owner→Owners`).
+  Dependências de código todas revisadas (`%`, `$`, `get_node`, sinais); validação headless 300 frames sem erro.
 
 ---
 

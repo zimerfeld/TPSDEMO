@@ -9,7 +9,7 @@ extends Node
 ## CanvasLayer no topo — herda o tema 2D do projeto e o Debug 2D funciona sobre a janela, igual às
 ## demais janelas flutuantes. Faixas vêm de res://Audios/.
 
-const FLOATING_SCENE := preload("res://scenes2D/controls2D/floating_window/floating_window.tscn")
+const FLOATING_SCENE := preload("res://controls2D/floating_window/floating_window.tscn")
 
 # 1ª opção de TODO dropdown: "Selecione..." = sem música definida (silêncio), a cena não toca. É o
 # default de uma cena não configurada. "Padrão" é uma opção à parte (resolve pelo nome da cena).
@@ -74,7 +74,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	listen_row.add_theme_constant_override("separation", 8)
 	root.add_child(listen_row)
 	_listen_picker = OptionButton.new()
-	_listen_picker.name = "ListenPicker"
+	_listen_picker.name = "ListenTracks"
 	_listen_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	listen_row.add_child(_listen_picker)
 	# Persiste a faixa escolhida para ouvir → restaurada na próxima abertura (persistir estado).
@@ -119,12 +119,12 @@ func _build_ui(content: VBoxContainer) -> void:
 		row.add_theme_constant_override("separation", 8)
 		list.add_child(row)
 		var lbl := Label.new()
-		lbl.name = "TrackLabel_%s" % key
+		lbl.name = "Track_%s" % key
 		lbl.text = String(scene["label"])
 		lbl.custom_minimum_size.x = 230
 		row.add_child(lbl)
 		var picker := OptionButton.new()
-		picker.name = "TrackPicker_%s" % key
+		picker.name = "Tracks_%s" % key
 		picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_populate_scene_picker(picker)
 		picker.item_selected.connect(_on_scene_track_selected.bind(key, picker))

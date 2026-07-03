@@ -60,7 +60,7 @@ Canais de doação configurados no repositório (badges no topo dos READMEs + bo
 | `library3D/characters/players/player/player.gd` | [[arquivos-chave/player-gd]] |
 | `library3D/characters/players/player/player_input.gd` | [[arquivos-chave/player-input-gd]] |
 | `library3D/characters/players/player/health_bar.gd` | [[arquivos-chave/health-bar-gd]] |
-| `library3D/characters/enemies/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
+| `controls2D/enemy_health_bar.gd` | [[arquivos-chave/enemy-health-bar-gd]] |
 | `effects_shared/limb_colliders.gd` | [[arquivos-chave/limb-colliders-gd]] |
 | `effects_shared/body_parts.gd` (+ planos corporais) | [[arquivos-chave/body-parts-gd]] |
 | `library3D/characters/red_robot/red_robot.gd` | [[arquivos-chave/red-robot-gd]] |

@@ -1,0 +1,88 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://controls2D/cyberpunk_hud/cyberpunk_hud.gd" id="1"]
+[ext_resource type="Theme" path="res://themes/cyberpunk.tres" id="2"]
+[ext_resource type="PackedScene" path="res://controls2D/vitals_panel/vitals_panel.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://controls2D/minimap_panel/minimap_panel.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://controls2D/ability_bar/ability_bar.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://controls2D/credits_panel/credits_panel.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://controls2D/log_feed/log_feed.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://controls2D/crosshair/crosshair.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://controls2D/scanlines/scanlines.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://controls2D/pause_menu/pause_menu.tscn" id="10"]
+
+[node name="CyberpunkHud" type="CanvasLayer"]
+script = ExtResource("1")
+
+[node name="ThemeRoot" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2")
+
+[node name="VitalsPanel" parent="ThemeRoot" instance=ExtResource("3")]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 376.0
+offset_bottom = 220.0
+
+[node name="MinimapPanel" parent="ThemeRoot" instance=ExtResource("4")]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -236.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 196.0
+grow_horizontal = 0
+
+[node name="AbilityBar" parent="ThemeRoot" instance=ExtResource("5")]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -150.0
+offset_right = 300.0
+offset_bottom = -16.0
+grow_vertical = 0
+
+[node name="CreditsPanel" parent="ThemeRoot" instance=ExtResource("6")]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -236.0
+offset_top = -220.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="LogFeed" parent="ThemeRoot" instance=ExtResource("7")]
+layout_mode = 1
+anchors_preset = 0
+anchor_top = 0.42
+offset_left = 16.0
+offset_top = 8.0
+offset_right = 276.0
+offset_bottom = 188.0
+
+[node name="Crosshair" parent="ThemeRoot" instance=ExtResource("8")]
+visible = false
+layout_mode = 1
+
+[node name="Scanlines" parent="ThemeRoot" instance=ExtResource("9")]
+layout_mode = 1
+
+[node name="PauseMenu" parent="ThemeRoot" instance=ExtResource("10")]
+layout_mode = 1

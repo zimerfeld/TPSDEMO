@@ -97,6 +97,10 @@ third-person shooter sandbox. At a high level it offers:
   It appears when you **aim at the enemy** and hides the moment your aim leaves it; the aim ray
   recognizes both the body and the **limb/sub-member colliders** — so aiming at a **protruding
   sub-member** (e.g. the leg guards) also reveals the enemy's health.
+- **Per-model physical body** — the locomotion capsule (physical blocking between characters) is
+  **auto-fitted to each model** from its limb colliders (radius from the standing footprint, height
+  from the full extent), instead of one hand-authored default for everyone. It stays a single cheap,
+  animation-independent shape per character — stable physics and deterministic networking.
 - **Localized damage** — per-limb native 3D colliders sized to each character's mesh, so hits to
   different body parts deal different damage (headshots deal extra). The members come from the
   model's **body plan**, chosen by a `body_type` (**biped** = head/torso/2 arms/2 legs — the
@@ -588,7 +592,8 @@ The per-limb hitbox system is the canonical example: `limb_colliders.gd` is a pl
 
 - Mouse or <kbd>Gamepad Right Stick</kbd>: Look around
 - <kbd>W</kbd>/<kbd>A</kbd>/<kbd>S</kbd>/<kbd>D</kbd>, <kbd>Arrow keys</kbd>, <kbd>Gamepad Left Analog Stick</kbd> or <kbd>Gamepad D-Pad</kbd>: Move
-- <kbd>Space</kbd>, <kbd>Gamepad A/Cross</kbd>: Jump
+- <kbd>Space</kbd>, <kbd>Gamepad A/Cross</kbd>: Jump — **variable height**: hold to complete the full jump arc
+  (maximum height and distance, animation plays to the end); release mid-rise to smoothly cut the jump short
 - <kbd>Right Mouse Button</kbd>, <kbd>Gamepad Left Trigger (L2)</kbd> (press to toggle, or hold and release): Aim
 - <kbd>Left Mouse Button</kbd>, <kbd>Gamepad Right Trigger (R2)</kbd>: Shoot (only while aiming)
 - <kbd>Arrow keys</kbd> / <kbd>Gamepad D-Pad</kbd> (in menus): Move focus between buttons
