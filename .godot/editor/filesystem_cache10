@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1783093058
+::res://::1783094659
 AIPrompts.txt::TextFile::-1::1780762580::0::1::::<><><>0<>0<><>::
 CLAUDE.md::TextFile::-1::1783081763::0::1::::<><><>0<>0<><>::
 contagem de downloads.txt::TextFile::-1::1782413992::0::1::::<><><>0<>0<><>::
@@ -157,7 +157,7 @@ stability_guard.gd::GDScript::827762660584854590::1783081302::0::1::::<>Node<><>
 ui_nav.gd::GDScript::8066163686518468714::1782840485::0::1::::<>Node<><>0<>0<><>::
 ::res://build/::1782262591
 icon.ico::OtherFile::-1::1781967641::0::1::::<><><>0<>0<><>::
-::res://build/windows/::1783093209
+::res://build/windows/::1783094208
 ::res://controls2D/::1783093058
 debug2d_toggle.gd::GDScript::5816466045801966744::1782840485::0::1::::Debug2DToggle<>CheckButton<><>0<>0<><>::
 enemy_health_bar.gd::GDScript::1538669343273556771::1783093089::0::1::::<>CanvasLayer<><>0<>0<><>::
@@ -253,19 +253,19 @@ criatura_alada_motor.wav::AudioStreamWAV::1991293750912183611::1783081302::17830
 criatura_alada_preview.png::CompressedTexture2D::5017755486567175009::1783081302::1783090512::1::::<><><>0<>0<>ecf8bddc0c52e6372229e88fb26b6501<>res://.godot/imported/criatura_alada_preview.png-51bb95794e1e0e60f8d6716ddb23778e.s3tc.ctex::
 ::res://library3D/characters/criatura_alada/IA/::1783081302
 criatura_alada_ai.gd::GDScript::2953498453819058529::1783081302::0::1::::CriaturaAladaAI<>Node<><>0<>0<><>::
-::res://library3D/characters/player/::1783093058
+::res://library3D/characters/player/::1783094587
 ai_config.json::JSON::-1::1782414005::0::1::::<><><>0<>0<><>::
 camera_noise_shake_effect.gd::GDScript::4107354489506457580::1782414006::0::1::::<>Camera3D<><>0<>0<><>::
 crosshair.png::CompressedTexture2D::1505555493444683777::1781472547::1783090511::1::::<><><>0<>0<>7ba7bddd4a6fb5675d2e4149abb9f9c1<>res://.godot/imported/crosshair.png-8b0ce101ce419ee51631a75922dc9fb4.ctex::
 limb_config.json::JSON::-1::1783081302::0::1::::<><><>0<>0<><>::
 muzzle_flash_particle_mesh_Cone.mesh::ArrayMesh::1082389752442802573::1783081302::0::1::::<><><>0<>0<><>::
 player.gd::GDScript::6130584122394539663::1783093089::0::1::::Player<>CharacterBody3D<><>0<>0<><>::
-player.glb::PackedScene::7765818617047381251::1783081302::1783090514::1::::<><><>0<>0<>2978f0839d1d5905ddf9453d5d593ac7<>res://.godot/imported/player.glb-503e661c669e29d8095e695488e44b4f.scn::uid://deuketc2tfbcu::::res://library3D/characters/player/playerobot.tres<>uid://bb8w80od0uuhd::::res://library3D/characters/player/robotemitter.tres
+player.glb::PackedScene::7765818617047381251::1782916261::1782414004::1::::<><><>0<>0<>2978f0839d1d5905ddf9453d5d593ac7<>res://.godot/imported/player.glb-503e661c669e29d8095e695488e44b4f.scn::uid://deuketc2tfbcu::::res://library3D/characters/player/playerobot.tres<>uid://bb8w80od0uuhd::::res://library3D/characters/player/robotemitter.tres
 player.tscn::PackedScene::6090571208465178269::1783092716::0::1::::<><><>0<>0<><>::uid://ctlx3bqglonsx::::res://library3D/characters/player/player.gd<>uid://div25sd40yx1d::::res://library3D/characters/player/player.glb<>uid://m1xn31x0lssx::::res://library3D/characters/player/player_input.gd<>uid://vpkjqsku35mr::::res://library3D/characters/player/crosshair.png<>uid://do3ko5enqvvrb::::res://library3D/characters/player/audio/step_random_pitch.tres<>uid://evwr35k4yn6g::::res://library3D/characters/player/audio/jump.wav<>uid://fbnqspetw2oy::::res://library3D/characters/player/audio/land.wav<>uid://8d78kbpqjumj::::res://effects_shared/blob_shadow.tres<>uid://byrvr71jmaisi::::res://library3D/characters/player/camera_noise_shake_effect.gd<>uid://byb8a73wgvytk::::res://library3D/characters/player/bullet/bullet_material.tres<>uid://pok2ib14r47b::::res://library3D/characters/player/muzzle_flash_particle_mesh_Cone.mesh<>uid://dj46di0ip66q5::::res://library3D/characters/player/bullet/effect/FlarePolar.png<>uid://glpjepixvmdl::::res://library3D/characters/player/audio/shoot.wav<>uid://jphgr3qep5::::res://library3D/characters/player/bullet/bullet.tscn
 playerobot.tres::StandardMaterial3D::7481920296101518612::1783092716::0::1::::<><><>0<>0<><>::uid://o1nd7djiihf1::::res://library3D/characters/player/textures/player_robot_albedo.png<>uid://e25tiap7vd16::::res://library3D/characters/player/textures/player_robot_orm.png<>uid://dfiaidypprqxn::::res://library3D/characters/player/textures/player_robot_normal.png<>uid://b8bamggcp7gpx::::res://library3D/characters/player/textures/player_robot_emissive.png
 player_input.gd::GDScript::897361163313930891::1783081942::0::1::::PlayerInputSynchronizer<>MultiplayerSynchronizer<><>0<>0<><>::
 procedural_aim.gd::GDScript::2977643352985813754::1782414007::0::1::::<>SkeletonModifier3D<><>0<>0<><>::
-robotemitter.tres::StandardMaterial3D::2526130033136369361::1783081302::0::1::::<><><>0<>0<><>::
+robotemitter.tres::StandardMaterial3D::2526130033136369361::1782414004::0::1::::<><><>0<>0<><>::
 ::res://library3D/characters/player/audio/::1783092716
 jump.wav::AudioStreamWAV::325474957216634152::1783081302::1783090513::1::::<><><>0<>0<>cfba7eee14df32357d27c73c9c91bfb8<>res://.godot/imported/jump.wav-9417c470721e4f80ea02f5f45d4cbdfb.sample::
 land.wav::AudioStreamWAV::353827458353061376::1783081302::1783090513::1::::<><><>0<>0<>d43b319cf31617acb59d988794febbc6<>res://.godot/imported/land.wav-e3c15b569784647306460a6e54c5fa0a.sample::
