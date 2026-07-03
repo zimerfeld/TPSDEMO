@@ -1,9 +1,9 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1783108175
+::res://::1783113432
 AIPrompts.txt::TextFile::-1::1780762580::0::1::::<><><>0<>0<><>::
 CLAUDE.md::TextFile::-1::1783105635::0::1::::<><><>0<>0<><>::
 contagem de downloads.txt::TextFile::-1::1782413992::0::1::::<><><>0<>0<><>::
-default_bus_layout.tres::AudioBusLayout::1513395931677394583::1783104866::0::1::::<><><>0<>0<><>::
+default_bus_layout.tres::AudioBusLayout::1513395931677394583::1783113432::0::1::::<><><>0<>0<><>::
 export_presets.cfg::TextFile::-1::1782351917::0::1::::<><><>0<>0<><>::
 godot-ai-LICENSE.txt::TextFile::-1::1782413997::0::1::::<><><>0<>0<><>::
 godot-ai.txt::TextFile::-1::1782424417::0::1::::<><><>0<>0<><>::
@@ -159,7 +159,7 @@ template_manager_base.gd::GDScript::340131288892778639::1783105635::0::1::::Temp
 ui_nav.gd::GDScript::8066163686518468714::1782840485::0::1::::<>Node<><>0<>0<><>::
 ::res://build/::1782262591
 icon.ico::OtherFile::-1::1781967641::0::1::::<><><>0<>0<><>::
-::res://build/windows/::1783105504
+::res://build/windows/::1783108210
 ::res://controls2D/::1783105635
 debug2d_toggle.gd::GDScript::5816466045801966744::1783105635::0::1::::Debug2DToggle<>CheckButton<><>0<>0<><>::
 enemy_health_bar.gd::GDScript::1538669343273556771::1783105635::0::1::::<>CanvasLayer<><>0<>0<><>::
@@ -433,9 +433,9 @@ chooseplayer.tscn::PackedScene::4750128530151895568::1782840485::0::1::::<><><>0
 ::res://scenes2D/chooseplayer/Resources/::1782414058
 chooseplayer.en.json::JSON::-1::1782414058::0::1::::<><><>0<>0<><>::
 chooseplayer.pt.json::JSON::-1::1782414058::0::1::::<><><>0<>0<><>::
-::res://scenes2D/client_session/::1783105636
+::res://scenes2D/client_session/::1783110180
 client_session.gd::GDScript::284601090265329339::1783105636::0::1::::<>Control<><>0<>0<><>::
-client_session.tscn::PackedScene::-1::1783105636::0::1::::<><><>0<>0<><>::res://scenes2D/client_session/client_session.gd<>res://themes/ui_theme.tres<>res://scenes2D/menu/menu_surreal_training_bg.png<>res://themes/session_signal_bg.gdshader
+client_session.tscn::PackedScene::-1::1783110180::0::1::::<><><>0<>0<><>::res://scenes2D/client_session/client_session.gd<>res://themes/ui_theme.tres<>res://scenes2D/menu/menu_surreal_training_bg.png<>res://themes/session_signal_bg.gdshader
 ::res://scenes2D/controls/::1783105636
 controls.gd::GDScript::2506016847827229326::1783105636::0::1::::<>Node<><>0<>0<><>::
 controls.tscn::PackedScene::-1::1783105636::0::1::::<><><>0<>0<><>::res://scenes2D/controls/controls.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres
@@ -448,9 +448,9 @@ developer.tscn::PackedScene::6714444820196828788::1782840485::0::1::::<><><>0<>0
 ::res://scenes2D/developer/Resources/::1782840485
 developer.en.json::JSON::-1::1782840485::0::1::::<><><>0<>0<><>::
 developer.pt.json::JSON::-1::1782840485::0::1::::<><><>0<>0<><>::
-::res://scenes2D/host_session/::1783105636
+::res://scenes2D/host_session/::1783110168
 host_session.gd::GDScript::1033553730063231628::1783105636::0::1::::<>Control<><>0<>0<><>::
-host_session.tscn::PackedScene::-1::1783105636::0::1::::<><><>0<>0<><>::res://scenes2D/host_session/host_session.gd<>res://themes/ui_theme.tres<>res://scenes2D/menu/menu_surreal_training_bg.png<>res://themes/session_signal_bg.gdshader
+host_session.tscn::PackedScene::-1::1783110168::0::1::::<><><>0<>0<><>::res://scenes2D/host_session/host_session.gd<>res://themes/ui_theme.tres<>res://scenes2D/menu/menu_surreal_training_bg.png<>res://themes/session_signal_bg.gdshader
 ::res://scenes2D/levels/::1783105636
 levels.gd::GDScript::8380582057794343613::1783105636::0::1::::<>Node<><>0<>0<><>::
 levels.tscn::PackedScene::8230681047836425903::1783081302::0::1::::<><><>0<>0<><>::uid://drnu7yflp4xg4::::res://scenes2D/levels/levels.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres<>res://themes/backgrounds/levels_bg.gdshader
@@ -487,9 +487,9 @@ performance_bar.gd::GDScript::475329158874176594::1782816622::0::1::::<>Control<
 ::res://scenes2D/overlays/Resources/::1782414075
 overlays.en.json::JSON::-1::1782414075::0::1::::<><><>0<>0<><>::
 overlays.pt.json::JSON::-1::1782414075::0::1::::<><><>0<>0<><>::
-::res://scenes2D/playonline/::1783105636
+::res://scenes2D/playonline/::1783113458
 electric_wire.gd::GDScript::6542220921439454516::1782816622::0::1::::<>Control<><>0<>0<><>::
-playonline.gd::GDScript::6186035925105165097::1783105636::0::1::::<>Node<><>0<>0<><>::
+playonline.gd::GDScript::6186035925105165097::1783113458::0::1::::<>Node<><>0<>0<><>::
 playonline.tscn::PackedScene::-1::1783105636::0::1::::<><><>0<>0<><>::res://scenes2D/playonline/playonline.gd<>uid://buithemedemo1::::res://themes/ui_theme.tres<>res://themes/backgrounds/playonline_bg.gdshader<>res://scenes2D/playonline/electric_wire.gd
 ::res://scenes2D/playonline/Resources/::1782492838
 playonline.en.json::JSON::-1::1782492838::0::1::::<><><>0<>0<><>::
