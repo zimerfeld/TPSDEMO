@@ -1,0 +1,222 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes2D/template_manager/template_manager.gd" id="1"]
+
+[node name="TemplateManager" type="ScrollContainer"]
+custom_minimum_size = Vector2(1000, 560)
+horizontal_scroll_mode = 0
+follow_focus = true
+script = ExtResource("1")
+
+[node name="Body" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="TopRow" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Templates" type="OptionButton" parent="Body/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Novo" type="Button" parent="Body/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Novo"
+
+[node name="Duplicar" type="Button" parent="Body/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Duplicar"
+
+[node name="Remover" type="Button" parent="Body/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Remover"
+
+[node name="NameRow" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NameLabel" type="Label" parent="Body/NameRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Nome"
+
+[node name="NameField" type="LineEdit" parent="Body/NameRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Nome do template"
+
+[node name="EntrySeparator" type="HSeparator" parent="Body"]
+layout_mode = 2
+
+[node name="EntryNameRow" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EntryNameLabel" type="Label" parent="Body/EntryNameRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Nome da entrada"
+
+[node name="EntryNameField" type="LineEdit" parent="Body/EntryNameRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Nome da entrada"
+
+[node name="EntryRow" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Entries" type="OptionButton" parent="Body/EntryRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AddEntry" type="Button" parent="Body/EntryRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Adicionar Entrada"
+
+[node name="RemoveEntry" type="Button" parent="Body/EntryRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Remover Entrada"
+
+[node name="FieldsGrid" type="GridContainer" parent="Body"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+columns = 2
+
+[node name="ModelLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Modelo"
+
+[node name="ModelColumn" type="VBoxContainer" parent="Body/FieldsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="CascadeRow" type="HFlowContainer" parent="Body/FieldsGrid/ModelColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 8
+
+[node name="ModelValue" type="Label" parent="Body/FieldsGrid/ModelColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="FactionLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Facção"
+
+[node name="Factions" type="OptionButton" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CountLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Quantidade"
+
+[node name="Count" type="SpinBox" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 64.0
+value = 1.0
+focus_mode = 2
+
+[node name="PlacementLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Posicionamento"
+
+[node name="Placements" type="OptionButton" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PositionsLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Coordenadas"
+
+[node name="PositionsField" type="LineEdit" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "x,y,z; x,y,z"
+
+[node name="RandomCenterLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Centro aleatório"
+
+[node name="RandomCenterField" type="LineEdit" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "0,1,0"
+
+[node name="RandomSizeLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Tamanho aleatório"
+
+[node name="RandomSizeField" type="LineEdit" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "34,0,34"
+
+[node name="FormationLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Formação"
+
+[node name="Formations" type="OptionButton" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FormationOriginLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Origem formação"
+
+[node name="FormationOriginField" type="LineEdit" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "0,1,0"
+
+[node name="SpacingLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Espaçamento"
+
+[node name="Spacing" type="SpinBox" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.5
+max_value = 50.0
+step = 0.5
+value = 4.0
+focus_mode = 2
+
+[node name="RotationLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Rotação Y"
+
+[node name="Rotation" type="SpinBox" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -360.0
+max_value = 360.0
+step = 5.0
+focus_mode = 2

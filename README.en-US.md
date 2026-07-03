@@ -45,9 +45,9 @@ third-person shooter sandbox. At a high level it offers:
   map**. Their behaviors (follow squad, prioritize enemies, combat spacing, pressure flank…) live in
   a dedicated AI script (`library3D/characters/players/player/IA/player_bot_ai.gd`).
 - **Level templates (Template Manager)** — each level row on the Levels screen has a **template
-  button** that opens the **Template Manager** (floating window, also reachable from the host's room
-  manager): named spawn templates per level, each with entries defining **type**
-  (character/structure), **model**, **faction** (friendly/enemy/neutral), **count** and **placement**
+  button** that opens the **Template Manager** (a **scrollable** floating window, also reachable from
+  the host's room manager): named spawn templates per level, each with entries defining
+  **model**, **faction** (friendly/enemy/neutral), **count** and **placement**
   (explicit coordinates, random area or combat formation). **"Save and Use On This Level"** activates
   the template, applied when the level starts (solo or as an online room). Works the same in the
   editor and in the **exported .exe**: the model scanner resolves the `.remap` names the export
@@ -166,12 +166,13 @@ third-person shooter sandbox. At a high level it offers:
   that no other toggle covers — particles, lights, bone-mounted laser/muzzle meshes),
   **Audio** (every sound the model emits — movement, motor, shots, explosions, voices),
   **Colisores de Membro** / member colliders (with the toggle on and one member/sub-member isolated, shows that collider's
-  green gizmo), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
-  collider, independent of the Debug 3D screen — with, right below the **Membro** toggle, an **Esqueleto** toggle
-  that floats the "Esqueleto: \<name\>" label of the chosen loose bone over it, plus extra Type/Name/ID lines), **Colisores de Esqueleto** (in "All members" mode → "Skeleton" filter, highlights the
-  chosen loose bone's region — or all of them — with a translucent box), **Submembros** (a floating
-  "Submembro: \<name\>" label over the sub-member chosen in the dropdown) and **Colisores de Submembros**
-  (shows only the selected sub-member's limbcollider). The selectors are **three
+  translucent gizmo — **members in light blue, sub-members in light purple**), **member labels** (a browser-owned toggle for the "Membro: …" tags over each
+  collider — in **dark blue** — independent of the Debug 3D screen — with, right below the **Membro** toggle, an **Esqueleto** toggle
+  that floats the **dark-orange** "Esqueleto: \<name\>" label of the chosen loose bone over it, plus extra Type/Name/ID lines), **Colisores de Esqueleto** (in "All members" mode → "Skeleton" filter, highlights the
+  chosen loose bone's region — or all of them — with a **light-orange** translucent box), **Submembros** (floating
+  **dark-purple** "Submembro: \<name\>" labels — over the sub-member chosen in the dropdown, or over **every**
+  sub-member at once in "Todos os Sub-membros" mode) and **Colisores de Submembros**
+  (shows the selected sub-member's limbcollider — or all of them in "Todos os Sub-membros"). The selectors are **three
   dropdowns** — **Membro** (member), **Sub-membro** right below it (with a **"Todos os Sub-membros"** option to show
   them all at once) and, only in **"Todos os membros"** mode, **Esqueleto** (loose bones), which sits below Sub-membro.
   Picking a **real** item (not "Selecione…"/"Todos") in any of the three reveals, **to its right**, a

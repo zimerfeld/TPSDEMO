@@ -16,13 +16,12 @@ const LEVELS := [
 const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn"
-const LevelTemplateDialogScene := preload("res://scenes2D/level_templates/level_template_dialog.gd")
+const TemplateManagerScene := preload("res://scenes2D/template_manager/template_manager.tscn")
 
 var _observing_id: int = -1        # sala observada (-1 = grade)
 var _playing_id: int = -1          # sala em que o host JOGA (-1 = não joga)
 
 var _confirm_dialog: FloatingWindow = null
-var _template_dialog: LevelTemplateDialog = null
 
 # Scaffold ESTÁTICO no .tscn (2026-06-30): RoomView/painel/pickers/lista/Voltar/Actions vêm da cena; o
 # código só popula os pickers + as linhas de sala (dinâmicas) e religa o foco. Antes a tela inteira era
@@ -108,9 +107,9 @@ func _on_start_pressed() -> void:
 		return
 	var level_path := String(_level_picker.get_item_metadata(idx))
 	if _template_picker.selected > 0:
-		LevelTemplateManager.set_active_template(level_path, String(_template_picker.get_item_metadata(_template_picker.selected)))
+		CharacterTemplateManager.set_active(level_path, String(_template_picker.get_item_metadata(_template_picker.selected)))
 	else:
-		LevelTemplateManager.set_active_template(level_path, "")
+		CharacterTemplateManager.set_active(level_path, "")
 	RoomManager.start_room(level_path)
 	_apply_mouse_mode()
 
@@ -124,8 +123,8 @@ func _refresh_template_picker() -> void:
 	if idx <= 0:
 		return
 	var level_path := String(_level_picker.get_item_metadata(idx))
-	var active_id := LevelTemplateManager.active_template_id(level_path)
-	for t in LevelTemplateManager.templates_for_level(level_path):
+	var active_id := CharacterTemplateManager.active_id(level_path)
+	for t in CharacterTemplateManager.templates_for_level(level_path):
 		_template_picker.add_item(String(t.get("name", "Template")))
 		_template_picker.set_item_metadata(_template_picker.item_count - 1, String(t.get("id", "")))
 		if String(t.get("id", "")) == active_id:
@@ -140,12 +139,9 @@ func _open_template_dialog_for_selected_level() -> void:
 		FloatingDialog.alert(self, "Gerenciador de Templates",
 				"Selecione um level primeiro para gerenciar seus templates.")
 		return
-	if _template_dialog == null:
-		_template_dialog = LevelTemplateDialogScene.new()
-		_template_dialog.configure("spawn")
-		_template_dialog.templates_changed.connect(_refresh_template_picker)
-		add_child(_template_dialog)
-	_template_dialog.popup_for_level(String(_level_picker.get_item_metadata(idx)))
+	var form := TemplateManagerScene.instantiate() as TemplateFormBase
+	form.templates_changed.connect(_refresh_template_picker)
+	form.open_over(self, String(_level_picker.get_item_metadata(idx)))
 
 
 # Botão "Reiniciar" de uma sala: recria o nível do zero (e avisa os clientes dela — ver

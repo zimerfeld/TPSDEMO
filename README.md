@@ -55,6 +55,8 @@ protruding sub-members (plates, guards) are editable too (and any model with no 
 special effects, audio, colliders — plus, per selected member/sub-member/loose bone, a **collider-geometry
 dropdown** (sphere/box/capsule, or "Selecione…" = no collider on a member) and a reusable floating dialog
 with live X/Y/Z **offset & scale** that persist instantly and are read back when a character spawns —
+color-coded for clarity (**members in blue, sub-members in purple, loose bones in orange**: light on
+the translucent 3D colliders/highlights, dark on the floating labels, matching each toggle's own text) —
 member labels — incl. a Bone toggle floating the chosen loose
 bone's name) and selector dropdowns — both persisted between
 visits, with the drill-down chain restored on reopen; a
@@ -78,8 +80,8 @@ high-FPS client view. A pre-session **Optimization** selector picks interpolatio
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
 The Levels screen also carries, per level, a **Template Manager** (characters) and a **Scenery
-Manager** (glowing stage props from `library3D/sceneries`) — floating windows where each entry's
-model is picked by **cascading folder navigation** (one dropdown per library folder level), with
+Manager** (glowing stage props from `library3D/sceneries`) — **scrollable** floating windows where
+each entry's model is picked by **cascading folder navigation** (one dropdown per library folder level), with
 faction, count and placement (coordinates, random area or formation); both a character template
 and a scenery can be active at once, applied when the level starts, in solo play and online rooms
 alike, in the editor and in the exported .exe. Ground enemies now move at **real human speed
@@ -100,7 +102,9 @@ os sub-membros salientes (placas, guardas) também são editáveis (e todo model
 efeitos especiais, áudio, colliders — e, por membro/sub-membro/osso avulso selecionado, um **dropdown de
 geometria do collider** (esfera/caixa/cápsula, ou "Selecione…" = sem collider no membro) e uma janela
 flutuante reutilizável com **afastamento e escala** X/Y/Z ao vivo, que persistem na hora e são relidos
-quando um personagem entra em cena — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
+quando um personagem entra em cena — com código de cores (**membros em azul, sub-membros em roxo, ossos
+avulsos em laranja**: claro nos colliders/realces 3D translúcidos, escuro nos rótulos flutuantes, casando com o texto de cada toggle) —
+rótulos de membro — incl. um toggle Osso que faz flutuar o nome
 do osso avulso escolhido) e dropdowns de seleção — ambos persistidos
 entre visitas, com a cadeia de navegação restaurada ao reabrir; uma tela developer cujo overlay de
 debug é dividido nas

@@ -1,73 +1,130 @@
+class_name TemplateManagerBase
 extends Node
-## Templates persistidos de composição de level.
+## Base compartilhada dos gerenciadores de composição de level. Cada SUBCLASSE (autoload) cuida de
+## UMA responsabilidade/pasta da biblioteca 3D e persiste no SEU próprio arquivo `user://`:
+##   • CharacterTemplateManager → personagens (`library3D/characters`), com facção;
+##   • SceneryTemplateManager    → cenários  (`library3D/sceneries`), sem facção.
 ##
-## Cada template define personagens aliados/inimigos e estruturas a serem instanciados no level,
-## com placement por posições explícitas, área aleatória ou formação de combate.
+## Cada template define entradas a instanciar no level, com placement por posições explícitas, área
+## aleatória ou formação de combate. As subclasses só declaram arquivo/raiz/kind e o default inicial.
 
-const FILE_PATH := "user://level_templates.json"
 const DEFAULT_RANDOM_SIZE := Vector3(34.0, 0.0, 34.0)
-## Raízes da navegação em CASCATA por pastas (um OptionButton por nível de pasta, no diálogo):
-## personagens no Gerenciador de Templates, cenários no Gerenciador de Cenários.
-const CHARACTERS_ROOT := "res://library3D/characters"
-const SCENERIES_ROOT := "res://library3D/sceneries"
+## Arquivo legado (categorias juntas) do antigo LevelTemplateManager — migrado 1x por subclasse.
+const LEGACY_FILE := "user://level_templates.json"
 
 var templates: Array[Dictionary] = []
 var _active_by_level: Dictionary = {}
-var _active_scenery_by_level: Dictionary = {}
 
 
 func _ready() -> void:
-	load_templates()
+	_load_or_migrate()
 	if templates.is_empty():
 		_install_defaults()
+	# Cura caminhos obsoletos: entradas salvas com um scene_path que não existe mais (ex.: a pasta foi
+	# movida/renomeada, como a extinta library3D/characters/enemies/) são relocalizadas pelo model_key
+	# sob a raiz ATUAL da categoria, e o arquivo é regravado. Sem isto, a cascata do diálogo não
+	# consegue re-selecionar o modelo salvo (abre em "Selecione...").
+	if _heal_entry_paths():
+		save()
 
 
-func load_templates() -> void:
+# ---- Ganchos virtuais (cada subclasse define) ---------------------------------------------
+
+# Arquivo próprio da subclasse (ex.: "user://character_templates.json").
+func _file_path() -> String:
+	return ""
+
+
+# Raiz da navegação em cascata por pastas (ex.: "res://library3D/characters"). Público: a UI lê.
+func root_dir() -> String:
+	return ""
+
+
+# Kind gravado nas entradas ("character" ou "scenery").
+func _entry_kind() -> String:
+	return "node"
+
+
+# Chave do mapa de ativos no arquivo LEGADO ("active_by_level" ou "active_scenery_by_level").
+func _legacy_active_key() -> String:
+	return "active_by_level"
+
+
+# True se um template do arquivo legado pertence a ESTA subclasse (por categoria).
+func _matches_legacy(_raw: Dictionary) -> bool:
+	return true
+
+
+# Templates instalados quando não há nada salvo (default de fábrica). Vazio por padrão.
+func _install_defaults() -> void:
+	pass
+
+
+# ---- Persistência -------------------------------------------------------------------------
+
+# Carrega o arquivo próprio; na 1ª execução (sem arquivo próprio) migra do arquivo legado.
+func _load_or_migrate() -> void:
+	if FileAccess.file_exists(_file_path()):
+		_load()
+	else:
+		_migrate_from_legacy()
+
+
+func _load() -> void:
 	templates.clear()
-	if not FileAccess.file_exists(FILE_PATH):
-		return
-	var file := FileAccess.open(FILE_PATH, FileAccess.READ)
+	_active_by_level.clear()
+	var file := FileAccess.open(_file_path(), FileAccess.READ)
 	if file == null:
 		return
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
 	if parsed is Dictionary:
 		_active_by_level = (parsed as Dictionary).get("active_by_level", {})
-		_active_scenery_by_level = (parsed as Dictionary).get("active_scenery_by_level", {})
 		for raw in (parsed as Dictionary).get("templates", []):
 			if raw is Dictionary:
 				templates.append(_normalize_template(raw))
 
 
-func save_templates() -> void:
+# Divide o arquivo legado (personagens + cenários juntos): traz só os templates desta categoria e o
+# mapa de ativos correspondente, e grava no arquivo próprio. Roda uma única vez (depois já existe
+# o arquivo próprio). Sem arquivo legado, é no-op — a subclasse cai nos defaults de fábrica.
+func _migrate_from_legacy() -> void:
+	if not FileAccess.file_exists(LEGACY_FILE):
+		return
+	var file := FileAccess.open(LEGACY_FILE, FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return
+	_active_by_level = (parsed as Dictionary).get(_legacy_active_key(), {})
+	for raw in (parsed as Dictionary).get("templates", []):
+		if raw is Dictionary and _matches_legacy(raw):
+			templates.append(_normalize_template(raw))
+	if not templates.is_empty() or not _active_by_level.is_empty():
+		save()
+
+
+func save() -> void:
 	var data := {
 		"templates": templates,
 		"active_by_level": _active_by_level,
-		"active_scenery_by_level": _active_scenery_by_level,
 	}
-	var file := FileAccess.open(FILE_PATH, FileAccess.WRITE)
+	var file := FileAccess.open(_file_path(), FileAccess.WRITE)
 	if file == null:
-		push_error("LevelTemplateManager: não foi possível salvar templates.")
+		push_error("%s: não foi possível salvar templates." % get_class())
 		return
 	file.store_string(JSON.stringify(data, "\t"))
 	file.close()
 
 
-func all_templates() -> Array[Dictionary]:
+# ---- API de templates ---------------------------------------------------------------------
+
+# Templates aplicáveis a `level_path` (os presos a este level + os globais de level_path "").
+func templates_for_level(level_path: String) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for t in templates:
-		out.append(t.duplicate(true))
-	return out
-
-
-# Templates do level filtrados por CATEGORIA: "spawn" (Gerenciador de Templates — personagens)
-# ou "scenery" (Gerenciador de Cenários — objetos de cenário). Categorias têm listas e ativos
-# independentes, mas dividem o mesmo arquivo/armazenamento.
-func templates_for_level(level_path: String, category: String = "spawn") -> Array[Dictionary]:
-	var out: Array[Dictionary] = []
-	for t in templates:
-		if String(t.get("category", "spawn")) != category:
-			continue
 		var template_level := String(t.get("level_path", ""))
 		if template_level == "" or template_level == level_path:
 			out.append(t.duplicate(true))
@@ -83,10 +140,10 @@ func upsert_template(template: Dictionary) -> String:
 	for i in templates.size():
 		if String(templates[i].get("id", "")) == id:
 			templates[i] = normalized
-			save_templates()
+			save()
 			return id
 	templates.append(normalized)
-	save_templates()
+	save()
 	return id
 
 
@@ -98,44 +155,23 @@ func remove_template(id: String) -> void:
 	for level_path in _active_by_level.keys():
 		if String(_active_by_level[level_path]) == id:
 			_active_by_level.erase(level_path)
-	for level_path in _active_scenery_by_level.keys():
-		if String(_active_scenery_by_level[level_path]) == id:
-			_active_scenery_by_level.erase(level_path)
-	save_templates()
+	save()
 
 
-func set_active_template(level_path: String, template_id: String) -> void:
+func set_active(level_path: String, template_id: String) -> void:
 	if template_id == "":
 		_active_by_level.erase(level_path)
 	else:
 		_active_by_level[level_path] = template_id
-	save_templates()
+	save()
 
 
-func active_template_id(level_path: String) -> String:
+func active_id(level_path: String) -> String:
 	return String(_active_by_level.get(level_path, ""))
 
 
-func active_template(level_path: String) -> Dictionary:
-	return _template_by_id(active_template_id(level_path))
-
-
-# Ativo da categoria "scenery" — espelho do ativo de spawn, num mapa próprio (um level pode ter
-# um template de personagens E um de cenário ativos ao mesmo tempo).
-func set_active_scenery(level_path: String, template_id: String) -> void:
-	if template_id == "":
-		_active_scenery_by_level.erase(level_path)
-	else:
-		_active_scenery_by_level[level_path] = template_id
-	save_templates()
-
-
-func active_scenery_id(level_path: String) -> String:
-	return String(_active_scenery_by_level.get(level_path, ""))
-
-
-func active_scenery(level_path: String) -> Dictionary:
-	return _template_by_id(active_scenery_id(level_path))
+func active(level_path: String) -> Dictionary:
+	return _template_by_id(active_id(level_path))
 
 
 func _template_by_id(id: String) -> Dictionary:
@@ -147,16 +183,15 @@ func _template_by_id(id: String) -> Dictionary:
 	return {}
 
 
-# Aplica os templates ATIVOS do level (spawn E cenário) ao iniciar — solo ou sala online.
-func apply_active_template(level_path: String, spawned_nodes: Node3D, _spawn_points_parent: Node3D = null) -> bool:
+# Aplica o template ATIVO do level (se houver) ao iniciar — solo ou sala online. True se instanciou.
+func apply_active(level_path: String, spawned_nodes: Node3D) -> bool:
 	if spawned_nodes == null:
 		return false
-	var applied := false
-	for template in [active_template(level_path), active_scenery(level_path)]:
-		if not (template as Dictionary).is_empty():
-			_apply_template(template, spawned_nodes)
-			applied = true
-	return applied
+	var template := active(level_path)
+	if template.is_empty():
+		return false
+	_apply_template(template, spawned_nodes)
+	return true
 
 
 # ---- Navegação em cascata por pastas (diálogos de template/cenário) ------------------------
@@ -206,6 +241,48 @@ func _dir_has_models(dir_path: String) -> bool:
 	return false
 
 
+# Percorre todos os templates e conserta scene_paths que não existem mais, relocalizando o modelo
+# pelo model_key sob a raiz atual. Devolve true se algo mudou (o chamador regrava). No-op quando
+# todos os caminhos são válidos.
+func _heal_entry_paths() -> bool:
+	var changed := false
+	for t in templates:
+		for raw_entry in t.get("entries", []):
+			if not raw_entry is Dictionary:
+				continue
+			var entry: Dictionary = raw_entry
+			var path := String(entry.get("scene_path", ""))
+			var key := String(entry.get("model_key", ""))
+			if path == "" or key == "" or ResourceLoader.exists(path):
+				continue
+			var fixed := _find_model_path(root_dir(), key)
+			if fixed != "" and fixed != path:
+				entry["scene_path"] = fixed
+				changed = true
+	return changed
+
+
+# Procura, recursivamente sob `dir_path`, a pasta-modelo cujo key (nome da pasta) == `key` e devolve
+# o caminho da sua cena; "" se não encontrar.
+func _find_model_path(dir_path: String, key: String) -> String:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return ""
+	for child in dir.get_directories():
+		if child.begins_with("."):
+			continue
+		var sub := "%s/%s" % [dir_path, child]
+		var model := _dir_model(sub)
+		if not model.is_empty() and String(model.get("key", "")) == key:
+			return String(model.get("path", ""))
+		var deeper := _find_model_path(sub, key)
+		if deeper != "":
+			return deeper
+	return ""
+
+
+# ---- Instanciação no level ----------------------------------------------------------------
+
 func _apply_template(template: Dictionary, spawned_nodes: Node3D) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
@@ -217,7 +294,7 @@ func _apply_template(template: Dictionary, spawned_nodes: Node3D) -> void:
 		var scene_path := String(entry.get("scene_path", ""))
 		var scene := load(scene_path) as PackedScene
 		if scene == null:
-			push_warning("LevelTemplateManager: cena inválida no template: %s" % scene_path)
+			push_warning("%s: cena inválida no template: %s" % [get_class(), scene_path])
 			continue
 		var positions := _positions_for(entry, rng)
 		for position in positions:
@@ -307,14 +384,15 @@ func _normalize_template(raw: Dictionary) -> Dictionary:
 	t["id"] = String(t.get("id", ""))
 	t["name"] = String(t.get("name", "Template"))
 	t["level_path"] = String(t.get("level_path", ""))
-	t["category"] = String(t.get("category", "spawn"))
+	# Campo "category" do formato antigo é descartado: cada arquivo já é de UMA categoria.
+	t.erase("category")
 	if not t.get("entries", []) is Array:
 		t["entries"] = []
-	# Migração: o antigo kind "structure" virou a categoria/kind "scenery" (a pasta
-	# library3D/structures deixou de existir; cenários vivem em library3D/sceneries).
+	# Toda entrada carrega o kind desta categoria (arquivo single-category); migra o kind legado
+	# "structure" (pasta library3D/structures extinta) junto.
 	for raw_entry in t["entries"]:
-		if raw_entry is Dictionary and String((raw_entry as Dictionary).get("kind", "")) == "structure":
-			(raw_entry as Dictionary)["kind"] = "scenery"
+		if raw_entry is Dictionary:
+			(raw_entry as Dictionary)["kind"] = _entry_kind()
 	return t
 
 
@@ -332,9 +410,9 @@ func _vector3_from(value: Variant) -> Vector3:
 	return Vector3.ZERO
 
 
-# No .exe exportado os arquivos aparecem como "*.tscn.remap" (e imports como
-# "*.import") no DirAccess; o nome lógico remove esses sufixos para o filtro
-# de extensão funcionar igual no editor e no build (mesmo padrão da tela Models).
+# No .exe exportado os arquivos aparecem como "*.tscn.remap" (e imports como "*.import") no
+# DirAccess; o nome lógico remove esses sufixos para o filtro de extensão funcionar igual no
+# editor e no build (mesmo padrão da tela Models).
 func _logical_name(file_name: String) -> String:
 	var ext := file_name.get_extension().to_lower()
 	if ext == "remap" or ext == "import":
@@ -344,18 +422,3 @@ func _logical_name(file_name: String) -> String:
 
 func _display_name(key: String) -> String:
 	return key.replace("_", " ").capitalize()
-
-
-func _install_defaults() -> void:
-	templates = [
-		{
-			"id": "default_level_2_air_support",
-			"name": "Level 2 - Caça aérea",
-			"level_path": "res://scenes3D/level_2/level_2.tscn",
-			"entries": [
-				{"kind": "character", "faction": "enemy", "model_key": "criatura_alada", "scene_path": "res://library3D/characters/criatura_alada/criatura_alada.tscn", "placement": "random", "random_center": [18, 1, 0], "random_size": [18, 0, 18], "count": 2},
-				{"kind": "character", "faction": "friendly", "model_key": "player", "scene_path": "res://library3D/characters/player/player.tscn", "placement": "formation", "formation": "line", "formation_origin": [-10, 1, -4], "count": 1, "spacing": 4.0}
-			]
-		}
-	]
-	save_templates()
