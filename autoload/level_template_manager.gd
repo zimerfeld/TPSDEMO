@@ -6,9 +6,14 @@ extends Node
 
 const FILE_PATH := "user://level_templates.json"
 const DEFAULT_RANDOM_SIZE := Vector3(34.0, 0.0, 34.0)
+## Raízes da navegação em CASCATA por pastas (um OptionButton por nível de pasta, no diálogo):
+## personagens no Gerenciador de Templates, cenários no Gerenciador de Cenários.
+const CHARACTERS_ROOT := "res://library3D/characters"
+const SCENERIES_ROOT := "res://library3D/sceneries"
 
 var templates: Array[Dictionary] = []
 var _active_by_level: Dictionary = {}
+var _active_scenery_by_level: Dictionary = {}
 
 
 func _ready() -> void:
@@ -28,6 +33,7 @@ func load_templates() -> void:
 	file.close()
 	if parsed is Dictionary:
 		_active_by_level = (parsed as Dictionary).get("active_by_level", {})
+		_active_scenery_by_level = (parsed as Dictionary).get("active_scenery_by_level", {})
 		for raw in (parsed as Dictionary).get("templates", []):
 			if raw is Dictionary:
 				templates.append(_normalize_template(raw))
@@ -37,6 +43,7 @@ func save_templates() -> void:
 	var data := {
 		"templates": templates,
 		"active_by_level": _active_by_level,
+		"active_scenery_by_level": _active_scenery_by_level,
 	}
 	var file := FileAccess.open(FILE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -53,9 +60,14 @@ func all_templates() -> Array[Dictionary]:
 	return out
 
 
-func templates_for_level(level_path: String) -> Array[Dictionary]:
+# Templates do level filtrados por CATEGORIA: "spawn" (Gerenciador de Templates — personagens)
+# ou "scenery" (Gerenciador de Cenários — objetos de cenário). Categorias têm listas e ativos
+# independentes, mas dividem o mesmo arquivo/armazenamento.
+func templates_for_level(level_path: String, category: String = "spawn") -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for t in templates:
+		if String(t.get("category", "spawn")) != category:
+			continue
 		var template_level := String(t.get("level_path", ""))
 		if template_level == "" or template_level == level_path:
 			out.append(t.duplicate(true))
@@ -86,6 +98,9 @@ func remove_template(id: String) -> void:
 	for level_path in _active_by_level.keys():
 		if String(_active_by_level[level_path]) == id:
 			_active_by_level.erase(level_path)
+	for level_path in _active_scenery_by_level.keys():
+		if String(_active_scenery_by_level[level_path]) == id:
+			_active_scenery_by_level.erase(level_path)
 	save_templates()
 
 
@@ -102,7 +117,28 @@ func active_template_id(level_path: String) -> String:
 
 
 func active_template(level_path: String) -> Dictionary:
-	var id := active_template_id(level_path)
+	return _template_by_id(active_template_id(level_path))
+
+
+# Ativo da categoria "scenery" — espelho do ativo de spawn, num mapa próprio (um level pode ter
+# um template de personagens E um de cenário ativos ao mesmo tempo).
+func set_active_scenery(level_path: String, template_id: String) -> void:
+	if template_id == "":
+		_active_scenery_by_level.erase(level_path)
+	else:
+		_active_scenery_by_level[level_path] = template_id
+	save_templates()
+
+
+func active_scenery_id(level_path: String) -> String:
+	return String(_active_scenery_by_level.get(level_path, ""))
+
+
+func active_scenery(level_path: String) -> Dictionary:
+	return _template_by_id(active_scenery_id(level_path))
+
+
+func _template_by_id(id: String) -> Dictionary:
 	if id == "":
 		return {}
 	for t in templates:
@@ -111,28 +147,63 @@ func active_template(level_path: String) -> Dictionary:
 	return {}
 
 
+# Aplica os templates ATIVOS do level (spawn E cenário) ao iniciar — solo ou sala online.
 func apply_active_template(level_path: String, spawned_nodes: Node3D, _spawn_points_parent: Node3D = null) -> bool:
-	var template := active_template(level_path)
-	if template.is_empty() or spawned_nodes == null:
+	if spawned_nodes == null:
 		return false
-	_apply_template(template, spawned_nodes)
-	return true
+	var applied := false
+	for template in [active_template(level_path), active_scenery(level_path)]:
+		if not (template as Dictionary).is_empty():
+			_apply_template(template, spawned_nodes)
+			applied = true
+	return applied
 
 
-func model_options(kind: String = "") -> Array[Dictionary]:
-	var roots: Array[String] = []
-	if kind == "structure":
-		roots = ["res://library3D/structures"]
-	elif kind == "character":
-		roots = ["res://library3D/characters"]
-	else:
-		roots = ["res://library3D/characters", "res://library3D/structures"]
-	var out: Array[Dictionary] = []
-	for root in roots:
-		_collect_scene_options(root, root, out)
-	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return String(a.get("key", "")) < String(b.get("key", "")))
-	return out
+# ---- Navegação em cascata por pastas (diálogos de template/cenário) ------------------------
+
+# Um passo da navegação: as SUBPASTAS navegáveis de `dir_path` (só as que contêm algum modelo,
+# em qualquer profundidade) e o MODELO da própria pasta (cena cujo basename == nome da pasta),
+# se houver. O diálogo monta um OptionButton por passo e desce a árvore com isto.
+func browse_dir(dir_path: String) -> Dictionary:
+	var folders: Array[String] = []
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return {"folders": folders, "model": {}}
+	for child in dir.get_directories():
+		if child.begins_with("."):
+			continue
+		if _dir_has_models("%s/%s" % [dir_path, child]):
+			folders.append(child)
+	folders.sort()
+	return {"folders": folders, "model": _dir_model(dir_path)}
+
+
+# O modelo "da pasta": a cena cujo basename é o nome da pasta (convenção da biblioteca —
+# cenas irmãs como bomb.tscn/impact_effect.tscn não representam a pasta).
+func _dir_model(dir_path: String) -> Dictionary:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return {}
+	var key := dir_path.get_file()
+	for raw_name in dir.get_files():
+		var file := _logical_name(raw_name)
+		if file.ends_with(".tscn") and file.get_basename() == key:
+			return {"key": key, "path": "%s/%s" % [dir_path, file], "label": _display_name(key)}
+	return {}
+
+
+func _dir_has_models(dir_path: String) -> bool:
+	if not _dir_model(dir_path).is_empty():
+		return true
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return false
+	for child in dir.get_directories():
+		if child.begins_with("."):
+			continue
+		if _dir_has_models("%s/%s" % [dir_path, child]):
+			return true
+	return false
 
 
 func _apply_template(template: Dictionary, spawned_nodes: Node3D) -> void:
@@ -236,8 +307,14 @@ func _normalize_template(raw: Dictionary) -> Dictionary:
 	t["id"] = String(t.get("id", ""))
 	t["name"] = String(t.get("name", "Template"))
 	t["level_path"] = String(t.get("level_path", ""))
+	t["category"] = String(t.get("category", "spawn"))
 	if not t.get("entries", []) is Array:
 		t["entries"] = []
+	# Migração: o antigo kind "structure" virou a categoria/kind "scenery" (a pasta
+	# library3D/structures deixou de existir; cenários vivem em library3D/sceneries).
+	for raw_entry in t["entries"]:
+		if raw_entry is Dictionary and String((raw_entry as Dictionary).get("kind", "")) == "structure":
+			(raw_entry as Dictionary)["kind"] = "scenery"
 	return t
 
 
@@ -253,28 +330,6 @@ func _vector3_from(value: Variant) -> Vector3:
 		if parts.size() >= 3:
 			return Vector3(float(parts[0]), float(parts[1]), float(parts[2]))
 	return Vector3.ZERO
-
-
-func _collect_scene_options(root: String, base: String, out: Array[Dictionary]) -> void:
-	var dir := DirAccess.open(root)
-	if dir == null:
-		return
-	for raw_name in dir.get_files():
-		var file := _logical_name(raw_name)
-		if file.ends_with(".tscn"):
-			var path := "%s/%s" % [root, file]
-			var key := root.get_file()
-			if file.get_basename() == key:
-				out.append({
-					"key": key,
-					"path": path,
-					"label": _display_name(key),
-					"kind": "structure" if base.ends_with("/structures") else "character",
-				})
-	for child in dir.get_directories():
-		if child.begins_with("."):
-			continue
-		_collect_scene_options("%s/%s" % [root, child], base, out)
 
 
 # No .exe exportado os arquivos aparecem como "*.tscn.remap" (e imports como
@@ -298,7 +353,7 @@ func _install_defaults() -> void:
 			"name": "Level 2 - Caça aérea",
 			"level_path": "res://scenes3D/level_2/level_2.tscn",
 			"entries": [
-				{"kind": "character", "faction": "enemy", "model_key": "criatura_alada", "scene_path": "res://library3D/characters/criatura_alada/criatura_alada.tscn", "placement": "random", "random_center": [18, 1, 0], "random_size": [18, 0, 18], "count": 2},
+				{"kind": "character", "faction": "enemy", "model_key": "criatura_alada", "scene_path": "res://library3D/characters/enemies/criatura_alada/criatura_alada.tscn", "placement": "random", "random_center": [18, 1, 0], "random_size": [18, 0, 18], "count": 2},
 				{"kind": "character", "faction": "friendly", "model_key": "player", "scene_path": "res://library3D/characters/players/player/player.tscn", "placement": "formation", "formation": "line", "formation_origin": [-10, 1, -4], "count": 1, "spacing": 4.0}
 			]
 		}

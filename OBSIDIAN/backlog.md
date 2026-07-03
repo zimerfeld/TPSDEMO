@@ -34,6 +34,18 @@ usuário commitar/publicar.** Polimentos sugeridos (não feitos): filtrar cenas 
 
 ---
 
+## 🟢 P0.6 — Ambiente visual dos levels (céu + fog + grade neon) — PRONTO p/ review (2026-07-03)
+
+Item 1 do plano de performance/atratividade, **aprovado pelo usuário e implementado**: céu
+procedural com identidade por level (**Level 1 ciano / Level 2 âmbar**), fog de distância
+exponencial e **piso-grade neon emissivo** (shader compartilhado `themes/level_grid_floor.gdshader`,
+só matemática — sem texturas/passes). Meta de performance do projeto registrada no `CLAUDE.md`
+(mín. 60 FPS em hardware gráfico mínimo) e **validada no `.exe`: 60 FPS nos 2 levels, inclusive em
+combate**. Detalhes: [[sistemas/ambiente-dos-levels]]. READMEs (3) atualizados. O exe caiu de
+531→174 MB porque o usuário moveu arquivos não usados de propósito (confirmado). **Aguarda commit.**
+
+---
+
 ## 🟢 P0 — Fechar a reestruturação em curso (`feature/restrutu`) — PRONTO p/ review (2026-07-01)
 
 **Status:** trabalho concluído e validado; **aguarda o usuário commitar/publicar** (regra: não commitar).
@@ -67,6 +79,34 @@ erros/warnings; atualizar os 3 READMEs + notas do cofre afetadas; `build_windows
 usuário commitar/publicar** (não commitar). Sistemas: [[sistemas/salas]], [[sistemas/biblioteca-de-modelos]].
 
 </details>
+
+---
+
+## 🟢 P0.7 — Cascata de pastas + Gerenciador de Cenários + reparo da reorganização (2026-07-03)
+
+Sessão grande, tudo validado em jogo no `.exe` (166 MB, 60 FPS) — **aguarda commit do usuário**:
+
+- **Reparo da reorganização de pastas do usuário** (characters → enemies/players/NPCs; remoção de
+  `structures/` e da pasta-suporte `characters/player/`): restaurados do git APENAS os assets
+  usados (player.glb + materiais/texturas, audio/, bullet/, muzzle mesh, limb_config) para DENTRO
+  de `characters/players/player/`; reescritos os caminhos antigos em **72 arquivos** (preloads de
+  script não usam UID e quebravam); `_spawnable_scenes` dos levels limpos (structures fora,
+  sceneries dentro); `user://level_templates.json` migrado.
+- **Navegação em cascata** no Gerenciador de Templates (characters) e o novo **Gerenciador de
+  Cenários** (sceneries) — ver [[sistemas/templates-de-level]]. Tela `levels` com 2 botões por
+  level (Tab renumerado 1-9); cenário "Palco Neon" (4 box + 3 sphere + 2 pill) validado no solo
+  E numa sala online.
+- **Velocidade dos inimigos terrestres calibrada em padrões reais** (pesquisa: caminhada ~1,4 m/s,
+  trote ~3, corrida 4,5): red_robot strafe 4,25→**2,4**, pressão 5,2→**3,2**, fuga 6,0→**3,8** +
+  **aceleração suave** (`manual_accel` 6/s) no movimento manual — sem deslizar, com peso.
+- **ManageTemplatesButton (host_session) corrigido**: alerta quando nenhum level está selecionado
+  (antes retorno silencioso = "botão quebrado"); validado hospedando sala em **127.0.0.1:4383**.
+- **Tela `levels` em grade responsiva**: `GridContainer` 3 colunas (Level fixo 300 px | Template |
+  Cenário), colunas dos gerenciadores com `SIZE_EXPAND_FILL` **dividindo o resto da tela meio a
+  meio**, espaçamento uniforme 16 px nas duas linhas. Ver [[convencoes/layout-responsivo]].
+- **`build_windows.ps1` blindado**: apaga `.godot/exported/` antes de todo export — o cache não
+  invalida quando um `.tscn` muda e o exe saía com **cena velha** (custou um ciclo de diagnóstico
+  com sondas headless e marcadores no binário). Ver [[sistemas/build-windows]].
 
 ---
 

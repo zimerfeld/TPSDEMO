@@ -2,7 +2,7 @@ extends Node3D
 
 signal quit
 
-const CriaturaAlada: PackedScene = preload("res://library3D/characters/criatura_alada/criatura_alada.tscn")
+const CriaturaAlada: PackedScene = preload("res://library3D/characters/enemies/criatura_alada/criatura_alada.tscn")
 
 ## Distância horizontal inicial (em metros) entre o player e a criatura alada.
 const SPAWN_DISTANCE := 20.0

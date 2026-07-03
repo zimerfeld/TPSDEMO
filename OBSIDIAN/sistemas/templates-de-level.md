@@ -1,9 +1,48 @@
-# Templates de Level (Gerenciador de Templates)
+# Templates de Level (Gerenciador de Templates + Gerenciador de Cenários)
 
-> Composição de spawn por level: personagens/estruturas, facção, quantidade e posicionamento,
-> editados em jogo numa janela flutuante e aplicados quando o level inicia (solo ou sala online).
-> Relacionado: [[fluxos/fluxo-de-cenas]] (tela `levels`), [[sistemas/salas]] (host abre a mesma
-> janela), memória *"salas nascem limpas"* (inimigos vêm SÓ de template).
+> Composição de spawn por level: personagens (Templates) e objetos de cenário (Cenários), com
+> facção, quantidade e posicionamento, editados em jogo numa janela flutuante e aplicados quando
+> o level inicia (solo ou sala online). Relacionado: [[fluxos/fluxo-de-cenas]] (tela `levels`),
+> [[sistemas/salas]] (host abre a mesma janela), memória *"salas nascem limpas"*.
+
+## Duas categorias, um só diálogo (2026-07-03)
+
+O `LevelTemplateDialog` é parametrizado por **categoria** via `configure()`: **"spawn"**
+(Gerenciador de Templates — personagens, raiz `library3D/characters`, com linha Facção) e
+**"scenery"** (Gerenciador de Cenários — objetos de palco, raiz `library3D/sceneries`, SEM linha
+Facção). Cada level tem na tela `levels` DOIS botões à direita (Template + Cenário), e cada
+categoria tem **ativo próprio por level** (`active_by_level` × `active_scenery_by_level` no
+mesmo JSON) — um level roda um template de personagens E um cenário ao mesmo tempo
+(`apply_active_template` aplica os dois, no solo e nas salas online).
+
+## Navegação em CASCATA do modelo (2026-07-03)
+
+O antigo dropdown único "Modelo" (lista achatada com poluição de bullet/impact_effect) virou uma
+**cascata de OptionButtons**: um dropdown por nível de pasta a partir da raiz da categoria —
+ex.: `[enemies] → [red_robot]` — descendo só por subpastas que CONTÊM um modelo em alguma
+profundidade (`browse_dir`/`_dir_model`/`_dir_has_models` no manager). Ao alcançar uma
+pasta-modelo (cena com o nome da pasta), os **campos referentes** da entrada são mapeados
+(`model_key` + `scene_path`) e o rótulo abaixo mostra "Modelo: X (x.tscn)". Navegar sem concluir
+NÃO apaga o modelo salvo da entrada. A cascata é reconstruída do `scene_path` ao trocar de
+entrada/template. O campo "Tipo" (character/structure) foi REMOVIDO (o kind vem da categoria);
+`model_options`/`_collect_scene_options` viraram código morto e foram excluídos.
+
+## Biblioteca de cenários (`library3D/sceneries/`)
+
+`box/` (cubo magenta 2 m), `sphere/` (esfera esmeralda r=1,2) e `pill/` (cápsula âmbar h=3) —
+`StaticBody3D` + geometria volumétrica básica + material EMISSIVO + `OmniLight3D` própria
+(range 6, sem sombra — barato) + `CollisionShape3D` abraçando a malha e `limb_config.json` com o
+membro único **BODY/CORPO** (conceito LimbColliders — mesma família do `bomb`), então a tela
+Models pode configurar o collider. Entram nos `_spawnable_scenes` dos levels (replicáveis nas
+salas). As antigas `structures/` saíram do projeto (limpeza do usuário); kind legado
+"structure" é migrado p/ "scenery" no load.
+
+## ManageTemplatesButton da host_session (2026-07-03)
+
+O "Templates" da grade do host "não funcionava" quando o seletor de level estava em
+"Selecione..." — retorno SILENCIOSO. Agora exibe um alerta (`FloatingDialog.alert`: "Selecione um
+level primeiro…"); com level selecionado abre o gerenciador normalmente (validado ao vivo
+hospedando em 127.0.0.1:4383 — sala #1 criada, observada, cenário aplicado).
 
 ## Arquitetura
 

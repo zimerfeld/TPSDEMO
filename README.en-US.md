@@ -53,7 +53,24 @@ third-person shooter sandbox. At a high level it offers:
   editor and in the **exported .exe**: the model scanner resolves the `.remap` names the export
   produces (same pattern as the Models screen), saving a **new** template stores the generated id (so
   activating right after saving works and re-saving never duplicates it), and the template **name
-  survives** entry add/remove refreshes.
+  survives** entry add/remove refreshes. Each entry's model is picked through **cascading folder
+  navigation**: one dropdown per library folder level (`characters/` → `enemies/` → `red_robot`,
+  for example), descending only through folders that contain models — reaching a model folder
+  fills the entry's model/scene fields.
+- **Scenery Manager** — sibling of the Template Manager with its own button beside each level:
+  same window and fields (minus Faction), browsing the **`library3D/sceneries`** library (stage
+  props: **magenta box, emerald sphere and amber pill** — basic volumetric geometries with
+  emissive materials, their own light and colliders following the LimbColliders/BODY-member
+  concept, configurable in the Models screen). A level can have a character template **and** a
+  scenery active at the same time, applied in solo play and in online rooms.
+- **Arena environments (striking, cheap by design)** — each level ships its own cyberpunk
+  atmosphere: a **procedural gradient sky**, exponential **distance fog** and an emissive **neon
+  grid floor** (one shared shader, `themes/level_grid_floor.gdshader` — pure per-pixel math, no
+  textures, with a distance fade that kills horizon moiré), each with a per-level color identity
+  (**Level 1 = cyan**, **Level 2 = amber sunset**, the same color language as the Host/Client
+  session screens). Built to the project's performance goal — **60+ FPS on minimal graphics
+  hardware** — so it looks striking at near-zero GPU cost; the grid glow is pure emission, so it
+  works with Bloom off and gains a free neon halo when Bloom is enabled in Settings.
 - **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
   ball** (a recolored, red-glowing version of the player's shot), and a flying bomber
   (Criatura Alada) that orbits the player and drops bombs.
@@ -66,7 +83,10 @@ third-person shooter sandbox. At a high level it offers:
   march in lockstep every second**, and keeps a **loose formation** (now even **less rigid** — the
   formation point "breathes" in a slow drift instead of converging on fixed coordinates). **Manual
   movement** (strafe/retreat/formation) now **matches the animation cadence to the real speed** → the
-  enemies **no longer "slide"** (their feet respect the walk timing). Each enemy targets the **closest
+  enemies **no longer "slide"** (their feet respect the walk timing). Their **movement speeds are
+  calibrated to real human standards** (walk ~1.4 m/s, jog ~3, run ~4.5): strafe 2.4 m/s, pressure
+  repositioning 3.2 m/s and retreat 3.8 m/s, with **smooth acceleration** (velocity converges
+  instead of snapping) for weighty, believable motion. Each enemy targets the **closest
   player** within its alert radius — **any enemy can shoot any player** that enters the radius
   (multiplayer). The **Criatura Alada** varies its **flight height smoothly**: it **descends** to a
   limit to bomb more precisely and **climbs** to a limit to **escape** when it takes fire. There is
