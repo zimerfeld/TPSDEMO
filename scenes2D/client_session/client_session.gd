@@ -21,7 +21,7 @@ var _confirm_dialog: FloatingWindow = null
 @onready var _rooms_list: VBoxContainer = %RoomsList
 @onready var _empty_hint: Label = %EmptyHint
 @onready var _actions_bar: HBoxContainer = %Actions
-@onready var _back_button: Button = %BackButton
+@onready var _back_button: Button = %Back
 @onready var _signal_layer: ColorRect = %SignalLayer
 
 
@@ -69,7 +69,7 @@ func _ready() -> void:
 func _rewire_tab() -> void:
 	var i := 1
 	for row in _rooms_list.get_children():
-		var play := row.get_node_or_null("PlayButton")
+		var play := row.get_node_or_null("Play")
 		if play is BaseButton:
 			(play as Control).set_meta(UINav.TAB_ORDER_META, i)
 			i += 1
@@ -114,13 +114,13 @@ func _make_client_row(r: Dictionary) -> Control:
 	row.name = "RoomRow_%d" % id
 	row.add_theme_constant_override("separation", 8)
 	var lbl := Label.new()
-	lbl.name = "RoomLabel"
+	lbl.name = "RoomInfo"
 	lbl.text = "Sala #%d — %s  (%d jogador%s)" % [
 		id, RoomManager.level_label(path), players, "" if players == 1 else "es"]
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(lbl)
 	var play_btn := Button.new()
-	play_btn.name = "PlayButton"
+	play_btn.name = "Play"
 	play_btn.text = "Jogar"
 	play_btn.pressed.connect(_on_play_room.bind(id, path))
 	row.add_child(play_btn)

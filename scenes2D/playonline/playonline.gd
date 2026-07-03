@@ -25,9 +25,9 @@ var _opt_buttons: Array[OptionButton] = []
 @onready var address_history: OptionButton = %AddressHistories
 # OptionButtons de otimização — agora ESTÁTICOS na cena (rótulos/colunas/tab_order vêm do .tscn); o
 # código só popula itens/seleção e conecta os handlers. Ver _build_optimization_options.
-@onready var host_render_picker: OptionButton = %HostRenderPicker
-@onready var sync_rate_picker: OptionButton = %SyncRatePicker
-@onready var interp_picker: OptionButton = %InterpPicker
+@onready var host_render_picker: OptionButton = %HostRenderModes
+@onready var sync_rate_picker: OptionButton = %SyncRates
+@onready var interp_picker: OptionButton = %Interpolations
 @onready var manage_rooms_button: Button = $UI/Inset/Main/Form/Fields/ButtonsRow/ManageRooms
 @onready var join_rooms_button: Button = $UI/Inset/Main/Form/Fields/ButtonsRow/JoinRooms
 @onready var loading: HBoxContainer = $UI/Loading

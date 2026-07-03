@@ -4,8 +4,8 @@ extends Node
 # O índice (variant_id) é o que trafega pela rede no register_loadout — um int, não um caminho
 # arbitrário (mais seguro). NetSpawn resolve o índice → cena via variant_scene_path().
 const VARIANTS: Array[String] = [
-	"res://library3D/characters/players/player/player.tscn",
-	"res://library3D/characters/players/playera/playera.tscn",
+	"res://library3D/characters/player/player.tscn",
+	"res://library3D/characters/playera/playera.tscn",
 ]
 
 var scene_path: String = VARIANTS[0]

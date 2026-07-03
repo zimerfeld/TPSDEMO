@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://scenes2D/controls2D/volume_bar/volume_bar.gd" id="1"]
-
-[node name="VolumeBar" type="Control"]
-custom_minimum_size = Vector2(280, 48)
-offset_right = 280.0
-offset_bottom = 48.0
-script = ExtResource("1")

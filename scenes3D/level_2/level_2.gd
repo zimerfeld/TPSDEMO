@@ -2,7 +2,7 @@ extends Node3D
 
 signal quit
 
-const CriaturaAlada: PackedScene = preload("res://library3D/characters/enemies/criatura_alada/criatura_alada.tscn")
+const CriaturaAlada: PackedScene = preload("res://library3D/characters/criatura_alada/criatura_alada.tscn")
 
 ## Distância horizontal inicial (em metros) entre o player e a criatura alada.
 const SPAWN_DISTANCE := 20.0
@@ -32,7 +32,9 @@ func _ready() -> void:
 		# NetSpawn): template ativo ou, na falta dele, a criatura padrão do jogo original — como sempre.
 		# Ver [[salas-nascem-limpas]].
 		if not has_meta("room_id"):
-			if not LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points):
+			var applied := CharacterTemplateManager.apply_active(scene_file_path, spawned_nodes)
+			applied = SceneryTemplateManager.apply_active(scene_file_path, spawned_nodes) or applied
+			if not applied:
 				var criatura: CharacterBody3D = CriaturaAlada.instantiate()
 				criatura.position = Vector3(SPAWN_DISTANCE, 1, 0)
 				spawned_nodes.add_child(criatura, true)

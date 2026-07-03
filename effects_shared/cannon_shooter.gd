@@ -14,7 +14,7 @@ extends RefCounted
 ## shot). tint recolors the EFFECT (light + trail); ball_color recolors the BALL; ball_scale
 ## sizes it (a bigger black sphere reads as a cannon ball).
 
-const BULLET_SCENE: PackedScene = preload("res://library3D/characters/players/player/bullet/bullet.tscn")
+const BULLET_SCENE: PackedScene = preload("res://library3D/characters/player/bullet/bullet.tscn")
 
 
 # Spawn and launch a bullet from `origin` along `dir`, owned by `shooter`, added under

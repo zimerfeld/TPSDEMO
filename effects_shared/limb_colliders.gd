@@ -639,3 +639,127 @@ static func make_shape(kind: String, box_aabb: AABB, cap_radius: bool = true) ->
 	elif long_axis == 2:
 		shape.rotation = Vector3(PI * 0.5, 0.0, 0.0)   # Y -> Z
 	return shape
+
+
+# ── Auto-fit da cápsula de LOCOMOÇÃO por modelo ───────────────────────────────
+# O bloqueio físico entre personagens (move_and_slide) usa UMA cápsula por corpo — barata,
+# estável e determinística (independe da pose animada, então servidor e cliente-predição
+# concordam). Em vez de uma cápsula default (0.5×2.0) igual p/ todo modelo, derivamos raio e
+# altura dos MESMOS boxes de membro que já medimos aqui: assim cada modelo da biblioteca ganha
+# um corpo físico proporcional a ele, mantendo 1 shape/personagem. Ver [[sistemas/player]].
+
+## Raio mínimo (m) da cápsula auto-ajustada — evita um corpo degenerado (fino demais) num
+## modelo com footprint minúsculo ou mal medido.
+const MIN_BODY_CAPSULE_RADIUS: float = 0.12
+
+
+# AABBs dos colliders de membro JÁ CONSTRUÍDOS, no espaço LOCAL de `space` (avaliado na pose
+# atual — no spawn, a pose de rest). Keyed por grupo (HEAD/TORSO/ARM_*/LEG_*/PART_<osso>). Lê a
+# geometria REAL das formas (pós-encolhimento), então reflete os colliders que o jogador vê/edita.
+func member_boxes_in(space: Node3D) -> Dictionary:
+	var out := {}
+	if space == null or not space.is_inside_tree():
+		return out
+	var inv := space.global_transform.affine_inverse()
+	for body in _bodies:
+		if not is_instance_valid(body) or not body.has_meta("group"):
+			continue
+		if body.has_meta("suppressed"):
+			continue  # collider só de preview (sem hitbox no gameplay) — não conta p/ a cápsula
+		var g := str(body.get_meta("group"))
+		for sn in body.find_children("*", "CollisionShape3D", false, false):
+			var cs := sn as CollisionShape3D
+			if cs == null or cs.shape == null:
+				continue
+			var local := _shape_local_aabb(cs.shape)
+			if local.size == Vector3.ZERO:
+				continue
+			var box := _transform_aabb(inv * cs.global_transform, local)
+			out[g] = box if not out.has(g) else out[g].merge(box)
+	return out
+
+
+# Ajusta a cápsula de locomoção `shape_node` (o CollisionShape3D do CORPO do personagem) ao
+# modelo real, a partir dos boxes de membro. RAIO vem do FOOTPRINT em pé (tronco + pernas; braços
+# e cabeça são excluídos p/ um T-pose não engordar o raio); ALTURA vem da extensão vertical total
+# (topo da cabeça → pés). A BASE é ancorada no chão do personagem (y=0) p/ não flutuar. Duplica a
+# forma p/ não mutar um sub-recurso compartilhado entre instâncias. No-op (devolve {}) se nada foi
+# construído (ex.: modelo sem membros classificados) — preserva a cápsula autorada como fallback.
+func fit_locomotion_capsule(shape_node: CollisionShape3D, character: Node3D) -> Dictionary:
+	if shape_node == null or character == null:
+		return {}
+	var boxes := member_boxes_in(character)
+	if boxes.is_empty():
+		return {}
+	var full := AABB()
+	var full_set := false
+	var foot := AABB()
+	var foot_set := false
+	for g in boxes:
+		var b: AABB = boxes[g]
+		full = b if not full_set else full.merge(b)
+		full_set = true
+		if _is_footprint_group(g):
+			foot = b if not foot_set else foot.merge(b)
+			foot_set = true
+	if not full_set:
+		return {}
+	# Footprint (tronco+pernas) define o raio; sem ele (ex.: só cabeça/tronco), usa o corpo inteiro.
+	var src: AABB = foot if foot_set else full
+	var radius := maxf(0.5 * maxf(src.size.x, src.size.z), MIN_BODY_CAPSULE_RADIUS)
+	# Altura: do CHÃO do personagem (y=0, ou abaixo se o pé passar da origem) ao topo da cabeça.
+	var top: float = full.position.y + full.size.y
+	var bottom: float = minf(full.position.y, 0.0)
+	var height := maxf(top - bottom, 2.0 * radius)
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = radius
+	capsule.height = height
+	shape_node.shape = capsule
+	# Centro no eixo do modelo (x/z do footprint) e no meio vertical entre base e topo.
+	var cx: float = full.position.x + full.size.x * 0.5
+	var cz: float = full.position.z + full.size.z * 0.5
+	shape_node.position = Vector3(cx, (bottom + top) * 0.5, cz)
+	shape_node.rotation = Vector3.ZERO
+	return {"radius": radius, "height": height}
+
+
+# Grupos que formam o FOOTPRINT em pé (base da cápsula de locomoção): TRONCO + PERNAS (qualquer
+# plano — LEG_L/R do bípede, LEG_F?/R? do quadrúpede). Braços (envergadura), cabeça (topo) e peças
+# PART_* ficam de fora p/ não distorcer o raio do corpo.
+static func _is_footprint_group(group: String) -> bool:
+	return group == BodyParts.TORSO or group.begins_with("LEG_")
+
+
+# AABB LOCAL (centrado na origem da forma) de uma forma primitiva de collider de membro.
+# Sphere/Box/Capsule cobrem tudo o que make_shape produz; AABB vazio p/ tipos inesperados.
+static func _shape_local_aabb(shape: Shape3D) -> AABB:
+	if shape is SphereShape3D:
+		var r := (shape as SphereShape3D).radius
+		return AABB(Vector3(-r, -r, -r), Vector3(r, r, r) * 2.0)
+	if shape is BoxShape3D:
+		var s := (shape as BoxShape3D).size
+		return AABB(-s * 0.5, s)
+	if shape is CapsuleShape3D:
+		var c := shape as CapsuleShape3D
+		return AABB(Vector3(-c.radius, -c.height * 0.5, -c.radius),
+				Vector3(c.radius * 2.0, c.height, c.radius * 2.0))
+	return AABB()
+
+
+# AABB que ENVOLVE `box` transformado por `xf` (une os 8 cantos no espaço destino). Usado p/
+# levar cada forma de membro ao espaço local do personagem (a rotação da cápsula de membro faz
+# a caixa deixar de ser eixo-alinhada, então o envelope dos cantos é o correto).
+static func _transform_aabb(xf: Transform3D, box: AABB) -> AABB:
+	var p := box.position
+	var s := box.size
+	var mn := xf * p
+	var mx := mn
+	for i in 8:
+		var corner := p + Vector3(
+				s.x if (i & 1) else 0.0,
+				s.y if (i & 2) else 0.0,
+				s.z if (i & 4) else 0.0)
+		var w: Vector3 = xf * corner
+		mn = mn.min(w)
+		mx = mx.max(w)
+	return AABB(mn, mx - mn)

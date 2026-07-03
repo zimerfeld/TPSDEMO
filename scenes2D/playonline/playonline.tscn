@@ -194,21 +194,21 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="ScopeLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
+[node name="Scope" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.7, 0.25, 1)
 theme_override_font_sizes/font_size = 16
 text = "SÓ NO HOST"
 horizontal_alignment = 1
 
-[node name="OptionLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
+[node name="Caption" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Render do host"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="HostRenderPicker" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
+[node name="HostRenderModes" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/HostColumn"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
@@ -220,21 +220,21 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="ScopeLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
+[node name="Scope" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 1, 0.6, 1)
 theme_override_font_sizes/font_size = 16
 text = "HOST + CLIENTE"
 horizontal_alignment = 1
 
-[node name="OptionLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
+[node name="Caption" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Taxa de sincronização"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="SyncRatePicker" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
+[node name="SyncRates" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/BothColumn"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
@@ -246,21 +246,21 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="ScopeLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
+[node name="Scope" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 16
 text = "SÓ NO CLIENTE"
 horizontal_alignment = 1
 
-[node name="OptionLabel" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
+[node name="Caption" type="Label" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Suavização ↔ Resposta"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="InterpPicker" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
+[node name="Interpolations" type="OptionButton" parent="UI/Inset/Main/Form/Fields/ColumnsRow/ClientColumn"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2

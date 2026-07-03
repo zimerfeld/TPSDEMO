@@ -5,7 +5,7 @@ signal replace_main_scene(resource: PackedScene)
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 const AIConfigLib := preload("res://effects_shared/ai_config.gd")
 # Janela flutuante REUTILIZÁVEL (controles2D) usada como editor de Afastamento/Escala do collider.
-const _FLOATING_WINDOW := preload("res://scenes2D/controls2D/floating_window/floating_window.tscn")
+const _FLOATING_WINDOW := preload("res://controls2D/floating_window/floating_window.tscn")
 
 # Placeholder shown as the first, default-selected option of every dropdown.
 # Picking it means "nothing chosen yet": dependent dropdowns reset to this same
@@ -51,19 +51,31 @@ const FALLBACK_MEMBER_LABEL: String = "CORPO"
 const ALL_AUX_LABEL: String = "Todos os Esqueletos"
 const ALL_AUX_VALUE: String = "__all_aux__"
 
-# Prefixo dos nós de REALCE (caixa translúcida sobre a região de um osso avulso) e a cor do realce.
+# Esqueleto (osso avulso): realce/colisor em LARANJA CLARO (quase transparente no 3D; toggle "Colisor
+# de Esqueleto") × rótulo do nome em LARANJA ESCURO (toggle "Esqueleto"). Mesma lógica dos pares
+# membro/sub-membro (texto do toggle = cor do elemento 3D que ele controla).
 const _AUX_HL_PREFIX := "_AuxHL_"
-const _AUX_HL_COLOR := Color(1.0, 0.6, 0.1, 0.35)   # laranja translúcido (distinto do verde dos colliders)
+const _AUX_HL_COLOR := Color(1.0, 0.75, 0.42, 0.32)   # laranja claro quase transparente (realce/box 3D)
+const _AUX_HL_TEXT_COLOR := Color(1.0, 0.75, 0.42)    # laranja claro opaco (texto do toggle Colisor de Esqueleto)
 
-# Prefixo dos BoneAttachment3D que carregam o Label3D com o NOME do osso avulso (toggle "Esqueleto"),
-# e a cor do texto (laranja, casando com o realce). Independente do realce: pode haver nome sem caixa.
+# Prefixo dos BoneAttachment3D que carregam o Label3D com o NOME do osso avulso (toggle "Esqueleto").
+# Independente do realce: pode haver nome sem caixa.
 const _AUX_LBL_PREFIX := "_AuxLbl_"
-const _AUX_LBL_COLOR := Color(1.0, 0.6, 0.1)
+const _AUX_LBL_COLOR := Color(0.82, 0.42, 0.05)       # laranja escuro (rótulo 3D + texto do toggle Esqueleto)
+
+# Esquema de cores membro × sub-membro (texto do toggle = cor do elemento 3D que ele controla):
+#   • MEMBRO   → colliders AZUL CLARO (quase transparente no 3D) / rótulos AZUL ESCURO;
+#   • SUB-MEMBRO → colliders ROXO CLARO (quase transparente no 3D) / rótulos ROXO ESCURO.
+# Os *_FILL (alpha baixo) são o material dos gizmos 3D; os *_COLOR (opacos) pintam texto/rótulo.
+const _MEMBER_COLLIDER_COLOR := Color(0.45, 0.78, 1.0)         # azul claro (toggle Colisores de Membro)
+const _MEMBER_COLLIDER_FILL := Color(0.45, 0.78, 1.0, 0.28)    # azul claro quase transparente (gizmo 3D)
+const _SUB_COLLIDER_COLOR := Color(0.80, 0.60, 1.0)            # roxo claro (toggle Colisores de Submembros)
+const _SUB_COLLIDER_FILL := Color(0.80, 0.60, 1.0, 0.28)      # roxo claro quase transparente (gizmo 3D)
 
 # Prefixo dos Label3D "Submembro: <nome>" (toggle "Submembros"), presos ao corpo do sub-membro
-# selecionado no dropdown. Roxo (igual à cor do texto do toggle "Submembros").
+# selecionado no dropdown. ROXO ESCURO (igual à cor do texto do toggle "Submembros").
 const _SUB_LBL_PREFIX := "_SubLbl_"
-const _SUB_LBL_COLOR := Color(0.6, 0.25, 0.9)
+const _SUB_LBL_COLOR := Color(0.52, 0.22, 0.82)
 
 # Root of the 3D model library. Models live in res://library3D/<tipo>/<modelo>/
 # (e.g. characters/red_robot, props/forklift, structures/core). The selection
@@ -1893,24 +1905,30 @@ func _label_aux_bones(bone_names: Array) -> void:
 func _refresh_sub_member_labels() -> void:
 	if _preview_instance == null:
 		return
+	_clear_sub_member_labels()
 	if not _show_sub_member_label or not member_row.visible:
-		_clear_sub_member_labels()
 		return
 	var msel := cbo_members.selected
-	# msel <= 0: placeholder (sem membro). Em "Todos os membros" (1) o dropdown "Sub-membro" também
-	# lista sub-membros, então rotula o PART_* escolhido (a checagem de val.begins_with abaixo filtra).
 	if msel <= 0:
-		_clear_sub_member_labels()
 		return
 	var ssel := cbo_sub_members.selected
 	if ssel <= 0:
-		_clear_sub_member_labels()
 		return
 	var val := _sub_member_value(ssel)
-	if not val.begins_with("PART_"):
-		_clear_sub_member_labels()
+	# Garante que os corpos dos sub-membros já existam (podem não ter sido construídos ainda) — sem
+	# isto, ativar SÓ o rótulo (sem os colisores) não achava corpo nenhum para ancorar.
+	_ensure_member_colliders()
+	# "Todos os Sub-membros" (modo "Todos os membros"): rotula TODOS os sub-membros de uma vez,
+	# espelhando o toggle "Colisores de Submembros" (que mostra todos os gizmos nesse modo). Antes só
+	# um PART_ individual era tratado (val != PART_ → retorno cedo), então NESSE modo nada aparecia.
+	if val == ALL_SUB_MEMBERS_VALUE:
+		for body in _member_bodies():
+			var g := str((body as StaticBody3D).get_meta("group"))
+			if g.begins_with("PART_"):
+				_label_sub_member(g)
 		return
-	_label_sub_member(val)
+	if val.begins_with("PART_"):
+		_label_sub_member(val)
 
 
 # Remove os rótulos de sub-membro (filhos dos corpos do preview).
@@ -1924,7 +1942,8 @@ func _clear_sub_member_labels() -> void:
 # Desenha um Label3D "Submembro: <nome>" preso ao corpo (StaticBody3D) do sub-membro, posicionado
 # acima da sua forma de colisão (acompanha a pose, pois o corpo é ancorado ao osso animado).
 func _label_sub_member(group: String) -> void:
-	_clear_sub_member_labels()
+	# NÃO limpa aqui: o chamador (_refresh_sub_member_labels) já limpou UMA vez e pode chamar isto em
+	# laço (modo "Todos os Sub-membros"); limpar aqui apagaria os rótulos dos grupos anteriores.
 	for body in _member_bodies():
 		if str((body as StaticBody3D).get_meta("group")) != group:
 			continue
@@ -2267,7 +2286,7 @@ func _on_ai_button_pressed() -> void:
 func _ensure_ai_window() -> void:
 	if is_instance_valid(_ai_window):
 		return
-	_ai_window = preload("res://scenes2D/controls2D/floating_window/floating_window.tscn").instantiate()
+	_ai_window = preload("res://controls2D/floating_window/floating_window.tscn").instantiate()
 	_ai_window.modal = false
 	_ai_window.remember_position_key = "ai_window"
 	_ai_window.min_window_size = Vector2(420, 480)
@@ -2532,16 +2551,23 @@ func _find_combo_text_index(combo: OptionButton, value: String) -> int:
 # collect one entry per model folder. Categories with no models are dropped.
 func _scan_library() -> Array:
 	var result: Array = []
-	for category in CATEGORIES:
-		var type_path := LIBRARY_ROOT.path_join(category["key"])
+	
+	var root := DirAccess.open(LIBRARY_ROOT)
+	if root == null:
+		return result
+		
+	for folder in root.get_directories():
+		var type_path := LIBRARY_ROOT.path_join(folder)
 		var type_access := DirAccess.open(type_path)
 		if type_access == null:
 			continue
 
 		var models: Array = []
+
 		for model_dir in type_access.get_directories():
 			var model_path := type_path.path_join(model_dir)
 			var file_path := _find_model_file(model_path)
+
 			if file_path != "":
 				models.append({
 					"name": _prettify(model_dir),
@@ -2550,12 +2576,15 @@ func _scan_library() -> Array:
 				})
 
 		if not models.is_empty():
-			models.sort_custom(func(a, b): return a["name"] < b["name"])
+			models.sort_custom(func(a,b): return a["name"] < b["name"])
+
 			result.append({
-				"key": category["key"],
-				"label": category["label"],
+				"key": folder,
+				"label": _prettify(folder),
 				"models": models,
 			})
+
+	result.sort_custom(func(a,b): return a["label"] < b["label"])
 
 	return result
 
@@ -2780,6 +2809,9 @@ func _preview_whole_model() -> void:
 	if instance is Node3D:
 		(instance as Node3D).rotation = Vector3.ZERO
 	_strip_scripts(instance)
+	# Descarta câmeras e UI embutidas (Crosshair/ColorRect do player) ANTES de entrar na
+	# árvore: senão o ColorRect em tela cheia engole o mouse e o modelo não gira/zooma.
+	_strip_preview_cruft(instance)
 	# Catalog the special-effect nodes (particles, lights, bone-mounted laser/muzzle
 	# meshes). Their visibility is decided by the "Efeitos especiais" toggle + dropdown
 	# via _apply_effects_visibility (called from _populate_effects after this returns);
@@ -2967,6 +2999,28 @@ func _strip_scripts(node: Node) -> void:
 		_strip_scripts(child)
 
 
+# Remove os nós que só existem para o gameplay e atrapalham o preview estático da Models:
+# câmeras embutidas (roubariam o `current` da câmera da própria tela e disparam avisos de
+# interpolação de física) e qualquer UI carregada junto — Control/CanvasLayer, como o
+# Crosshair e o ColorRect de fade do player. Ancorados em tela cheia, esses controles
+# ENGOLEM o mouse (os containers da UI são mouse_filter=ignore, então o arraste cai neles
+# em vez de chegar ao _unhandled_input) e impedem girar/dar zoom no modelo. Só o player os
+# carregava, por isso apenas ele "não girava". Varre em largura e libera a subárvore inteira
+# de cada nó condenado de uma vez (não desce nos filhos de quem já será liberado).
+func _strip_preview_cruft(root: Node) -> void:
+	var doomed: Array[Node] = []
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		for child in node.get_children():
+			if child is Camera3D or child is Control or child is CanvasLayer:
+				doomed.append(child)
+			else:
+				stack.append(child)
+	for node in doomed:
+		node.free()
+
+
 # Effect node classes surfaced by the "Efeitos Especiais" dropdown — every kind of
 # special effect a model may carry: lights (luminosity/shadows — Light3D covers Omni/
 # Spot/Directional), particle systems (smoke, sparks, thrust — GPU/CPU), and the other
@@ -3011,11 +3065,10 @@ const _LABEL_PREFIX := "_MdlLbl_"
 # controla a linha (Membro→Rótulos, Tipo→Tipo, Nome→Nome, ID→ID), para o usuário associar de
 # relance o controle ao seu rótulo 3D. As chaves casam com o "id" das linhas em _add_member_labels.
 const _LABEL_LINE_COLORS := {
-	"Member": Color(0.45, 0.85, 1.0),   # azul-ciano (membro)
+	"Member": Color(0.18, 0.34, 0.85),  # azul escuro (rótulo de membro + toggle MemberLabel)
 	"Type": Color(1.0, 0.45, 0.85),     # rosa (tipo)
 	"Name": Color(0.55, 1.0, 0.55),     # verde (nome)
 	"Id": Color(1.0, 0.92, 0.42),       # amarelo (id)
-	"Osso": Color(1.0, 0.6, 0.1),       # laranja (osso avulso — igual ao realce)
 }
 
 # Tamanho dos Label3D de membro (compartilhado entre a construção e o anti-colisão por tela,
@@ -3395,8 +3448,8 @@ func _build_damage_footer(model_key: String) -> void:
 
 	# Linha 1 da grade (controles): dropdown de osso (expande) | dropdown de dono | botão Adicionar.
 	var picker := OptionButton.new()
-	picker.name = "Bone"
-	picker.set_meta(UINav.TAB_ORDER_META, 2)   # ring local da janela Dano: Limbs 1 → Bone 2 → Owner 3 → Add 4 → × 5
+	picker.name = "Bones"
+	picker.set_meta(UINav.TAB_ORDER_META, 2)   # ring local da janela Dano: Limbs 1 → Bones 2 → Owners 3 → Add 4 → × 5
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL   # col 0 expande → "AddTitle" acompanha
 	var candidates := _aux_bone_candidates()
 	if candidates.is_empty():
@@ -3407,7 +3460,7 @@ func _build_damage_footer(model_key: String) -> void:
 			picker.add_item(b)
 	grid.add_child(picker)
 	var owner_btn := OptionButton.new()
-	owner_btn.name = "Owner"
+	owner_btn.name = "Owners"
 	owner_btn.set_meta(UINav.TAB_ORDER_META, 3)
 	for ch in _owner_choices():
 		var i := owner_btn.item_count
@@ -3607,11 +3660,9 @@ func _clear_member_colliders() -> void:
 # — only the per-member colliders get a gizmo. Other categories draw all their shapes.
 func _add_collider_gizmos(instance: Node) -> void:
 	var members_only := _current_category_key() in ["characters", "weapons"]
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.albedo_color = Color(0.2, 1.0, 0.4, 0.28)
+	# Dois materiais: MEMBRO (azul claro) × SUB-MEMBRO (roxo claro), ambos quase transparentes.
+	var member_mat := _make_gizmo_material(_MEMBER_COLLIDER_FILL)
+	var sub_mat := _make_gizmo_material(_SUB_COLLIDER_FILL)
 	for node in instance.find_children("*", "CollisionShape3D", true, false):
 		var shape_node := node as CollisionShape3D
 		if shape_node.shape == null or shape_node.has_node(NodePath(_GIZMO_NAME)):
@@ -3622,11 +3673,24 @@ func _add_collider_gizmos(instance: Node) -> void:
 		var owner_body := shape_node.get_parent()
 		if owner_body is StaticBody3D and (owner_body as StaticBody3D).has_meta("suppressed"):
 			continue
+		# Sub-membro (grupo PART_*) usa o material roxo; membro comum, o azul.
+		var is_sub: bool = owner_body is StaticBody3D \
+				and str((owner_body as StaticBody3D).get_meta("group", "")).begins_with("PART_")
 		var gizmo := MeshInstance3D.new()
 		gizmo.name = _GIZMO_NAME
 		gizmo.mesh = shape_node.shape.get_debug_mesh()
-		gizmo.material_override = mat
+		gizmo.material_override = sub_mat if is_sub else member_mat
 		shape_node.add_child(gizmo)
+
+
+# Material UNSHADED translúcido (fill quase transparente) para os gizmos de collider.
+func _make_gizmo_material(fill: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.albedo_color = fill
+	return mat
 
 
 # True when a CollisionShape3D belongs to one of the per-member colliders we built (its
@@ -3730,24 +3794,26 @@ func _add_member_labels(instance: Node) -> void:
 # usuário ligar de relance o controle ao seu rótulo. Cobre os estados do CheckButton (normal/
 # hover/pressed/focus) para a cor não "sumir" ao passar o mouse ou marcar.
 func _apply_label_line_colors() -> void:
-	var toggles := {
-		"Member": labels_toggle, "Type": type_check, "Name": name_check, "Id": id_check,
-		"Osso": osso_check,
+	# Cada toggle recebe a cor do elemento 3D que controla. RÓTULOS = tom ESCURO (azul/roxo/laranja) +
+	# as linhas Tipo/Nome/ID; COLISORES/realce = tom CLARO (azul/roxo/laranja).
+	var colors := {
+		labels_toggle: _LABEL_LINE_COLORS["Member"],    # MemberLabel → azul escuro
+		type_check: _LABEL_LINE_COLORS["Type"],         # Tipo → rosa
+		name_check: _LABEL_LINE_COLORS["Name"],         # Nome → verde
+		id_check: _LABEL_LINE_COLORS["Id"],             # ID → amarelo
+		sub_member_label_toggle: _SUB_LBL_COLOR,        # SubMemberLabel → roxo escuro
+		colliders_toggle: _MEMBER_COLLIDER_COLOR,       # MemberLimbCollider → azul claro
+		sub_collider_toggle: _SUB_COLLIDER_COLOR,       # SubMemberLimbCollider → roxo claro
+		osso_check: _AUX_LBL_COLOR,                     # SkeletonLabel → laranja escuro
+		aux_highlight_toggle: _AUX_HL_TEXT_COLOR,       # SkeletonLimbCollider → laranja claro
 	}
-	for id in toggles:
-		var btn: CheckButton = toggles[id]
-		var col: Color = _LABEL_LINE_COLORS[id]
+	# Cobre os estados do CheckButton (normal/hover/pressed/focus) p/ a cor não sumir no hover/marcado.
+	for btn in colors:
 		for key in [
 			"font_color", "font_hover_color", "font_pressed_color",
 			"font_hover_pressed_color", "font_focus_color",
 		]:
-			btn.add_theme_color_override(key, col)
-	# "Submembros": texto roxo (igual ao rótulo 3D _SUB_LBL_COLOR), fundo normal.
-	for key in [
-		"font_color", "font_hover_color", "font_pressed_color",
-		"font_hover_pressed_color", "font_focus_color",
-	]:
-		sub_member_label_toggle.add_theme_color_override(key, _SUB_LBL_COLOR)
+			(btn as CheckButton).add_theme_color_override(key, colors[btn])
 
 
 # Anti-colisão das pilhas de rótulos de membro (chamado por frame enquanto houver pilhas). O

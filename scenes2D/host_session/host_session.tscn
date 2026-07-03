@@ -90,23 +90,23 @@ layout_mode = 2
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="LevelPicker" type="OptionButton" parent="ManagePanel/Margin/Content/StartRow"]
+[node name="Levels" type="OptionButton" parent="ManagePanel/Margin/Content/StartRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 44)
 layout_mode = 2
 
-[node name="TemplatePicker" type="OptionButton" parent="ManagePanel/Margin/Content/StartRow"]
+[node name="Templates" type="OptionButton" parent="ManagePanel/Margin/Content/StartRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(260, 44)
 layout_mode = 2
 
-[node name="ManageTemplatesButton" type="Button" parent="ManagePanel/Margin/Content/StartRow"]
+[node name="ManageTemplates" type="Button" parent="ManagePanel/Margin/Content/StartRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(130, 44)
 layout_mode = 2
 text = "Templates"
 
-[node name="StartButton" type="Button" parent="ManagePanel/Margin/Content/StartRow"]
+[node name="Start" type="Button" parent="ManagePanel/Margin/Content/StartRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(160, 44)
 layout_mode = 2
@@ -147,7 +147,7 @@ unique_name_in_owner = true
 layout_mode = 2
 alignment = 1
 
-[node name="BackButton" type="Button" parent="ManagePanel/Margin/Content/Actions"]
+[node name="Back" type="Button" parent="ManagePanel/Margin/Content/Actions"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2

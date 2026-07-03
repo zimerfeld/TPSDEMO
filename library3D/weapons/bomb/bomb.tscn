@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://library3D/weapons/bomb/bomb.gd" id="1_0qv7x"]
-[ext_resource type="AudioStream" path="res://library3D/characters/players/player/bullet/bullet_explode.wav" id="2_psid4"]
+[ext_resource type="AudioStream" path="res://library3D/characters/player/bullet/bullet_explode.wav" id="2_psid4"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_net"]
 properties/0/path = NodePath(".:global_transform")

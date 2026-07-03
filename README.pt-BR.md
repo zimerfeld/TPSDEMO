@@ -45,9 +45,9 @@ em terceira pessoa. Em alto nível, oferece:
   comportamentos (seguir esquadrão, priorizar inimigos, espaçamento de combate, flanco sob pressão…)
   ficam num script de IA dedicado (`library3D/characters/players/player/IA/player_bot_ai.gd`).
 - **Templates de fase (Gerenciador de Templates)** — cada linha de level na tela Levels tem um
-  **botão de template** que abre o **Gerenciador de Templates** (janela flutuante, também acessível
-  pela gerência de salas do host): templates de spawn nomeados por level, cada um com entradas que
-  definem **tipo** (personagem/estrutura), **modelo**, **facção** (aliado/inimigo/neutro),
+  **botão de template** que abre o **Gerenciador de Templates** (janela flutuante **rolável**, também
+  acessível pela gerência de salas do host): templates de spawn nomeados por level, cada um com
+  entradas que definem **modelo**, **facção** (aliado/inimigo/neutro),
   **quantidade** e **posicionamento** (coordenadas explícitas, área aleatória ou formação de
   combate). **"Salvar e Usar Neste Level"** ativa o template, aplicado quando o level inicia (solo ou
   como sala online). Funciona igual no editor e no **.exe exportado**: o scanner de modelos resolve
@@ -99,6 +99,10 @@ em terceira pessoa. Em alto nível, oferece:
   Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo
   quanto os **colliders de membro/sub-membro** — então apontar para um **sub-membro saliente**
   (ex.: as placas das pernas) também exibe a vida do inimigo.
+- **Corpo físico proporcional ao modelo** — a cápsula de locomoção (bloqueio físico entre
+  personagens) é **auto-ajustada a cada modelo** a partir dos colliders de membro (raio pelo footprint
+  em pé, altura pela extensão total), em vez de uma default autorada igual para todos. Continua sendo
+  **um único shape barato** por personagem, independente da animação — física estável e rede determinística.
 - **Dano localizado** — colliders 3D nativos por membro dimensionados pela malha de cada
   personagem, então acertos em partes diferentes causam dano diferente (headshots causam dano
   extra). Os membros vêm do **plano corporal** do modelo, escolhido por um `body_type`
@@ -167,13 +171,15 @@ em terceira pessoa. Em alto nível, oferece:
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
   toggle cobre — partículas, luzes, malhas de laser/clarão presas a ossos), **Áudio** (todo som que
   o modelo emite — movimento, motor, tiros, explosões, vozes), **Colisores de Membro** (com o toggle
-  ligado e um membro/sub-membro isolado, exibe o gizmo verde daquele collider), **rótulos de membro**
-  (toggle próprio do browser para as tags "Membro: …" sobre cada collider, independente da tela
+  ligado e um membro/sub-membro isolado, exibe o gizmo translúcido daquele collider — **membros em azul
+  claro, sub-membros em roxo claro**), **rótulos de membro**
+  (toggle próprio do browser para as tags "Membro: …" — em **azul escuro** — sobre cada collider, independente da tela
   Debug 3D — com, logo abaixo do toggle **Membro**, um toggle **Esqueleto** que faz flutuar o rótulo
-  "Esqueleto: \<nome\>" do osso avulso escolhido sobre ele, e as linhas extras Tipo/Nome/ID), **Colisores de Esqueleto** (no modo "Todos os membros" → filtro "Esqueleto", destaca com uma
-  caixa translúcida a região do osso avulso escolhido, ou de todos), **Submembros** (rótulo flutuante
-  "Submembro: \<nome\>" sobre o sub-membro escolhido no dropdown) e **Colisores de Submembros** (mostra
-  só o limbcollider do sub-membro selecionado). Os seletores são **três
+  "Esqueleto: \<nome\>" (em **laranja escuro**) do osso avulso escolhido sobre ele, e as linhas extras Tipo/Nome/ID), **Colisores de Esqueleto** (no modo "Todos os membros" → filtro "Esqueleto", destaca com uma
+  caixa translúcida **laranja clara** a região do osso avulso escolhido, ou de todos), **Submembros** (rótulos flutuantes
+  **roxo escuro** "Submembro: \<nome\>" — sobre o sub-membro escolhido no dropdown, ou sobre **todos** de uma
+  vez no modo "Todos os Sub-membros") e **Colisores de Submembros** (mostra
+  o limbcollider do sub-membro selecionado, ou de todos no modo "Todos os Sub-membros"). Os seletores são **três
   dropdowns** — **Membro**, **Sub-membro** (logo abaixo, com a opção **"Todos os Sub-membros"** para ver todos de
   uma vez) e, só no modo **"Todos os membros"**, **Esqueleto** (ossos avulsos), que fica abaixo de Sub-membro.
   Ao escolher um item **real** (não "Selecione…"/"Todos") em qualquer um dos três, aparece **à direita** um
@@ -589,7 +595,9 @@ O sistema de hitboxes por membro é o exemplo canônico: `limb_colliders.gd` é 
 
 - Mouse ou <kbd>Analógico direito do gamepad</kbd>: Olhar ao redor
 - <kbd>W</kbd>/<kbd>A</kbd>/<kbd>S</kbd>/<kbd>D</kbd>, <kbd>Setas</kbd>, <kbd>Analógico esquerdo</kbd> ou <kbd>D-Pad</kbd>: Mover
-- <kbd>Espaço</kbd>, <kbd>Gamepad A/Cross</kbd>: Pular
+- <kbd>Espaço</kbd>, <kbd>Gamepad A/Cross</kbd>: Pular — **altura variável**: segure para completar o arco
+  inteiro do pulo (altura e distância máximas, animação roda até o fim); solte no meio da subida para
+  cortar o pulo suavemente
 - <kbd>Botão direito do mouse</kbd>, <kbd>Gatilho esquerdo (L2)</kbd> (pressione p/ alternar, ou segure e solte): Mirar
 - <kbd>Botão esquerdo do mouse</kbd>, <kbd>Gatilho direito (R2)</kbd>: Atirar (apenas mirando)
 - <kbd>Setas</kbd> / <kbd>D-Pad</kbd> (nos menus): Mover o foco entre os botões

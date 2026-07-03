@@ -16,27 +16,26 @@ const LEVELS := [
 const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn"
-const LevelTemplateDialogScene := preload("res://scenes2D/level_templates/level_template_dialog.gd")
+const TemplateManagerScene := preload("res://scenes2D/template_manager/template_manager.tscn")
 
 var _observing_id: int = -1        # sala observada (-1 = grade)
 var _playing_id: int = -1          # sala em que o host JOGA (-1 = não joga)
 
 var _confirm_dialog: FloatingWindow = null
-var _template_dialog: LevelTemplateDialog = null
 
 # Scaffold ESTÁTICO no .tscn (2026-06-30): RoomView/painel/pickers/lista/Voltar/Actions vêm da cena; o
 # código só popula os pickers + as linhas de sala (dinâmicas) e religa o foco. Antes a tela inteira era
 # montada em runtime.
 @onready var _room_view: TextureRect = %RoomView
 @onready var _panel: Control = %ManagePanel
-@onready var _level_picker: OptionButton = %LevelPicker
-@onready var _template_picker: OptionButton = %TemplatePicker
+@onready var _level_picker: OptionButton = %Levels
+@onready var _template_picker: OptionButton = %Templates
 @onready var _rooms_list: VBoxContainer = %RoomsList
 @onready var _hint: Label = %Hint
 @onready var _actions_bar: HBoxContainer = %Actions
-@onready var _back_button: Button = %BackButton
-@onready var _manage_templates_button: Button = %ManageTemplatesButton
-@onready var _start_button: Button = %StartButton
+@onready var _back_button: Button = %Back
+@onready var _manage_templates_button: Button = %ManageTemplates
+@onready var _start_button: Button = %Start
 @onready var _signal_layer: ColorRect = %SignalLayer
 
 
@@ -108,9 +107,9 @@ func _on_start_pressed() -> void:
 		return
 	var level_path := String(_level_picker.get_item_metadata(idx))
 	if _template_picker.selected > 0:
-		LevelTemplateManager.set_active_template(level_path, String(_template_picker.get_item_metadata(_template_picker.selected)))
+		CharacterTemplateManager.set_active(level_path, String(_template_picker.get_item_metadata(_template_picker.selected)))
 	else:
-		LevelTemplateManager.set_active_template(level_path, "")
+		CharacterTemplateManager.set_active(level_path, "")
 	RoomManager.start_room(level_path)
 	_apply_mouse_mode()
 
@@ -124,8 +123,8 @@ func _refresh_template_picker() -> void:
 	if idx <= 0:
 		return
 	var level_path := String(_level_picker.get_item_metadata(idx))
-	var active_id := LevelTemplateManager.active_template_id(level_path)
-	for t in LevelTemplateManager.templates_for_level(level_path):
+	var active_id := CharacterTemplateManager.active_id(level_path)
+	for t in CharacterTemplateManager.templates_for_level(level_path):
 		_template_picker.add_item(String(t.get("name", "Template")))
 		_template_picker.set_item_metadata(_template_picker.item_count - 1, String(t.get("id", "")))
 		if String(t.get("id", "")) == active_id:
@@ -140,12 +139,9 @@ func _open_template_dialog_for_selected_level() -> void:
 		FloatingDialog.alert(self, "Gerenciador de Templates",
 				"Selecione um level primeiro para gerenciar seus templates.")
 		return
-	if _template_dialog == null:
-		_template_dialog = LevelTemplateDialogScene.new()
-		_template_dialog.configure("spawn")
-		_template_dialog.templates_changed.connect(_refresh_template_picker)
-		add_child(_template_dialog)
-	_template_dialog.popup_for_level(String(_level_picker.get_item_metadata(idx)))
+	var form := TemplateManagerScene.instantiate() as TemplateFormBase
+	form.templates_changed.connect(_refresh_template_picker)
+	form.open_over(self, String(_level_picker.get_item_metadata(idx)))
 
 
 # Botão "Reiniciar" de uma sala: recria o nível do zero (e avisa os clientes dela — ver
@@ -254,7 +250,7 @@ func _make_server_row(room: Dictionary) -> Control:
 	row.name = "RoomRow_%d" % id
 	row.add_theme_constant_override("separation", 8)
 	var lbl := Label.new()
-	lbl.name = "RoomLabel_%d" % id
+	lbl.name = "RoomInfo_%d" % id
 	# Conexões (clientes remotos) ativas nesta sala. Atualiza ao vivo: o RoomManager emite
 	# rooms_changed em join_room/leave_room/_on_peer_disconnected → _refresh_rooms remonta as linhas.
 	var conns: int = RoomManager.connections_in_room(id)
@@ -267,7 +263,7 @@ func _make_server_row(room: Dictionary) -> Control:
 	# desabilitados (o host só gerencia as salas; iniciar/parar/reiniciar seguem funcionando).
 	var render_off: bool = not NetConfig.host_render_observed
 	var play_btn := Button.new()
-	play_btn.name = "PlayButton_%d" % id
+	play_btn.name = "Play_%d" % id
 	play_btn.text = "Jogar"
 	play_btn.disabled = render_off
 	if render_off:
@@ -275,7 +271,7 @@ func _make_server_row(room: Dictionary) -> Control:
 	play_btn.pressed.connect(_on_play_room.bind(id))
 	row.add_child(play_btn)
 	var observe_btn := Button.new()
-	observe_btn.name = "ObserveButton_%d" % id
+	observe_btn.name = "Observe_%d" % id
 	observe_btn.text = "Observando" if id == _observing_id else "Observar"
 	observe_btn.disabled = (id == _observing_id) or render_off
 	if render_off:
@@ -283,12 +279,12 @@ func _make_server_row(room: Dictionary) -> Control:
 	observe_btn.pressed.connect(_set_observing.bind(id))
 	row.add_child(observe_btn)
 	var restart_btn := Button.new()
-	restart_btn.name = "RestartButton_%d" % id
+	restart_btn.name = "Restart_%d" % id
 	restart_btn.text = "Reiniciar"
 	restart_btn.pressed.connect(_on_restart_room.bind(id))
 	row.add_child(restart_btn)
 	var stop_btn := Button.new()
-	stop_btn.name = "StopButton_%d" % id
+	stop_btn.name = "Stop_%d" % id
 	stop_btn.text = "Parar"
 	stop_btn.pressed.connect(func() -> void: RoomManager.stop_room(id))
 	row.add_child(stop_btn)

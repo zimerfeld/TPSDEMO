@@ -162,7 +162,7 @@ abandonado.
 **Diálogos (reescrito 2026-06-25):** TODAS as janelas de confirmação/aviso (Sair, Resolução, Restaurar,
 Desconectar host/cliente, avisos das sessões, salvar/reassociar/remover na tela Models e erros do
 `CrashHandler`) são montadas sobre o **controle2D reutilizável `FloatingWindow`**
-(`scenes2D/controls2D/floating_window/`, `class_name FloatingWindow`) pelo helper **`FloatingDialog`**
+(`controls2D/floating_window/`, `class_name FloatingWindow`) pelo helper **`FloatingDialog`**
 (`themes/floating_dialog.gd`, `confirm()/alert()`). É um `Control` (não o `Window`/`ConfirmationDialog`
 nativo): **título centralizado** (espaçador esquerdo espelha o ×), **botões de largura uniforme**, **× de
 fechar padrão** (mesmo visual preto opaco dos painéis Dano/IA), **fundo modal** que escurece e bloqueia o
@@ -203,7 +203,8 @@ por pixel, sem texturas) → sem custo relevante numa tela de menu. As sessões 
 
 Autoload **`NetConfig`** (`autoload/net_config.gd`, persiste em `Settings`/seção `netopt`) + seletor na
 tela **playonline** (3 dropdowns ESTÁTICOS no `.tscn` — colunas `HostColumn`/`BothColumn`/`ClientColumn`
-com `HostRenderPicker`/`SyncRatePicker`/`InterpPicker`, `tab_order` 6/7/8 antes dos botões Host/Client;
+com `HostRenderModes`/`SyncRates`/`Interpolations` (renomeados dos antigos `*Picker` na varredura de
+nomes de 2026-07-03 — OptionButton no plural, sem sigla), `tab_order` 6/7/8 antes dos botões Host/Client;
 o código só popula itens/seleção e conecta — `_build_optimization_options`/`_setup_opt_picker`, 2026-06-30,
 antes eram montados em runtime). São prefs LOCAIS (não replicadas) — cada lado ajusta o que controla:
 - **Suavização ↔ Resposta** — atraso de interpolação dos modelos remotos: Suave 100 ms / **Equilibrado

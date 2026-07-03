@@ -1,7 +1,7 @@
 extends Node
 
 ## Visualizador dos controles 2D — equivalente 2D da tela Models (scenes3D/models).
-## Um dropdown lista cada controle em res://scenes2D/controls2D/ e o selecionado é
+## Um dropdown lista cada controle em res://controls2D/ e o selecionado é
 ## instanciado num SubViewport de preview. Soltar uma nova pasta de controle lá
 ## faz ela aparecer aqui automaticamente (sem mudar código).
 
@@ -15,7 +15,7 @@ const SELECT_LABEL: String = "Selecione..."
 
 # Raiz da biblioteca de controles 2D. Cada subpasta <nome>/ com um <nome>.tscn é
 # um controle previewável (espelha o scanner da tela Models para a library3D).
-const CONTROLS_ROOT: String = "res://scenes2D/controls2D"
+const CONTROLS_ROOT: String = "res://controls2D"
 
 # Construído em _ready varrendo CONTROLS_ROOT. Cada entrada: {"name", "path"}.
 var _controls: Array = []

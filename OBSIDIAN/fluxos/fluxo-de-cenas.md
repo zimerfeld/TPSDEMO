@@ -66,7 +66,7 @@ models. `cyberpunkhud` é cena avulsa de preview, fora do fluxo de navegação.)
 - **models** — navegador/extrator de modelos 3D: Categoria → Modelo → Malha (malhas distintas), preview rotacionável, "Salvar como cena 3D" (extrai p/ `library/extracted/`) e botão "Exportados". Detalhes em [[sistemas/biblioteca-de-modelos]]
 - **Exported** (`library/extracted/Exported.tscn`) — galeria que exibe todas as cenas de `library/extracted/` lado a lado; volta para models
 - **chooseplayer** — escolhe personagem (modelo 3D girando) → levels
-- **levels** — Level 1 / Level 2, load assíncrono. `_select_level()` ramifica: **offline** carrega o nível direto; **online** (`PlayerSelection.online_mode`) guarda o caminho em `PlayerSelection.level_path` e abre `playonline`. Cada linha tem um botão de **template** que abre o **Gerenciador de Templates** (`scenes2D/level_templates/level_template_dialog.gd`, renomeado de "Templates de Level" em 2026-06-29; antes um `Window` nativo, **agora um controlador sobre `FloatingWindow`** — herda o tema 2D e o Debug 2D funciona sobre ele). A mesma janela é aberta pela tela `host_session`. Cada **entrada** de spawn tem um campo **"Nome da entrada"** (2026-07-01) que renomeia o texto exibido no dropdown `EntryPicker`; vazio → rótulo automático `"N. facção modelo xN"`. O nome é salvo por entrada em `LevelTemplateManager` (chave `name`).
+- **levels** — Level 1 / Level 2, load assíncrono. `_select_level()` ramifica: **offline** carrega o nível direto; **online** (`PlayerSelection.online_mode`) guarda o caminho em `PlayerSelection.level_path` e abre `playonline`. Cada linha tem um botão de **template** que abre o **Gerenciador de Templates** (`scenes2D/level_templates/level_template_dialog.gd`, renomeado de "Templates de Level" em 2026-06-29; antes um `Window` nativo, **agora um controlador sobre `FloatingWindow`** — herda o tema 2D e o Debug 2D funciona sobre ele). A mesma janela é aberta pela tela `host_session`. Cada **entrada** de spawn tem um campo **"Nome da entrada"** (2026-07-01) que renomeia o texto exibido no dropdown `Entries` (ex-`EntryPicker`); vazio → rótulo automático `"N. facção modelo xN"`. O nome é salvo por entrada em `LevelTemplateManager` (chave `name`).
 - **playonline** — só **Host / Connect** (porta + endereço). **Não há seletor de nível**: o nível já foi escolhido na tela `levels` (fluxo online) e vem em `PlayerSelection.level_path`; o servidor dedicado headless faz fallback p/ `level_1` (`DEFAULT_ROOM_LEVEL`, que entra direto aqui e abre uma sala). **Os níveis são jogáveis online** — `level_1` e `level_2` ganharam `MultiplayerSpawner` + `PlayerSpawnpoints` (ver [[sistemas/multiplayer]]).
 
 ---
@@ -136,7 +136,9 @@ Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas*
 - **Tab + Debug 2D em `host_session` / `client_session` (2026-06-29; estáticas em 2026-06-30)** — antes
   eram telas montadas INTEIRAS em código. **Agora o scaffold fixo é ESTÁTICO no `.tscn`** (painel com
   textura/véu/`SignalLayer` shader, título, `StartRow` com pickers no host, lista, barra **`Actions`** +
-  **`BackButton`**); o código só popula os pickers, monta as **linhas de sala** dinâmicas (`_refresh_rooms`)
+  **`Back`** — renomeado de `BackButton` na varredura de nomes de 2026-07-03, junto com
+  `ManageTemplates`/`Start`/`Levels`/`Templates`); o código só popula os pickers, monta as
+  **linhas de sala** dinâmicas (`_refresh_rooms`)
   e ajusta o `aspect` do shader. O DebugOverlay injeta o `Debug2D` na `Actions`. O **`tab_order` é numerado
   por CÓDIGO** no `_rewire_tab` (não dá p/ fixar no `.tscn` porque o nº de salas varia): controles da grade
   → botões habilitados de cada linha de sala (desabilitados ficam fora) → **Voltar** → **Debug 2D**; foco

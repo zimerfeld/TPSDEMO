@@ -136,6 +136,18 @@ move yaw/pitch; o toggle **Rotação** liga/desliga a rotação automática (só
 trava — gira como turntable). `UI` raiz tem `mouse_filter = 2` para o arrasto chegar
 a `_unhandled_input`.
 
+**Limpeza de "cruft" do preview (2026-07-03, `_strip_preview_cruft`):** algumas cenas de
+gameplay carregam nós que não pertencem a um preview estático — o `player.tscn`, por exemplo,
+embute um rig de câmera (`CameraBase/.../Camera3D`) e uma UI de jogo (`Crosshair` `TextureRect`
++ um `ColorRect` de fade **ancorado em tela cheia**). Como os containers da `UI` são
+`mouse_filter = 2` (ignore), o arrasto sobre a área 3D **caía nesse `ColorRect`** (default
+`STOP`) em vez de chegar ao `_unhandled_input` — resultado: **só o player "não girava"** (os
+demais modelos não têm Control embutido). Além disso a `Camera3D` embutida roubava o `current`
+e disparava avisos de *Physics interpolation* todo frame. Correção: logo após `_strip_scripts`,
+`_preview_whole_model()` chama `_strip_preview_cruft(instance)`, que **libera toda `Camera3D`,
+`Control` e `CanvasLayer`** da subárvore instanciada **antes** de entrar na árvore. Fix geral
+(vale para qualquer modelo que traga esses nós), mantém o preview 100% estático e zera os avisos.
+
 ### Toggles (preferência + persistência)
 
 > [!note] Nós dos toggles sem o sufixo "Toggle" (2026-06-28)
@@ -210,6 +222,32 @@ virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 > Como `Label3D` NÃO passa pelo auto-tradutor do Locale, `_on_language_changed` agora chama
 > `_refresh_member_overlays()` + `_refresh_aux_labels()` para reconstruir as pilhas no idioma novo.
 > Chaves novas em `models.{pt,en}.json`: `Tipo:`/`Nome:` (prefixos) + os toggles `Tipo`/`Nome`/`Linhas do Esqueleto`.
+
+> [!note] Esquema de cores membro × sub-membro + fix do rótulo de sub-membro (2026-07-03)
+> **Cores** (o texto de cada toggle casa com o elemento 3D que ele controla — constantes no topo de
+> `models.gd`):
+> - **Membro** → colisores **AZUL CLARO** quase transparente (`_MEMBER_COLLIDER_FILL`, gizmo) e texto do
+>   toggle *Colisor de Membro* (`_MEMBER_COLLIDER_COLOR`); **rótulos AZUL ESCURO** (`_LABEL_LINE_COLORS["Member"]`,
+>   também no toggle *Membro*).
+> - **Sub-membro** → colisores **ROXO CLARO** quase transparente (`_SUB_COLLIDER_FILL`) e texto do toggle
+>   *Colisor de Submembro* (`_SUB_COLLIDER_COLOR`); **rótulos ROXO ESCURO** (`_SUB_LBL_COLOR`, também no toggle *Submembros*).
+> - **Esqueleto (osso avulso)** → realce/box **LARANJA CLARO** quase transparente (`_AUX_HL_COLOR`) e texto
+>   do toggle *Colisor de Esqueleto* (`_AUX_HL_TEXT_COLOR`); **rótulos "Esqueleto: …" LARANJA ESCURO**
+>   (`_AUX_LBL_COLOR`, também no toggle *Esqueleto*). (2026-07-03)
+> - `_add_collider_gizmos` escolhe o material por grupo (`PART_*` → roxo; senão azul), via o helper
+>   `_make_gizmo_material(fill)`. `_apply_label_line_colors` (reescrito num único dict/laço) pinta os 9
+>   toggles com cor: membro/sub/esqueleto (rótulo escuro × colisor claro) + Tipo/Nome/ID. O antigo verde
+>   único dos colliders (`0.2,1.0,0.4`) e o laranja único do esqueleto (`1.0,0.6,0.1`) foram substituídos;
+>   a chave `"Osso"` de `_LABEL_LINE_COLORS` saiu (o toggle agora usa `_AUX_LBL_COLOR`).
+>
+> **Tamanho dos rótulos:** membro e sub-membro compartilham `_LBL_FONT_SIZE`/`_LBL_PIXEL_SIZE` (mesmo
+> tamanho de texto — confirmado no .exe: "Membro:" e "Sub-membro:" saem idênticos).
+>
+> **Bug corrigido:** ao ligar o toggle **Submembros** (rótulo) no modo **"Todos os membros" → "Todos os
+> Sub-membros"**, NENHUM rótulo aparecia — `_refresh_sub_member_labels` só tratava um `PART_` individual
+> (o valor `ALL_SUB_MEMBERS_VALUE` não começa com `PART_` → retorno cedo). Agora, nesse modo, rotula
+> TODOS os sub-membros (espelhando o toggle de colisores), garante os corpos com `_ensure_member_colliders`
+> e o clear passou do `_label_sub_member` (chamado em laço) para o chamador (uma vez só).
 
 > [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
 > - **Malha** (`Malha`, **1º toggle da lista** desde 2026-06-23, chave `show_malha`, default LIGADO):
@@ -704,7 +742,7 @@ props.glb) ficam planas (rodas + carroceria como irmãos, sem nó-pai por carro)
 ## Viewer de controles 2D (análogo)
 
 `scenes2D/controls/controls.tscn` (`controls.gd`) é o equivalente 2D desta tela:
-um dropdown lista cada controle em `scenes2D/controls2D/<nome>/<nome>.tscn` e o
+um dropdown lista cada controle em `controls2D/<nome>/<nome>.tscn` e o
 selecionado é instanciado num `SubViewport` de preview (isola controles que cobrem
 a tela inteira, como `scanlines`/`pause_menu`, e o `cyberpunk_hud`, que é
 `CanvasLayer`). Acessível pela tela `developer` (botão "Controles 2D", ao lado de

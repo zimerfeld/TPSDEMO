@@ -48,13 +48,15 @@ vivo (sem botão Aplicar).
 
 ## Features · Funcionalidades
 
-![EN](screenshots/screenshotGB.png) Highlights: localized damage (native per-limb 3D colliders, headshots deal extra) with a
+![EN](screenshots/screenshotGB.png) Highlights: a per-model physical body (the locomotion capsule is auto-fitted to each model from its limb colliders, one cheap shape each); localized damage (native per-limb 3D colliders, headshots deal extra) with a
 per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
 character, in the model's own folder `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits) where the body type (biped/quadruped/crawler) defines the members and
 protruding sub-members (plates, guards) are editable too (and any model with no classified member — e.g. Structures like the bronze statues — gets a single fallback **CORPO** member wrapping the whole model, so a collider can always be defined); a Models viewer with per-category master toggles (rotation, animation,
 special effects, audio, colliders — plus, per selected member/sub-member/loose bone, a **collider-geometry
 dropdown** (sphere/box/capsule, or "Selecione…" = no collider on a member) and a reusable floating dialog
 with live X/Y/Z **offset & scale** that persist instantly and are read back when a character spawns —
+color-coded for clarity (**members in blue, sub-members in purple, loose bones in orange**: light on
+the translucent 3D colliders/highlights, dark on the floating labels, matching each toggle's own text) —
 member labels — incl. a Bone toggle floating the chosen loose
 bone's name) and selector dropdowns — both persisted between
 visits, with the drill-down chain restored on reopen; a
@@ -78,8 +80,8 @@ high-FPS client view. A pre-session **Optimization** selector picks interpolatio
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
 The Levels screen also carries, per level, a **Template Manager** (characters) and a **Scenery
-Manager** (glowing stage props from `library3D/sceneries`) — floating windows where each entry's
-model is picked by **cascading folder navigation** (one dropdown per library folder level), with
+Manager** (glowing stage props from `library3D/sceneries`) — **scrollable** floating windows where
+each entry's model is picked by **cascading folder navigation** (one dropdown per library folder level), with
 faction, count and placement (coordinates, random area or formation); both a character template
 and a scenery can be active at once, applied when the level starts, in solo play and online rooms
 alike, in the editor and in the exported .exe. Ground enemies now move at **real human speed
@@ -93,14 +95,16 @@ looped by slow, alternating **electric energy**), and every **confirmation windo
 floating-window control (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a
 standard × close and a modal backdrop — the same base other floating windows can reuse.
 
-![PT](screenshots/screenshotBR.png) Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
+![PT](screenshots/screenshotBR.png) Destaques: corpo físico proporcional ao modelo (a cápsula de locomoção é auto-ajustada a cada modelo pelos colliders de membro, um único shape barato); dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
 por personagem, na pasta do próprio modelo `library3D/<cat>/<modelo>/limb_config.json`, com override gravável em `user://` para edições no jogo), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
 os sub-membros salientes (placas, guardas) também são editáveis (e todo modelo sem membro classificado — ex.: Estruturas como as estátuas de bronze — ganha um único membro **CORPO** de fallback que envolve o modelo inteiro, para sempre dar para definir um collider); um visualizador Models com toggles mestres por categoria (rotação, animação,
 efeitos especiais, áudio, colliders — e, por membro/sub-membro/osso avulso selecionado, um **dropdown de
 geometria do collider** (esfera/caixa/cápsula, ou "Selecione…" = sem collider no membro) e uma janela
 flutuante reutilizável com **afastamento e escala** X/Y/Z ao vivo, que persistem na hora e são relidos
-quando um personagem entra em cena — rótulos de membro — incl. um toggle Osso que faz flutuar o nome
+quando um personagem entra em cena — com código de cores (**membros em azul, sub-membros em roxo, ossos
+avulsos em laranja**: claro nos colliders/realces 3D translúcidos, escuro nos rótulos flutuantes, casando com o texto de cada toggle) —
+rótulos de membro — incl. um toggle Osso que faz flutuar o nome
 do osso avulso escolhido) e dropdowns de seleção — ambos persistidos
 entre visitas, com a cadeia de navegação restaurada ao reabrir; uma tela developer cujo overlay de
 debug é dividido nas
@@ -182,11 +186,13 @@ com PCK embutido + atalho no Desktop com o ícone.
 
 ## Controls · Controles
 
-![EN](screenshots/screenshotGB.png) Move (WASD / arrows / stick), look (mouse / right stick), jump (Space), aim (RMB / L2), shoot
+![EN](screenshots/screenshotGB.png) Move (WASD / arrows / stick), look (mouse / right stick), jump (Space — hold for the full
+jump, release mid-rise to smoothly cut it short), aim (RMB / L2), shoot
 (LMB / R2, only while aiming), menu focus with arrow keys, back/quit (Escape — cancels a field edit
 first; the menu confirms before quitting), fullscreen (F11 / Alt+Enter), debug info (F3).
 
-![PT](screenshots/screenshotBR.png) Mover (WASD / setas / analógico), olhar (mouse / analógico direito), pular (Espaço), mirar
+![PT](screenshots/screenshotBR.png) Mover (WASD / setas / analógico), olhar (mouse / analógico direito), pular (Espaço — segure
+para o pulo completo, solte no meio da subida para cortá-lo suavemente), mirar
 (botão direito / L2), atirar (botão esquerdo / R2, só mirando), foco dos menus com as setas,
 voltar/sair (Escape — cancela primeiro um campo em edição; o menu confirma antes de sair), tela
 cheia (F11 / Alt+Enter), info de debug (F3).

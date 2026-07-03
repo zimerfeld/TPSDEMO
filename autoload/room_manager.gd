@@ -226,7 +226,9 @@ func _ensure_template_spawned(room_id: int) -> void:
 	var spawned: Node3D = room.get("spawned_nodes")
 	if not is_instance_valid(spawned):
 		return
-	LevelTemplateManager.apply_active_template(String(room.get("level_path", "")), spawned)
+	var level_path := String(room.get("level_path", ""))
+	CharacterTemplateManager.apply_active(level_path, spawned)
+	SceneryTemplateManager.apply_active(level_path, spawned)
 
 
 # Interest management: o nó (e seus sub-nós) só é replicado (spawn + sync) para peers QUE ESTÃO

@@ -5,15 +5,43 @@
 > o level inicia (solo ou sala online). Relacionado: [[fluxos/fluxo-de-cenas]] (tela `levels`),
 > [[sistemas/salas]] (host abre a mesma janela), memória *"salas nascem limpas"*.
 
-## Duas categorias, um só diálogo (2026-07-03)
+## Duas cenas + dois managers separados (2026-07-03, refatoração)
 
-O `LevelTemplateDialog` é parametrizado por **categoria** via `configure()`: **"spawn"**
-(Gerenciador de Templates — personagens, raiz `library3D/characters`, com linha Facção) e
-**"scenery"** (Gerenciador de Cenários — objetos de palco, raiz `library3D/sceneries`, SEM linha
-Facção). Cada level tem na tela `levels` DOIS botões à direita (Template + Cenário), e cada
-categoria tem **ativo próprio por level** (`active_by_level` × `active_scenery_by_level` no
-mesmo JSON) — um level roda um template de personagens E um cenário ao mesmo tempo
-(`apply_active_template` aplica os dois, no solo e nas salas online).
+Responsabilidades **separadas** por categoria (antes: um só diálogo `LevelTemplateDialog`
+parametrizado por `configure()` e um só autoload `LevelTemplateManager` — ambos REMOVIDOS):
+
+- **UI — duas cenas `.tscn`** (raiz `ScrollContainer`, rolagem vertical quando os campos não cabem):
+  - `scenes2D/template_manager/template_manager.tscn` (+ `.gd`) — personagens, **com** linha Facção;
+  - `scenes2D/scenery_manager/scenery_manager.tscn` (+ `.gd`) — cenários, **sem** Facção.
+  - Lógica comum na base `scenes2D/managers_common/template_form_base.gd` (`class_name
+    TemplateFormBase extends ScrollContainer`); cada subclasse só define `_manager()`, título e
+    nome padrão. A presença/ausência da Facção é detectada pelo nó `%Factions` (só existe na cena
+    de personagens). Cada cena tem `Resources/<nome>.pt.json` + `.en.json` (i18n via Locale).
+  - Abertas por `open_over(host, level_path)`: criam a `FloatingWindow` (CanvasLayer 128),
+    inserem o próprio formulário no conteúdo dela e montam os botões do rodapé; ao fechar, o
+    CanvasLayer inteiro é liberado (a instância NÃO é reaproveitada — o chamador cria uma nova).
+- **Dados — dois autoloads** (`autoload/template_manager_base.gd` = `TemplateManagerBase` com a
+  lógica comum; subclasses `CharacterTemplateManager` e `SceneryTemplateManager`), cada um no SEU
+  arquivo: `user://character_templates.json` e `user://scenery_templates.json`. API uniforme sem
+  categoria: `templates_for_level(level)`, `active(level)`/`active_id(level)`, `set_active`,
+  `upsert_template`, `remove_template`, `browse_dir`, `root_dir`, `apply_active(level, spawned)`.
+- **Migração 1x**: na 1ª carga, se o arquivo próprio não existe, cada manager LÊ o legado
+  `user://level_templates.json` e traz só a sua categoria (`_matches_legacy`) + o mapa de ativos
+  correspondente (`active_by_level` / `active_scenery_by_level`), gravando no arquivo próprio.
+- **Aplicação**: `level_1`/`level_2` (solo) e `RoomManager` (salas) chamam
+  `CharacterTemplateManager.apply_active` **e** `SceneryTemplateManager.apply_active`. No `level_2`,
+  a criatura padrão só nasce se NENHUM dos dois aplicou (semântica preservada do antigo bool).
+
+Cada level tem na tela `levels` DOIS botões à direita (Template + Cenário), com ativos
+independentes — um level roda um template de personagens E um cenário ao mesmo tempo (solo e salas).
+
+**Cura de caminhos obsoletos (no load):** `_heal_entry_paths` relocaliza pelo `model_key`, sob a
+raiz atual, toda entrada cujo `scene_path` não existe mais (ex.: dados salvos apontando para a
+extinta `characters/enemies/…`) e regrava o arquivo. Sem isto, a cascata do diálogo abria em
+"Selecione..." em vez de re-selecionar o modelo salvo. **Rótulos i18n dos botões de level:** os
+textos dinâmicos "Templates/Cenários: padrão" e "Template/Cenário: `<nome>`" passam por `tr_key`
+(prefixos fixos traduzidos; o NOME do template é dado e não é traduzido), no `SKIP_GROUP` e
+re-traduzidos em `language_changed` — chaves em `scenes2D/levels/Resources/levels.{pt,en}.json`.
 
 ## Navegação em CASCATA do modelo (2026-07-03)
 
@@ -37,7 +65,7 @@ Models pode configurar o collider. Entram nos `_spawnable_scenes` dos levels (re
 salas). As antigas `structures/` saíram do projeto (limpeza do usuário); kind legado
 "structure" é migrado p/ "scenery" no load.
 
-## ManageTemplatesButton da host_session (2026-07-03)
+## ManageTemplates da host_session (2026-07-03; ex-ManageTemplatesButton)
 
 O "Templates" da grade do host "não funcionava" quando o seletor de level estava em
 "Selecione..." — retorno SILENCIOSO. Agora exibe um alerta (`FloatingDialog.alert`: "Selecione um
@@ -46,22 +74,28 @@ hospedando em 127.0.0.1:4383 — sala #1 criada, observada, cenário aplicado).
 
 ## Arquitetura
 
-- **`LevelTemplateManager`** (`autoload/level_template_manager.gd`): persiste em
-  `user://level_templates.json` (`{templates: [...], active_by_level: {level_path: id}}`).
-  API: `upsert_template(t) -> id`, `remove_template(id)`, `set_active_template(level, id)`,
-  `active_template(level)`, `apply_active_template(level, spawned_nodes)`, `model_options(kind)`.
-  Sem template salvo, `_install_defaults()` instala o exemplo "Level 2 - Caça aérea".
-- **`LevelTemplateDialog`** (`scenes2D/level_templates/level_template_dialog.gd`): controlador do
-  formulário DENTRO de uma `FloatingWindow` (CanvasLayer 128) — tema 2D + Debug 2D funcionam.
-  Aberto pelo botão de template de cada linha da tela `levels` e pela `host_session`.
-- **Entrada** de template: `kind` (character/structure), `model_key`/`scene_path`, `faction`
-  (friendly/enemy/neutral), `count`, `placement` (coordinates/random/formation) + campos de cada
-  modo, `name` (rótulo custom no EntryPicker), `rotation_y`, `spacing`.
-- **Aplicação**: `level_1.gd`/`level_2.gd` chamam `apply_active_template` no `_ready` (offline) e o
-  `RoomManager` na criação da sala (online). Facção friendly → player `bot_controlled` (bots de
-  cobertura); enemy → IA hostil.
-- `model_options` varre `library3D/characters` e `library3D/structures` recursivamente; só entra a
-  cena cujo basename == nome da pasta (a cena "do modelo"; irmãs como `bomb.tscn` ficam fora).
+- **`TemplateManagerBase`** (`autoload/template_manager_base.gd`): base comum dos dois autoloads.
+  API: `upsert_template(t) -> id`, `remove_template(id)`, `set_active(level, id)`,
+  `active(level)`/`active_id(level)`, `templates_for_level(level)`, `apply_active(level, spawned)`,
+  `browse_dir(dir)`, `root_dir()`. Ganchos por subclasse: `_file_path`, `root_dir`, `_entry_kind`,
+  `_matches_legacy`, `_install_defaults`.
+  - **`CharacterTemplateManager`** → `user://character_templates.json`, raiz `characters`; sem
+    template salvo, instala o exemplo "Level 2 - Caça aérea".
+  - **`SceneryTemplateManager`** → `user://scenery_templates.json`, raiz `sceneries`; sem defaults.
+- **`TemplateFormBase`** (`scenes2D/managers_common/template_form_base.gd`): controlador do formulário
+  (raiz `ScrollContainer`) inserido numa `FloatingWindow` (CanvasLayer 128) — tema 2D + Debug 2D
+  funcionam. Subclasses: `template_manager.gd` (personagens) e `scenery_manager.gd` (cenários),
+  cada uma raiz da sua `.tscn`. Abertas por `open_over(host, level)` do botão de cada linha da tela
+  `levels` e (só o de personagens) pela `host_session`.
+- **Entrada** de template: `kind` (character/scenery), `model_key`/`scene_path`, `faction`
+  (friendly/enemy/neutral — só personagens), `count`, `placement` (coordinates/random/formation) +
+  campos de cada modo, `name` (rótulo custom no dropdown `Entries`), `rotation_y`, `spacing`.
+- **Aplicação**: `level_1.gd`/`level_2.gd` chamam `apply_active` dos DOIS managers no `_ready`
+  (offline) e o `RoomManager` na criação da sala (online). Facção friendly → player `bot_controlled`
+  (bots de cobertura); enemy → IA hostil.
+- `browse_dir`/`_dir_model` varrem a raiz da categoria recursivamente; só entra a cena cujo basename
+  == nome da pasta (a cena "do modelo"; irmãs como `bomb.tscn` ficam fora). Precisa do
+  `_logical_name` (strip `.remap`/`.import`) para funcionar no `.exe` exportado.
 
 ## Bugs corrigidos em 2026-07-03 (encontrados em playtest no .exe)
 

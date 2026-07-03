@@ -294,6 +294,27 @@ trocada por uma **`CapsuleShape3D` (raio 0,5 / altura 2,0, em y=1)** — a MESMA
 do player — então não há mais a esfera enorme. O nó continua `CollisionShape3D` (dependência de
 `red_robot.gd`).
 
+**Auto-fit da cápsula de locomoção por modelo (2026-07-03):** em vez da cápsula default (0,5×2,0)
+IGUAL p/ todo modelo, o bloqueio físico agora é **proporcional ao modelo**, derivado dos MESMOS boxes
+de membro que o `LimbColliders` já mede — mantendo **1 shape por personagem** (barato, estável e
+determinístico, então servidor e cliente-predição concordam; não depende da pose animada). Método
+`LimbColliders.fit_locomotion_capsule(shape_node, character)`, chamado logo após `build_for` em
+`player.gd` e `red_robot.gd`:
+- **RAIO = footprint em pé** (`_is_footprint_group`: **TRONCO + PERNAS** — `LEG_*` de qualquer plano).
+  Braços (envergadura de um T-pose), cabeça (topo) e peças `PART_*` ficam **de fora** p/ não engordar
+  o raio. `raio = 0,5 · max(footprint.x, footprint.z)`, com piso `MIN_BODY_CAPSULE_RADIUS = 0,12`.
+- **ALTURA = extensão vertical total** (topo da cabeça → pés), com a **BASE ancorada no chão** do
+  personagem (`bottom = min(aabb.min.y, 0)`) p/ a cápsula nunca **flutuar** (mantém `is_on_floor`).
+- **Centro** no eixo do modelo (x/z do footprint) e no meio vertical. **Duplica** a forma p/ não mutar
+  um sub-recurso compartilhado. **No-op** (devolve `{}`) se nada foi construído (ex.: criatura_alada,
+  que não monta `LimbColliders` no gameplay; modelo sem membros classificados) → **preserva a cápsula
+  autorada** como fallback seguro.
+- Helpers internos: `member_boxes_in(space)` (AABBs por grupo no espaço do personagem, lendo a
+  geometria REAL das formas — pós-encolhimento), `_shape_local_aabb` (sphere/box/capsule) e
+  `_transform_aabb` (envelope dos 8 cantos, correto p/ cápsulas de membro rotacionadas).
+- **Validado** por sonda headless determinística (bípede sintético ~1,8 m): raio **0,250** (footprint,
+  NÃO os braços a 0,575), altura **1,800**, base **0,000** — os 3 critérios OK.
+
 O atirador exclui os próprios colliders de membro do projétil (`player._exclude_own_limbs`)
 para o tiro não nascer acertando o próprio braço/arma.
 

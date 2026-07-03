@@ -62,7 +62,7 @@ APPROACH ──► AIM ──► SHOOTING
 
 ## HUD de Vida (Boss Bar)
 
-- `library3D/characters/enemies/enemy_health_bar.gd` — `CanvasLayer` compartilhado no **topo-centro**
+- `controls2D/enemy_health_bar.gd` — `CanvasLayer` compartilhado no **topo-centro**
 - Acionado por:
   - `hit()` → `show_health_hud()` (ao ser atingido)
   - **mira do player entra** → `player_input._update_enemy_focus()` chama `show_health_hud()`
@@ -119,6 +119,10 @@ func hit() -> void:
 - `_setup_limb_colliders()` no `_ready` (se `not dead`) cria colliders 3D nativos (`StaticBody3D` + `BoxShape3D`) por membro
 - Usa `effects_shared/limb_colliders.gd` sobre `RedRobotModel/Armature/Skeleton3D` (`head_bone_names = ["mouth_eyes", "L-EYE", "R-EYE"]` — os olhos entram na CABEÇA para o headshot não ficar minúsculo; 2026-06-18)
 - Layer 32 (bit6); o bullet do player colide fisicamente e aplica dano localizado
+- **Cápsula de locomoção auto-ajustada (2026-07-03):** após `build_for`, `red_robot.gd` chama
+  `lc.fit_locomotion_capsule(collision_shape, self)` — o bloqueio físico vira proporcional ao modelo
+  (raio pelo footprint tronco+pernas, altura pela extensão vertical), em vez da cápsula default. Ver
+  [[sistemas/dano-localizado]] ("Auto-fit da cápsula de locomoção por modelo").
 - Ver [[arquivos-chave/limb-colliders-gd]]
 
 ---
