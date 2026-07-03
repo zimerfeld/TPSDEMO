@@ -18,7 +18,7 @@ func _ready() -> void:
 		return
 
 	# Offline (OfflineMultiplayerPeer) e host (ENet) entram aqui como servidor; o cliente
-	# recebe inimigo/players via MultiplayerSpawner. Mesmo padrão do level_base.
+	# recebe inimigo/players via MultiplayerSpawner. Mesmo padrão entre os níveis.
 	if multiplayer.is_server():
 		# Modo-sala (multi-level): a sala NASCE VAZIA — nada pré-spawnado na criação, NEM o template
 		# (o RoomManager o aplica depois, pelo caminho per-peer protegido, quando há gente na sala).

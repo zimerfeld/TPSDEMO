@@ -42,8 +42,17 @@ func _ready() -> void:
 		var rid: int = RoomManager.pending_play_room
 		var path: String = RoomManager.pending_play_level
 		RoomManager.pending_play_room = -1
-		RoomManager.client_join_room(rid, path, PlayerSelection.variant_id)
-		_enter_play(rid)
+		# Corrida: o host pode ter PARADO/reiniciado a sala enquanto o jogador escolhia o personagem. O
+		# RoomManager (autoload) segue recebendo receive_room_list mesmo durante o chooseplayer, então
+		# server_room_list() está atualizado. Se a sala sumiu, NÃO nascemos numa sala morta (evita a cena
+		# vazia de entrar numa sala que não roda mais): volta ao navegador com um aviso.
+		if _server_has_room(rid):
+			RoomManager.client_join_room(rid, path, PlayerSelection.variant_id)
+			_enter_play(rid)
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			_refresh_rooms()
+			_alert.call_deferred("A sala não está mais disponível")
 	else:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		_refresh_rooms()
@@ -70,6 +79,16 @@ func _rewire_tab() -> void:
 	if dbg != null:
 		(dbg as Control).set_meta(UINav.TAB_ORDER_META, i)
 	UINav.wire_tab_ring(self)
+
+
+# True se a sala ainda consta na última lista recebida do servidor (só salas em EXECUÇÃO entram
+# nessa lista). Usado para não entrar numa sala que o host parou/reiniciou enquanto o jogador
+# escolhia o personagem (guarda de corrida do "Jogar").
+func _server_has_room(room_id: int) -> bool:
+	for r in RoomManager.server_room_list():
+		if int((r as Dictionary).get("id", -1)) == room_id:
+			return true
+	return false
 
 
 func _refresh_rooms() -> void:

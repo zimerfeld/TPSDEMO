@@ -28,7 +28,8 @@ shooter sandbox: a menu-driven flow (character selection, level picker, settings
 online play), playable characters that move/aim/jump/shoot (the shot waits for the aim to settle),
 allied bots that give the player covering fire, ground and flying enemies (the Red Robot has a
 reactive AI that reloads faster, opens fire in range and flees when you close in — enemies now move
-with individual variation and hold a loose formation),
+with individual variation, no longer slide (animation cadence matched to speed), target the closest
+player in their alert radius, and the flyer varies its height smoothly to dive-bomb or escape fire),
 per-limb localized damage, several levels, a browsable 3D model library (with a model-orientation axis gizmo), reusable cyberpunk HUD
 widgets, per-scene looping background music, debug tooling, EN/PT localization and live (no-Apply) settings.
 
@@ -37,7 +38,9 @@ terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, con
 desenvolvedor, jogo online), personagens jogáveis que se movem/miram/pulam/atiram (o tiro espera a
 mira assentar), bots aliados que dão cobertura ao jogador, inimigos terrestres e voadores (o Red
 Robot tem uma IA reativa que recarrega mais rápido, abre fogo no alcance e recua quando você se
-aproxima — e os inimigos agora se movem com variação individual e mantêm uma formação frouxa), dano
+aproxima — e os inimigos agora se movem com variação individual, **não deslizam mais** (cadência da
+animação casada à velocidade), miram o **player mais próximo** no raio de alerta, e a criatura voadora
+**varia a altura suavemente** para mergulhar e bombardear ou subir e escapar de tiros), dano
 localizado por membro, várias fases, biblioteca de
 modelos 3D navegável (com gizmo de eixos de orientação),
 widgets de HUD cyberpunk reutilizáveis, música de fundo por cena em loop, ferramentas de debug, localização EN/PT e configurações ao
@@ -48,7 +51,7 @@ vivo (sem botão Aplicar).
 ![EN](screenshots/screenshotGB.png) Highlights: localized damage (native per-limb 3D colliders, headshots deal extra) with a
 per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
 character, in the model's own folder `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits) where the body type (biped/quadruped/crawler) defines the members and
-protruding sub-members (plates, guards) are editable too; a Models viewer with per-category master toggles (rotation, animation,
+protruding sub-members (plates, guards) are editable too (and any model with no classified member — e.g. Structures like the bronze statues — gets a single fallback **CORPO** member wrapping the whole model, so a collider can always be defined); a Models viewer with per-category master toggles (rotation, animation,
 special effects, audio, colliders — plus, per selected member/sub-member/loose bone, a **collider-geometry
 dropdown** (sphere/box/capsule, or "Selecione…" = no collider on a member) and a reusable floating dialog
 with live X/Y/Z **offset & scale** that persist instantly and are read back when a character spawns —
@@ -74,6 +77,16 @@ and other players/enemies are smoothed with a timestamped interpolation buffer f
 high-FPS client view. A pre-session **Optimization** selector picks interpolation (Smooth/Balanced/
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
+The Levels screen also carries, per level, a **Template Manager** (characters) and a **Scenery
+Manager** (glowing stage props from `library3D/sceneries`) — floating windows where each entry's
+model is picked by **cascading folder navigation** (one dropdown per library folder level), with
+faction, count and placement (coordinates, random area or formation); both a character template
+and a scenery can be active at once, applied when the level starts, in solo play and online rooms
+alike, in the editor and in the exported .exe. Ground enemies now move at **real human speed
+standards** (strafe 2.4 m/s, retreat 3.8 m/s) with smooth acceleration — weighty, believable motion.
+Each arena ships its own cyberpunk atmosphere — procedural gradient sky, distance fog and an
+emissive **neon grid floor** (Level 1 cyan, Level 2 amber sunset) — engineered for the project's
+goal of **60+ FPS on minimal graphics hardware**, so it looks striking at near-zero GPU cost.
 Each 2D screen (Levels, Play Online, Settings, Developer) carries its own lightweight **animated shader
 background** that evokes its purpose (Play Online also frames its border with a **braided-metal wire**
 looped by slow, alternating **electric energy**), and every **confirmation window** is built on one reusable
@@ -83,7 +96,7 @@ standard × close and a modal backdrop — the same base other floating windows 
 ![PT](screenshots/screenshotBR.png) Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
 por personagem, na pasta do próprio modelo `library3D/<cat>/<modelo>/limb_config.json`, com override gravável em `user://` para edições no jogo), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
-os sub-membros salientes (placas, guardas) também são editáveis; um visualizador Models com toggles mestres por categoria (rotação, animação,
+os sub-membros salientes (placas, guardas) também são editáveis (e todo modelo sem membro classificado — ex.: Estruturas como as estátuas de bronze — ganha um único membro **CORPO** de fallback que envolve o modelo inteiro, para sempre dar para definir um collider); um visualizador Models com toggles mestres por categoria (rotação, animação,
 efeitos especiais, áudio, colliders — e, por membro/sub-membro/osso avulso selecionado, um **dropdown de
 geometria do collider** (esfera/caixa/cápsula, ou "Selecione…" = sem collider no membro) e uma janela
 flutuante reutilizável com **afastamento e escala** X/Y/Z ao vivo, que persistem na hora e são relidos
@@ -113,11 +126,25 @@ com snapshots datados para uma visão do cliente sem flicker e com FPS alto. Um 
 pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync (30/60 Hz) e render do host
 (Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
 telas Host/Client são em tela cheia, no padrão do resto da UI.
+A tela de Níveis também traz, por level, um **Gerenciador de Templates** (personagens) e um
+**Gerenciador de Cenários** (objetos de palco luminosos de `library3D/sceneries`) — janelas
+flutuantes em que o modelo de cada entrada é escolhido por **navegação em cascata de pastas** (um
+dropdown por nível da biblioteca), com facção, quantidade e posicionamento (coordenadas, área
+aleatória ou formação); um template de personagens e um cenário podem estar ativos ao mesmo tempo,
+aplicados quando o level inicia, no solo e nas salas online, no editor e no .exe exportado. Os
+inimigos terrestres agora se movem em **padrões de velocidade humanos reais** (strafe 2,4 m/s,
+recuo 3,8 m/s) com aceleração suave — movimento com peso e crível.
+Cada arena tem sua própria atmosfera cyberpunk — céu procedural em gradiente, névoa de distância e
+um **piso-grade neon** emissivo (Level 1 ciano, Level 2 pôr-do-sol âmbar) — projetada para a meta do
+projeto de **60+ FPS em hardware gráfico mínimo**: visual marcante com custo de GPU quase zero.
 Cada tela 2D (Níveis, Jogar Online, Configurações, Developer) tem seu próprio **fundo animado por shader**
 (leve) que remete à sua função (a Jogar Online ainda emoldura a borda com um **fio de metal trançado**
 percorrido por uma **energia elétrica** lenta e alternada), e toda **janela de confirmação** é montada sobre um controle de janela
 flutuante reutilizável (`FloatingWindow`, uma cena `controls2D`) — texto centralizado, botões de largura
 uniforme, um × de fechar padrão e fundo modal — a mesma base que outras janelas flutuantes podem reusar.
+A **janela de erro global é recuperável** — fechar (× / ESC / **Voltar**) só volta à cena que a chamou,
+sem encerrar o jogo. *(EN: the global error window is recoverable — closing it just returns to the calling
+scene and never quits the game.)*
 
 > ![EN](screenshots/screenshotGB.png) **On the per-limb hitboxes:** you didn't reinvent Godot's physics; you automated the authoring
 > of hitboxes that would be unfeasible to maintain at scale by hand.

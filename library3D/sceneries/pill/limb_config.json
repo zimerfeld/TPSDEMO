@@ -1,0 +1,18 @@
+{
+	"collider_offsets": {
+
+	},
+	"collider_rotations": {
+
+	},
+	"collider_scales": {
+		"BODY": [
+			1.0,
+			1.0,
+			1.0
+		]
+	},
+	"collider_shapes": {
+		"BODY": "capsule"
+	}
+}

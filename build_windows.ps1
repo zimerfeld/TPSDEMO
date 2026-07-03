@@ -111,6 +111,10 @@ func _init() -> void:
 # 2) Exporta o .exe (release, PCK embutido). Antes, encerra a instância aberta (se houver) para
 # não travar o arquivo de saída.
 Stop-RunningZimaro $exeOut
+# O cache de export do Godot (.godot/exported) NÃO invalida quando um .tscn muda (observado em
+# 2026-07-03: o .exe saía com a cena VELHA mesmo com -Force) — limpa antes de todo export para o
+# .exe sempre refletir o estado atual dos fontes. Custo: re-converter as cenas (segundos).
+Remove-Item (Join-Path $proj ".godot\exported") -Recurse -Force -ErrorAction SilentlyContinue
 Write-Host "Exportando $exeOut ..."
 & $godot --headless --path $proj --export-release "Windows Desktop" $exeOut
 if (-not (Test-Path $exeOut)) { throw "Export falhou: $exeOut não foi criado." }

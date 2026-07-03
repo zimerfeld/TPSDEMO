@@ -2,7 +2,7 @@ extends Node3D
 
 signal quit
 
-const CriaturaAlada: PackedScene = preload("res://library3D/characters/criatura_alada/criatura_alada.tscn")
+const CriaturaAlada: PackedScene = preload("res://library3D/characters/enemies/criatura_alada/criatura_alada.tscn")
 
 ## Distância horizontal inicial (em metros) entre o player e a criatura alada.
 const SPAWN_DISTANCE := 20.0
@@ -23,7 +23,7 @@ func _ready() -> void:
 		return
 
 	# Offline (OfflineMultiplayerPeer) e host (ENet) entram aqui como servidor; o cliente
-	# recebe criatura/players via MultiplayerSpawner. Mesmo padrão do level_base.
+	# recebe criatura/players via MultiplayerSpawner. Mesmo padrão entre os níveis.
 	if multiplayer.is_server():
 		# Modo-sala (multi-level): a sala NASCE VAZIA — nada pré-spawnado na criação, NEM o template
 		# (o RoomManager o aplica depois, pelo caminho per-peer protegido, quando há gente na sala).

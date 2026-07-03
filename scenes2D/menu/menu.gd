@@ -58,7 +58,7 @@ func _ready() -> void:
 		func(_n: Node) -> void: _wire_tab_order.call_deferred())
 
 
-# Headless auto-host: vai direto para playonline (que auto-hospeda o level_base).
+# Headless auto-host: vai direto para playonline (que auto-hospeda uma sala com o Level 1).
 # Deferido porque main.gd só conecta replace_main_scene DEPOIS do _ready do menu.
 func _start_online_headless() -> void:
 	PlayerSelection.online_mode = true

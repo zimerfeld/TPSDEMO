@@ -257,6 +257,11 @@ func _ensure_debug2d_toggle(screen: Node) -> void:
 	# is_instance_valid: a tela pode ter sido liberada entre o call_deferred e esta execução.
 	if not is_instance_valid(screen) or screen.scene_file_path.ends_with("developer.tscn"):
 		return
+	# NUNCA em cena de LEVEL (gameplay 3D): os levels (level_1/level_2) raízam num Node3D e têm uma barra
+	# Actions no TitleCanvas — o toggle Debug 2D é de TELAS 2D de UI, não do jogo em si. A tela Models
+	# (scenes3D/models) raíza num Node comum, então NÃO cai neste guard e segue recebendo o toggle.
+	if screen is Node3D:
+		return
 	var actions := screen.find_child("Actions", true, false)
 	if not (actions is HBoxContainer) or actions.has_node("Debug2D"):
 		return

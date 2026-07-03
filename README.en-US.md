@@ -30,6 +30,9 @@ third-person shooter sandbox. At a high level it offers:
   **confirmation/alert windows are built on one reusable floating-window control**
   (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a standard × close and a
   modal backdrop — created by the `FloatingDialog` helper; the same base other floating windows can reuse.
+  The **global error window is recoverable**: closing it (× / ESC / **Back**) just returns focus to the
+  calling scene — a port/connection or validation error **never quits the game** (with a **Try Again**
+  option when it makes sense).
 - **Playable characters** — selectable player variants that move, aim, jump and shoot,
   with first-person camera control and a local health HUD. The **jump is higher** and the **fire
   rate more spaced out**; the **shot now leaves only after the aim settles** (once the aim animation
@@ -41,6 +44,33 @@ third-person shooter sandbox. At a high level it offers:
   far, regrouping takes priority over chasing, so they **no longer run off until falling off the
   map**. Their behaviors (follow squad, prioritize enemies, combat spacing, pressure flank…) live in
   a dedicated AI script (`library3D/characters/players/player/IA/player_bot_ai.gd`).
+- **Level templates (Template Manager)** — each level row on the Levels screen has a **template
+  button** that opens the **Template Manager** (floating window, also reachable from the host's room
+  manager): named spawn templates per level, each with entries defining **type**
+  (character/structure), **model**, **faction** (friendly/enemy/neutral), **count** and **placement**
+  (explicit coordinates, random area or combat formation). **"Save and Use On This Level"** activates
+  the template, applied when the level starts (solo or as an online room). Works the same in the
+  editor and in the **exported .exe**: the model scanner resolves the `.remap` names the export
+  produces (same pattern as the Models screen), saving a **new** template stores the generated id (so
+  activating right after saving works and re-saving never duplicates it), and the template **name
+  survives** entry add/remove refreshes. Each entry's model is picked through **cascading folder
+  navigation**: one dropdown per library folder level (`characters/` → `enemies/` → `red_robot`,
+  for example), descending only through folders that contain models — reaching a model folder
+  fills the entry's model/scene fields.
+- **Scenery Manager** — sibling of the Template Manager with its own button beside each level:
+  same window and fields (minus Faction), browsing the **`library3D/sceneries`** library (stage
+  props: **magenta box, emerald sphere and amber pill** — basic volumetric geometries with
+  emissive materials, their own light and colliders following the LimbColliders/BODY-member
+  concept, configurable in the Models screen). A level can have a character template **and** a
+  scenery active at the same time, applied in solo play and in online rooms.
+- **Arena environments (striking, cheap by design)** — each level ships its own cyberpunk
+  atmosphere: a **procedural gradient sky**, exponential **distance fog** and an emissive **neon
+  grid floor** (one shared shader, `themes/level_grid_floor.gdshader` — pure per-pixel math, no
+  textures, with a distance fade that kills horizon moiré), each with a per-level color identity
+  (**Level 1 = cyan**, **Level 2 = amber sunset**, the same color language as the Host/Client
+  session screens). Built to the project's performance goal — **60+ FPS on minimal graphics
+  hardware** — so it looks striking at near-zero GPU cost; the grid glow is pure emission, so it
+  works with Bloom off and gains a free neon halo when Bloom is enabled in Settings.
 - **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
   ball** (a recolored, red-glowing version of the player's shot), and a flying bomber
   (Criatura Alada) that orbits the player and drops bombs.
@@ -50,9 +80,18 @@ third-person shooter sandbox. At a high level it offers:
   10 m away; and if the player gets to **10 m or closer**, the robot **runs away in the opposite
   direction** while still facing/aiming at and shooting the player. Each robot moves
   **individually** (its own strafe sign, phase and speed, seeded at spawn) so the squad **doesn't
-  march in lockstep every second**, and keeps a **loose formation**: it circles/strafes freely in
-  combat but tends to **return to its designated slot** (the bearing from the player captured at its
-  spawn point). The **Criatura Alada**'s flight bob is desynchronized across instances too.
+  march in lockstep every second**, and keeps a **loose formation** (now even **less rigid** — the
+  formation point "breathes" in a slow drift instead of converging on fixed coordinates). **Manual
+  movement** (strafe/retreat/formation) now **matches the animation cadence to the real speed** → the
+  enemies **no longer "slide"** (their feet respect the walk timing). Their **movement speeds are
+  calibrated to real human standards** (walk ~1.4 m/s, jog ~3, run ~4.5): strafe 2.4 m/s, pressure
+  repositioning 3.2 m/s and retreat 3.8 m/s, with **smooth acceleration** (velocity converges
+  instead of snapping) for weighty, believable motion. Each enemy targets the **closest
+  player** within its alert radius — **any enemy can shoot any player** that enters the radius
+  (multiplayer). The **Criatura Alada** varies its **flight height smoothly**: it **descends** to a
+  limit to bomb more precisely and **climbs** to a limit to **escape** when it takes fire. There is
+  also a per-model **faction marker** (hostile / neutral / ally) — groundwork for future **neutral**
+  characters that would only fight back when threatened.
 - **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
   when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
   It appears when you **aim at the enemy** and hides the moment your aim leaves it; the aim ray
@@ -83,15 +122,19 @@ third-person shooter sandbox. At a high level it offers:
   `data/limb_config/<key>.json` / combined `data/limb_config.json`) and read at runtime via `LimbConfig`; the default
   multiplier comes from the body plan (head +50%, rest ×1). Collider shapes are per-model — e.g. the
   **red_robot** uses a **spherical torso** and a **larger head** (`torso_shape`/`head_scale` on
-  `LimbColliders`).
+  `LimbColliders`). **Fallback `CORPO` member** — every model with no classified member (e.g.
+  **Structures** like the bronze statues, or a rig whose meshes don't match the plan) gets a single
+  **CORPO** member on the Models screen that wraps the whole model (box by default), so a
+  collider/damage can **always** be defined; the **Member** dropdown now shows for **any category** in
+  "Whole model".
 - **Reusable shooting** — the cannon-bullet and hitscan-laser firing are isolated into
   reusable components (`CannonShooter` / `LaserShooter` in `effects_shared/`) that any model
   can use; the player and Red Robot both fire via `CannonShooter`. The bullet's muzzle transform is
   baked **before** it enters the tree, so its networked spawn lands exactly at the gun on remote
   clients (no off-the-barrel offset); and the aim ray now **excludes the shooter's own body/limbs**
   and ignores point-blank hits, so rapid aim-and-fire no longer sends a shot to the sky.
-- **Multiple levels** — a simple arena (Level 1), a bomber encounter (Level 2), a full
-  complex level (Level Base), plus **rooms-based online play**: the **Play Online** screen has two
+- **Multiple levels** — a simple arena (Level 1) and a bomber encounter (Level 2), plus
+  **rooms-based online play**: the **Play Online** screen has two
   buttons that choose the role. **Manage Rooms** opens the room manager (`host_session`), where
   you start one or more levels as isolated rooms and, per room, **Play** (after the character picker,
   spawn into it as a player), **Observe** (free-fly no-collision camera), **Restart** or **Stop**.
@@ -154,7 +197,7 @@ third-person shooter sandbox. At a high level it offers:
   view. "Efeitos Especiais" lists, right after "Selecione…", a **"Todos"** option and shows every
   kind of effect the model has (lights/luminosity, smoke, particles, decals, fog…); picking one
   isolates a single effect. Picking a
-  value in any selector (Categoria → Prefixo → Modelo → Malha) resets every dropdown below it to
+  value in any selector (Categoria → Modelo → Malha) resets every dropdown below it to
   "Selecione…". **Every
   selector choice is persisted** (alongside the toggles), and reopening the screen restores the
   chain exactly as it was left — without auto-selecting any item: the first selector with no saved
@@ -228,7 +271,9 @@ light colors so you can tell them apart:
   developer screen, every 2D screen with a footer **Actions** bar carries a **Debug 2D** toggle
   (`CheckButton`, injected by `DebugOverlay`) so you can flip the master on/off without leaving the scene
   (the developer screen keeps its own pair). A standard-position Actions bar was also added to the
-  **menu** and the **gameplay levels** (under each level's `TitleCanvas`), so the toggle reaches them too.
+  **menu**, so the toggle reaches it. The toggle **never shows on a gameplay level scene**
+  (`level_1`/`level_2`): it is a **2D-UI** control, not part of the game — `DebugOverlay` skips scenes
+  that root at a `Node3D` (the **Models** screen, rooted at a plain `Node`, keeps the toggle).
 - **Debug 3D** (light-cyan labels/labels) — master `debug_3d` plus the dependent switches
   `Type` / `Name` / `Id` (describing the owning `Skeleton3D`), `Members`, `Skeleton` and
   `Mesh`. Renders per-member `Label3D` tags that follow the live pose.
@@ -426,7 +471,7 @@ asset library under `library3D/`:
   - `controls` — a 2D controls viewer (the 2D analog of the Models screen) that browses and
     previews the `controls2D` widgets through a dropdown.
   - `cyberpunkhud` — assembled HUD screen built from `controls2D` widgets.
-- `scenes3D/` — 3D levels and tools: `level_1`, `level_2`, `level_base`, and the `models` viewer.
+- `scenes3D/` — 3D levels and tools: `level_1`, `level_2`, and the `models` viewer.
 - `library3D/` — 3D asset library, organized by type: `characters`, `propulsores`, `structures`,
   `weapons`, plus `geometry` and `textures` support folders. New model folders dropped in here
   show up automatically in the Models viewer.
@@ -448,7 +493,7 @@ asset library under `library3D/`:
 Screen flow:
 
 ```
-menu ─┬─ Play Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
+menu ─┬─ Play Offline ─► chooseplayer ─► levels ─► level_1 / level_2
       ├─ Play Online ──► playonline (Manage Rooms / Join Rooms)
       │                    ├─ Host ───► host_session   (start rooms; per room: Play / Observe / Restart / Stop)
       │                    └─ Client ─► client_session (browse rooms; per room: Play)
@@ -490,7 +535,7 @@ ZIMARO/
 │  ├─ controls/          # 2D widget viewer (analog of the Models screen)
 │  └─ controls2D/        # reusable HUD widgets: crosshair, minimap_panel, vitals_panel, volume_bar, …
 ├─ scenes3D/             # 3D levels and tools
-│  ├─ level_1/ level_2/ level_base/   # playable levels
+│  ├─ level_1/ level_2/               # playable levels
 │  ├─ spectator_camera/  # free-fly no-collision camera to Observe a room (host) — WASD + Space
 │  └─ models/            # 3D model viewer/inspector for the library3D assets
 ├─ library3D/            # reusable 3D asset library, organized by type

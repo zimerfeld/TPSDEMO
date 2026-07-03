@@ -12,7 +12,6 @@ signal replace_main_scene
 const LEVELS := [
 	{"label": "Level 1", "path": "res://scenes3D/level_1/level_1.tscn"},
 	{"label": "Level 2", "path": "res://scenes3D/level_2/level_2.tscn"},
-	{"label": "Level Base", "path": "res://scenes3D/level_base/level_base.tscn"},
 ]
 const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
@@ -136,9 +135,14 @@ func _refresh_template_picker() -> void:
 func _open_template_dialog_for_selected_level() -> void:
 	var idx: int = _level_picker.selected
 	if idx <= 0:
+		# Antes retornava em SILÊNCIO com o picker no "Selecione..." — parecia botão quebrado.
+		# Agora avisa o que falta para abrir o gerenciador.
+		FloatingDialog.alert(self, "Gerenciador de Templates",
+				"Selecione um level primeiro para gerenciar seus templates.")
 		return
 	if _template_dialog == null:
 		_template_dialog = LevelTemplateDialogScene.new()
+		_template_dialog.configure("spawn")
 		_template_dialog.templates_changed.connect(_refresh_template_picker)
 		add_child(_template_dialog)
 	_template_dialog.popup_for_level(String(_level_picker.get_item_metadata(idx)))
