@@ -101,7 +101,10 @@ func open_over(host: Node, level_path: String) -> void:
 	_win.get_content().add_child(self)  # entra na árvore → dispara _ready()
 	# Ações no RODAPÉ da janela (largura uniforme, traduzidas — igual às demais janelas).
 	_win.add_footer_button("Salvar").pressed.connect(_save_template)
-	_win.add_footer_button("Salvar e Usar Neste Level").pressed.connect(_save_and_use)
+	# add_footer_button nomeia o nó "Footer_<texto>"; renomeamos p/ "Footer_SalvarAplicar" (sem espaços).
+	var save_apply := _win.add_footer_button("Salvar e Aplicar")
+	save_apply.name = "Footer_SalvarAplicar"
+	save_apply.pressed.connect(_save_and_use)
 	_win.add_footer_button("Fechar").pressed.connect(_win.close)
 	_load_active_or_first()
 	_refresh_template_picker()
@@ -144,17 +147,25 @@ func _refresh_entry_picker() -> void:
 		_entries_picker.select(clampi(_entry_index, 0, _entries_picker.item_count - 1))
 
 
-# Texto do dropdown Entries para a entrada `i`: o NOME custom (se houver), senão o rótulo automático.
+# Texto do dropdown Entries para a entrada `i`: o índice "N." + o corpo (_entry_body_text).
 func _entry_display_text(i: int) -> String:
+	return "%d. %s" % [i + 1, _entry_body_text(i)]
+
+
+# Corpo do rótulo da entrada `i` (SEM o prefixo "N."): o NOME custom, se houver, senão o rótulo
+# automático. É o que auto-preenche o campo "Nome da entrada".
+func _entry_body_text(i: int) -> String:
 	var e := _entries()[i] as Dictionary
 	var custom := String(e.get("name", "")).strip_edges()
-	if custom != "":
-		return "%d. %s" % [i + 1, custom]
+	return custom if custom != "" else _entry_auto_label(e)
+
+
+# Rótulo AUTOMÁTICO da entrada ("facção modelo xN" / "modelo xN"), ignorando qualquer nome custom.
+func _entry_auto_label(e: Dictionary) -> String:
 	if _factions_picker != null:
-		return "%d. %s %s x%d" % [
-			i + 1, String(e.get("faction", "neutral")),
+		return "%s %s x%d" % [String(e.get("faction", "neutral")),
 			String(e.get("model_key", "")), int(e.get("count", 1))]
-	return "%d. %s x%d" % [i + 1, String(e.get("model_key", "")), int(e.get("count", 1))]
+	return "%s x%d" % [String(e.get("model_key", "")), int(e.get("count", 1))]
 
 
 func _on_template_name_changed(new_text: String) -> void:
@@ -189,7 +200,9 @@ func _refresh_entry_fields() -> void:
 		_rebuild_cascade("")
 		return
 	var e := _entries()[_entry_index] as Dictionary
-	_entry_name_edit.text = String(e.get("name", ""))
+	# Auto-preenche o campo "Nome da entrada" com o texto exibido no dropdown Entries (corpo, sem o
+	# "N."): o nome custom, se houver, senão o rótulo automático — o campo nunca fica vazio.
+	_entry_name_edit.text = _entry_body_text(_entry_index)
 	_rebuild_cascade(String(e.get("scene_path", "")))
 	if _factions_picker != null:
 		_select_text(_factions_picker, String(e.get("faction", "enemy")))
@@ -295,7 +308,6 @@ func _save_entry_fields() -> void:
 	if _entry_index < 0 or _entry_index >= _entries().size():
 		return
 	var e := _entries()[_entry_index] as Dictionary
-	e["name"] = _entry_name_edit.text.strip_edges()
 	e["kind"] = _entry_kind()
 	if _factions_picker != null and _factions_picker.selected >= 0:
 		e["faction"] = _factions_picker.get_item_text(_factions_picker.selected)
@@ -312,6 +324,11 @@ func _save_entry_fields() -> void:
 	e["formation_origin"] = _parse_vector_text(_formation_origin_edit.text)
 	e["spacing"] = float(_spacing_spin.value)
 	e["rotation_y"] = float(_rotation_spin.value)
+	# Nome da entrada por ÚLTIMO (após facção/modelo/quantidade acima): o campo é AUTO-PREENCHIDO com o
+	# rótulo automático, então só grava como NOME CUSTOM se o usuário o alterou; se ainda for o rótulo
+	# automático (calculado com os valores recém-salvos), mantém "" para o rótulo seguir dinâmico.
+	var typed := _entry_name_edit.text.strip_edges()
+	e["name"] = "" if typed == _entry_auto_label(e) else typed
 
 
 # ---- Cascata de pastas do Modelo -----------------------------------------------------------

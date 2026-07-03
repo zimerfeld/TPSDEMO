@@ -49,7 +49,7 @@ em terceira pessoa. Em alto nível, oferece:
   acessível pela gerência de salas do host): templates de spawn nomeados por level, cada um com
   entradas que definem **modelo**, **facção** (aliado/inimigo/neutro),
   **quantidade** e **posicionamento** (coordenadas explícitas, área aleatória ou formação de
-  combate). **"Salvar e Usar Neste Level"** ativa o template, aplicado quando o level inicia (solo ou
+  combate). **"Salvar e Aplicar"** ativa o template, aplicado quando o level inicia (solo ou
   como sala online). Funciona igual no editor e no **.exe exportado**: o scanner de modelos resolve
   os nomes `.remap` que o export produz (mesmo padrão da tela Models), salvar um template **novo**
   guarda o id gerado (ativar logo após salvar funciona e re-salvar não duplica) e o **nome do

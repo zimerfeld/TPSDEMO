@@ -48,7 +48,7 @@ third-person shooter sandbox. At a high level it offers:
   button** that opens the **Template Manager** (a **scrollable** floating window, also reachable from
   the host's room manager): named spawn templates per level, each with entries defining
   **model**, **faction** (friendly/enemy/neutral), **count** and **placement**
-  (explicit coordinates, random area or combat formation). **"Save and Use On This Level"** activates
+  (explicit coordinates, random area or combat formation). **"Save and Apply"** activates
   the template, applied when the level starts (solo or as an online room). Works the same in the
   editor and in the **exported .exe**: the model scanner resolves the `.remap` names the export
   produces (same pattern as the Models screen), saving a **new** template stores the generated id (so

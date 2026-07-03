@@ -20,6 +20,13 @@ parametrizado por `configure()` e um só autoload `LevelTemplateManager` — amb
   - Abertas por `open_over(host, level_path)`: criam a `FloatingWindow` (CanvasLayer 128),
     inserem o próprio formulário no conteúdo dela e montam os botões do rodapé; ao fechar, o
     CanvasLayer inteiro é liberado (a instância NÃO é reaproveitada — o chamador cria uma nova).
+  - **Layout do formulário (2026-07-03):** `Novo` fica à direita do campo `Nome` (não mais na TopRow);
+    a `EntryRow` (dropdown `Entries` + `Remover Entrada`) vem ANTES da `EntryNameRow` (campo
+    `Nome da entrada` + `Adicionar Entrada` à direita). O campo `Nome da entrada` é **auto-preenchido**
+    com o corpo do rótulo do dropdown Entries (`_entry_body_text`: nome custom ou `_entry_auto_label`
+    "facção modelo xN"); `_save_entry_fields` só grava como nome CUSTOM se o texto difere do rótulo
+    automático (senão mantém `""` = dinâmico). Rodapé: o botão foi renomeado — nó `Footer_SalvarAplicar`,
+    texto **"Salvar e Aplicar"** (`add_footer_button` + `save_apply.name = ...`; chave i18n nova).
 - **Dados — dois autoloads** (`autoload/template_manager_base.gd` = `TemplateManagerBase` com a
   lógica comum; subclasses `CharacterTemplateManager` e `SceneryTemplateManager`), cada um no SEU
   arquivo: `user://character_templates.json` e `user://scenery_templates.json`. API uniforme sem

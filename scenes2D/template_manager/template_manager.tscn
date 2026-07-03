@@ -22,11 +22,6 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Novo" type="Button" parent="Body/TopRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Novo"
-
 [node name="Duplicar" type="Button" parent="Body/TopRow"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -52,8 +47,27 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Nome do template"
 
+[node name="Novo" type="Button" parent="Body/NameRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Novo"
+
 [node name="EntrySeparator" type="HSeparator" parent="Body"]
 layout_mode = 2
+
+[node name="EntryRow" type="HBoxContainer" parent="Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Entries" type="OptionButton" parent="Body/EntryRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RemoveEntry" type="Button" parent="Body/EntryRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Remover Entrada"
 
 [node name="EntryNameRow" type="HBoxContainer" parent="Body"]
 layout_mode = 2
@@ -70,24 +84,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Nome da entrada"
 
-[node name="EntryRow" type="HBoxContainer" parent="Body"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Entries" type="OptionButton" parent="Body/EntryRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="AddEntry" type="Button" parent="Body/EntryRow"]
+[node name="AddEntry" type="Button" parent="Body/EntryNameRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Adicionar Entrada"
-
-[node name="RemoveEntry" type="Button" parent="Body/EntryRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Remover Entrada"
 
 [node name="FieldsGrid" type="GridContainer" parent="Body"]
 layout_mode = 2
