@@ -39,7 +39,6 @@ const SCENES := [
 	{"key": "host_session", "label": "Sessão host (salas)"},
 	{"key": "client_session", "label": "Sessão cliente (salas)"},
 	{"key": "models", "label": "Biblioteca de modelos"},
-	{"key": "level_base", "label": "Level Base"},
 	{"key": "level_1", "label": "Level 1"},
 	{"key": "level_2", "label": "Level 2"},
 ]

@@ -39,6 +39,8 @@ var _yaw := 0.0
 var _phase := Phase.CLIMB
 var _bomb_cd := 0.0
 var _scan_cd := 0.0
+# Janela (s) em que a criatura se considera AMEAÇADA após levar um tiro → sobe p/ escapar (IA aérea).
+var _recent_hit_t := 0.0
 var _player: Node3D = null
 var _dead := false
 var ai: Node = null
@@ -100,6 +102,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_t += delta
+	_recent_hit_t = maxf(0.0, _recent_hit_t - delta)  # decai a sensação de ameaça
 
 	# procura o player periodicamente
 	_scan_cd -= delta
@@ -110,7 +113,7 @@ func _physics_process(delta: float) -> void:
 		var scope: Node = get_parent()
 		if scope == null:
 			scope = get_tree().current_scene
-		_player = _find_player(scope)
+		_player = _find_nearest_player(scope)
 
 	# sem player → repouso: paira no lugar (bom para preview/navegador de modelos)
 	if _player == null:
@@ -121,8 +124,13 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# ---- direção/altitude: a IA aérea escolhe órbita, raio e camada vertical.
+	# Contexto p/ a camada de voo: AMEAÇADA (levou tiro há pouco) → sobe p/ escapar; prestes a
+	# bombardear (cd ≤ 1.2 s) → desce p/ precisão. A IA interpola a troca de camada (sem degrau).
+	var threatened := _recent_hit_t > 0.0
+	var bomb_imminent := _phase == Phase.PATROL and _bomb_cd <= 1.2
 	var move_plan: Dictionary = ai.movement_plan(global_position, _player.global_position, orbit_radius,
-		cruise_speed, cruise_altitude, _t, get_world_3d().direct_space_state, [self, _player], delta)
+		cruise_speed, cruise_altitude, _t, get_world_3d().direct_space_state, [self, _player], delta,
+		threatened, bomb_imminent)
 	var horiz: Vector3 = move_plan.get("horiz", Vector3.ZERO)
 	var desired_altitude := float(move_plan.get("altitude", cruise_altitude))
 
@@ -137,6 +145,8 @@ func _physics_process(delta: float) -> void:
 		horiz *= 0.6   # sobe mais reto
 	else:
 		vy = bob_amplitude * bob_freq * cos(_t * bob_freq) + (desired_altitude - global_position.y) * 0.6
+		# Teto de taxa vertical → a troca de camada (descer p/ mirar / subir p/ escapar) fica suave.
+		vy = clampf(vy, -climb_speed * 1.6, climb_speed * 1.6)
 
 	# ---- orientação (frente -Z aponta para onde voa) + banking ao curvar
 	if horiz.length() > 0.05:
@@ -209,6 +219,7 @@ func hit(amount: int = 50) -> void:
 	if _dead:
 		return
 	health = maxi(health - amount, 0)
+	_recent_hit_t = 3.0  # levou tiro → ameaçada: sobe p/ escapar (janela decai no _physics_process)
 	show_health_hud()
 	if health <= 0:
 		_dead = true
@@ -232,16 +243,28 @@ func hide_health_hud() -> void:
 	hud.hide_now()
 
 
-func _find_player(n: Node) -> Node3D:
+# Player VIVO mais próximo dentro do escopo (a própria sala) — qualquer inimigo mira o mais perto DELE.
+func _find_nearest_player(scope: Node) -> Node3D:
+	var candidates: Array[Node3D] = []
+	_collect_players(scope, candidates)
+	var best: Node3D = null
+	var best_d := INF
+	var here := global_position
+	for p in candidates:
+		var d := here.distance_to(p.global_position)
+		if d < best_d:
+			best_d = d
+			best = p
+	return best
+
+
+func _collect_players(n: Node, out: Array[Node3D]) -> void:
 	if n == null:
-		return null
+		return
 	if n is Node3D and _is_player_candidate(n as Node3D):
-		return n as Node3D
+		out.append(n as Node3D)
 	for c in n.get_children():
-		var r := _find_player(c)
-		if r != null:
-			return r
-	return null
+		_collect_players(c, out)
 
 
 func _is_player_candidate(body: Node3D) -> bool:

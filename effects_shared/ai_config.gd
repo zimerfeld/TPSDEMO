@@ -128,6 +128,20 @@ const _MODEL_BEHAVIOR_DEFS := {
 	],
 }
 
+# ───────────────────────────── Facção do modelo (marcação estrutural) ─────────────────────────────
+# Marca de que LADO o modelo está. A lógica de comportamento pluga aqui depois:
+#   hostile = ataca players assim que os detecta no raio de alerta (padrão dos inimigos atuais);
+#   neutral = NÃO ataca por detecção — só decide entrar em confronto se AMEAÇADO (levar tiro) ou por
+#             aleatoriedade (ainda sem personagem neutro no jogo; campo pronto para receber a lógica);
+#   ally    = do lado do player (bots aliados).
+# Persistida no mesmo JSON por-modelo (chave "faction"), com precedência user:// como os behaviors.
+const FACTIONS := ["hostile", "neutral", "ally"]
+const _MODEL_FACTION_DEFAULTS := {
+	"red_robot": "hostile",
+	"criatura_alada": "hostile",
+	"player": "ally",
+}
+
 static var _dir_cache: Dictionary = {}
 
 
@@ -249,6 +263,35 @@ static func behaviors(model_key: String) -> Dictionary:
 
 static func behavior_enabled(model_key: String, behavior_key: String) -> bool:
 	return bool(behaviors(model_key).get(behavior_key, false))
+
+
+static func default_faction(model_key: String) -> String:
+	return String(_MODEL_FACTION_DEFAULTS.get(model_key, "hostile"))
+
+
+## Facção efetiva do modelo (override salvo tem precedência; senão o default).
+static func faction(model_key: String) -> String:
+	var saved := String(_load_entry(model_key).get("faction", ""))
+	return saved if saved in FACTIONS else default_faction(model_key)
+
+
+static func set_faction(model_key: String, value: String) -> void:
+	if model_key == "" or not (value in FACTIONS):
+		return
+	var entry := _load_entry(model_key)
+	if value == default_faction(model_key):
+		entry.erase("faction")   # volta ao padrão → não polui o arquivo
+	else:
+		entry["faction"] = value
+	_save_entry(model_key, entry)
+
+
+static func is_hostile(model_key: String) -> bool:
+	return faction(model_key) == "hostile"
+
+
+static func is_neutral(model_key: String) -> bool:
+	return faction(model_key) == "neutral"
 
 
 static func set_behavior(model_key: String, behavior_key: String, enabled: bool) -> void:

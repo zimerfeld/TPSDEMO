@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" uid="uid://cfbfungfev5oq" path="res://library3D/structures/core_out_light/CoreOutLight.glb" id="1"]
-
-[node name="CoreOutLight" type="Node3D"]
-
-[node name="CoreOutLightModel" parent="." instance=ExtResource("1")]

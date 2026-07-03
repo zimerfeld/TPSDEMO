@@ -57,9 +57,13 @@ const QUICK_RETRY_DELAY := 0.35
 ## Duração (s) de um burst de reposicionamento quando a IA sente pressão.
 @export var reposition_duration: float = 0.9
 ## Coesão de formação: o quanto o robô tende a voltar ao seu slot designado (0 = livre, 1 = rígido).
-@export_range(0.0, 1.5) var formation_cohesion: float = 0.55
+## Baixo de propósito — a formação é uma TENDÊNCIA frouxa, não um alinhamento pragmático.
+@export_range(0.0, 1.5) var formation_cohesion: float = 0.32
 ## Tolerância (m) antes de o robô ser puxado de volta ao slot — abaixo disto ele circula livre.
-@export var formation_band: float = 5.0
+@export var formation_band: float = 7.0
+## Amplitude (rad) da oscilação lenta do rumo do slot — faz o ponto de formação "respirar" em vez de
+## ser um alvo fixo, deixando o pelotão orgânico (não marcha para coordenadas exatas).
+@export_range(0.0, 1.2) var formation_wander: float = 0.5
 ## Variação de velocidade por-indivíduo (±fração) — quebra o "todos andam igual a cada segundo".
 @export_range(0.0, 0.4) var speed_variation: float = 0.18
 
@@ -77,6 +81,7 @@ var _slot_bearing: float = 0.0
 var _slot_seeded: bool = false
 var _phase: float = 0.0
 var _speed_mult: float = 1.0
+var _time: float = 0.0  # relógio interno da sessão de combate (oscilação orgânica do slot)
 
 
 func _ready() -> void:
@@ -135,6 +140,7 @@ func decide(distance: float, effective_range: float) -> Action:
 
 ## Atualiza timers internos da sessão de combate.
 func tick(delta: float) -> void:
+	_time += delta
 	_strafe_cooldown = maxf(0.0, _strafe_cooldown - delta)
 	_reposition_time = maxf(0.0, _reposition_time - delta)
 
@@ -256,7 +262,10 @@ func movement_plan(origin: Vector3, target_position: Vector3, effective_range: f
 		var spawn_off := origin - target_position
 		spawn_off.y = 0.0
 		_slot_bearing = atan2(spawn_off.x, spawn_off.z) if spawn_off.length() > 0.5 else _phase
-	var slot_dir := Vector3(sin(_slot_bearing), 0.0, cos(_slot_bearing))
+	# Rumo do slot com oscilação lenta e individual (fase própria) → o ponto de formação "respira",
+	# então o pelotão fica orgânico em vez de convergir para coordenadas fixas (menos pragmático).
+	var wandered := _slot_bearing + sin(_time * 0.25 + _phase) * formation_wander
+	var slot_dir := Vector3(sin(wandered), 0.0, cos(wandered))
 	var to_slot := (target_position + slot_dir * preferred) - origin
 	to_slot.y = 0.0
 	if to_slot.length() > formation_band:

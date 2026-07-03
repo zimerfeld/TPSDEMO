@@ -22,7 +22,7 @@ var online_mode: bool = false
 var level_path: String = ""
 
 # Modo "Hospedar Somente": host abre o servidor SEM player controlado e observa o level
-# com uma câmera livre (sem colisão). Definido na tela playonline; lido em level_base.
+# com uma câmera livre (sem colisão). Definido na tela playonline; lido nos níveis.
 var spectator_host: bool = false
 
 

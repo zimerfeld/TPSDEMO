@@ -39,6 +39,13 @@ const ALL_MEMBERS_VALUE: String = "__all_members__"
 const ALL_SUB_MEMBERS_LABEL: String = "Todos os Sub-membros"
 const ALL_SUB_MEMBERS_VALUE: String = "__all_sub_members__"
 
+# Membro de FALLBACK: quando um modelo não tem NENHUM membro classificado — estruturas/propulsores
+# (sem plano corporal) ou um rig cujas malhas não casam com o classificador — a tela sintetiza um
+# único membro "CORPO" que envolve TODAS as malhas visíveis. Assim TODO modelo tem ao menos um membro
+# editável e um collider definível (nunca fica sem alvo para o editor de geometria/dano).
+const FALLBACK_MEMBER_GROUP: String = "CORPO"
+const FALLBACK_MEMBER_LABEL: String = "CORPO"
+
 # Item no topo do filtro "Esqueleto" (modo "Todos os membros"): realça os respectivos modelos
 # 3D de TODOS os ossos avulsos de uma vez. Sentinela estável; rótulo traduzido.
 const ALL_AUX_LABEL: String = "Todos os Esqueletos"
@@ -115,12 +122,10 @@ var _mesh_catalog: Array = []
 # data such as the head bone(s) that BodyParts can't infer from the name alone.
 var _current_model_path: String = ""
 
-# The models of the current category that pass the active prefix filter, in the
-# same order as the Model dropdown — so the dropdown index maps straight back to
-# an entry. Rebuilt whenever the category or prefix changes.
+# The models of the current category, in the same order as the Model dropdown — so
+# the dropdown index maps straight back to an entry. Rebuilt whenever the category
+# changes.
 var _filtered_models: Array = []
-# Active prefix filter ("" = ALL_PREFIXES_LABEL, i.e. no filtering).
-var _prefix_filter: String = ""
 
 # Rotation state. The holder either spins on its own (auto) or follows the mouse
 # while the left button is held; dragging temporarily overrides auto-rotation.
@@ -288,7 +293,6 @@ var _gizmo_node: Node3D = null
 var _zoom: float = 0.0
 var _zoom_target: float = 0.0
 @onready var cbo_category: OptionButton = %Categories
-@onready var cbo_prefix: OptionButton = %Prefixes
 @onready var cbo_models: OptionButton = %Models
 @onready var cbo_meshes: OptionButton = %Meshes
 @onready var animation_row: HBoxContainer = %AnimationRow
@@ -373,7 +377,6 @@ func _ready() -> void:
 	for category in _categories:
 		cbo_category.add_item(Locale.tr_key(category["label"]))
 	cbo_category.item_selected.connect(_on_category_selected)
-	cbo_prefix.item_selected.connect(_on_prefix_selected)
 	cbo_models.item_selected.connect(_on_model_selected)
 	cbo_meshes.item_selected.connect(_on_mesh_selected)
 	cbo_animations.item_selected.connect(_on_animation_selected)
@@ -456,7 +459,7 @@ func _ready() -> void:
 	_update_language_buttons()
 
 	# Reopen exactly where the user left off: replay the persisted selection chain
-	# (Categoria -> Prefixo -> Modelo -> Parte -> Animação/Efeitos). With nothing saved
+	# (Categoria -> Modelo -> Parte -> Animação/Efeitos). With nothing saved
 	# every dropdown shows "Selecione..." and nothing is previewed — identical to a first
 	# visit, and no real item is ever auto-selected.
 	_restore_selection_chain()
@@ -473,7 +476,7 @@ func _on_language_changed(_lang: String) -> void:
 	for i in range(_categories.size()):
 		if i + 1 < cbo_category.item_count:
 			cbo_category.set_item_text(i + 1, Locale.tr_key(_categories[i]["label"]))
-	for combo in [cbo_prefix, cbo_models, cbo_meshes, cbo_animations, cbo_effects, cbo_members, cbo_sub_members, cbo_skeleton]:
+	for combo in [cbo_models, cbo_meshes, cbo_animations, cbo_effects, cbo_members, cbo_sub_members, cbo_skeleton]:
 		if combo.item_count > 0:
 			combo.set_item_text(0, Locale.tr_key(SELECT_LABEL))
 	# Dropdowns de geometria (itens fixos Selecione/Esfera/Caixa/Cápsula) — re-traduz preservando a seleção.
@@ -689,69 +692,20 @@ func _process(delta: float) -> void:
 
 # Sequential gating: each dropdown below Categoria stays DISABLED until the one
 # directly above it holds a real (non-"Selecione...") choice. So the user is forced
-# down the chain Categoria -> Prefixo -> Modelo -> Parte. Category index 0 is the
-# "Selecione..." placeholder (real categories start at index 1). Selecting it blanks
-# and disables the whole chain below and clears the preview.
+# down the chain Categoria -> Modelo -> Parte. Category index 0 is the "Selecione..."
+# placeholder (real categories start at index 1). Selecting it blanks and disables the
+# whole chain below and clears the preview.
 func _on_category_selected(index: int) -> void:
 	_save_selection("sel_category", _category_value(index))
 	if index <= 0:
-		_reset_prefixes()
 		_reset_models()
 		return
-	_populate_prefixes(index - 1)
-	# Prefix is now enabled but still on its placeholder, so Modelo/Parte stay locked.
-	_reset_models()
+	_populate_models()
 
 
-# Build the prefix dropdown for a category: "Selecione..." (placeholder) plus each
-# distinct model prefix (the first underscore-separated token, e.g. "robot" for
-# robot_01 / robot_02). Enables the dropdown; the placeholder carries empty metadata.
-func _populate_prefixes(category_index: int) -> void:
-	var models: Array = _categories[category_index]["models"]
-	var seen: Dictionary = {}
-	var prefixes: Array = []
-	for entry in models:
-		var prefix: String = entry.get("prefix", "")
-		if prefix != "" and not seen.has(prefix):
-			seen[prefix] = true
-			prefixes.append(prefix)
-	prefixes.sort()
-
-	cbo_prefix.clear()
-	cbo_prefix.add_item(Locale.tr_key(SELECT_LABEL))
-	cbo_prefix.set_item_metadata(0, "")
-	for prefix in prefixes:
-		cbo_prefix.add_item(_prettify(prefix))
-		cbo_prefix.set_item_metadata(cbo_prefix.item_count - 1, prefix)
-	cbo_prefix.select(0)
-	cbo_prefix.disabled = false
-	_prefix_filter = ""
-
-
-# Reset the prefix dropdown to just the "Selecione..." placeholder and DISABLE it
-# (no category chosen, so there is nothing to filter yet).
-func _reset_prefixes() -> void:
-	cbo_prefix.clear()
-	cbo_prefix.add_item(Locale.tr_key(SELECT_LABEL))
-	cbo_prefix.set_item_metadata(0, "")
-	cbo_prefix.select(0)
-	cbo_prefix.disabled = true
-	_prefix_filter = ""
-
-
-func _on_prefix_selected(index: int) -> void:
-	_prefix_filter = cbo_prefix.get_item_metadata(index)
-	_save_selection("sel_prefix", _prefix_filter)
-	if _prefix_filter == "":
-		# Back to the placeholder: re-lock Modelo and Parte.
-		_reset_models()
-	else:
-		_populate_models()
-
-
-# Fill the Model dropdown with "Selecione..." plus the current category's models
-# that match the chosen prefix, and ENABLE it. The placeholder stays selected, so no
-# model is previewed until the user picks one — and the Part dropdown stays locked.
+# Fill the Model dropdown with "Selecione..." plus every model in the current category
+# and ENABLE it. The placeholder stays selected, so no model is previewed until the user
+# picks one — and the Part dropdown stays locked.
 func _populate_models() -> void:
 	cbo_models.clear()
 	cbo_models.add_item(Locale.tr_key(SELECT_LABEL))
@@ -763,8 +717,6 @@ func _populate_models() -> void:
 
 	var models: Array = _categories[cat_index]["models"]
 	for entry in models:
-		if entry.get("prefix", "") != _prefix_filter:
-			continue
 		_filtered_models.append(entry)
 		cbo_models.add_item(entry["name"])
 
@@ -1033,11 +985,13 @@ func _plan_member_entries() -> Array:
 
 
 # Preenche o dropdown "Membro". Personagens: todos os membros do plano (ver _plan_member_entries);
-# armas: os membros com collider. Só para Personagens/Armas em "Modelo completo"; senão esconde as
-# duas rows. **Restaura o valor PERSISTIDO (sel_member) sempre que exibido; se não houver/for inválido
+# armas: os membros com collider; DEMAIS categorias (estruturas/propulsores): o membro único "CORPO"
+# sintetizado por _add_mesh_member_colliders. Vale para QUALQUER modelo em "Modelo completo" (regra:
+# todo modelo tem ao menos "CORPO" para definir um collider); só esconde as rows no placeholder de
+# categoria. **Restaura o valor PERSISTIDO (sel_member) sempre que exibido; se não houver/for inválido
 # → "Selecione..."** (2026-06-25).
 func _populate_members() -> void:
-	if not (_current_category_key() in ["characters", "weapons"]):
+	if _current_category_key() == "":
 		_reset_members()
 		return
 	_ensure_member_colliders()
@@ -2454,7 +2408,7 @@ func _part_value(index: int) -> String:
 	return cbo_meshes.get_item_text(index)
 
 
-# Replay the persisted Categoria -> Prefixo -> Modelo -> Parte chain (and, for "Modelo
+# Replay the persisted Categoria -> Modelo -> Parte chain (and, for "Modelo
 # completo", the parallel Animação/Efeitos leaves) so the browser reopens exactly where
 # the user left it. select() does not emit item_selected, so each step also calls its
 # handler explicitly — populating the next dropdown just like a real click would.
@@ -2469,7 +2423,6 @@ func _part_value(index: int) -> String:
 func _restore_selection_chain() -> void:
 	var cfg := Settings.config_file
 	var v_cat: String = cfg.get_value("models", "sel_category", "")
-	var v_pre: String = cfg.get_value("models", "sel_prefix", "")
 	var v_mod: String = cfg.get_value("models", "sel_model", "")
 	var v_part: String = cfg.get_value("models", "sel_part", "")
 	var v_anim: String = cfg.get_value("models", "sel_animation", "")
@@ -2485,16 +2438,6 @@ func _restore_selection_chain() -> void:
 		return
 	cbo_category.select(ci)
 	_on_category_selected(ci)
-
-	# Prefixo
-	if v_pre == "":
-		return
-	var pi := _find_prefix_index(v_pre)
-	if pi <= 0:
-		cbo_prefix.disabled = true
-		return
-	cbo_prefix.select(pi)
-	_on_prefix_selected(pi)
 
 	# Modelo
 	if v_mod == "":
@@ -2547,16 +2490,6 @@ func _find_category_index(value: String) -> int:
 	for i in range(_categories.size()):
 		if String(_categories[i]["key"]) == value:
 			return i + 1
-	return -1
-
-
-# Index of the Prefixo item whose metadata equals the saved prefix token, or -1.
-func _find_prefix_index(value: String) -> int:
-	if value == "":
-		return -1
-	for i in range(1, cbo_prefix.item_count):
-		if String(cbo_prefix.get_item_metadata(i)) == value:
-			return i
 	return -1
 
 
@@ -2614,7 +2547,6 @@ func _scan_library() -> Array:
 					"name": _prettify(model_dir),
 					"path": file_path,
 					"display_path": _find_display_file(model_path),
-					"prefix": _prefix_of(model_dir),
 				})
 
 		if not models.is_empty():
@@ -2767,13 +2699,6 @@ func _build_mesh_catalog(scene: PackedScene) -> Array:
 		entry["label"] = label
 		result.append(entry)
 	return result
-
-
-# Grouping prefix of a model folder: the first underscore-separated token.
-# "core_out_light" -> "core", "red_robot" -> "red", "forklift" -> "forklift".
-func _prefix_of(folder_name: String) -> String:
-	var parts := folder_name.split("_", false)
-	return parts[0] if not parts.is_empty() else folder_name
 
 
 # "prop_cargobox5b_022" -> "prop_cargobox5b", "Spot_010" -> "Spot".
@@ -4014,22 +3939,39 @@ func _current_category_key() -> String:
 # the node the animation drives (the limb pivot / recoiling receiver), so the collider
 # (and its tooltip) MOVES WITH THE ANIMATION instead of staying behind.
 func _add_mesh_member_colliders(instance: Node) -> void:
-	var is_weapon := _current_category_key() == "weapons"
-	# Personagens usam o classificador do plano (instância — BodyParts não é polimórfico
-	# via estático); armas seguem o WeaponParts estático.
-	var classifier := _current_classifier()
+	var cat := _current_category_key()
+	var is_weapon := cat == "weapons"
+	# Só PERSONAGENS e ARMAS têm classificador de membros por nome (plano corporal / WeaponParts).
+	# Estruturas/propulsores não têm plano — não classificamos (evita casar "horse_head" com CABEÇA)
+	# e caímos direto no membro único "CORPO" abaixo.
+	var has_classifier := cat == "characters" or is_weapon
 	var members: Dictionary = {}   # group -> {"label": String, "nodes": Array}
-	for node in instance.find_children("*", "MeshInstance3D", true, false):
-		var mi := node as MeshInstance3D
-		if mi.mesh == null or not mi.is_visible_in_tree():
-			continue
-		var g := WeaponParts.group_of(mi.name) if is_weapon else classifier.group_of(mi.name)
-		if g == "":
-			continue
-		if not members.has(g):
-			var lab: String = WeaponParts.label_of(g) if is_weapon else classifier.label_of(g)
-			members[g] = {"label": lab, "nodes": []}
-		members[g]["nodes"].append(mi)
+	if has_classifier:
+		# Personagens usam o classificador do plano (instância — BodyParts não é polimórfico
+		# via estático); armas seguem o WeaponParts estático.
+		var classifier := _current_classifier()
+		for node in instance.find_children("*", "MeshInstance3D", true, false):
+			var mi := node as MeshInstance3D
+			if mi.mesh == null or not mi.is_visible_in_tree():
+				continue
+			var g := WeaponParts.group_of(mi.name) if is_weapon else classifier.group_of(mi.name)
+			if g == "":
+				continue
+			if not members.has(g):
+				var lab: String = WeaponParts.label_of(g) if is_weapon else classifier.label_of(g)
+				members[g] = {"label": lab, "nodes": []}
+			members[g]["nodes"].append(mi)
+
+	# Fallback: NENHUM membro classificado (estrutura/propulsor, ou rig cujas malhas não casaram) →
+	# um único membro "CORPO" que envolve TODAS as malhas visíveis, para sempre haver um collider definível.
+	if members.is_empty():
+		var all_nodes: Array = []
+		for node in instance.find_children("*", "MeshInstance3D", true, false):
+			var mi := node as MeshInstance3D
+			if mi.mesh != null and mi.is_visible_in_tree():
+				all_nodes.append(mi)
+		if not all_nodes.is_empty():
+			members[FALLBACK_MEMBER_GROUP] = {"label": FALLBACK_MEMBER_LABEL, "nodes": all_nodes}
 
 	var model_key := _current_model_key()
 	for g in members:
@@ -4073,6 +4015,9 @@ func _add_mesh_member_colliders(instance: Node) -> void:
 			# Barrel → capsule along its length; receiver/grip/stock/mag → box.
 			var kind := "capsule" if g == WeaponParts.BARREL else "box"
 			shape_node = LimbColliders.make_shape(kind, aabb)
+		elif g == FALLBACK_MEMBER_GROUP:
+			# CORPO (modelo inteiro): caixa envolvente é o default sensato (o usuário pode trocar no dropdown).
+			shape_node = LimbColliders.make_shape("box", aabb)
 		else:
 			shape_node = LimbColliders.make_member_shape(g, aabb)
 		# Escala salva (igual ao caminho com esqueleto): escala a forma em torno do seu centro.

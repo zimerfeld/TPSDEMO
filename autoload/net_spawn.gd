@@ -1,6 +1,6 @@
 extends Node
 
-## Spawn de players em multiplayer, centralizado para todos os níveis (level_base/1/2).
+## Spawn de players em multiplayer, centralizado para todos os níveis (level_1/level_2).
 ##
 ## Vive como autoload → o caminho /root/NetSpawn é idêntico em todos os peers, o que torna o
 ## RPC `register_loadout` confiável (a rota do RPC casa em servidor e cliente). Cada nível
