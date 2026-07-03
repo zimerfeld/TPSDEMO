@@ -10,9 +10,15 @@
 			1.0,
 			1.0,
 			1.0
+		],
+		"CORPO": [
+			1.35000002384186,
+			1.04999995231628,
+			1.39999997615814
 		]
 	},
 	"collider_shapes": {
-		"BODY": "capsule"
+		"BODY": "capsule",
+		"CORPO": "capsule"
 	}
 }

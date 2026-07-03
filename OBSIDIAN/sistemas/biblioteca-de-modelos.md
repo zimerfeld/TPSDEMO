@@ -136,6 +136,18 @@ move yaw/pitch; o toggle **Rotação** liga/desliga a rotação automática (só
 trava — gira como turntable). `UI` raiz tem `mouse_filter = 2` para o arrasto chegar
 a `_unhandled_input`.
 
+**Limpeza de "cruft" do preview (2026-07-03, `_strip_preview_cruft`):** algumas cenas de
+gameplay carregam nós que não pertencem a um preview estático — o `player.tscn`, por exemplo,
+embute um rig de câmera (`CameraBase/.../Camera3D`) e uma UI de jogo (`Crosshair` `TextureRect`
++ um `ColorRect` de fade **ancorado em tela cheia**). Como os containers da `UI` são
+`mouse_filter = 2` (ignore), o arrasto sobre a área 3D **caía nesse `ColorRect`** (default
+`STOP`) em vez de chegar ao `_unhandled_input` — resultado: **só o player "não girava"** (os
+demais modelos não têm Control embutido). Além disso a `Camera3D` embutida roubava o `current`
+e disparava avisos de *Physics interpolation* todo frame. Correção: logo após `_strip_scripts`,
+`_preview_whole_model()` chama `_strip_preview_cruft(instance)`, que **libera toda `Camera3D`,
+`Control` e `CanvasLayer`** da subárvore instanciada **antes** de entrar na árvore. Fix geral
+(vale para qualquer modelo que traga esses nós), mantém o preview 100% estático e zera os avisos.
+
 ### Toggles (preferência + persistência)
 
 > [!note] Nós dos toggles sem o sufixo "Toggle" (2026-06-28)
@@ -704,7 +716,7 @@ props.glb) ficam planas (rodas + carroceria como irmãos, sem nó-pai por carro)
 ## Viewer de controles 2D (análogo)
 
 `scenes2D/controls/controls.tscn` (`controls.gd`) é o equivalente 2D desta tela:
-um dropdown lista cada controle em `scenes2D/controls2D/<nome>/<nome>.tscn` e o
+um dropdown lista cada controle em `controls2D/<nome>/<nome>.tscn` e o
 selecionado é instanciado num `SubViewport` de preview (isola controles que cobrem
 a tela inteira, como `scanlines`/`pause_menu`, e o `cyberpunk_hud`, que é
 `CanvasLayer`). Acessível pela tela `developer` (botão "Controles 2D", ao lado de

@@ -5,7 +5,7 @@ signal replace_main_scene(resource: PackedScene)
 const DEVELOPER_PATH: String = "res://scenes2D/developer/developer.tscn"
 const AIConfigLib := preload("res://effects_shared/ai_config.gd")
 # Janela flutuante REUTILIZÁVEL (controles2D) usada como editor de Afastamento/Escala do collider.
-const _FLOATING_WINDOW := preload("res://scenes2D/controls2D/floating_window/floating_window.tscn")
+const _FLOATING_WINDOW := preload("res://controls2D/floating_window/floating_window.tscn")
 
 # Placeholder shown as the first, default-selected option of every dropdown.
 # Picking it means "nothing chosen yet": dependent dropdowns reset to this same
@@ -2267,7 +2267,7 @@ func _on_ai_button_pressed() -> void:
 func _ensure_ai_window() -> void:
 	if is_instance_valid(_ai_window):
 		return
-	_ai_window = preload("res://scenes2D/controls2D/floating_window/floating_window.tscn").instantiate()
+	_ai_window = preload("res://controls2D/floating_window/floating_window.tscn").instantiate()
 	_ai_window.modal = false
 	_ai_window.remember_position_key = "ai_window"
 	_ai_window.min_window_size = Vector2(420, 480)
@@ -2532,16 +2532,23 @@ func _find_combo_text_index(combo: OptionButton, value: String) -> int:
 # collect one entry per model folder. Categories with no models are dropped.
 func _scan_library() -> Array:
 	var result: Array = []
-	for category in CATEGORIES:
-		var type_path := LIBRARY_ROOT.path_join(category["key"])
+	
+	var root := DirAccess.open(LIBRARY_ROOT)
+	if root == null:
+		return result
+		
+	for folder in root.get_directories():
+		var type_path := LIBRARY_ROOT.path_join(folder)
 		var type_access := DirAccess.open(type_path)
 		if type_access == null:
 			continue
 
 		var models: Array = []
+
 		for model_dir in type_access.get_directories():
 			var model_path := type_path.path_join(model_dir)
 			var file_path := _find_model_file(model_path)
+
 			if file_path != "":
 				models.append({
 					"name": _prettify(model_dir),
@@ -2550,12 +2557,15 @@ func _scan_library() -> Array:
 				})
 
 		if not models.is_empty():
-			models.sort_custom(func(a, b): return a["name"] < b["name"])
+			models.sort_custom(func(a,b): return a["name"] < b["name"])
+
 			result.append({
-				"key": category["key"],
-				"label": category["label"],
+				"key": folder,
+				"label": _prettify(folder),
 				"models": models,
 			})
+
+	result.sort_custom(func(a,b): return a["label"] < b["label"])
 
 	return result
 
@@ -2780,6 +2790,9 @@ func _preview_whole_model() -> void:
 	if instance is Node3D:
 		(instance as Node3D).rotation = Vector3.ZERO
 	_strip_scripts(instance)
+	# Descarta câmeras e UI embutidas (Crosshair/ColorRect do player) ANTES de entrar na
+	# árvore: senão o ColorRect em tela cheia engole o mouse e o modelo não gira/zooma.
+	_strip_preview_cruft(instance)
 	# Catalog the special-effect nodes (particles, lights, bone-mounted laser/muzzle
 	# meshes). Their visibility is decided by the "Efeitos especiais" toggle + dropdown
 	# via _apply_effects_visibility (called from _populate_effects after this returns);
@@ -2965,6 +2978,28 @@ func _strip_scripts(node: Node) -> void:
 	node.set_script(null)
 	for child in node.get_children():
 		_strip_scripts(child)
+
+
+# Remove os nós que só existem para o gameplay e atrapalham o preview estático da Models:
+# câmeras embutidas (roubariam o `current` da câmera da própria tela e disparam avisos de
+# interpolação de física) e qualquer UI carregada junto — Control/CanvasLayer, como o
+# Crosshair e o ColorRect de fade do player. Ancorados em tela cheia, esses controles
+# ENGOLEM o mouse (os containers da UI são mouse_filter=ignore, então o arraste cai neles
+# em vez de chegar ao _unhandled_input) e impedem girar/dar zoom no modelo. Só o player os
+# carregava, por isso apenas ele "não girava". Varre em largura e libera a subárvore inteira
+# de cada nó condenado de uma vez (não desce nos filhos de quem já será liberado).
+func _strip_preview_cruft(root: Node) -> void:
+	var doomed: Array[Node] = []
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		for child in node.get_children():
+			if child is Camera3D or child is Control or child is CanvasLayer:
+				doomed.append(child)
+			else:
+				stack.append(child)
+	for node in doomed:
+		node.free()
 
 
 # Effect node classes surfaced by the "Efeitos Especiais" dropdown — every kind of
@@ -3395,8 +3430,8 @@ func _build_damage_footer(model_key: String) -> void:
 
 	# Linha 1 da grade (controles): dropdown de osso (expande) | dropdown de dono | botão Adicionar.
 	var picker := OptionButton.new()
-	picker.name = "Bone"
-	picker.set_meta(UINav.TAB_ORDER_META, 2)   # ring local da janela Dano: Limbs 1 → Bone 2 → Owner 3 → Add 4 → × 5
+	picker.name = "Bones"
+	picker.set_meta(UINav.TAB_ORDER_META, 2)   # ring local da janela Dano: Limbs 1 → Bones 2 → Owners 3 → Add 4 → × 5
 	picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL   # col 0 expande → "AddTitle" acompanha
 	var candidates := _aux_bone_candidates()
 	if candidates.is_empty():
@@ -3407,7 +3442,7 @@ func _build_damage_footer(model_key: String) -> void:
 			picker.add_item(b)
 	grid.add_child(picker)
 	var owner_btn := OptionButton.new()
-	owner_btn.name = "Owner"
+	owner_btn.name = "Owners"
 	owner_btn.set_meta(UINav.TAB_ORDER_META, 3)
 	for ch in _owner_choices():
 		var i := owner_btn.item_count

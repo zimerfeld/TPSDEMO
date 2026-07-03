@@ -37,7 +37,7 @@ Models pode configurar o collider. Entram nos `_spawnable_scenes` dos levels (re
 salas). As antigas `structures/` saíram do projeto (limpeza do usuário); kind legado
 "structure" é migrado p/ "scenery" no load.
 
-## ManageTemplatesButton da host_session (2026-07-03)
+## ManageTemplates da host_session (2026-07-03; ex-ManageTemplatesButton)
 
 O "Templates" da grade do host "não funcionava" quando o seletor de level estava em
 "Selecione..." — retorno SILENCIOSO. Agora exibe um alerta (`FloatingDialog.alert`: "Selecione um
@@ -56,7 +56,7 @@ hospedando em 127.0.0.1:4383 — sala #1 criada, observada, cenário aplicado).
   Aberto pelo botão de template de cada linha da tela `levels` e pela `host_session`.
 - **Entrada** de template: `kind` (character/structure), `model_key`/`scene_path`, `faction`
   (friendly/enemy/neutral), `count`, `placement` (coordinates/random/formation) + campos de cada
-  modo, `name` (rótulo custom no EntryPicker), `rotation_y`, `spacing`.
+  modo, `name` (rótulo custom no dropdown `Entries`), `rotation_y`, `spacing`.
 - **Aplicação**: `level_1.gd`/`level_2.gd` chamam `apply_active_template` no `_ready` (offline) e o
   `RoomManager` na criação da sala (online). Facção friendly → player `bot_controlled` (bots de
   cobertura); enemy → IA hostil.

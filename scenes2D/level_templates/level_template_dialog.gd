@@ -13,7 +13,7 @@ extends Node
 
 signal templates_changed
 
-const FLOATING_SCENE := preload("res://scenes2D/controls2D/floating_window/floating_window.tscn")
+const FLOATING_SCENE := preload("res://controls2D/floating_window/floating_window.tscn")
 
 var _level_path := ""
 var _template: Dictionary = {}
@@ -99,7 +99,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	top.add_theme_constant_override("separation", 8)
 	root.add_child(top)
 	_template_picker = OptionButton.new()
-	_template_picker.name = "TemplatePicker"
+	_template_picker.name = "Templates"
 	_template_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_template_picker.item_selected.connect(_on_template_selected)
 	top.add_child(_template_picker)
@@ -116,7 +116,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	var entry_separator := HSeparator.new()
 	entry_separator.name = "EntrySeparator"
 	root.add_child(entry_separator)
-	# Campo "Nome da entrada": renomeia o texto exibido no EntryPicker abaixo dele. Vazio → o dropdown
+	# Campo "Nome da entrada": renomeia o texto exibido no dropdown Entries abaixo dele. Vazio → o dropdown
 	# cai no rótulo automático ("N. facção modelo xN"). A digitação atualiza o item na hora (sem rebuild).
 	_entry_name_edit = LineEdit.new()
 	_entry_name_edit.name = "EntryNameField"
@@ -128,7 +128,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	entry_row.add_theme_constant_override("separation", 8)
 	root.add_child(entry_row)
 	_entry_picker = OptionButton.new()
-	_entry_picker.name = "EntryPicker"
+	_entry_picker.name = "Entries"
 	_entry_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_entry_picker.item_selected.connect(_on_entry_selected)
 	entry_row.add_child(_entry_picker)
@@ -146,22 +146,22 @@ func _build_ui(content: VBoxContainer) -> void:
 	# Navegação em CASCATA do modelo: um OptionButton por nível de pasta (raiz da categoria →
 	# subpastas → pasta-modelo). O rótulo abaixo mostra o modelo selecionado (campos referentes).
 	var model_box := VBoxContainer.new()
-	model_box.name = "ModelBox"
+	model_box.name = "ModelColumn"
 	model_box.add_theme_constant_override("separation", 4)
 	_cascade_row = HFlowContainer.new()
 	_cascade_row.name = "CascadeRow"
 	_cascade_row.add_theme_constant_override("h_separation", 8)
 	model_box.add_child(_cascade_row)
 	_model_value_label = Label.new()
-	_model_value_label.name = "ModelValueLabel"
+	_model_value_label.name = "ModelValue"
 	model_box.add_child(_model_value_label)
 	if _category != "scenery":
 		_faction_picker = _picker(["friendly", "enemy", "neutral"])
-		_faction_picker.name = "FactionPickers"
+		_faction_picker.name = "Factions"
 	_count_spin = _spin(1, 64, 1, 1)
-	_count_spin.name = "CountSpin"
+	_count_spin.name = "Count"
 	_placement_picker = _picker(["random", "coordinates", "formation"])
-	_placement_picker.name = "PlacementPicker"
+	_placement_picker.name = "Placements"
 	_positions_edit = _line("x,y,z; x,y,z")
 	_positions_edit.name = "PositionsField"
 	_random_center_edit = _line("0,1,0")
@@ -233,7 +233,7 @@ func _refresh_entry_picker() -> void:
 		_entry_picker.select(clampi(_entry_index, 0, _entry_picker.item_count - 1))
 
 
-# Texto exibido no EntryPicker para a entrada `i`: o NOME custom (se houver), senão o rótulo
+# Texto exibido no dropdown Entries para a entrada `i`: o NOME custom (se houver), senão o rótulo
 # automático ("N. facção modelo xN"). O prefixo "N." mantém a ordem/identificação na lista.
 func _entry_display_text(i: int) -> String:
 	var e := _entries()[i] as Dictionary
@@ -455,7 +455,7 @@ func _append_cascade_picker(dir_path: String) -> void:
 	if folders.is_empty():
 		return
 	var picker := OptionButton.new()
-	picker.name = "FolderPickers%d" % (_cascade_pickers.size() + 1)
+	picker.name = "Folders%d" % (_cascade_pickers.size() + 1)
 	picker.add_item("Selecione...")
 	for folder in folders:
 		picker.add_item(String(folder))

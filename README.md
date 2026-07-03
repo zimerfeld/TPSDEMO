@@ -48,7 +48,7 @@ vivo (sem botão Aplicar).
 
 ## Features · Funcionalidades
 
-![EN](screenshots/screenshotGB.png) Highlights: localized damage (native per-limb 3D colliders, headshots deal extra) with a
+![EN](screenshots/screenshotGB.png) Highlights: a per-model physical body (the locomotion capsule is auto-fitted to each model from its limb colliders, one cheap shape each); localized damage (native per-limb 3D colliders, headshots deal extra) with a
 per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
 character, in the model's own folder `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits) where the body type (biped/quadruped/crawler) defines the members and
 protruding sub-members (plates, guards) are editable too (and any model with no classified member — e.g. Structures like the bronze statues — gets a single fallback **CORPO** member wrapping the whole model, so a collider can always be defined); a Models viewer with per-category master toggles (rotation, animation,
@@ -93,7 +93,7 @@ looped by slow, alternating **electric energy**), and every **confirmation windo
 floating-window control (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a
 standard × close and a modal backdrop — the same base other floating windows can reuse.
 
-![PT](screenshots/screenshotBR.png) Destaques: dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
+![PT](screenshots/screenshotBR.png) Destaques: corpo físico proporcional ao modelo (a cápsula de locomoção é auto-ajustada a cada modelo pelos colliders de membro, um único shape barato); dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
 por personagem, na pasta do próprio modelo `library3D/<cat>/<modelo>/limb_config.json`, com override gravável em `user://` para edições no jogo), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
 os sub-membros salientes (placas, guardas) também são editáveis (e todo modelo sem membro classificado — ex.: Estruturas como as estátuas de bronze — ganha um único membro **CORPO** de fallback que envolve o modelo inteiro, para sempre dar para definir um collider); um visualizador Models com toggles mestres por categoria (rotação, animação,
@@ -182,11 +182,13 @@ com PCK embutido + atalho no Desktop com o ícone.
 
 ## Controls · Controles
 
-![EN](screenshots/screenshotGB.png) Move (WASD / arrows / stick), look (mouse / right stick), jump (Space), aim (RMB / L2), shoot
+![EN](screenshots/screenshotGB.png) Move (WASD / arrows / stick), look (mouse / right stick), jump (Space — hold for the full
+jump, release mid-rise to smoothly cut it short), aim (RMB / L2), shoot
 (LMB / R2, only while aiming), menu focus with arrow keys, back/quit (Escape — cancels a field edit
 first; the menu confirms before quitting), fullscreen (F11 / Alt+Enter), debug info (F3).
 
-![PT](screenshots/screenshotBR.png) Mover (WASD / setas / analógico), olhar (mouse / analógico direito), pular (Espaço), mirar
+![PT](screenshots/screenshotBR.png) Mover (WASD / setas / analógico), olhar (mouse / analógico direito), pular (Espaço — segure
+para o pulo completo, solte no meio da subida para cortá-lo suavemente), mirar
 (botão direito / L2), atirar (botão esquerdo / R2, só mirando), foco dos menus com as setas,
 voltar/sair (Escape — cancela primeiro um campo em edição; o menu confirma antes de sair), tela
 cheia (F11 / Alt+Enter), info de debug (F3).

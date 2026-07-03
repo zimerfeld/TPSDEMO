@@ -18,7 +18,7 @@ const _Z_BORDER_HOST := 0
 const _Z_BORDER_HOVERED := 1
 const _Z_TOOLTIP_HOST := 2
 const _Z_TOOLTIP_HOVERED := 3
-const _Debug2DToggle := preload("res://scenes2D/controls2D/debug2d_toggle.gd")
+const _Debug2DToggle := preload("res://controls2D/debug2d_toggle.gd")
 
 # Janelas flutuantes (Dano/IA/Afastamento-Escala etc.) entram neste grupo. Enquanto QUALQUER uma
 # está visível, o Debug 2D some na UI que a chamou: só os controles DENTRO da janela flutuante

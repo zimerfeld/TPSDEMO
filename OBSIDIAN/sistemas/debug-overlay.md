@@ -59,7 +59,7 @@ aplicam na hora (`DebugOverlay.refresh()`).
   chama `refresh()` para reconstruir os tooltips na cena nova.
 - **Toggle de Debug 2D na barra Actions:** ao trocar de tela, o `_process` também chama
   `_ensure_debug2d_toggle(screen)`, que injeta (idempotente) um `Debug2DToggle`
-  (`scenes2D/controls2D/debug2d_toggle.gd`, um `CheckButton`; o **nó** se chama `Debug2D` — sem o sufixo
+  (`controls2D/debug2d_toggle.gd`, um `CheckButton`; o **nó** se chama `Debug2D` — sem o sufixo
   "Toggle", padrão 2026-06-28) na `HBoxContainer` **Actions** da tela —
   **menos a developer**, que o `_ensure_debug2d_toggle` pula de propósito. **A developer também passou a
   ter o toggle na Actions (2026-06-29):** ela mesma o injeta (`developer._ensure_actions_debug2d`), na
@@ -154,7 +154,7 @@ aplicam na hora (`DebugOverlay.refresh()`).
   frame o `_process` lista as do grupo que estão `is_visible_in_tree()` (`_active_floating_windows`) e
   `_suppressed_by_floating(ctrl, …)` esconde o que não é descendente de nenhuma delas. Sem janela
   aberta nada muda. **Vale em QUALQUER cena (2026-06-27):** a classe reutilizável `FloatingWindow`
-  (`scenes2D/controls2D/floating_window/`) entra no grupo sozinha no seu `_ready`, então toda janela
+  (`controls2D/floating_window/`) entra no grupo sozinha no seu `_ready`, então toda janela
   baseada nela — incluindo os diálogos de confirmação do `FloatingDialog` — já dispara a supressão em
   qualquer tela. Em Models, o **editor de IA** virou uma `FloatingWindow` runtime (2026-06-30, ver
   abaixo) e se registra sozinha; já o `damage_panel` (Dano) segue `PanelContainer` próprio (ligado ao

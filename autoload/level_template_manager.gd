@@ -353,8 +353,8 @@ func _install_defaults() -> void:
 			"name": "Level 2 - Caça aérea",
 			"level_path": "res://scenes3D/level_2/level_2.tscn",
 			"entries": [
-				{"kind": "character", "faction": "enemy", "model_key": "criatura_alada", "scene_path": "res://library3D/characters/enemies/criatura_alada/criatura_alada.tscn", "placement": "random", "random_center": [18, 1, 0], "random_size": [18, 0, 18], "count": 2},
-				{"kind": "character", "faction": "friendly", "model_key": "player", "scene_path": "res://library3D/characters/players/player/player.tscn", "placement": "formation", "formation": "line", "formation_origin": [-10, 1, -4], "count": 1, "spacing": 4.0}
+				{"kind": "character", "faction": "enemy", "model_key": "criatura_alada", "scene_path": "res://library3D/characters/criatura_alada/criatura_alada.tscn", "placement": "random", "random_center": [18, 1, 0], "random_size": [18, 0, 18], "count": 2},
+				{"kind": "character", "faction": "friendly", "model_key": "player", "scene_path": "res://library3D/characters/player/player.tscn", "placement": "formation", "formation": "line", "formation_origin": [-10, 1, -4], "count": 1, "spacing": 4.0}
 			]
 		}
 	]

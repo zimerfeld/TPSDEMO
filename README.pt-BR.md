@@ -99,6 +99,10 @@ em terceira pessoa. Em alto nível, oferece:
   Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo
   quanto os **colliders de membro/sub-membro** — então apontar para um **sub-membro saliente**
   (ex.: as placas das pernas) também exibe a vida do inimigo.
+- **Corpo físico proporcional ao modelo** — a cápsula de locomoção (bloqueio físico entre
+  personagens) é **auto-ajustada a cada modelo** a partir dos colliders de membro (raio pelo footprint
+  em pé, altura pela extensão total), em vez de uma default autorada igual para todos. Continua sendo
+  **um único shape barato** por personagem, independente da animação — física estável e rede determinística.
 - **Dano localizado** — colliders 3D nativos por membro dimensionados pela malha de cada
   personagem, então acertos em partes diferentes causam dano diferente (headshots causam dano
   extra). Os membros vêm do **plano corporal** do modelo, escolhido por um `body_type`
@@ -589,7 +593,9 @@ O sistema de hitboxes por membro é o exemplo canônico: `limb_colliders.gd` é 
 
 - Mouse ou <kbd>Analógico direito do gamepad</kbd>: Olhar ao redor
 - <kbd>W</kbd>/<kbd>A</kbd>/<kbd>S</kbd>/<kbd>D</kbd>, <kbd>Setas</kbd>, <kbd>Analógico esquerdo</kbd> ou <kbd>D-Pad</kbd>: Mover
-- <kbd>Espaço</kbd>, <kbd>Gamepad A/Cross</kbd>: Pular
+- <kbd>Espaço</kbd>, <kbd>Gamepad A/Cross</kbd>: Pular — **altura variável**: segure para completar o arco
+  inteiro do pulo (altura e distância máximas, animação roda até o fim); solte no meio da subida para
+  cortar o pulo suavemente
 - <kbd>Botão direito do mouse</kbd>, <kbd>Gatilho esquerdo (L2)</kbd> (pressione p/ alternar, ou segure e solte): Mirar
 - <kbd>Botão esquerdo do mouse</kbd>, <kbd>Gatilho direito (R2)</kbd>: Atirar (apenas mirando)
 - <kbd>Setas</kbd> / <kbd>D-Pad</kbd> (nos menus): Mover o foco entre os botões
