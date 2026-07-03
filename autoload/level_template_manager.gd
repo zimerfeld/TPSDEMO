@@ -259,7 +259,8 @@ func _collect_scene_options(root: String, base: String, out: Array[Dictionary]) 
 	var dir := DirAccess.open(root)
 	if dir == null:
 		return
-	for file in dir.get_files():
+	for raw_name in dir.get_files():
+		var file := _logical_name(raw_name)
 		if file.ends_with(".tscn"):
 			var path := "%s/%s" % [root, file]
 			var key := root.get_file()
@@ -274,6 +275,16 @@ func _collect_scene_options(root: String, base: String, out: Array[Dictionary]) 
 		if child.begins_with("."):
 			continue
 		_collect_scene_options("%s/%s" % [root, child], base, out)
+
+
+# No .exe exportado os arquivos aparecem como "*.tscn.remap" (e imports como
+# "*.import") no DirAccess; o nome lógico remove esses sufixos para o filtro
+# de extensão funcionar igual no editor e no build (mesmo padrão da tela Models).
+func _logical_name(file_name: String) -> String:
+	var ext := file_name.get_extension().to_lower()
+	if ext == "remap" or ext == "import":
+		return file_name.get_basename()
+	return file_name
 
 
 func _display_name(key: String) -> String:

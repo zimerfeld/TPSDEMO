@@ -44,6 +44,16 @@ em terceira pessoa. Em alto nível, oferece:
   reagrupar tem prioridade sobre perseguir, então **não saem mais correndo até cair do mapa**. Os
   comportamentos (seguir esquadrão, priorizar inimigos, espaçamento de combate, flanco sob pressão…)
   ficam num script de IA dedicado (`library3D/characters/players/player/IA/player_bot_ai.gd`).
+- **Templates de fase (Gerenciador de Templates)** — cada linha de level na tela Levels tem um
+  **botão de template** que abre o **Gerenciador de Templates** (janela flutuante, também acessível
+  pela gerência de salas do host): templates de spawn nomeados por level, cada um com entradas que
+  definem **tipo** (personagem/estrutura), **modelo**, **facção** (aliado/inimigo/neutro),
+  **quantidade** e **posicionamento** (coordenadas explícitas, área aleatória ou formação de
+  combate). **"Salvar e Usar Neste Level"** ativa o template, aplicado quando o level inicia (solo ou
+  como sala online). Funciona igual no editor e no **.exe exportado**: o scanner de modelos resolve
+  os nomes `.remap` que o export produz (mesmo padrão da tela Models), salvar um template **novo**
+  guarda o id gerado (ativar logo após salvar funciona e re-salvar não duplica) e o **nome do
+  template sobrevive** aos refreshes de adicionar/remover entrada.
 - **Inimigos** — um inimigo terrestre (Red Robot) que se aproxima, mira e dispara uma **bala de
   canhão** preta (uma versão recolorida, com brilho vermelho, do tiro do player), e um bombardeiro
   voador (Criatura Alada) que orbita o player e solta bombas.

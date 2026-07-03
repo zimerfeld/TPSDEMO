@@ -44,6 +44,16 @@ third-person shooter sandbox. At a high level it offers:
   far, regrouping takes priority over chasing, so they **no longer run off until falling off the
   map**. Their behaviors (follow squad, prioritize enemies, combat spacing, pressure flank…) live in
   a dedicated AI script (`library3D/characters/players/player/IA/player_bot_ai.gd`).
+- **Level templates (Template Manager)** — each level row on the Levels screen has a **template
+  button** that opens the **Template Manager** (floating window, also reachable from the host's room
+  manager): named spawn templates per level, each with entries defining **type**
+  (character/structure), **model**, **faction** (friendly/enemy/neutral), **count** and **placement**
+  (explicit coordinates, random area or combat formation). **"Save and Use On This Level"** activates
+  the template, applied when the level starts (solo or as an online room). Works the same in the
+  editor and in the **exported .exe**: the model scanner resolves the `.remap` names the export
+  produces (same pattern as the Models screen), saving a **new** template stores the generated id (so
+  activating right after saving works and re-saving never duplicates it), and the template **name
+  survives** entry add/remove refreshes.
 - **Enemies** — a ground enemy (Red Robot) that approaches, aims and fires a black **cannon
   ball** (a recolored, red-glowing version of the player's shot), and a flying bomber
   (Criatura Alada) that orbits the player and drops bombs.

@@ -31,6 +31,7 @@ Canais de doação configurados no repositório (badges no topo dos READMEs + bo
 | [[sistemas/sistema-de-vida]] | HP, barra de vida, respawn |
 | [[sistemas/dano-localizado]] | Dano por arma, hitboxes Area3D por membro, headshot |
 | [[sistemas/biblioteca-de-modelos]] | Tela Models: navegador/extrator de malhas, galeria Exported, categoria Structures + membro CORPO de fallback |
+| [[sistemas/templates-de-level]] | Gerenciador de Templates: spawn por level (modelo/facção/quantidade/posicionamento); 3 bugs corrigidos no .exe (scan `.remap`, id do Salvar e Usar, nome preservado) |
 | [[sistemas/audio]] | Buses (Master/Outside/Reactor/Music/SFX), controles Música × Efeitos de Som; música de fundo por cena/level em loop infinito (autoload MusicManager + pasta `Audios/`) + Gerenciador de Música nas settings (ouvir/atribuir por cena) |
 | [[sistemas/debug-overlay]] | DebugOverlay + tela developer em 2 colunas (Debug 2D amarelo / Debug 3D ciano), grid, rótulos 3D |
 | [[sistemas/performance-hud]] | Indicadores de performance: PerformanceHUD (barra FPS/NET/RAM/CPU/GPU, developer) + StabilityGuard (proteção crash/freeze sempre-ligada) |

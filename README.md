@@ -77,6 +77,10 @@ and other players/enemies are smoothed with a timestamped interpolation buffer f
 high-FPS client view. A pre-session **Optimization** selector picks interpolation (Smooth/Balanced/
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
+The Levels screen also carries a per-level **Template Manager** (floating window) to compose named
+spawn templates — characters/structures, faction, count and placement (coordinates, random area or
+formation) — activated per level ("Save and Use On This Level") and applied when the level starts,
+working the same in the editor and in the exported .exe.
 Each 2D screen (Levels, Play Online, Settings, Developer) carries its own lightweight **animated shader
 background** that evokes its purpose (Play Online also frames its border with a **braided-metal wire**
 looped by slow, alternating **electric energy**), and every **confirmation window** is built on one reusable
@@ -116,6 +120,10 @@ com snapshots datados para uma visão do cliente sem flicker e com FPS alto. Um 
 pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync (30/60 Hz) e render do host
 (Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
 telas Host/Client são em tela cheia, no padrão do resto da UI.
+A tela de Níveis também traz um **Gerenciador de Templates** por level (janela flutuante) para compor
+templates de spawn nomeados — personagens/estruturas, facção, quantidade e posicionamento
+(coordenadas, área aleatória ou formação) — ativados por level ("Salvar e Usar Neste Level") e
+aplicados quando o level inicia, funcionando igual no editor e no .exe exportado.
 Cada tela 2D (Níveis, Jogar Online, Configurações, Developer) tem seu próprio **fundo animado por shader**
 (leve) que remete à sua função (a Jogar Online ainda emoldura a borda com um **fio de metal trançado**
 percorrido por uma **energia elétrica** lenta e alternada), e toda **janela de confirmação** é montada sobre um controle de janela

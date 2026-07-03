@@ -11,7 +11,26 @@
 > com impacto no usuário, atualizar READMEs (`.md`/`.en-US`/`.pt-BR`) **e** este cofre; rodar
 > `build_windows.ps1` ao final; eliminar erros/warnings após compilar.
 
-**Última revisão:** 2026-07-01 · **Branch ativa:** `feature/restrutu` (24 commits à frente de `main`)
+**Última revisão:** 2026-07-03 · **Branch ativa:** `feature/fable`
+
+---
+
+## 🟢 P0.5 — Gerenciador de Templates funcional no .exe — PRONTO p/ review (2026-07-03)
+
+Playtest de ponta a ponta no **.exe exportado** (menu → chooseplayer → levels → Gerenciador de
+Templates → template "Arena Fable" (Red Robot ×3 enemy) → partida solo no Level 1 com spawn,
+combate, morte e respawn a ~60 FPS). **3 bugs achados e corrigidos** (detalhes em
+[[sistemas/templates-de-level]]):
+
+1. Dropdown **Modelo vazio no build** — scan `DirAccess` não resolvia `*.tscn.remap` do export
+   (`level_template_manager.gd`, helper `_logical_name` igual ao da tela Models).
+2. **"Salvar e Usar Neste Level" não ativava template novo** (id gerado não voltava ao diálogo;
+   Save repetido duplicava) — `level_template_dialog.gd` agora guarda o id do `upsert_template`.
+3. **Nome do template se perdia** ao Adicionar/Remover Entrada — `text_changed` grava direto.
+
+READMEs (3) + cofre atualizados; `build_windows.ps1` rodado (531 MB, sem erros). **Aguarda o
+usuário commitar/publicar.** Polimentos sugeridos (não feitos): filtrar cenas de suporte
+(bullet/impact_effect) do dropdown Modelo; sufixo automático p/ nomes de template repetidos.
 
 ---
 

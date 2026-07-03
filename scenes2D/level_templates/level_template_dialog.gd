@@ -81,6 +81,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	_name_edit = LineEdit.new()
 	_name_edit.name = "NameField"
 	_name_edit.placeholder_text = "Nome do template"
+	_name_edit.text_changed.connect(_on_template_name_changed)
 	root.add_child(_labeled("Nome", _name_edit))
 
 	var entry_separator := HSeparator.new()
@@ -212,6 +213,12 @@ func _entry_display_text(i: int) -> String:
 	]
 
 
+# Digitou no campo "Nome" do template: grava direto no template em edição, para o valor
+# sobreviver aos refreshes do formulário (ex.: Adicionar/Remover Entrada re-lê o dicionário).
+func _on_template_name_changed(new_text: String) -> void:
+	_template["name"] = new_text
+
+
 # Digitou no campo "Nome da entrada": grava na entrada selecionada e atualiza SÓ o item do dropdown
 # (sem repovoar tudo → o campo não perde o foco). Vazio volta ao rótulo automático.
 func _on_entry_name_changed(new_text: String) -> void:
@@ -258,7 +265,10 @@ func _save_template() -> void:
 	_save_entry_fields()
 	_template["name"] = _name_edit.text.strip_edges()
 	_template["level_path"] = _level_path
-	LevelTemplateManager.upsert_template(_template)
+	# Guarda o id devolvido: num template NOVO o upsert gera o id numa CÓPIA normalizada,
+	# então sem esta atribuição o _template local ficaria com id "" — o "Salvar e Usar
+	# Neste Level" ativaria id vazio (nada) e cada Save criaria um template duplicado.
+	_template["id"] = LevelTemplateManager.upsert_template(_template)
 	templates_changed.emit()
 	_refresh_template_picker()
 
