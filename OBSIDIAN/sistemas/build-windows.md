@@ -23,6 +23,14 @@ pwsh -File build_windows.ps1
 
 - **Pré-requisitos:** Godot 4.6.2 em `C:\GODOT\Godot_v4.6.2-stable_win64.exe\…` + export templates
   4.6.2 instalados. O `.ico` (1ª geração) precisa de Python 3 com Pillow.
+- ⚠️ **Cache de export com cena VELHA (2026-07-03):** o export reaproveita cenas convertidas do
+  cache `.godot/exported/`, que **não invalida quando um `.tscn` muda** — o exe saía com a cena
+  DESATUALIZADA mesmo com `-Force` (tela `levels` rebuildada mostrando o layout antigo).
+  **Correção definitiva no próprio script:** o `build_windows.ps1` agora apaga
+  `.godot/exported/` **antes de todo export** (custo: re-converter as cenas, segundos). Sintoma
+  residual em investigações: validar SEMPRE a mudança visual no build. Atenção também a
+  **corridas de regravação** (hook de formatação/editor externo com o arquivo aberto) — se o exe
+  sair "um edit atrás", conferir os `LastWriteTime` dos fontes × exe antes de suspeitar do código.
 - O **ícone NÃO é embutido no .exe** (faltaria o `rcedit`, um binário externo não instalado) — fica
   só no atalho. Instalar/configurar `rcedit` no editor permitiria embutir no próprio executável.
 - **Auto-encerra instância aberta antes de exportar (2026-06-21):** `Stop-RunningZimaro` mata

@@ -44,6 +44,34 @@ em terceira pessoa. Em alto nível, oferece:
   reagrupar tem prioridade sobre perseguir, então **não saem mais correndo até cair do mapa**. Os
   comportamentos (seguir esquadrão, priorizar inimigos, espaçamento de combate, flanco sob pressão…)
   ficam num script de IA dedicado (`library3D/characters/players/player/IA/player_bot_ai.gd`).
+- **Templates de fase (Gerenciador de Templates)** — cada linha de level na tela Levels tem um
+  **botão de template** que abre o **Gerenciador de Templates** (janela flutuante, também acessível
+  pela gerência de salas do host): templates de spawn nomeados por level, cada um com entradas que
+  definem **tipo** (personagem/estrutura), **modelo**, **facção** (aliado/inimigo/neutro),
+  **quantidade** e **posicionamento** (coordenadas explícitas, área aleatória ou formação de
+  combate). **"Salvar e Usar Neste Level"** ativa o template, aplicado quando o level inicia (solo ou
+  como sala online). Funciona igual no editor e no **.exe exportado**: o scanner de modelos resolve
+  os nomes `.remap` que o export produz (mesmo padrão da tela Models), salvar um template **novo**
+  guarda o id gerado (ativar logo após salvar funciona e re-salvar não duplica) e o **nome do
+  template sobrevive** aos refreshes de adicionar/remover entrada. O modelo de cada entrada é
+  escolhido por **navegação em cascata**: um dropdown por nível de pasta da biblioteca
+  (`characters/` → `enemies/` → `red_robot`, por exemplo), descendo só por pastas que contêm
+  modelos — ao alcançar a pasta-modelo, os campos referentes (modelo/cena) são preenchidos.
+- **Gerenciador de Cenários** — irmão do Gerenciador de Templates, um botão próprio ao lado de
+  cada level: mesma janela e campos (sem Facção), navegando a biblioteca **`library3D/sceneries`**
+  (objetos de palco: **caixa magenta, esfera esmeralda e cápsula âmbar** — geometrias volumétricas
+  básicas com material emissivo, luz própria e colliders no conceito LimbColliders/membro CORPO,
+  configuráveis na tela Models). Cada level pode ter um template de personagens **e** um cenário
+  ativos ao mesmo tempo, aplicados no jogo solo e nas salas online.
+- **Ambientes de arena (impactantes e baratos por design)** — cada level tem sua própria atmosfera
+  cyberpunk: **céu procedural em gradiente**, **névoa de distância** exponencial e um **piso-grade
+  neon** emissivo (um shader compartilhado, `themes/level_grid_floor.gdshader` — pura matemática
+  por pixel, sem texturas, com fade por distância que elimina o moiré no horizonte), cada um com
+  identidade de cor própria (**Level 1 = ciano**, **Level 2 = pôr-do-sol âmbar**, a mesma
+  linguagem de cor das telas de sessão Host/Cliente). Construído sob a meta de performance do
+  projeto — **60+ FPS em hardware gráfico mínimo** — visual marcante com custo de GPU próximo de
+  zero; o brilho da grade é emissão pura, então funciona com Bloom desligado e ganha um halo neon
+  de graça quando o Bloom é ativado nas Configurações.
 - **Inimigos** — um inimigo terrestre (Red Robot) que se aproxima, mira e dispara uma **bala de
   canhão** preta (uma versão recolorida, com brilho vermelho, do tiro do player), e um bombardeiro
   voador (Criatura Alada) que orbita o player e solta bombas.
@@ -56,7 +84,11 @@ em terceira pessoa. Em alto nível, oferece:
   a cada segundo**, e mantém uma **formação frouxa** (agora ainda **menos rígida** — o ponto de
   formação "respira" numa oscilação lenta em vez de convergir para coordenadas fixas). O **movimento
   manual** (strafe/recuo/formação) **casa a cadência da animação à velocidade real** → os inimigos
-  **não "deslizam" mais** (os pés respeitam o tempo da caminhada). Cada inimigo mira o **player mais
+  **não "deslizam" mais** (os pés respeitam o tempo da caminhada). As **velocidades de deslocamento
+  são calibradas em padrões humanos reais** (caminhada ~1,4 m/s, trote ~3, corrida ~4,5): strafe
+  2,4 m/s, reposicionamento sob pressão 3,2 m/s e recuo 3,8 m/s, com **aceleração suave** (a
+  velocidade converge em vez de saltar) — movimento com peso e crível, sem o antigo passo lateral
+  de atleta de elite. Cada inimigo mira o **player mais
   próximo dele** dentro do raio de alerta — **qualquer inimigo pode atirar em qualquer player** que
   entre no raio (multiplayer). A **Criatura Alada** varia a **altura de voo com suavidade**: **desce**
   até um limite para bombardear com precisão e **sobe** até um limite para **escapar** quando leva

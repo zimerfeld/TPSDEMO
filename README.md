@@ -77,6 +77,16 @@ and other players/enemies are smoothed with a timestamped interpolation buffer f
 high-FPS client view. A pre-session **Optimization** selector picks interpolation (Smooth/Balanced/
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
+The Levels screen also carries, per level, a **Template Manager** (characters) and a **Scenery
+Manager** (glowing stage props from `library3D/sceneries`) — floating windows where each entry's
+model is picked by **cascading folder navigation** (one dropdown per library folder level), with
+faction, count and placement (coordinates, random area or formation); both a character template
+and a scenery can be active at once, applied when the level starts, in solo play and online rooms
+alike, in the editor and in the exported .exe. Ground enemies now move at **real human speed
+standards** (strafe 2.4 m/s, retreat 3.8 m/s) with smooth acceleration — weighty, believable motion.
+Each arena ships its own cyberpunk atmosphere — procedural gradient sky, distance fog and an
+emissive **neon grid floor** (Level 1 cyan, Level 2 amber sunset) — engineered for the project's
+goal of **60+ FPS on minimal graphics hardware**, so it looks striking at near-zero GPU cost.
 Each 2D screen (Levels, Play Online, Settings, Developer) carries its own lightweight **animated shader
 background** that evokes its purpose (Play Online also frames its border with a **braided-metal wire**
 looped by slow, alternating **electric energy**), and every **confirmation window** is built on one reusable
@@ -116,6 +126,17 @@ com snapshots datados para uma visão do cliente sem flicker e com FPS alto. Um 
 pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync (30/60 Hz) e render do host
 (Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
 telas Host/Client são em tela cheia, no padrão do resto da UI.
+A tela de Níveis também traz, por level, um **Gerenciador de Templates** (personagens) e um
+**Gerenciador de Cenários** (objetos de palco luminosos de `library3D/sceneries`) — janelas
+flutuantes em que o modelo de cada entrada é escolhido por **navegação em cascata de pastas** (um
+dropdown por nível da biblioteca), com facção, quantidade e posicionamento (coordenadas, área
+aleatória ou formação); um template de personagens e um cenário podem estar ativos ao mesmo tempo,
+aplicados quando o level inicia, no solo e nas salas online, no editor e no .exe exportado. Os
+inimigos terrestres agora se movem em **padrões de velocidade humanos reais** (strafe 2,4 m/s,
+recuo 3,8 m/s) com aceleração suave — movimento com peso e crível.
+Cada arena tem sua própria atmosfera cyberpunk — céu procedural em gradiente, névoa de distância e
+um **piso-grade neon** emissivo (Level 1 ciano, Level 2 pôr-do-sol âmbar) — projetada para a meta do
+projeto de **60+ FPS em hardware gráfico mínimo**: visual marcante com custo de GPU quase zero.
 Cada tela 2D (Níveis, Jogar Online, Configurações, Developer) tem seu próprio **fundo animado por shader**
 (leve) que remete à sua função (a Jogar Online ainda emoldura a borda com um **fio de metal trançado**
 percorrido por uma **energia elétrica** lenta e alternada), e toda **janela de confirmação** é montada sobre um controle de janela

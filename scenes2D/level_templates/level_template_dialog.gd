@@ -1,10 +1,15 @@
 class_name LevelTemplateDialog
 extends Node
 
-## Controlador do "Gerenciador de Templates" de cada level: monta o formulário (escolha/edição de
-## templates e suas entradas de spawn) DENTRO da janela flutuante reutilizável (FloatingWindow), num
-## CanvasLayer no topo. Assim os controles herdam o tema 2D do projeto e o Debug 2D funciona sobre a
-## janela (a FloatingWindow entra no grupo do DebugOverlay), igual às demais janelas flutuantes.
+## Controlador do "Gerenciador de Templates" (personagens) E do "Gerenciador de Cenários" (objetos
+## de cenário) de cada level — mesma janela/formulário, mudando a CATEGORIA (`configure`): monta o
+## formulário DENTRO da janela flutuante reutilizável (FloatingWindow), num CanvasLayer no topo.
+## Assim os controles herdam o tema 2D do projeto e o Debug 2D funciona sobre a janela.
+##
+## O MODELO da entrada é escolhido por NAVEGAÇÃO EM CASCATA de OptionButtons: um dropdown por
+## nível de pasta a partir da raiz da categoria (characters/ ou sceneries/), descendo pelas
+## subpastas até uma pasta-modelo (cena com o nome da pasta) — que preenche os campos referentes
+## (model_key + scene_path) da entrada.
 
 signal templates_changed
 
@@ -13,15 +18,20 @@ const FLOATING_SCENE := preload("res://scenes2D/controls2D/floating_window/float
 var _level_path := ""
 var _template: Dictionary = {}
 var _entry_index := -1
-var _model_options: Array[Dictionary] = []
+## Categoria dos templates geridos por ESTA instância: "spawn" (personagens) ou "scenery".
+var _category := "spawn"
 
 var _win: FloatingWindow = null
 var _template_picker: OptionButton
 var _name_edit: LineEdit
 var _entry_name_edit: LineEdit
 var _entry_picker: OptionButton
-var _kind_picker: OptionButton
-var _model_picker: OptionButton
+var _cascade_row: HFlowContainer
+var _cascade_pickers: Array[OptionButton] = []
+var _cascade_dirs: Array[String] = []
+var _model_value_label: Label
+var _sel_model_key := ""
+var _sel_scene_path := ""
 var _faction_picker: OptionButton
 var _count_spin: SpinBox
 var _placement_picker: OptionButton
@@ -34,6 +44,12 @@ var _spacing_spin: SpinBox
 var _rotation_spin: SpinBox
 
 
+# Define a categoria ANTES do primeiro popup: "spawn" (Gerenciador de Templates, navega
+# library3D/characters) ou "scenery" (Gerenciador de Cenários, navega library3D/sceneries).
+func configure(category: String) -> void:
+	_category = category
+
+
 func popup_for_level(level_path: String) -> void:
 	_level_path = level_path
 	if _template.is_empty():
@@ -41,6 +57,19 @@ func popup_for_level(level_path: String) -> void:
 	_open_window()
 	_refresh_template_picker()
 	_refresh_template_fields()
+
+
+func _window_title() -> String:
+	return "Gerenciador de Cenários" if _category == "scenery" else "Gerenciador de Templates"
+
+
+func _root_dir() -> String:
+	return LevelTemplateManager.SCENERIES_ROOT if _category == "scenery" \
+			else LevelTemplateManager.CHARACTERS_ROOT
+
+
+func _entry_kind() -> String:
+	return "scenery" if _category == "scenery" else "character"
 
 
 # Monta a janela flutuante (num CanvasLayer no topo), constrói o formulário no seu conteúdo e os
@@ -55,7 +84,7 @@ func _open_window() -> void:
 	_win.min_window_size = Vector2(1040, 640)
 	layer.add_child(_win)
 	add_child(layer)
-	_win.set_title("Gerenciador de Templates")
+	_win.set_title(_window_title())
 	_win.closed.connect(layer.queue_free)
 	_build_ui(_win.get_content())
 	_win.popup_centered()
@@ -81,6 +110,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	_name_edit = LineEdit.new()
 	_name_edit.name = "NameField"
 	_name_edit.placeholder_text = "Nome do template"
+	_name_edit.text_changed.connect(_on_template_name_changed)
 	root.add_child(_labeled("Nome", _name_edit))
 
 	var entry_separator := HSeparator.new()
@@ -102,9 +132,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	_entry_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_entry_picker.item_selected.connect(_on_entry_selected)
 	entry_row.add_child(_entry_picker)
-	# Um único botão: adiciona uma entrada (personagem por padrão); o Tipo é trocável depois pelo
-	# seletor "Tipo" do grid (que repovoa o "Modelo" conforme personagem/estrutura).
-	_add_button(entry_row, "Adicionar Entrada", func() -> void: _add_entry("character"))
+	_add_button(entry_row, "Adicionar Entrada", func() -> void: _add_entry(_entry_kind()))
 	_add_button(entry_row, "Remover Entrada", _remove_entry)
 
 	var grid := GridContainer.new()
@@ -115,15 +143,21 @@ func _build_ui(content: VBoxContainer) -> void:
 	grid.add_theme_constant_override("v_separation", 8)
 	root.add_child(grid)
 
-	_kind_picker = _picker(["character", "structure"])
-	_kind_picker.name = "KindPicker"
-	_kind_picker.item_selected.connect(func(_idx: int) -> void:
-		_save_entry_fields()
-		_refresh_model_picker())
-	_model_picker = OptionButton.new()
-	_model_picker.name = "ModelPicker"
-	_faction_picker = _picker(["friendly", "enemy", "neutral"])
-	_faction_picker.name = "FactionPicker"
+	# Navegação em CASCATA do modelo: um OptionButton por nível de pasta (raiz da categoria →
+	# subpastas → pasta-modelo). O rótulo abaixo mostra o modelo selecionado (campos referentes).
+	var model_box := VBoxContainer.new()
+	model_box.name = "ModelBox"
+	model_box.add_theme_constant_override("separation", 4)
+	_cascade_row = HFlowContainer.new()
+	_cascade_row.name = "CascadeRow"
+	_cascade_row.add_theme_constant_override("h_separation", 8)
+	model_box.add_child(_cascade_row)
+	_model_value_label = Label.new()
+	_model_value_label.name = "ModelValueLabel"
+	model_box.add_child(_model_value_label)
+	if _category != "scenery":
+		_faction_picker = _picker(["friendly", "enemy", "neutral"])
+		_faction_picker.name = "FactionPickers"
 	_count_spin = _spin(1, 64, 1, 1)
 	_count_spin.name = "CountSpin"
 	_placement_picker = _picker(["random", "coordinates", "formation"])
@@ -142,9 +176,10 @@ func _build_ui(content: VBoxContainer) -> void:
 	_spacing_spin.name = "SpacingSpin"
 	_rotation_spin = _spin(-360, 360, 5, 0)
 	_rotation_spin.name = "RotationSpin"
-	_add_grid_row(grid, "Tipo", _kind_picker)
-	_add_grid_row(grid, "Modelo", _model_picker)
-	_add_grid_row(grid, "Facção", _faction_picker)
+	_add_grid_row(grid, "Modelo", model_box)
+	# Cenários não têm facção (são objetos neutros do palco) — a linha só existe p/ personagens.
+	if _faction_picker != null:
+		_add_grid_row(grid, "Facção", _faction_picker)
 	_add_grid_row(grid, "Quantidade", _count_spin)
 	_add_grid_row(grid, "Posicionamento", _placement_picker)
 	_add_grid_row(grid, "Coordenadas", _positions_edit)
@@ -162,17 +197,18 @@ func _build_ui(content: VBoxContainer) -> void:
 
 
 func _load_active_or_first() -> void:
-	var active := LevelTemplateManager.active_template(_level_path)
+	var active := LevelTemplateManager.active_scenery(_level_path) if _category == "scenery" \
+			else LevelTemplateManager.active_template(_level_path)
 	if not active.is_empty():
 		_template = active
 		return
-	var options := LevelTemplateManager.templates_for_level(_level_path)
+	var options := LevelTemplateManager.templates_for_level(_level_path, _category)
 	_template = options[0] if not options.is_empty() else _default_template()
 
 
 func _refresh_template_picker() -> void:
 	_template_picker.clear()
-	var templates := LevelTemplateManager.templates_for_level(_level_path)
+	var templates := LevelTemplateManager.templates_for_level(_level_path, _category)
 	for t in templates:
 		_template_picker.add_item(String(t.get("name", "Template")))
 		_template_picker.set_item_metadata(_template_picker.item_count - 1, String(t.get("id", "")))
@@ -212,6 +248,12 @@ func _entry_display_text(i: int) -> String:
 	]
 
 
+# Digitou no campo "Nome" do template: grava direto no template em edição, para o valor
+# sobreviver aos refreshes do formulário (ex.: Adicionar/Remover Entrada re-lê o dicionário).
+func _on_template_name_changed(new_text: String) -> void:
+	_template["name"] = new_text
+
+
 # Digitou no campo "Nome da entrada": grava na entrada selecionada e atualiza SÓ o item do dropdown
 # (sem repovoar tudo → o campo não perde o foco). Vazio volta ao rótulo automático.
 func _on_entry_name_changed(new_text: String) -> void:
@@ -223,26 +265,31 @@ func _on_entry_name_changed(new_text: String) -> void:
 
 func _refresh_entry_fields() -> void:
 	var has_entry := _entry_index >= 0 and _entry_index < _entries().size()
-	for control in [_entry_name_edit, _kind_picker, _model_picker, _faction_picker, _count_spin,
+	var controls: Array = [_entry_name_edit, _count_spin,
 			_placement_picker, _positions_edit, _random_center_edit, _random_size_edit,
-			_formation_picker, _formation_origin_edit, _spacing_spin, _rotation_spin]:
+			_formation_picker, _formation_origin_edit, _spacing_spin, _rotation_spin]
+	if _faction_picker != null:
+		controls.append(_faction_picker)
+	for control in controls:
 		if control is LineEdit or control is SpinBox:
 			control.editable = has_entry
 		elif control is OptionButton:
 			control.disabled = not has_entry
+	for picker in _cascade_pickers:
+		picker.disabled = not has_entry
 	# Re-liga o anel de Tab agora que os campos do grid mudaram de habilitado/desabilitado: assim a
 	# sequência (topo → nome → entrada → grid → rodapé → ×) inclui TODOS os controles focáveis atuais,
 	# de cima p/ baixo e da esquerda p/ a direita, com o × por ÚLTIMO. call_deferred: o estado assentou.
 	if is_instance_valid(_win):
 		_win.wire_focus_ring.call_deferred()
 	if not has_entry:
+		_rebuild_cascade("")
 		return
 	var e := _entries()[_entry_index] as Dictionary
 	_entry_name_edit.text = String(e.get("name", ""))
-	_select_text(_kind_picker, String(e.get("kind", "character")))
-	_refresh_model_picker()
-	_select_model(String(e.get("scene_path", "")))
-	_select_text(_faction_picker, String(e.get("faction", "enemy")))
+	_rebuild_cascade(String(e.get("scene_path", "")))
+	if _faction_picker != null:
+		_select_text(_faction_picker, String(e.get("faction", "enemy")))
 	_count_spin.value = int(e.get("count", 1))
 	_select_text(_placement_picker, String(e.get("placement", "random")))
 	_positions_edit.text = _positions_to_text(e.get("positions", []))
@@ -258,14 +305,21 @@ func _save_template() -> void:
 	_save_entry_fields()
 	_template["name"] = _name_edit.text.strip_edges()
 	_template["level_path"] = _level_path
-	LevelTemplateManager.upsert_template(_template)
+	_template["category"] = _category
+	# Guarda o id devolvido: num template NOVO o upsert gera o id numa CÓPIA normalizada,
+	# então sem esta atribuição o _template local ficaria com id "" — o "Salvar e Usar
+	# Neste Level" ativaria id vazio (nada) e cada Save criaria um template duplicado.
+	_template["id"] = LevelTemplateManager.upsert_template(_template)
 	templates_changed.emit()
 	_refresh_template_picker()
 
 
 func _save_and_use() -> void:
 	_save_template()
-	LevelTemplateManager.set_active_template(_level_path, String(_template.get("id", "")))
+	if _category == "scenery":
+		LevelTemplateManager.set_active_scenery(_level_path, String(_template.get("id", "")))
+	else:
+		LevelTemplateManager.set_active_template(_level_path, String(_template.get("id", "")))
 	templates_changed.emit()
 
 
@@ -296,13 +350,11 @@ func _remove_template() -> void:
 
 func _add_entry(kind: String) -> void:
 	_save_entry_fields()
-	var options := LevelTemplateManager.model_options(kind)
-	var first := options[0] if not options.is_empty() else {}
 	_entries().append({
 		"kind": kind,
 		"faction": "friendly" if kind == "character" else "neutral",
-		"model_key": String(first.get("key", kind)),
-		"scene_path": String(first.get("path", "")),
+		"model_key": "",
+		"scene_path": "",
 		"placement": "random",
 		"count": 1,
 		"positions": [[0, 1, 0]],
@@ -327,7 +379,7 @@ func _remove_entry() -> void:
 
 func _on_template_selected(index: int) -> void:
 	var id := String(_template_picker.get_item_metadata(index))
-	for t in LevelTemplateManager.templates_for_level(_level_path):
+	for t in LevelTemplateManager.templates_for_level(_level_path, _category):
 		if String(t.get("id", "")) == id:
 			_template = t
 			_entry_index = 0
@@ -346,12 +398,14 @@ func _save_entry_fields() -> void:
 		return
 	var e := _entries()[_entry_index] as Dictionary
 	e["name"] = _entry_name_edit.text.strip_edges()
-	e["kind"] = _kind_picker.get_item_text(_kind_picker.selected)
-	e["faction"] = _faction_picker.get_item_text(_faction_picker.selected)
-	if _model_picker.selected >= 0:
-		var meta: Dictionary = _model_picker.get_item_metadata(_model_picker.selected)
-		e["model_key"] = String(meta.get("key", ""))
-		e["scene_path"] = String(meta.get("path", ""))
+	e["kind"] = _entry_kind()
+	if _faction_picker != null and _faction_picker.selected >= 0:
+		e["faction"] = _faction_picker.get_item_text(_faction_picker.selected)
+	# A cascata só sobrescreve o modelo quando uma pasta-modelo foi de fato alcançada — navegar
+	# pelas pastas sem concluir não apaga o modelo já salvo da entrada.
+	if _sel_scene_path != "":
+		e["model_key"] = _sel_model_key
+		e["scene_path"] = _sel_scene_path
 	e["count"] = int(_count_spin.value)
 	e["placement"] = _placement_picker.get_item_text(_placement_picker.selected)
 	e["positions"] = _parse_positions(_positions_edit.text)
@@ -363,13 +417,95 @@ func _save_entry_fields() -> void:
 	e["rotation_y"] = float(_rotation_spin.value)
 
 
-func _refresh_model_picker() -> void:
-	_model_picker.clear()
-	var kind := _kind_picker.get_item_text(_kind_picker.selected) if _kind_picker.selected >= 0 else "character"
-	_model_options = LevelTemplateManager.model_options(kind)
-	for opt in _model_options:
-		_model_picker.add_item("%s (%s)" % [String(opt.get("label", "")), String(opt.get("kind", ""))])
-		_model_picker.set_item_metadata(_model_picker.item_count - 1, opt)
+# ---- Cascata de pastas do Modelo -----------------------------------------------------------
+
+# (Re)monta a cadeia de OptionButtons a partir da raiz da categoria e, se a entrada já tem um
+# modelo salvo (scene_path sob a raiz), re-seleciona a cadeia de pastas até ele.
+func _rebuild_cascade(scene_path: String) -> void:
+	for picker in _cascade_pickers:
+		picker.queue_free()
+	_cascade_pickers.clear()
+	_cascade_dirs.clear()
+	_sel_model_key = ""
+	_sel_scene_path = ""
+	var root := _root_dir()
+	_append_cascade_picker(root)
+	if scene_path.begins_with(root + "/"):
+		var rel_dir := scene_path.substr(root.length() + 1).get_base_dir()
+		for folder in rel_dir.split("/", false):
+			var depth := _cascade_pickers.size() - 1
+			if depth < 0:
+				break
+			var picker := _cascade_pickers[depth]
+			var idx := _find_item(picker, String(folder))
+			if idx < 0:
+				break
+			picker.select(idx)  # select() por código não emite item_selected → desce manualmente
+			_descend(depth, String(folder))
+	_update_model_label()
+	if is_instance_valid(_win):
+		_win.wire_focus_ring.call_deferred()
+
+
+# Acrescenta o dropdown do PRÓXIMO nível listando as subpastas navegáveis de `dir_path`
+# (só pastas que contêm um modelo em alguma profundidade; vazio → cascata termina aqui).
+func _append_cascade_picker(dir_path: String) -> void:
+	var info: Dictionary = LevelTemplateManager.browse_dir(dir_path)
+	var folders: Array = info.get("folders", [])
+	if folders.is_empty():
+		return
+	var picker := OptionButton.new()
+	picker.name = "FolderPickers%d" % (_cascade_pickers.size() + 1)
+	picker.add_item("Selecione...")
+	for folder in folders:
+		picker.add_item(String(folder))
+	var depth := _cascade_pickers.size()
+	picker.item_selected.connect(func(idx: int) -> void: _on_cascade_selected(depth, idx))
+	_cascade_row.add_child(picker)
+	_cascade_pickers.append(picker)
+	_cascade_dirs.append(dir_path)
+
+
+func _on_cascade_selected(depth: int, idx: int) -> void:
+	# Escolher num nível corta todos os níveis mais fundos (a navegação recomeça dali).
+	while _cascade_pickers.size() > depth + 1:
+		(_cascade_pickers.pop_back() as OptionButton).queue_free()
+		_cascade_dirs.pop_back()
+	if idx <= 0:
+		_sel_model_key = ""
+		_sel_scene_path = ""
+	else:
+		_descend(depth, _cascade_pickers[depth].get_item_text(idx))
+	_update_model_label()
+	if is_instance_valid(_win):
+		_win.wire_focus_ring.call_deferred()
+
+
+# Entra na pasta escolhida: se ela é uma pasta-MODELO, mapeia os campos referentes da entrada
+# (model_key + scene_path); havendo subpastas navegáveis, oferece o próximo nível da cascata.
+func _descend(depth: int, folder: String) -> void:
+	var dir := "%s/%s" % [_cascade_dirs[depth], folder]
+	var info: Dictionary = LevelTemplateManager.browse_dir(dir)
+	var model: Dictionary = info.get("model", {})
+	_sel_model_key = String(model.get("key", ""))
+	_sel_scene_path = String(model.get("path", ""))
+	if not (info.get("folders", []) as Array).is_empty():
+		_append_cascade_picker(dir)
+
+
+func _update_model_label() -> void:
+	if _sel_scene_path != "":
+		_model_value_label.text = "Modelo: %s (%s)" % [
+			_sel_model_key.replace("_", " ").capitalize(), _sel_scene_path.get_file()]
+	else:
+		_model_value_label.text = "Navegue pelas pastas até um modelo"
+
+
+func _find_item(picker: OptionButton, text: String) -> int:
+	for i in picker.item_count:
+		if picker.get_item_text(i) == text:
+			return i
+	return -1
 
 
 func _entries() -> Array:
@@ -381,8 +517,9 @@ func _entries() -> Array:
 func _default_template() -> Dictionary:
 	return {
 		"id": "",
-		"name": "Novo template",
+		"name": "Novo cenário" if _category == "scenery" else "Novo template",
 		"level_path": _level_path,
+		"category": _category,
 		"entries": [],
 	}
 
@@ -447,16 +584,6 @@ func _select_text(picker: OptionButton, value: String) -> void:
 		if picker.get_item_text(i) == value:
 			picker.select(i)
 			return
-
-
-func _select_model(scene_path: String) -> void:
-	for i in _model_picker.item_count:
-		var meta: Dictionary = _model_picker.get_item_metadata(i)
-		if String(meta.get("path", "")) == scene_path:
-			_model_picker.select(i)
-			return
-	if _model_picker.item_count > 0:
-		_model_picker.select(0)
 
 
 func _parse_positions(text: String) -> Array:

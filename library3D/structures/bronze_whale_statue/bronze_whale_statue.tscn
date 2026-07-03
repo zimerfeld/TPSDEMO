@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" uid="uid://dsnplnwmj1juf" path="res://library3D/structures/bronze_whale_statue/bronze_whale_statue.glb" id="1"]
-
-[node name="BronzeWhaleStatue" type="Node3D"]
-
-[node name="StatueModel" parent="." instance=ExtResource("1")]

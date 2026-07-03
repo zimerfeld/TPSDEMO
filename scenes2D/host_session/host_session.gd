@@ -135,9 +135,14 @@ func _refresh_template_picker() -> void:
 func _open_template_dialog_for_selected_level() -> void:
 	var idx: int = _level_picker.selected
 	if idx <= 0:
+		# Antes retornava em SILÊNCIO com o picker no "Selecione..." — parecia botão quebrado.
+		# Agora avisa o que falta para abrir o gerenciador.
+		FloatingDialog.alert(self, "Gerenciador de Templates",
+				"Selecione um level primeiro para gerenciar seus templates.")
 		return
 	if _template_dialog == null:
 		_template_dialog = LevelTemplateDialogScene.new()
+		_template_dialog.configure("spawn")
 		_template_dialog.templates_changed.connect(_refresh_template_picker)
 		add_child(_template_dialog)
 	_template_dialog.popup_for_level(String(_level_picker.get_item_metadata(idx)))

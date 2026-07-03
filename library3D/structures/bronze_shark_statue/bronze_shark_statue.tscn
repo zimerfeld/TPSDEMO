@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" uid="uid://bm6w8g3guku6b" path="res://library3D/structures/bronze_shark_statue/bronze_shark_statue.glb" id="1"]
-
-[node name="BronzeSharkStatue" type="Node3D"]
-
-[node name="StatueModel" parent="." instance=ExtResource("1")]

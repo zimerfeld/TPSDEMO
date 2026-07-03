@@ -19,6 +19,21 @@ quebram em linha quando não cabem). **Aplicado em `settings` (2026-06-23):** ca
 de abas (`TabContainer`) já rola sozinha quando não cabe. `models` é denso em sub-1920 mas não tem
 faixas largas — não recebeu HFlow (só seria necessário se telas muito estreitas virarem alvo).
 
+**Aplicado em `levels` (2026-07-03):** a lista de fases virou um **`GridContainer` de 3 colunas**
+(`%LevelsGrid`: Level | Template | Cenário), substituindo o VBox com HBoxes por linha. Motivo: em
+HBoxes independentes cada linha dimensionava seus botões pelo TEXTO (+ o `Expand` do botão de level
+engordava a linha mais estreita), desalinhando as colunas; o grid iguala cada coluna pela célula
+mais larga → **mesmo espaçamento e alinhamento nas duas linhas** (h/v_separation 16). Os botões de
+Template/Cenário são inseridos em runtime LOGO APÓS o botão do seu level (`move_child`) para caírem
+na linha certa; no loading o **grid inteiro** é ocultado (filho oculto em grid reflui o resto).
+**Largura responsiva (2026-07-03):** o grid preenche a largura da tela (sem `size_flags 0`); a
+coluna Level fica FIXA (min 300, flag FILL) e os botões de Template/Cenário recebem
+`SIZE_EXPAND_FILL` por código → as duas colunas **dividem o resto do espaço em tela meio a meio**
+(~754 px cada em 1920), em qualquer resolução.
+⚠️ **Cache de export:** ao editar um `.tscn`, o export embutia a **cena velha** do cache
+`.godot/exported/` (não invalida por mtime) — o `build_windows.ps1` agora **limpa esse cache
+automaticamente antes de todo export** (ver [[sistemas/build-windows]]).
+
 ## Esqueleto padrão das telas
 
 ```
