@@ -33,16 +33,16 @@ signal recovered()
 # crítico em qualquer máquina). Ajustáveis no Inspector do autoload.
 @export var ram_free_warn_mb:   float = 1024.0
 @export var ram_free_crit_mb:   float = 512.0
-# VRAM: o level_base sozinho usa ~1.2 GB (texturas + lightmaps + VoxelGI/reflection probes), normal
+# VRAM: um nível 3D real sozinho usa ~1.2 GB (texturas + lightmaps + VoxelGI/reflection probes), normal
 # para um nível 3D real — várias salas COMPARTILHAM esses recursos (cache por path), então não
-# multiplica. Limites antigos (warn 512 / crit 800) disparavam THROTTLE/EMERGENCY no level_base
+# multiplica. Limites antigos (warn 512 / crit 800) disparavam THROTTLE/EMERGENCY num nível
 # (estrangulando a física do servidor a 30 tps → jogo lento p/ todos). Subidos p/ acima do uso real.
 @export var vram_warn_mb:       float = 2560.0
 @export var vram_crit_mb:       float = 5120.0
-# ⚠️ Limiares calibrados para os níveis 3D REAIS. O level_base sozinho já tem ~3066 collision pairs
+# ⚠️ Limiares calibrados para os níveis 3D REAIS. Um nível real sozinho já tem ~3066 collision pairs
 # de geometria estática (Core/Structure/colliders radiais) — NÃO é uma "explosão" de física, é o
 # normal. Com salas múltiplas isso soma (N × ~3k). Valores antigos (warn 300 / crit 600, nodes
-# 3000/6000) disparavam EMERGENCY no level_base e PAUSAVAM a árvore → no multiplayer isso congela
+# 3000/6000) disparavam EMERGENCY num nível e PAUSAVAM a árvore → no multiplayer isso congela
 # spawn/sync de TODOS os peers (tela preta no cliente). Subidos p/ acima do uso normal multi-sala,
 # mantendo a rede de segurança só p/ runaway de verdade (dezenas de milhares).
 @export var col_pairs_warn:     float = 8000.0

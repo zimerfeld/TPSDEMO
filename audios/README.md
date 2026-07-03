@@ -37,7 +37,6 @@ deixe o Godot importar. Pronto — a música toca sozinha na próxima vez que aq
 | Arquivo / File          | Tela ou level / Screen or level                | Status |
 |-------------------------|------------------------------------------------|--------|
 | `menu.ogg`              | Menu principal / Main menu                     | ✅ incluso / bundled |
-| `level_base.ogg`        | Level base                                     | ✅ incluso / bundled |
 | `chooseplayer.ogg`      | Escolher personagem (senão usa `menu.ogg`)     | herda menu / inherits menu |
 | `playonline.ogg`        | Jogar Online                                   | — |
 | `levels.ogg`            | Seleção de level (Jogar)                       | — |
@@ -60,8 +59,8 @@ deixe o Godot importar. Pronto — a música toca sozinha na próxima vez que aq
 
 🇬🇧 Only add music you have the right to use (your own, CC0/public-domain, or a license that
 permits bundling in a game). Do **not** add copyrighted commercial tracks ripped from streaming
-sites. `menu.ogg` and `level_base.ogg` were already in the project.
+sites. `menu.ogg` was already in the project.
 >
 🇧🇷 Só adicione músicas que você tem direito de usar (suas, CC0/domínio público, ou licença que
 permita embutir num jogo). **Não** adicione faixas comerciais com direitos autorais baixadas de
-sites de streaming. `menu.ogg` e `level_base.ogg` já estavam no projeto.
+sites de streaming. `menu.ogg` já estava no projeto.

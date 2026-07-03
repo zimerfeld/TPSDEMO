@@ -1,2 +1,4 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+C:/GODOT/ZIMARO/audios filter=lfs diff=lfs merge=lfs -text
+C:/GODOT/ZIMARO/library3D filter=lfs diff=lfs merge=lfs -text

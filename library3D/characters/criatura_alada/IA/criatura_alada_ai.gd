@@ -14,6 +14,12 @@ const BEHAVIOR_PRESSURE_BOMB_RUN := "pressure_bomb_run"
 @export var preferred_altitude_above_target := 14.0
 @export var minimum_altitude_above_target := 7.0
 @export var altitude_band := 4.0
+## Camada BAIXA (m acima do alvo) para onde desce ao ir bombardear — mais perto = mais preciso.
+@export var dive_altitude_above_target := 7.5
+## Camada ALTA (m acima do alvo) para onde sobe ao se sentir ameaçada (levar tiro) — escapar dos tiros.
+@export var escape_altitude_above_target := 24.0
+## Suavidade da troca de camada (maior = converge mais rápido; a transição é sempre interpolada).
+@export var altitude_ease := 1.6
 @export var orbit_radius_min := 7.0
 @export var orbit_radius_max := 14.0
 @export var airspace_probe_length := 7.0
@@ -23,6 +29,11 @@ const BEHAVIOR_PRESSURE_BOMB_RUN := "pressure_bomb_run"
 @export var vertical_evasion_amplitude := 2.3
 
 var _behaviors: Dictionary = {}
+# Viés de altitude interpolado (m) somado à camada de cruzeiro → troca de camada SUAVE (sem degrau).
+var _alt_bias := 0.0
+# Contexto do quadro (setado pelo corpo em movement_plan): ameaçada (levou tiro) / prestes a bombardear.
+var _threatened := false
+var _bomb_imminent := false
 var _orbit_sign := 1.0
 var _orbit_switch_cd := 0.0
 var _blocked_time := 0.0
@@ -53,8 +64,11 @@ func tick(delta: float) -> void:
 
 func movement_plan(origin: Vector3, target_position: Vector3, base_radius: float,
 		base_speed: float, base_altitude: float, bob_time: float,
-		space_state: PhysicsDirectSpaceState3D, exclude: Array, delta: float) -> Dictionary:
+		space_state: PhysicsDirectSpaceState3D, exclude: Array, delta: float,
+		threatened: bool = false, bomb_imminent: bool = false) -> Dictionary:
 	tick(delta)
+	_threatened = threatened
+	_bomb_imminent = bomb_imminent
 	var to_self := origin - target_position
 	to_self.y = 0.0
 	var dist := to_self.length()
@@ -67,7 +81,7 @@ func movement_plan(origin: Vector3, target_position: Vector3, base_radius: float
 	var horiz := tangent * base_speed * speed_mult - radial * clampf(radial_err, -base_speed, base_speed)
 	if behavior_enabled(BEHAVIOR_PRESSURE_BOMB_RUN) and _pressure_time > 0.0:
 		horiz += -radial * base_speed * 0.28
-	var altitude := _desired_altitude(target_position.y, base_altitude, bob_time)
+	var altitude := _desired_altitude(target_position.y, base_altitude, bob_time, delta)
 	var vertical_bias := _vertical_space_bias(space_state, origin, exclude)
 	return {
 		"horiz": horiz,
@@ -125,16 +139,25 @@ func _desired_orbit_radius(base_radius: float, current_distance: float) -> float
 	return radius
 
 
-func _desired_altitude(target_y: float, base_altitude: float, bob_time: float) -> float:
-	var altitude := base_altitude
-	if behavior_enabled(BEHAVIOR_ADAPTIVE_ALTITUDE):
-		altitude = maxf(base_altitude, target_y + preferred_altitude_above_target)
+## Altura desejada (Y do mundo) com troca de camada SUAVE relativa ao player:
+##   • AMEAÇADA (levou tiro) → SOBE até `escape_altitude_above_target` para escapar dos tiros (prioridade);
+##   • prestes a BOMBARDEAR → DESCE até `dive_altitude_above_target` para acertar com mais precisão;
+##   • senão → altura de cruzeiro preferida.
+## O viés de camada é interpolado (ease exponencial, framerate-independente) → sem teleporte/degrau.
+func _desired_altitude(target_y: float, base_altitude: float, bob_time: float, delta: float) -> float:
+	if not behavior_enabled(BEHAVIOR_ADAPTIVE_ALTITUDE):
+		return maxf(base_altitude, target_y + minimum_altitude_above_target)  # altura fixa (comportamento antigo)
+	var target_off := preferred_altitude_above_target
+	if behavior_enabled(BEHAVIOR_VERTICAL_EVASION) and _threatened:
+		target_off = escape_altitude_above_target
+	elif _bomb_imminent:
+		target_off = dive_altitude_above_target
+	var ease := 1.0 - exp(-altitude_ease * maxf(delta, 0.0001))
+	_alt_bias = lerpf(_alt_bias, target_off - preferred_altitude_above_target, ease)
+	var off := preferred_altitude_above_target + _alt_bias
 	if behavior_enabled(BEHAVIOR_VERTICAL_EVASION):
-		var evasion := sin(bob_time * 1.7 + float(_miss_streak)) * vertical_evasion_amplitude
-		if _pressure_time > 0.0:
-			evasion -= 1.4
-		altitude += evasion
-	return maxf(altitude, target_y + minimum_altitude_above_target)
+		off += sin(bob_time * 1.2) * (vertical_evasion_amplitude * 0.5)  # respiro suave em torno da camada
+	return target_y + maxf(off, minimum_altitude_above_target)
 
 
 func _choose_orbit_sign(space_state: PhysicsDirectSpaceState3D, origin: Vector3,

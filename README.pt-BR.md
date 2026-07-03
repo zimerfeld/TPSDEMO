@@ -30,7 +30,9 @@ em terceira pessoa. Em alto nível, oferece:
   Todas as **janelas de confirmação/aviso são montadas sobre um controle de janela flutuante
   reutilizável** (`FloatingWindow`, uma cena `controls2D`) — texto centralizado, botões de largura
   uniforme, × de fechar padrão e fundo modal —, criadas pelo helper `FloatingDialog`; a mesma base
-  serve de fundação para outras janelas flutuantes.
+  serve de fundação para outras janelas flutuantes. A **janela de erro global é recuperável**: fechar
+  (× / ESC / **Voltar**) apenas devolve o foco à cena que a chamou — um erro de porta/conexão ou de
+  validação **nunca encerra o jogo** (com opção **Tentar Novamente** quando faz sentido).
 - **Personagens jogáveis** — variações de player selecionáveis que se movem, miram, pulam e
   atiram, com câmera em primeira pessoa e um HUD de vida local. O **pulo é mais alto** e a
   **cadência de tiro mais espaçada**; o **tiro sai só depois de a mira assentar** (ao fim da
@@ -51,9 +53,15 @@ em terceira pessoa. Em alto nível, oferece:
   de 10 m; e, se o player chegar a **10 m ou menos**, o robô **recua correndo no sentido oposto**
   enquanto continua olhando/mirando e atirando. Cada robô se move de forma **individualizada**
   (sinal de strafe, fase e velocidade próprios, semeados no spawn) para o pelotão **não andar igual
-  a cada segundo**, e mantém uma **formação frouxa**: circula/estrafa livre em combate, mas tende a
-  **voltar ao seu lugar designado** (a direção a partir do player capturada do ponto de spawn). A
-  **Criatura Alada** também teve a oscilação de voo dessincronizada entre instâncias.
+  a cada segundo**, e mantém uma **formação frouxa** (agora ainda **menos rígida** — o ponto de
+  formação "respira" numa oscilação lenta em vez de convergir para coordenadas fixas). O **movimento
+  manual** (strafe/recuo/formação) **casa a cadência da animação à velocidade real** → os inimigos
+  **não "deslizam" mais** (os pés respeitam o tempo da caminhada). Cada inimigo mira o **player mais
+  próximo dele** dentro do raio de alerta — **qualquer inimigo pode atirar em qualquer player** que
+  entre no raio (multiplayer). A **Criatura Alada** varia a **altura de voo com suavidade**: **desce**
+  até um limite para bombardear com precisão e **sobe** até um limite para **escapar** quando leva
+  tiro. Há ainda uma **marcação de facção** por modelo (hostil / neutro / aliado) — base para futuros
+  personagens **neutros**, que só entrariam em confronto se ameaçados.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
   Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo
@@ -85,7 +93,11 @@ em terceira pessoa. Em alto nível, oferece:
   migra do antigo `data/limb_config/<key>.json` / combinado `data/limb_config.json`) e lido em
   runtime via `LimbConfig`; o multiplicador default vem do plano corporal (cabeça +50%, resto ×1). As
   formas dos colliders são por modelo — ex.: o **red_robot** usa **tronco esférico** e **cabeça com
-  volume maior** (`torso_shape`/`head_scale` em `LimbColliders`).
+  volume maior** (`torso_shape`/`head_scale` em `LimbColliders`). **Membro `CORPO` de fallback** —
+  todo modelo sem membro classificado (ex.: **Estruturas** como as estátuas de bronze, ou um rig cujas
+  malhas não casam com o plano) ganha na tela Models um único membro **CORPO** que envolve o modelo
+  inteiro (caixa por padrão), para que **sempre** dê para definir um collider/dano; o dropdown
+  **Membro** passou a aparecer para **qualquer categoria** em "Modelo completo".
 - **Tiro reutilizável** — o disparo de bala de canhão e o de laser hitscan foram isolados em
   componentes reutilizáveis (`CannonShooter` / `LaserShooter` em `effects_shared/`) que qualquer
   modelo pode usar; player e Red Robot disparam via `CannonShooter`. O transform do cano da bala é
@@ -93,8 +105,8 @@ em terceira pessoa. Em alto nível, oferece:
   clientes remotos (sem deslocamento para fora do cano); e a raycast de mira agora **exclui o próprio
   corpo/membros do atirador** e ignora acertos colados, então mirar-e-atirar rápido não manda mais
   o tiro para o céu.
-- **Várias fases** — uma arena simples (Level 1), um encontro com o bombardeiro (Level 2), uma
-  fase completa e complexa (Level Base), além do **jogo online por salas**: a tela **Jogar Online** tem
+- **Várias fases** — uma arena simples (Level 1) e um encontro com o bombardeiro (Level 2), além do
+  **jogo online por salas**: a tela **Jogar Online** tem
   dois botões que escolhem o papel. **Gerenciar Salas** abre o gerenciador de salas
   (`host_session`), onde inicia um ou mais levels como salas isoladas e, por sala, **Jogar** (após o
   seletor de personagem, nasce nela como player), **Observar** (câmera livre sem colisão), **Reiniciar**
@@ -158,7 +170,7 @@ em terceira pessoa. Em alto nível, oferece:
   Especiais" aparecem só na visão montada "Modelo completo". "Efeitos Especiais" lista, após
   "Selecione…", a opção **"Todos"** e exibe efeitos de todos os tipos que existirem (luzes/
   luminosidade, fumaça, partículas, decals, névoa…); escolher um item isola um único efeito.
-  Escolher um valor em qualquer seletor (Categoria → Prefixo → Modelo → Malha) reseta
+  Escolher um valor em qualquer seletor (Categoria → Modelo → Malha) reseta
   todos os dropdowns abaixo dele para "Selecione…". **Todas as escolhas dos seletores são
   persistidas** (junto com os toggles), e ao reabrir a tela a cadeia é restaurada exatamente como foi
   deixada — sem auto-selecionar nenhum item: o primeiro seletor sem escolha salva fica em "Selecione…"
@@ -231,8 +243,9 @@ distintas para você diferenciá-los:
   Type/Name**. Além da tela developer, toda tela 2D com a barra **Actions** no rodapé
   ganha um toggle **Debug 2D** (`CheckButton`, injetado pelo `DebugOverlay`) para ligar/desligar o
   master sem sair da cena (a developer mantém o seu próprio par). Uma barra Actions na posição padrão
-  foi adicionada também ao **menu** e aos **levels de gameplay** (sob o `TitleCanvas` de cada um), para
-  o toggle alcançá-los também.
+  foi adicionada também ao **menu**, para o toggle alcançá-lo. O toggle **nunca aparece em cena de level
+  de gameplay** (`level_1`/`level_2`): é um controle de **UI 2D**, não do jogo — o `DebugOverlay` pula
+  cenas que raízam num `Node3D` (a tela **Models**, de raiz `Node`, segue com o toggle).
 - **Debug 3D** (rótulos ciano claro) — master `debug_3d` mais os dependentes `Type` / `Name` /
   `Id` (descrevendo o nó `Skeleton3D`), `Members`, `Skeleton` e `Mesh`. Renderiza rótulos
   `Label3D` por membro que seguem a pose viva.
@@ -427,7 +440,7 @@ reutilizáveis em `library3D/`:
   - `controls` — um visualizador de controles 2D (o análogo 2D da tela Models) que navega e
     pré-visualiza os widgets de `controls2D` por um dropdown.
   - `cyberpunkhud` — tela de HUD montada a partir dos widgets de `controls2D`.
-- `scenes3D/` — fases e ferramentas 3D: `level_1`, `level_2`, `level_base` e o visualizador `models`.
+- `scenes3D/` — fases e ferramentas 3D: `level_1`, `level_2` e o visualizador `models`.
 - `library3D/` — biblioteca de assets 3D, organizada por tipo: `characters`, `propulsores`,
   `structures`, `weapons`, mais as pastas de apoio `geometry` e `textures`. Novas pastas de modelos
   colocadas aqui aparecem automaticamente no visualizador Models.
@@ -450,7 +463,7 @@ reutilizáveis em `library3D/`:
 Fluxo de telas:
 
 ```
-menu ─┬─ Jogar Offline ─► chooseplayer ─► levels ─► level_1 / level_2 / level_base
+menu ─┬─ Jogar Offline ─► chooseplayer ─► levels ─► level_1 / level_2
       ├─ Jogar Online ──► playonline (Gerenciar Salas / Entrar em Salas)
       │                    ├─ Host ───► host_session   (inicia salas; por sala: Jogar / Observar / Reiniciar / Parar)
       │                    └─ Client ─► client_session (navega salas; por sala: Jogar)
@@ -492,7 +505,7 @@ ZIMARO/
 │  ├─ controls/          # visualizador de widgets 2D (análogo da tela Models)
 │  └─ controls2D/        # widgets de HUD reutilizáveis: crosshair, minimap_panel, vitals_panel, volume_bar, …
 ├─ scenes3D/             # fases e ferramentas 3D
-│  ├─ level_1/ level_2/ level_base/   # fases jogáveis
+│  ├─ level_1/ level_2/               # fases jogáveis
 │  ├─ spectator_camera/  # câmera livre sem colisão para Observar uma sala (host) — WASD + Espaço
 │  └─ models/            # visualizador/inspetor de modelos 3D da library3D
 ├─ library3D/            # biblioteca de assets 3D, organizada por tipo

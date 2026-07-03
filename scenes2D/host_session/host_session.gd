@@ -12,7 +12,6 @@ signal replace_main_scene
 const LEVELS := [
 	{"label": "Level 1", "path": "res://scenes3D/level_1/level_1.tscn"},
 	{"label": "Level 2", "path": "res://scenes3D/level_2/level_2.tscn"},
-	{"label": "Level Base", "path": "res://scenes3D/level_base/level_base.tscn"},
 ]
 const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"

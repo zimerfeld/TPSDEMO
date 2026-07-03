@@ -3,7 +3,7 @@ extends Node
 signal replace_main_scene
 signal quit
 
-const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
+const DEFAULT_ROOM_LEVEL: String = "res://scenes3D/level_1/level_1.tscn"
 const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn"
 const CLIENT_SESSION_PATH: String = "res://scenes2D/client_session/client_session.tscn"
 # Quantos valores recentes (porta/IP) guardar para seleção.
@@ -335,9 +335,9 @@ func _on_manage_rooms_pressed() -> void:
 	# Servidor já ativo: o host_session é a tela persistente (o peer NÃO é fechado ao navegar nele).
 	multiplayer.multiplayer_peer = peer
 	RoomManager.client_mode = false
-	# Servidor dedicado (headless): já inicia uma sala com o level base por padrão.
+	# Servidor dedicado (headless): já inicia uma sala com o Level 1 por padrão.
 	if DisplayServer.get_name() == "headless":
-		RoomManager.start_room(LEVEL_BASE_PATH)
+		RoomManager.start_room(DEFAULT_ROOM_LEVEL)
 	emit_signal("replace_main_scene", ResourceLoader.load(HOST_SESSION_PATH))
 
 

@@ -18,6 +18,7 @@ var _model_options: Array[Dictionary] = []
 var _win: FloatingWindow = null
 var _template_picker: OptionButton
 var _name_edit: LineEdit
+var _entry_name_edit: LineEdit
 var _entry_picker: OptionButton
 var _kind_picker: OptionButton
 var _model_picker: OptionButton
@@ -85,6 +86,13 @@ func _build_ui(content: VBoxContainer) -> void:
 	var entry_separator := HSeparator.new()
 	entry_separator.name = "EntrySeparator"
 	root.add_child(entry_separator)
+	# Campo "Nome da entrada": renomeia o texto exibido no EntryPicker abaixo dele. Vazio → o dropdown
+	# cai no rótulo automático ("N. facção modelo xN"). A digitação atualiza o item na hora (sem rebuild).
+	_entry_name_edit = LineEdit.new()
+	_entry_name_edit.name = "EntryNameField"
+	_entry_name_edit.placeholder_text = "Nome da entrada"
+	_entry_name_edit.text_changed.connect(_on_entry_name_changed)
+	root.add_child(_labeled("Nome da entrada", _entry_name_edit))
 	var entry_row := HBoxContainer.new()
 	entry_row.name = "EntryRow"
 	entry_row.add_theme_constant_override("separation", 8)
@@ -184,22 +192,40 @@ func _refresh_template_fields() -> void:
 func _refresh_entry_picker() -> void:
 	_entry_picker.clear()
 	for i in _entries().size():
-		var e := _entries()[i] as Dictionary
-		_entry_picker.add_item("%d. %s %s x%d" % [
-			i + 1,
-			String(e.get("faction", "neutral")),
-			String(e.get("model_key", "")),
-			int(e.get("count", 1)),
-		])
+		_entry_picker.add_item(_entry_display_text(i))
 	if _entry_picker.item_count > 0:
 		_entry_picker.select(clampi(_entry_index, 0, _entry_picker.item_count - 1))
 
 
+# Texto exibido no EntryPicker para a entrada `i`: o NOME custom (se houver), senão o rótulo
+# automático ("N. facção modelo xN"). O prefixo "N." mantém a ordem/identificação na lista.
+func _entry_display_text(i: int) -> String:
+	var e := _entries()[i] as Dictionary
+	var custom := String(e.get("name", "")).strip_edges()
+	if custom != "":
+		return "%d. %s" % [i + 1, custom]
+	return "%d. %s %s x%d" % [
+		i + 1,
+		String(e.get("faction", "neutral")),
+		String(e.get("model_key", "")),
+		int(e.get("count", 1)),
+	]
+
+
+# Digitou no campo "Nome da entrada": grava na entrada selecionada e atualiza SÓ o item do dropdown
+# (sem repovoar tudo → o campo não perde o foco). Vazio volta ao rótulo automático.
+func _on_entry_name_changed(new_text: String) -> void:
+	if _entry_index < 0 or _entry_index >= _entries().size():
+		return
+	(_entries()[_entry_index] as Dictionary)["name"] = new_text
+	_entry_picker.set_item_text(_entry_index, _entry_display_text(_entry_index))
+
+
 func _refresh_entry_fields() -> void:
 	var has_entry := _entry_index >= 0 and _entry_index < _entries().size()
-	for control in [_kind_picker, _model_picker, _faction_picker, _count_spin, _placement_picker,
-			_positions_edit, _random_center_edit, _random_size_edit, _formation_picker,
-			_formation_origin_edit, _spacing_spin, _rotation_spin]:
+	for control in [_entry_name_edit, _kind_picker, _model_picker, _faction_picker, _count_spin,
+			_placement_picker, _positions_edit, _random_center_edit, _random_size_edit,
+			_formation_picker, _formation_origin_edit, _spacing_spin, _rotation_spin]:
 		if control is LineEdit or control is SpinBox:
 			control.editable = has_entry
 		elif control is OptionButton:
@@ -212,6 +238,7 @@ func _refresh_entry_fields() -> void:
 	if not has_entry:
 		return
 	var e := _entries()[_entry_index] as Dictionary
+	_entry_name_edit.text = String(e.get("name", ""))
 	_select_text(_kind_picker, String(e.get("kind", "character")))
 	_refresh_model_picker()
 	_select_model(String(e.get("scene_path", "")))
@@ -318,6 +345,7 @@ func _save_entry_fields() -> void:
 	if _entry_index < 0 or _entry_index >= _entries().size():
 		return
 	var e := _entries()[_entry_index] as Dictionary
+	e["name"] = _entry_name_edit.text.strip_edges()
 	e["kind"] = _kind_picker.get_item_text(_kind_picker.selected)
 	e["faction"] = _faction_picker.get_item_text(_faction_picker.selected)
 	if _model_picker.selected >= 0:

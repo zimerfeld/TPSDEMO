@@ -4,7 +4,6 @@ signal replace_main_scene
 
 const LEVEL_1_PATH: String = "res://scenes3D/level_1/level_1.tscn"
 const LEVEL_2_PATH: String = "res://scenes3D/level_2/level_2.tscn"
-const LEVEL_BASE_PATH: String = "res://scenes3D/level_base/level_base.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 const LevelTemplateDialogScene := preload("res://scenes2D/level_templates/level_template_dialog.gd")
 
@@ -12,8 +11,6 @@ var loading_path: String = ""
 
 @onready var level1_button: Button = %Level1
 @onready var level2_button: Button = %Level2
-@onready var level_base_button: Button = %LevelBase
-@onready var back_button: Button = %Back
 @onready var loading: HBoxContainer = %Loading
 @onready var loading_progress: ProgressBar = %Progress
 @onready var loading_done_timer: Timer = %DoneTimer
@@ -78,7 +75,6 @@ func _process(_delta: float) -> void:
 			print("Error while loading scene: " + str(status))
 			level1_button.show()
 			level2_button.show()
-			level_base_button.show()
 			loading.hide()
 
 
@@ -94,10 +90,6 @@ func _on_level_2_pressed() -> void:
 	_select_level(LEVEL_2_PATH)
 
 
-func _on_level_base_pressed() -> void:
-	_select_level(LEVEL_BASE_PATH)
-
-
 # Offline (solo): carrega o nível direto. O fluxo online não passa mais por aqui — a tela de
 # salas (PlayOnline → HostSession/ClientSession) escolhe o level por sala.
 func _select_level(level_path: String) -> void:
@@ -106,7 +98,6 @@ func _select_level(level_path: String) -> void:
 	loading_path = level_path
 	level1_button.hide()
 	level2_button.hide()
-	level_base_button.hide()
 	loading.show()
 	ResourceLoader.load_threaded_request(loading_path, "", true)
 
@@ -122,7 +113,6 @@ func _add_template_buttons() -> void:
 	var rows := {
 		LEVEL_1_PATH: {"row": %Level1.get_parent(), "name": "Level1Template", "tab": 2},
 		LEVEL_2_PATH: {"row": %Level2.get_parent(), "name": "Level2Template", "tab": 4},
-		LEVEL_BASE_PATH: {"row": %LevelBase.get_parent(), "name": "LevelBaseTemplate", "tab": 6},
 	}
 	for level_path in rows:
 		var info: Dictionary = rows[level_path]

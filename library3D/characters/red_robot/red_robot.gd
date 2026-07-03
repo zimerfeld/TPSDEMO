@@ -11,6 +11,10 @@ enum State {
 
 const PLAYER_AIM_TOLERANCE_DEGREES = deg_to_rad(15.0)
 
+## Histerese de alvo: só troca para outro player se ele estiver ao menos esta distância (m) mais perto
+## que o alvo atual — evita ficar alternando entre players quase equidistantes.
+const TARGET_SWITCH_MARGIN: float = 2.5
+
 const SHOOT_WAIT: float = 6.0
 const AIM_TIME: float = 1.0
 
@@ -36,6 +40,12 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 @export_range(0.0, 1.0) var aim_accuracy: float = 0.78
 ## Só dispara quando o player estiver dentro deste alcance (mira precisa).
 @export var effective_range: float = 30.0
+## Velocidade (m/s) que a animação de caminhada percorre no chão com speed_scale = 1.0 (a "passada
+## natural"). No movimento manual (strafe/recuo/formação) a cadência da animação é escalada para casar
+## com a velocidade real → os pés NÃO patinam. Tunável (irá para a tela de parametrização de IA).
+@export var walk_natural_speed: float = 2.2
+## Multiplicador global do quanto o robô anda no modo manual (1.0 = casa a passada; >1 acelera).
+@export_range(0.5, 2.0) var gait_speed_scale: float = 1.0
 
 @export var target_position := Vector3()
 @export var aim_target_position := Vector3.ZERO
@@ -58,7 +68,13 @@ var shoot_countdown: float = SHOOT_WAIT
 var aim_countdown: float = AIM_TIME
 
 var player: Node3D = null
+# Todos os players atualmente dentro do raio de alerta (Area body_entered/exited). O alvo do quadro é
+# o MAIS PRÓXIMO entre eles (_pick_target) → qualquer inimigo pode atirar em qualquer player no raio.
+var _players_in_range: Array[Node3D] = []
 var orientation := Transform3D()
+# AnimationPlayer de locomoção que o AnimationTree pilota — usado para escalar a cadência das pernas
+# à velocidade real no movimento manual (anti-patinação). Resolvido no _ready a partir do tree.
+var _loco_player: AnimationPlayer = null
 
 # Controlador de IA (comportamentos/decisões), instanciado em _ready a partir de IA/.
 var ai: RedRobotAI = null
@@ -93,6 +109,10 @@ func _ready() -> void:
 	if multiplayer.is_server():
 		net_transform = global_transform
 	$AnimationTree.active = true
+	# AnimationPlayer que o tree pilota → escalamos seu speed_scale no movimento manual p/ a cadência
+	# das pernas casar com a velocidade real (sem patinar). Guardado com segurança (pode ser null).
+	if animation_tree.anim_player != NodePath():
+		_loco_player = animation_tree.get_node_or_null(animation_tree.anim_player) as AnimationPlayer
 
 	# IA do red_robot: instancia o controlador de comportamento/decisões (pasta IA/) e
 	# aplica a recarga acelerada (1.5x mais rápida no 1º e nos próximos tiros).
@@ -313,9 +333,14 @@ func _physics_process(delta: float) -> void:
 		shoot()
 		test_shoot = false
 
+	# Alvo do quadro = player VIVO mais próximo dentro do raio de alerta (multiplayer: pode haver
+	# vários). Reavaliado a cada frame com histerese → cada robô reage ao player mais perto DELE.
+	player = _pick_target()
+
 	if not player:
 		target_position = Vector3()
 		aim_target_position = Vector3.ZERO
+		_reset_locomotion_cadence()
 		animate(delta)
 		set_velocity(get_gravity() * delta)
 		set_up_direction(Vector3.UP)
@@ -373,10 +398,14 @@ func _physics_process(delta: float) -> void:
 	animate(delta)
 	if bool(move_plan.get("manual", false)):
 		animation_tree["parameters/state/transition_request"] = "walk"
+		var desired_speed: float = float(move_plan.get("speed", 0.0)) * gait_speed_scale
+		# Casa a cadência das pernas à velocidade real → sem patinar (respeita o tempo da animação).
+		_match_locomotion_cadence(desired_speed)
 		_apply_direct_movement(player.global_transform.origin, move_plan.get("direction", Vector3.ZERO),
-			float(move_plan.get("speed", 0.0)))
+			desired_speed)
 	else:
-		# Apply root motion to orientation.
+		# APPROACH: o deslocamento VEM da animação (root motion) → pés já travados; cadência natural.
+		_reset_locomotion_cadence()
 		orientation *= Transform3D(animation_tree.get_root_motion_rotation(), animation_tree.get_root_motion_position())
 		var h_velocity: Vector3 = orientation.origin / delta
 		velocity.x = h_velocity.x
@@ -438,11 +467,42 @@ func _is_player_candidate(body: Node3D) -> bool:
 		or (body.has_method(&"add_camera_shake_trauma") and body.has_method(&"hit")))
 
 
+# Alvo do quadro: player VIVO mais próximo dentro do raio de alerta. Com histerese (TARGET_SWITCH_MARGIN)
+# para não oscilar entre players quase equidistantes. Retorna null se não há ninguém no raio.
+func _pick_target() -> Node3D:
+	var here: Vector3 = global_transform.origin
+	var best: Node3D = null
+	var best_d: float = INF
+	for p in _players_in_range:
+		if not is_instance_valid(p):
+			continue
+		var d: float = here.distance_to((p as Node3D).global_transform.origin)
+		if d < best_d:
+			best_d = d
+			best = p
+	# Mantém o alvo atual se o novo mais próximo não for margem suficiente mais perto (evita flip-flop).
+	if player != null and is_instance_valid(player) and _players_in_range.has(player) and best != null and best != player:
+		if here.distance_to(player.global_transform.origin) - best_d < TARGET_SWITCH_MARGIN:
+			return player
+	return best
+
+
+# Escala a cadência da locomoção para a velocidade real: leg cycle ∝ ground speed → sem patinar.
+func _match_locomotion_cadence(speed: float) -> void:
+	if _loco_player != null:
+		_loco_player.speed_scale = clampf(speed / maxf(walk_natural_speed, 0.1), 0.55, 2.2)
+
+
+# Volta a locomoção à cadência natural (usado fora do movimento manual e quando não há alvo).
+func _reset_locomotion_cadence() -> void:
+	if _loco_player != null and not is_equal_approx(_loco_player.speed_scale, 1.0):
+		_loco_player.speed_scale = 1.0
+
+
 func _on_area_body_entered(body: Node3D) -> void:
-	if _is_player_candidate(body):
-		player = body
+	if _is_player_candidate(body) and not _players_in_range.has(body):
+		_players_in_range.append(body)
 
 
 func _on_area_body_exited(body: Node3D) -> void:
-	if body == player:
-		player = null
+	_players_in_range.erase(body)

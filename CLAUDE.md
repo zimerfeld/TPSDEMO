@@ -17,3 +17,4 @@
 - (2026-06-30) Em telas com COLUNAS, aplicar o ciclo de TAB por coluna: percorrer todos os controles de uma coluna (de cima para baixo) antes de passar para a próxima coluna.
 - (2026-06-30) Os cliques nos botões da `LangBar` (idiomas) também devem ser permitidos com janelas/painéis flutuantes abertos — mesmo comportamento do `CheckButton` Debug2D (clique acionável mesmo sob o backdrop modal).
 - (2026-06-30) Controles desabilitados (`disabled`) não podem receber foco de TAB (ficam fora do anel de navegação).
+- (2026-07-02) O `CheckButton` **Debug2D NUNCA pode aparecer em cena de LEVEL** (gameplay 3D — `level_1`/`level_2`). O toggle é de telas 2D de UI, não do jogo. Enforçado em `DebugOverlay._ensure_debug2d_toggle` (retorna cedo se `screen is Node3D`); a tela `Models` (raiz `Node`) segue recebendo o toggle. Ver [[sistemas/debug-overlay]].
