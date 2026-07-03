@@ -5,7 +5,8 @@ signal replace_main_scene
 const LEVEL_1_PATH: String = "res://scenes3D/level_1/level_1.tscn"
 const LEVEL_2_PATH: String = "res://scenes3D/level_2/level_2.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
-const LevelTemplateDialogScene := preload("res://scenes2D/level_templates/level_template_dialog.gd")
+const TemplateManagerScene := preload("res://scenes2D/template_manager/template_manager.tscn")
+const SceneryManagerScene := preload("res://scenes2D/scenery_manager/scenery_manager.tscn")
 
 var loading_path: String = ""
 
@@ -16,8 +17,6 @@ var loading_path: String = ""
 @onready var portuguese_button: Button = %Portuguese
 @onready var english_button: Button = %English
 
-var _template_dialog: LevelTemplateDialog = null
-var _scenery_dialog: LevelTemplateDialog = null
 var _template_buttons: Dictionary = {}
 var _scenery_buttons: Dictionary = {}
 
@@ -33,6 +32,9 @@ func _ready() -> void:
 	_wire_tab_order.call_deferred()
 	($UI/Actions as HBoxContainer).child_entered_tree.connect(
 		func(_n: Node) -> void: _wire_tab_order.call_deferred())
+	# Os botões Template/Cenário têm texto DINÂMICO (script-driven) — re-traduz o rótulo ao trocar
+	# de idioma (o nome do template em si é DADO e não é traduzido; só os prefixos fixos).
+	Locale.language_changed.connect(func(_lang: String) -> void: _refresh_template_buttons())
 
 
 # (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — pode ser chamado quantas vezes
@@ -140,6 +142,9 @@ func _make_row_button(button_name: String, tab: int, text: String) -> Button:
 	btn.name = button_name
 	btn.set_meta(UINav.TAB_ORDER_META, tab)
 	btn.text = text
+	# Texto é reescrito por _refresh_template_buttons (via tr_key) → sai do auto-localizador do Locale
+	# para o script não brigar com ele sobre o mesmo rótulo.
+	btn.add_to_group(Locale.SKIP_GROUP)
 	btn.custom_minimum_size = Vector2(220, 50)
 	# As colunas Template/Cenário EXPANDEM: com o grid em largura total e a coluna Level fixa
 	# (300 px), as duas dividem o RESTO do espaço em tela meio a meio, responsivamente.
@@ -148,21 +153,15 @@ func _make_row_button(button_name: String, tab: int, text: String) -> Button:
 
 
 func _open_template_dialog(level_path: String) -> void:
-	if _template_dialog == null:
-		_template_dialog = LevelTemplateDialogScene.new()
-		_template_dialog.configure("spawn")
-		_template_dialog.templates_changed.connect(_refresh_template_buttons)
-		add_child(_template_dialog)
-	_template_dialog.popup_for_level(level_path)
+	var form := TemplateManagerScene.instantiate() as TemplateFormBase
+	form.templates_changed.connect(_refresh_template_buttons)
+	form.open_over(self, level_path)
 
 
 func _open_scenery_dialog(level_path: String) -> void:
-	if _scenery_dialog == null:
-		_scenery_dialog = LevelTemplateDialogScene.new()
-		_scenery_dialog.configure("scenery")
-		_scenery_dialog.templates_changed.connect(_refresh_template_buttons)
-		add_child(_scenery_dialog)
-	_scenery_dialog.popup_for_level(level_path)
+	var form := SceneryManagerScene.instantiate() as TemplateFormBase
+	form.templates_changed.connect(_refresh_template_buttons)
+	form.open_over(self, level_path)
 
 
 func _refresh_template_buttons() -> void:
@@ -173,17 +172,17 @@ func _refresh_template_buttons() -> void:
 
 
 func _template_button_text(level_path: String) -> String:
-	var active := LevelTemplateManager.active_template(level_path)
+	var active := CharacterTemplateManager.active(level_path)
 	if active.is_empty():
-		return "Templates: padrão"
-	return "Template: %s" % String(active.get("name", "ativo"))
+		return Locale.tr_key("Templates: padrão")
+	return "%s %s" % [Locale.tr_key("Template:"), String(active.get("name", "ativo"))]
 
 
 func _scenery_button_text(level_path: String) -> String:
-	var active := LevelTemplateManager.active_scenery(level_path)
+	var active := SceneryTemplateManager.active(level_path)
 	if active.is_empty():
-		return "Cenários: padrão"
-	return "Cenário: %s" % String(active.get("name", "ativo"))
+		return Locale.tr_key("Cenários: padrão")
+	return "%s %s" % [Locale.tr_key("Cenário:"), String(active.get("name", "ativo"))]
 
 
 func _input(input_event: InputEvent) -> void:

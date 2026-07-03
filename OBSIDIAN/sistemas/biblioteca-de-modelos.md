@@ -223,6 +223,32 @@ virou o **botão `DamageButton`** ao lado direito do "Voltar", ver abaixo.)
 > `_refresh_member_overlays()` + `_refresh_aux_labels()` para reconstruir as pilhas no idioma novo.
 > Chaves novas em `models.{pt,en}.json`: `Tipo:`/`Nome:` (prefixos) + os toggles `Tipo`/`Nome`/`Linhas do Esqueleto`.
 
+> [!note] Esquema de cores membro × sub-membro + fix do rótulo de sub-membro (2026-07-03)
+> **Cores** (o texto de cada toggle casa com o elemento 3D que ele controla — constantes no topo de
+> `models.gd`):
+> - **Membro** → colisores **AZUL CLARO** quase transparente (`_MEMBER_COLLIDER_FILL`, gizmo) e texto do
+>   toggle *Colisor de Membro* (`_MEMBER_COLLIDER_COLOR`); **rótulos AZUL ESCURO** (`_LABEL_LINE_COLORS["Member"]`,
+>   também no toggle *Membro*).
+> - **Sub-membro** → colisores **ROXO CLARO** quase transparente (`_SUB_COLLIDER_FILL`) e texto do toggle
+>   *Colisor de Submembro* (`_SUB_COLLIDER_COLOR`); **rótulos ROXO ESCURO** (`_SUB_LBL_COLOR`, também no toggle *Submembros*).
+> - **Esqueleto (osso avulso)** → realce/box **LARANJA CLARO** quase transparente (`_AUX_HL_COLOR`) e texto
+>   do toggle *Colisor de Esqueleto* (`_AUX_HL_TEXT_COLOR`); **rótulos "Esqueleto: …" LARANJA ESCURO**
+>   (`_AUX_LBL_COLOR`, também no toggle *Esqueleto*). (2026-07-03)
+> - `_add_collider_gizmos` escolhe o material por grupo (`PART_*` → roxo; senão azul), via o helper
+>   `_make_gizmo_material(fill)`. `_apply_label_line_colors` (reescrito num único dict/laço) pinta os 9
+>   toggles com cor: membro/sub/esqueleto (rótulo escuro × colisor claro) + Tipo/Nome/ID. O antigo verde
+>   único dos colliders (`0.2,1.0,0.4`) e o laranja único do esqueleto (`1.0,0.6,0.1`) foram substituídos;
+>   a chave `"Osso"` de `_LABEL_LINE_COLORS` saiu (o toggle agora usa `_AUX_LBL_COLOR`).
+>
+> **Tamanho dos rótulos:** membro e sub-membro compartilham `_LBL_FONT_SIZE`/`_LBL_PIXEL_SIZE` (mesmo
+> tamanho de texto — confirmado no .exe: "Membro:" e "Sub-membro:" saem idênticos).
+>
+> **Bug corrigido:** ao ligar o toggle **Submembros** (rótulo) no modo **"Todos os membros" → "Todos os
+> Sub-membros"**, NENHUM rótulo aparecia — `_refresh_sub_member_labels` só tratava um `PART_` individual
+> (o valor `ALL_SUB_MEMBERS_VALUE` não começa com `PART_` → retorno cedo). Agora, nesse modo, rotula
+> TODOS os sub-membros (espelhando o toggle de colisores), garante os corpos com `_ensure_member_colliders`
+> e o clear passou do `_label_sub_member` (chamado em laço) para o chamador (uma vez só).
+
 > [!note] "Malha" e "Linhas do Esqueleto" (vindos da antiga tela developer, 2026-06-23)
 > - **Malha** (`Malha`, **1º toggle da lista** desde 2026-06-23, chave `show_malha`, default LIGADO):
 >   mostra/esconde a malha (`MeshInstance3D`) do modelo do preview (pula gizmos com nome `_…`). `_apply_malha_visibility`.

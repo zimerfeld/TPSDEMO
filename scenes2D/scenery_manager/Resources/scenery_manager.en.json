@@ -1,0 +1,23 @@
+{
+	"Gerenciador de Cenários": "Scenery Manager",
+	"Novo": "New",
+	"Duplicar": "Duplicate",
+	"Remover": "Remove",
+	"Nome": "Name",
+	"Nome da entrada": "Entry name",
+	"Adicionar Entrada": "Add Entry",
+	"Remover Entrada": "Remove Entry",
+	"Modelo": "Model",
+	"Quantidade": "Count",
+	"Posicionamento": "Placement",
+	"Coordenadas": "Coordinates",
+	"Centro aleatório": "Random center",
+	"Tamanho aleatório": "Random size",
+	"Formação": "Formation",
+	"Origem formação": "Formation origin",
+	"Espaçamento": "Spacing",
+	"Rotação Y": "Rotation Y",
+	"Salvar": "Save",
+	"Salvar e Usar Neste Level": "Save and Use in This Level",
+	"Fechar": "Close"
+}

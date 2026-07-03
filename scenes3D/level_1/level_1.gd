@@ -26,7 +26,8 @@ func _ready() -> void:
 		# tela cinza (envenenamento do scene-cache). Single-level (offline / "Hospedar Somente"):
 		# aplica o template ativo, se houver. Ver [[salas-nascem-limpas]].
 		if not has_meta("room_id"):
-			LevelTemplateManager.apply_active_template(scene_file_path, spawned_nodes, player_spawn_points)
+			CharacterTemplateManager.apply_active(scene_file_path, spawned_nodes)
+			SceneryTemplateManager.apply_active(scene_file_path, spawned_nodes)
 		randomize()
 
 	# Modo-sala (servidor multi-level) usa spawn POR-SALA (RoomManager); senão, NetSpawn single-level.
