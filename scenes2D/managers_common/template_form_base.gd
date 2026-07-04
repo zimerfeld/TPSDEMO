@@ -26,16 +26,30 @@ var _sel_scene_path := ""
 @onready var _name_edit: LineEdit = %NameField
 @onready var _entry_name_edit: LineEdit = %EntryNameField
 @onready var _entries_picker: OptionButton = %Entries
-@onready var _cascade_row: HFlowContainer = %CascadeRow
-@onready var _model_value_label: Label = %ModelValue
+# CascadeRow agora é um VBoxContainer (empilha os dropdowns "Folders" verticalmente, cada um ocupando
+# a largura toda da linha — o cross-axis do VBox estica os filhos). Ver _append_cascade_picker.
+@onready var _cascade_row: VBoxContainer = %CascadeRow
 @onready var _factions_picker: OptionButton = get_node_or_null("%Factions")
+# Dropdown de ARMA (só na cena de personagens — nó %Weapons). Habilitado só depois que um
+# personagem (pasta-modelo) é escolhido na cascata; opções vindas de library3D/weapons.
+@onready var _weapons_picker: OptionButton = get_node_or_null("%Weapons")
 @onready var _count_spin: SpinBox = %Count
 @onready var _placements_picker: OptionButton = %Placements
+# Painel que agrupa os campos condicionais ao Posicionamento (some quando não há entrada).
+@onready var _placement_group: PanelContainer = %PlacementGroup
+# Rótulos + campos específicos de cada modo de Posicionamento (mostrados/ocultados por
+# _apply_placement_visibility conforme o valor de %Placements).
+@onready var _positions_label: Label = %PositionsLabel
 @onready var _positions_edit: LineEdit = %PositionsField
+@onready var _random_center_label: Label = %RandomCenterLabel
 @onready var _random_center_edit: LineEdit = %RandomCenterField
+@onready var _random_size_label: Label = %RandomSizeLabel
 @onready var _random_size_edit: LineEdit = %RandomSizeField
+@onready var _formation_label: Label = %FormationLabel
 @onready var _formations_picker: OptionButton = %Formations
+@onready var _formation_origin_label: Label = %FormationOriginLabel
 @onready var _formation_origin_edit: LineEdit = %FormationOriginField
+@onready var _spacing_label: Label = %SpacingLabel
 @onready var _spacing_spin: SpinBox = %Spacing
 @onready var _rotation_spin: SpinBox = %Rotation
 
@@ -67,6 +81,7 @@ func _ready() -> void:
 	_name_edit.text_changed.connect(_on_template_name_changed)
 	_entry_name_edit.text_changed.connect(_on_entry_name_changed)
 	_entries_picker.item_selected.connect(_on_entry_selected)
+	_placements_picker.item_selected.connect(_on_placement_selected)
 	(%Novo as Button).pressed.connect(_new_template)
 	(%Duplicar as Button).pressed.connect(_duplicate_template)
 	(%Remover as Button).pressed.connect(_remove_template)
@@ -83,6 +98,8 @@ func _setup_picker_items() -> void:
 	if _factions_picker != null:
 		for v in ["friendly", "enemy", "neutral"]:
 			_factions_picker.add_item(v)
+	if _weapons_picker != null:
+		_populate_weapons()
 
 
 # Abre a janela flutuante (num CanvasLayer no topo, sob `host`), insere ESTE formulário no seu
@@ -93,8 +110,13 @@ func open_over(host: Node, level_path: String) -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 128
 	_win = FLOATING_SCENE.instantiate()
-	_win.min_window_size = Vector2(1040, 640)
+	_win.min_window_size = Vector2(700, 620)
 	layer.add_child(_win)
+	# Encosta a barra de rolagem vertical mais à direita: reduz a margem direita do corpo da janela
+	# só nesta janela (override de instância), aproximando o ScrollContainer da borda direita.
+	var body := _win.get_node_or_null("Window/Main/Body") as MarginContainer
+	if body != null:
+		body.add_theme_constant_override("margin_right", 4)
 	host.add_child(layer)
 	_win.set_title(_window_title())
 	_win.closed.connect(layer.queue_free)
@@ -193,10 +215,11 @@ func _refresh_entry_fields() -> void:
 			control.disabled = not has_entry
 	for picker in _cascade_pickers:
 		picker.disabled = not has_entry
-	# Re-liga o anel de Tab agora que os campos mudaram de habilitado/desabilitado (o × por último).
-	if is_instance_valid(_win):
-		_win.wire_focus_ring.call_deferred()
 	if not has_entry:
+		# Sem entrada: oculta todos os campos de posicionamento e religa o anel de Tab (× por último).
+		_apply_placement_visibility()
+		if is_instance_valid(_win):
+			_win.wire_focus_ring.call_deferred()
 		_rebuild_cascade("")
 		return
 	var e := _entries()[_entry_index] as Dictionary
@@ -206,6 +229,8 @@ func _refresh_entry_fields() -> void:
 	_rebuild_cascade(String(e.get("scene_path", "")))
 	if _factions_picker != null:
 		_select_text(_factions_picker, String(e.get("faction", "enemy")))
+	if _weapons_picker != null:
+		_select_weapon(String(e.get("weapon_path", "")))
 	_count_spin.value = int(e.get("count", 1))
 	_select_text(_placements_picker, String(e.get("placement", "random")))
 	_positions_edit.text = _positions_to_text(e.get("positions", []))
@@ -215,6 +240,45 @@ func _refresh_entry_fields() -> void:
 	_formation_origin_edit.text = _vec_to_text(e.get("formation_origin", [0, 1, 0]))
 	_spacing_spin.value = float(e.get("spacing", 4.0))
 	_rotation_spin.value = float(e.get("rotation_y", 0.0))
+	# Agora que %Placements reflete o modo salvo, aplica a visibilidade e religa o anel de Tab.
+	_apply_placement_visibility()
+	if is_instance_valid(_win):
+		_win.wire_focus_ring.call_deferred()
+
+
+# Mostra apenas os campos do modo de Posicionamento atualmente selecionado, ocultando os demais
+# (label + campo juntos, para o GridContainer manter o pareamento das colunas). Sem entrada, oculta
+# tudo. "coordinates" → Coordenadas; "random" → Centro/Tamanho aleatório; "formation" → Formação,
+# Origem e Espaçamento. Rotação Y é geral (sempre visível). O anel de Tab ignora ocultos (UINav).
+func _apply_placement_visibility() -> void:
+	var has_entry := _entry_index >= 0 and _entry_index < _entries().size()
+	# O grupo inteiro só aparece com uma entrada selecionada (cada modo mostra ao menos um campo).
+	_placement_group.visible = has_entry
+	var placement := ""
+	if has_entry and _placements_picker.selected >= 0:
+		placement = _placements_picker.get_item_text(_placements_picker.selected)
+	var coord := placement == "coordinates"
+	var rand := placement == "random"
+	var form := placement == "formation"
+	_positions_label.visible = coord
+	_positions_edit.visible = coord
+	_random_center_label.visible = rand
+	_random_center_edit.visible = rand
+	_random_size_label.visible = rand
+	_random_size_edit.visible = rand
+	_formation_label.visible = form
+	_formations_picker.visible = form
+	_formation_origin_label.visible = form
+	_formation_origin_edit.visible = form
+	_spacing_label.visible = form
+	_spacing_spin.visible = form
+
+
+# Trocar o Posicionamento no dropdown reflete na hora quais campos aparecem e religa o anel de Tab.
+func _on_placement_selected(_index: int) -> void:
+	_apply_placement_visibility()
+	if is_instance_valid(_win):
+		_win.wire_focus_ring.call_deferred()
 
 
 func _save_template() -> void:
@@ -275,6 +339,8 @@ func _add_entry() -> void:
 		"formation_origin": [0, 1, 0],
 		"spacing": 4.0,
 		"rotation_y": 0.0,
+		"weapon_key": "",
+		"weapon_path": "",
 	})
 	_entry_index = _entries().size() - 1
 	_refresh_template_fields()
@@ -311,6 +377,13 @@ func _save_entry_fields() -> void:
 	e["kind"] = _entry_kind()
 	if _factions_picker != null and _factions_picker.selected >= 0:
 		e["faction"] = _factions_picker.get_item_text(_factions_picker.selected)
+	# Arma escolhida (só personagens): guarda o caminho da cena e a chave (nome da pasta). "Selecione..."
+	# (índice 0) ou dropdown desabilitado (sem personagem) → sem arma.
+	if _weapons_picker != null:
+		var wsel := _weapons_picker.selected
+		var wpath := "" if wsel <= 0 else String(_weapons_picker.get_item_metadata(wsel))
+		e["weapon_path"] = wpath
+		e["weapon_key"] = "" if wpath == "" else wpath.get_file().get_basename()
 	# A cascata só sobrescreve o modelo quando uma pasta-modelo foi de fato alcançada.
 	if _sel_scene_path != "":
 		e["model_key"] = _sel_model_key
@@ -356,7 +429,7 @@ func _rebuild_cascade(scene_path: String) -> void:
 				break
 			picker.select(idx)  # select() por código não emite item_selected → desce manualmente
 			_descend(depth, String(folder))
-	_update_model_label()
+	_refresh_weapon_enabled()
 	if is_instance_valid(_win):
 		_win.wire_focus_ring.call_deferred()
 
@@ -390,7 +463,7 @@ func _on_cascade_selected(depth: int, idx: int) -> void:
 		_sel_scene_path = ""
 	else:
 		_descend(depth, _cascade_pickers[depth].get_item_text(idx))
-	_update_model_label()
+	_refresh_weapon_enabled()
 	if is_instance_valid(_win):
 		_win.wire_focus_ring.call_deferred()
 
@@ -403,16 +476,11 @@ func _descend(depth: int, folder: String) -> void:
 	var model: Dictionary = info.get("model", {})
 	_sel_model_key = String(model.get("key", ""))
 	_sel_scene_path = String(model.get("path", ""))
-	if not (info.get("folders", []) as Array).is_empty():
+	# Ao alcançar uma pasta-MODELO a cascata PARA: não desce para subpastas de suporte (laser/, parts/…)
+	# — era o que gerava o "Folders2" poluído com efeitos/projéteis. Só oferece o próximo nível quando a
+	# pasta é apenas um AGRUPADOR intermediário (não tem cena homônima).
+	if _sel_scene_path == "" and not (info.get("folders", []) as Array).is_empty():
 		_append_cascade_picker(dir)
-
-
-func _update_model_label() -> void:
-	if _sel_scene_path != "":
-		_model_value_label.text = "Modelo: %s (%s)" % [
-			_sel_model_key.replace("_", " ").capitalize(), _sel_scene_path.get_file()]
-	else:
-		_model_value_label.text = "Navegue pelas pastas até um modelo"
 
 
 func _find_item(picker: OptionButton, text: String) -> int:
@@ -420,6 +488,39 @@ func _find_item(picker: OptionButton, text: String) -> int:
 		if picker.get_item_text(i) == text:
 			return i
 	return -1
+
+
+# ---- Arma (só personagens) ----------------------------------------------------------------
+
+# Preenche o dropdown de arma a partir de library3D/weapons (via TemplateManagerBase.list_weapons):
+# "Selecione..." (metadata "") + uma opção por arma, com o caminho da cena na metadata.
+func _populate_weapons() -> void:
+	_weapons_picker.clear()
+	_weapons_picker.add_item("Selecione...")
+	_weapons_picker.set_item_metadata(0, "")
+	for w in _manager().list_weapons():
+		_weapons_picker.add_item(String(w["label"]))
+		_weapons_picker.set_item_metadata(_weapons_picker.item_count - 1, String(w["path"]))
+
+
+# Seleciona a arma cujo caminho de cena bate com `path`; "" (ou não encontrada) → "Selecione...".
+func _select_weapon(path: String) -> void:
+	if _weapons_picker == null:
+		return
+	for i in _weapons_picker.item_count:
+		if String(_weapons_picker.get_item_metadata(i)) == path:
+			_weapons_picker.select(i)
+			return
+	_weapons_picker.select(0)
+
+
+# A arma só fica habilitada DEPOIS que um personagem (pasta-modelo) foi escolhido na cascata
+# (_sel_scene_path preenchido) e há uma entrada selecionada.
+func _refresh_weapon_enabled() -> void:
+	if _weapons_picker == null:
+		return
+	var has_entry := _entry_index >= 0 and _entry_index < _entries().size()
+	_weapons_picker.disabled = not (has_entry and _sel_scene_path != "")
 
 
 # ---- Helpers -------------------------------------------------------------------------------

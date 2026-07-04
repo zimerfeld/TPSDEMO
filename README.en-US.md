@@ -56,7 +56,11 @@ third-person shooter sandbox. At a high level it offers:
   survives** entry add/remove refreshes. Each entry's model is picked through **cascading folder
   navigation**: one dropdown per library folder level (`characters/` → `enemies/` → `red_robot`,
   for example), descending only through folders that contain models — reaching a model folder
-  fills the entry's model/scene fields.
+  fills the entry's model/scene fields. The form is **tidied for readability**: the
+  placement-specific fields are gathered into a titled **"Placement options"** panel that shows only
+  the fields for the chosen mode (coordinates / random center + size / formation + origin + spacing),
+  numeric fields (count, spacing, rotation) are compact, and the window is sized to its content so
+  controls no longer stretch edge-to-edge.
 - **Scenery Manager** — sibling of the Template Manager with its own button beside each level:
   same window and fields (minus Faction), browsing the **`library3D/sceneries`** library (stage
   props: **magenta box, emerald sphere and amber pill** — basic volumetric geometries with

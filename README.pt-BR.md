@@ -56,7 +56,12 @@ em terceira pessoa. Em alto nível, oferece:
   template sobrevive** aos refreshes de adicionar/remover entrada. O modelo de cada entrada é
   escolhido por **navegação em cascata**: um dropdown por nível de pasta da biblioteca
   (`characters/` → `enemies/` → `red_robot`, por exemplo), descendo só por pastas que contêm
-  modelos — ao alcançar a pasta-modelo, os campos referentes (modelo/cena) são preenchidos.
+  modelos — ao alcançar a pasta-modelo, os campos referentes (modelo/cena) são preenchidos. O
+  formulário foi **organizado para leitura**: os campos específicos do posicionamento ficam num painel
+  intitulado **"Opções de posicionamento"** que exibe só os campos do modo escolhido (coordenadas /
+  centro + tamanho aleatório / formação + origem + espaçamento), os campos numéricos (quantidade,
+  espaçamento, rotação) são compactos, e a janela é dimensionada ao conteúdo, sem os controles
+  esticando de borda a borda.
 - **Gerenciador de Cenários** — irmão do Gerenciador de Templates, um botão próprio ao lado de
   cada level: mesma janela e campos (sem Facção), navegando a biblioteca **`library3D/sceneries`**
   (objetos de palco: **caixa magenta, esfera esmeralda e cápsula âmbar** — geometrias volumétricas

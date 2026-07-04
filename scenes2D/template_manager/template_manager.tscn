@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scenes2D/template_manager/template_manager.gd" id="1"]
 
 [node name="TemplateManager" type="ScrollContainer"]
-custom_minimum_size = Vector2(1000, 560)
+custom_minimum_size = Vector2(620, 540)
 horizontal_scroll_mode = 0
 follow_focus = true
 script = ExtResource("1")
@@ -91,7 +91,7 @@ text = "Adicionar Entrada"
 
 [node name="FieldsGrid" type="GridContainer" parent="Body"]
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 0
 theme_override_constants/h_separation = 12
 theme_override_constants/v_separation = 8
 columns = 2
@@ -101,18 +101,15 @@ layout_mode = 2
 text = "Modelo"
 
 [node name="ModelColumn" type="VBoxContainer" parent="Body/FieldsGrid"]
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 theme_override_constants/separation = 4
 
-[node name="CascadeRow" type="HFlowContainer" parent="Body/FieldsGrid/ModelColumn"]
+[node name="CascadeRow" type="VBoxContainer" parent="Body/FieldsGrid/ModelColumn"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/h_separation = 8
-
-[node name="ModelValue" type="Label" parent="Body/FieldsGrid/ModelColumn"]
-unique_name_in_owner = true
-layout_mode = 2
+theme_override_constants/separation = 4
 
 [node name="FactionLabel" type="Label" parent="Body/FieldsGrid"]
 layout_mode = 2
@@ -120,8 +117,20 @@ text = "Facção"
 
 [node name="Factions" type="OptionButton" parent="Body/FieldsGrid"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
+
+[node name="WeaponLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Arma"
+
+[node name="Weapons" type="OptionButton" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+disabled = true
 
 [node name="CountLabel" type="Label" parent="Body/FieldsGrid"]
 layout_mode = 2
@@ -129,8 +138,9 @@ text = "Quantidade"
 
 [node name="Count" type="SpinBox" parent="Body/FieldsGrid"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 min_value = 1.0
 max_value = 64.0
 value = 1.0
@@ -142,71 +152,9 @@ text = "Posicionamento"
 
 [node name="Placements" type="OptionButton" parent="Body/FieldsGrid"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PositionsLabel" type="Label" parent="Body/FieldsGrid"]
-layout_mode = 2
-text = "Coordenadas"
-
-[node name="PositionsField" type="LineEdit" parent="Body/FieldsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "x,y,z; x,y,z"
-
-[node name="RandomCenterLabel" type="Label" parent="Body/FieldsGrid"]
-layout_mode = 2
-text = "Centro aleatório"
-
-[node name="RandomCenterField" type="LineEdit" parent="Body/FieldsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "0,1,0"
-
-[node name="RandomSizeLabel" type="Label" parent="Body/FieldsGrid"]
-layout_mode = 2
-text = "Tamanho aleatório"
-
-[node name="RandomSizeField" type="LineEdit" parent="Body/FieldsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "34,0,34"
-
-[node name="FormationLabel" type="Label" parent="Body/FieldsGrid"]
-layout_mode = 2
-text = "Formação"
-
-[node name="Formations" type="OptionButton" parent="Body/FieldsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="FormationOriginLabel" type="Label" parent="Body/FieldsGrid"]
-layout_mode = 2
-text = "Origem formação"
-
-[node name="FormationOriginField" type="LineEdit" parent="Body/FieldsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-placeholder_text = "0,1,0"
-
-[node name="SpacingLabel" type="Label" parent="Body/FieldsGrid"]
-layout_mode = 2
-text = "Espaçamento"
-
-[node name="Spacing" type="SpinBox" parent="Body/FieldsGrid"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 0.5
-max_value = 50.0
-step = 0.5
-value = 4.0
-focus_mode = 2
+size_flags_horizontal = 0
 
 [node name="RotationLabel" type="Label" parent="Body/FieldsGrid"]
 layout_mode = 2
@@ -214,9 +162,111 @@ text = "Rotação Y"
 
 [node name="Rotation" type="SpinBox" parent="Body/FieldsGrid"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 0
 min_value = -360.0
 max_value = 360.0
 step = 5.0
+focus_mode = 2
+
+[node name="PlacementGroup" type="PanelContainer" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="PlacementMargin" type="MarginContainer" parent="Body/PlacementGroup"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="PlacementCol" type="VBoxContainer" parent="Body/PlacementGroup/PlacementMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PlacementOptionsTitle" type="Label" parent="Body/PlacementGroup/PlacementMargin/PlacementCol"]
+layout_mode = 2
+text = "Opções de posicionamento"
+
+[node name="PlacementFields" type="GridContainer" parent="Body/PlacementGroup/PlacementMargin/PlacementCol"]
+layout_mode = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+columns = 2
+
+[node name="PositionsLabel" type="Label" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Coordenadas"
+
+[node name="PositionsField" type="LineEdit" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+placeholder_text = "x,y,z; x,y,z"
+
+[node name="RandomCenterLabel" type="Label" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Centro aleatório"
+
+[node name="RandomCenterField" type="LineEdit" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+placeholder_text = "0,1,0"
+
+[node name="RandomSizeLabel" type="Label" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Tamanho aleatório"
+
+[node name="RandomSizeField" type="LineEdit" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+placeholder_text = "34,0,34"
+
+[node name="FormationLabel" type="Label" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Formação"
+
+[node name="Formations" type="OptionButton" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="FormationOriginLabel" type="Label" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Origem formação"
+
+[node name="FormationOriginField" type="LineEdit" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+placeholder_text = "0,1,0"
+
+[node name="SpacingLabel" type="Label" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Espaçamento"
+
+[node name="Spacing" type="SpinBox" parent="Body/PlacementGroup/PlacementMargin/PlacementCol/PlacementFields"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+min_value = 0.5
+max_value = 50.0
+step = 0.5
+value = 4.0
 focus_mode = 2
