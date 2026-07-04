@@ -10,6 +10,7 @@
 	"Modelo": "Modelo",
 	"Quantidade": "Quantidade",
 	"Posicionamento": "Posicionamento",
+	"Opções de posicionamento": "Opções de posicionamento",
 	"Coordenadas": "Coordenadas",
 	"Centro aleatório": "Centro aleatório",
 	"Tamanho aleatório": "Tamanho aleatório",
@@ -18,6 +19,6 @@
 	"Espaçamento": "Espaçamento",
 	"Rotação Y": "Rotação Y",
 	"Salvar": "Salvar",
-	"Salvar e Usar Neste Level": "Salvar e Usar Neste Level",
+	"Salvar e Aplicar": "Salvar e Aplicar",
 	"Fechar": "Fechar"
 }

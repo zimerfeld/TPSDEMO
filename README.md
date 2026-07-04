@@ -82,7 +82,8 @@ Port/IP) is persisted and restored, and the Host/Client screens are full-screen 
 The Levels screen also carries, per level, a **Template Manager** (characters) and a **Scenery
 Manager** (glowing stage props from `library3D/sceneries`) — **scrollable** floating windows where
 each entry's model is picked by **cascading folder navigation** (one dropdown per library folder level), with
-faction, count and placement (coordinates, random area or formation); both a character template
+faction, count and placement (coordinates, random area or formation) — the fields for the chosen
+placement mode are shown grouped, one mode at a time, and numeric fields are compact; both a character template
 and a scenery can be active at once, applied when the level starts, in solo play and online rooms
 alike, in the editor and in the exported .exe. Ground enemies now move at **real human speed
 standards** (strafe 2.4 m/s, retreat 3.8 m/s) with smooth acceleration — weighty, believable motion.
@@ -134,7 +135,8 @@ A tela de Níveis também traz, por level, um **Gerenciador de Templates** (pers
 **Gerenciador de Cenários** (objetos de palco luminosos de `library3D/sceneries`) — janelas
 flutuantes em que o modelo de cada entrada é escolhido por **navegação em cascata de pastas** (um
 dropdown por nível da biblioteca), com facção, quantidade e posicionamento (coordenadas, área
-aleatória ou formação); um template de personagens e um cenário podem estar ativos ao mesmo tempo,
+aleatória ou formação) — os campos do posicionamento escolhido aparecem agrupados, um modo por vez,
+e os campos numéricos são compactos; um template de personagens e um cenário podem estar ativos ao mesmo tempo,
 aplicados quando o level inicia, no solo e nas salas online, no editor e no .exe exportado. Os
 inimigos terrestres agora se movem em **padrões de velocidade humanos reais** (strafe 2,4 m/s,
 recuo 3,8 m/s) com aceleração suave — movimento com peso e crível.

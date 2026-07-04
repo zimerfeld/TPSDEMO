@@ -2551,11 +2551,11 @@ func _find_combo_text_index(combo: OptionButton, value: String) -> int:
 # collect one entry per model folder. Categories with no models are dropped.
 func _scan_library() -> Array:
 	var result: Array = []
-	
+
 	var root := DirAccess.open(LIBRARY_ROOT)
 	if root == null:
 		return result
-		
+
 	for folder in root.get_directories():
 		var type_path := LIBRARY_ROOT.path_join(folder)
 		var type_access := DirAccess.open(type_path)
@@ -3139,6 +3139,11 @@ func _apply_member_labels_visibility() -> void:
 	for pivot in _preview_instance.find_children(_LABEL_PREFIX + "Pivot", "Node3D", true, false):
 		(pivot as Node3D).free()
 	_member_label_pivots = []
+	# Sem membro escolhido no dropdown ("Selecione...") NÃO exibe rótulos de membro — espelha o gate
+	# dos rótulos de sub-membro (cbo_sub_members) e de esqueleto (cbo_skeleton). "Todos os membros"
+	# (índice 1) e um membro específico (índices 2+) continuam mostrando; só o placeholder oculta.
+	if member_row.visible and cbo_members.selected <= 0:
+		return
 	if not _any_member_label():
 		return
 	_ensure_member_colliders()
