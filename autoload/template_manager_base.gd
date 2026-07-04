@@ -9,6 +9,9 @@ extends Node
 ## aleatória ou formação de combate. As subclasses só declaram arquivo/raiz/kind e o default inicial.
 
 const DEFAULT_RANDOM_SIZE := Vector3(34.0, 0.0, 34.0)
+## Raiz das armas (usada pelo dropdown "Arma" do gerenciador de personagens). Fixa — as armas não
+## dependem da categoria do manager.
+const WEAPONS_DIR := "res://library3D/weapons"
 ## Arquivo legado (categorias juntas) do antigo LevelTemplateManager — migrado 1x por subclasse.
 const LEGACY_FILE := "user://level_templates.json"
 
@@ -211,6 +214,24 @@ func browse_dir(dir_path: String) -> Dictionary:
 			folders.append(child)
 	folders.sort()
 	return {"folders": folders, "model": _dir_model(dir_path)}
+
+
+# Lista as ARMAS disponíveis para o dropdown "Arma": cada subpasta de library3D/weapons que tem uma
+# cena homônima (convenção da biblioteca). Cada entrada: {key, path, label}, ordenadas por rótulo.
+# Reusa _dir_model/_logical_name, então funciona igual no editor e no .exe exportado.
+func list_weapons() -> Array:
+	var out: Array = []
+	var dir := DirAccess.open(WEAPONS_DIR)
+	if dir == null:
+		return out
+	for child in dir.get_directories():
+		if child.begins_with("."):
+			continue
+		var model := _dir_model("%s/%s" % [WEAPONS_DIR, child])
+		if not model.is_empty():
+			out.append(model)
+	out.sort_custom(func(a, b): return String(a["label"]) < String(b["label"]))
+	return out
 
 
 # O modelo "da pasta": a cena cujo basename é o nome da pasta (convenção da biblioteca —

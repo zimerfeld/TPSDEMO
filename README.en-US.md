@@ -48,7 +48,7 @@ third-person shooter sandbox. At a high level it offers:
   button** that opens the **Template Manager** (a **scrollable** floating window, also reachable from
   the host's room manager): named spawn templates per level, each with entries defining
   **model**, **faction** (friendly/enemy/neutral), **count** and **placement**
-  (explicit coordinates, random area or combat formation). **"Save and Use On This Level"** activates
+  (explicit coordinates, random area or combat formation). **"Save and Apply"** activates
   the template, applied when the level starts (solo or as an online room). Works the same in the
   editor and in the **exported .exe**: the model scanner resolves the `.remap` names the export
   produces (same pattern as the Models screen), saving a **new** template stores the generated id (so
@@ -56,7 +56,11 @@ third-person shooter sandbox. At a high level it offers:
   survives** entry add/remove refreshes. Each entry's model is picked through **cascading folder
   navigation**: one dropdown per library folder level (`characters/` → `enemies/` → `red_robot`,
   for example), descending only through folders that contain models — reaching a model folder
-  fills the entry's model/scene fields.
+  fills the entry's model/scene fields. The form is **tidied for readability**: the
+  placement-specific fields are gathered into a titled **"Placement options"** panel that shows only
+  the fields for the chosen mode (coordinates / random center + size / formation + origin + spacing),
+  numeric fields (count, spacing, rotation) are compact, and the window is sized to its content so
+  controls no longer stretch edge-to-edge.
 - **Scenery Manager** — sibling of the Template Manager with its own button beside each level:
   same window and fields (minus Faction), browsing the **`library3D/sceneries`** library (stage
   props: **magenta box, emerald sphere and amber pill** — basic volumetric geometries with

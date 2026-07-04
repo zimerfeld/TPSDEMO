@@ -9,8 +9,10 @@
 	"Remover Entrada": "Remove Entry",
 	"Modelo": "Model",
 	"Facção": "Faction",
+	"Arma": "Weapon",
 	"Quantidade": "Count",
 	"Posicionamento": "Placement",
+	"Opções de posicionamento": "Placement options",
 	"Coordenadas": "Coordinates",
 	"Centro aleatório": "Random center",
 	"Tamanho aleatório": "Random size",
@@ -19,6 +21,6 @@
 	"Espaçamento": "Spacing",
 	"Rotação Y": "Rotation Y",
 	"Salvar": "Save",
-	"Salvar e Usar Neste Level": "Save and Use in This Level",
+	"Salvar e Aplicar": "Save and Apply",
 	"Fechar": "Close"
 }

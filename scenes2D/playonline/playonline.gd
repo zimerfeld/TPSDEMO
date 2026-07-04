@@ -6,6 +6,9 @@ signal quit
 const DEFAULT_ROOM_LEVEL: String = "res://scenes3D/level_1/level_1.tscn"
 const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn"
 const CLIENT_SESSION_PATH: String = "res://scenes2D/client_session/client_session.tscn"
+# Timeout (s) da checagem de conexão do "Entrar em Salas": se o servidor não responder a tempo, a
+# tentativa é CANCELADA (não fica tentando indefinidamente) e a tela volta com um aviso.
+const JOIN_TIMEOUT_SEC: float = 2.0
 # Quantos valores recentes (porta/IP) guardar para seleção.
 const HISTORY_MAX: int = 3
 # Domínios completos (FQDN) ficam num histórico PRÓPRIO e persistente (não rolam junto com os IPs
@@ -17,6 +20,9 @@ var peer: MultiplayerPeer = OfflineMultiplayerPeer.new()
 # OptionButtons de otimização (com meta "_item_keys") — re-traduzidos no language_changed, já que
 # o auto-localizer do Locale pula OptionButton (seus itens são geridos em código).
 var _opt_buttons: Array[OptionButton] = []
+# True enquanto uma tentativa de "Entrar em Salas" está pendente (conectando). Bloqueia re-clique e
+# torna o cancelamento idempotente: o 1º de {conectou, falhou, timeout} "vence" e zera o pending.
+var _join_pending: bool = false
 
 @onready var player_name_field: LineEdit = %PlayerName
 @onready var port: SpinBox = %Port
@@ -318,6 +324,8 @@ func _on_loading_done_timer_timeout() -> void:
 # onde dá pra iniciar/parar/reiniciar, observar e JOGAR em vários levels ao mesmo tempo. O peer fica
 # aberto até "Voltar" (sair de uma sala NÃO encerra o servidor). Ver host_session.gd / RoomManager.
 func _on_manage_rooms_pressed() -> void:
+	if _join_pending:
+		return  # não hospeda enquanto uma checagem de "Entrar em Salas" está em andamento
 	PlayerSelection.spectator_host = true  # host observa as salas; vira player só pelo "Jogar"
 	_remember("ports", int(port.value))
 	peer = ENetMultiplayerPeer.new()
@@ -345,6 +353,8 @@ func _on_manage_rooms_pressed() -> void:
 # (ClientSession), onde escolhe em qual sala entrar. Abre a ClientSession só após o connected_to_server
 # (o peer precisa estar conectado para pedir a lista de salas via RPC).
 func _on_join_rooms_pressed() -> void:
+	if _join_pending:
+		return  # já há uma checagem/conexão em andamento
 	PlayerSelection.spectator_host = false
 	_remember("ports", int(port.value))
 	if address.text.strip_edges() != "":
@@ -373,21 +383,35 @@ func _on_join_rooms_pressed() -> void:
 		multiplayer.connection_failed.disconnect(_on_rooms_connect_failed)
 	multiplayer.connected_to_server.connect(_open_rooms_client, CONNECT_ONE_SHOT)
 	multiplayer.connection_failed.connect(_on_rooms_connect_failed, CONNECT_ONE_SHOT)
+	# Pendente: bloqueia re-clique e torna o cancelamento idempotente (o 1º de {conectou, falhou}
+	# "vence"). O limite de tempo é do ENet (set_timeout acima) → connection_failed dispara a tempo.
+	_join_pending = true
 
 
 func _open_rooms_client() -> void:
+	if not _join_pending:
+		return
+	_join_pending = false
 	emit_signal("replace_main_scene", ResourceLoader.load(CLIENT_SESSION_PATH))
 
 
 func _on_rooms_connect_failed() -> void:
+	if not _join_pending:
+		return
+	_join_pending = false
+	_abort_join("Falha ao conectar em %s:%d.\n\nVerifique o endereço e a porta." % [address.text, int(port.value)])
+
+
+# Encerra uma tentativa de join pendente: esconde o loading, desliga os sinais de conexão (o que
+# ainda não disparou), fecha o peer (volta a Offline) e mostra o aviso com opção de tentar de novo.
+func _abort_join(msg: String) -> void:
 	loading.hide()
 	if multiplayer.connected_to_server.is_connected(_open_rooms_client):
 		multiplayer.connected_to_server.disconnect(_open_rooms_client)
+	if multiplayer.connection_failed.is_connected(_on_rooms_connect_failed):
+		multiplayer.connection_failed.disconnect(_on_rooms_connect_failed)
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
-	CrashHandler.show_error(
-		"Falha ao conectar em %s:%d.\n\nVerifique o endereço e a porta." % [address.text, int(port.value)],
-		_on_join_rooms_pressed
-	)
+	CrashHandler.show_error(msg, _on_join_rooms_pressed)
 
 
 # ───────────────────────────── Otimização (escolhida ANTES de hospedar/entrar) ─────────────────
