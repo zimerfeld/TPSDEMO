@@ -33,7 +33,7 @@ var _sel_scene_path := ""
 # Dropdown de ARMA (só na cena de personagens — nó %Weapons). Habilitado só depois que um
 # personagem (pasta-modelo) é escolhido na cascata; opções vindas de library3D/weapons.
 @onready var _weapons_picker: OptionButton = get_node_or_null("%Weapons")
-@onready var _count_spin: SpinBox = %Count
+@onready var _count_spin: SpinBox = %Counts
 @onready var _placements_picker: OptionButton = %Placements
 # Painel que agrupa os campos condicionais ao Posicionamento (some quando não há entrada).
 @onready var _placement_group: PanelContainer = %PlacementGroup
@@ -51,7 +51,7 @@ var _sel_scene_path := ""
 @onready var _formation_origin_edit: LineEdit = %FormationOriginField
 @onready var _spacing_label: Label = %SpacingLabel
 @onready var _spacing_spin: SpinBox = %Spacing
-@onready var _rotation_spin: SpinBox = %Rotation
+@onready var _rotation_spin: SpinBox = %Rotations
 
 
 # ---- Ganchos virtuais (cada subclasse define) ---------------------------------------------

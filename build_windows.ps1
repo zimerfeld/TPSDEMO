@@ -32,10 +32,10 @@ function Set-ZimaroShortcut {
 }
 
 # Data de modificação mais recente entre os ARQUIVOS-FONTE do projeto (ignora caches e o que
-# não entra no .exe: .godot/, build/, .git/, OBSIDIAN/, e os próprios .md/.ps1 de tooling).
+# não entra no .exe: .godot/, build/, .git/, ZIMARO/ (cofre de docs), e os próprios .md/.ps1 de tooling).
 function Get-NewestSourceTime {
 	param([string]$root)
-	$exclude = @('.godot', 'build', '.git', '.claude', 'OBSIDIAN')
+	$exclude = @('.godot', 'build', '.git', '.claude', 'ZIMARO')
 	$newest = $null
 	Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction SilentlyContinue | ForEach-Object {
 		$rel = $_.FullName.Substring($root.Length).TrimStart('\', '/')

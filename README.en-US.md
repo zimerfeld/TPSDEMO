@@ -2,7 +2,7 @@
 
 > Detailed, extensive English documentation. For the high-level bilingual summary see
 > [README.md](README.md); the Portuguese version is [README.pt-BR.md](README.pt-BR.md).
-> The [`OBSIDIAN/`](OBSIDIAN) vault mirrors this content with per-system notes.
+> The [`ZIMARO/`](ZIMARO) vault mirrors this content with per-system notes.
 
 ZIMARO is a third-person shooter sandbox made using [Godot Engine](https://godotengine.org).
 
@@ -497,7 +497,7 @@ asset library under `library3D/`:
 - `<scene>/Resources/*.pt.json` + `*.en.json` — per-scene UI language dictionaries, scanned and
   merged by the `Locale` autoload.
 - `themes/` — shared theme resources.
-- `OBSIDIAN/` — project documentation vault (mirrors this README).
+- `ZIMARO/` — project documentation vault (mirrors this README).
 
 Screen flow:
 
@@ -561,7 +561,7 @@ ZIMARO/
 │                        # UI dictionaries live per scene: <scene>/Resources/*.pt.json + *.en.json (read by Locale)
 ├─ themes/               # shared Theme resources (ui_theme.tres, cyberpunk.tres)
 ├─ addons/               # Godot editor plugins (godot_ai — the MCP server)
-├─ OBSIDIAN/             # project documentation vault (mirrors this README)
+├─ ZIMARO/               # project documentation vault (mirrors this README)
 ├─ screenshots/          # captured preview images
 └─ project.godot · default_bus_layout.tres · file_format.sh   # project config · audio buses · formatter
 ```
@@ -591,7 +591,7 @@ By subsystem:
 
 The per-limb hitbox system is the canonical example: `limb_colliders.gd` is a plain `Node3D` that
 **assembles** native `StaticBody3D` + `CollisionShape3D` + `BoneAttachment3D`. The Obsidian note
-[`recursos-nativos-godot`](OBSIDIAN/CLAUDE/sistemas/recursos-nativos-godot.md) has the full inventory.
+[`recursos-nativos-godot`](<ZIMARO/🧩 Sistemas/🧱 recursos-nativos-godot.md>) has the full inventory.
 
 ## Controls
 
@@ -634,7 +634,7 @@ running the formatter removes it.
 
 `README.md` is a high-level bilingual summary; this file (`README.en-US.md`) and
 [`README.pt-BR.md`](README.pt-BR.md) hold the extensive, detailed documentation, and the
-[`OBSIDIAN/`](OBSIDIAN) vault mirrors them with per-system notes. **All three README files are kept
+[`ZIMARO/`](ZIMARO) vault mirrors them with per-system notes. **All three README files are kept
 up to date at the end of every change** so they remain a reliable knowledge base for any analysis or
 decision-making.
 

@@ -174,13 +174,13 @@ LFS is not required.
 (3D assets by type) · `effects_shared/` (cross-character helpers) · `autoload/` (global singletons:
 crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud; Settings is
 `scenes2D/settings/config.gd`) · per-scene `Resources/*.pt.json` + `*.en.json` (UI dictionaries) ·
-`OBSIDIAN/` (documentation vault).
+`ZIMARO/` (documentation vault).
 
 ![PT](screenshots/screenshotBR.png) `scenes2D/` (telas, UI, widgets reutilizáveis) · `scenes3D/` (fases + visualizador Models) ·
 `library3D/` (assets 3D por tipo) · `effects_shared/` (helpers entre personagens) · `autoload/`
 (singletons globais: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud; o
 Settings é `scenes2D/settings/config.gd`) · `Resources/*.pt.json` + `*.en.json` por cena (dicionários
-da UI) · `OBSIDIAN/` (cofre de documentação).
+da UI) · `ZIMARO/` (cofre de documentação).
 
 ![EN](screenshots/screenshotGB.png) **Windows build:** `pwsh -File build_windows.ps1` → `build/windows/ZIMARO.exe` (embedded PCK) + a
 desktop shortcut with the app icon. · ![PT](screenshots/screenshotBR.png) **Build Windows:** `pwsh -File build_windows.ps1` → o `.exe`
@@ -210,11 +210,11 @@ linha final — garantido por [`file_format.sh`](file_format.sh) (rode `bash fil
 ## Documentation · Documentação
 
 ![EN](screenshots/screenshotGB.png) The detailed docs ([README.en-US.md](README.en-US.md) / [README.pt-BR.md](README.pt-BR.md)) and
-the [`OBSIDIAN/`](OBSIDIAN) vault are the project knowledge base and are kept up to date at the end of
+the [`ZIMARO/`](ZIMARO) vault are the project knowledge base and are kept up to date at the end of
 every change.
 
 ![PT](screenshots/screenshotBR.png) As docs detalhadas ([README.en-US.md](README.en-US.md) / [README.pt-BR.md](README.pt-BR.md)) e o
-cofre [`OBSIDIAN/`](OBSIDIAN) são a base de conhecimento do projeto e são mantidos atualizados ao
+cofre [`ZIMARO/`](ZIMARO) são a base de conhecimento do projeto e são mantidos atualizados ao
 final de cada mudança.
 
 ## License · Licença
