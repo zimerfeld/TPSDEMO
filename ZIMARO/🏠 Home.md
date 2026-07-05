@@ -2,7 +2,7 @@
 tipo: moc
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-07-05
 ---
 
 # 🏠 ZIMARO — Cofre de Neurônios
@@ -13,6 +13,9 @@ atualizado: 2026-07-04
 > Memória persistente do Claude para o projeto **ZIMARO** — sandbox de tiro em terceira pessoa
 > feito em **Godot 4**, com multiplayer server-authoritative. O cofre é atualizado ao fim de cada
 > tarefa relevante e espelha o estado real do código.
+>
+> 📁 **Pasta do cofre:** `ZIMARO/` na raiz do repositório (`C:\GODOT\ZIMARO\ZIMARO`) — renomeada
+> de `OBSIDIAN/` para o nome do projeto em 2026-07-05.
 
 ## ⚡ Resumo executivo
 
@@ -52,6 +55,7 @@ atualizado: 2026-07-04
 - [[🗿 biblioteca-de-modelos]] — tela Models: navegador/extrator de malhas, galeria Exported, categoria Structures + membro CORPO de fallback
 - [[🧩 templates-de-level]] — Gerenciadores de Templates (personagens) e de Cenários por level: navegação em cascata, ativos independentes
 - [[🌌 ambiente-dos-levels]] — céu procedural + fog + piso-grade neon por shader (Level 1 ciano / Level 2 âmbar), 60 FPS no .exe
+- [[🌀 fundos-2D-animados]] — fundos animados das telas 2D por shader (portal/vórtice); regra da emenda do `atan()` no eixo esquerdo
 - [[🔊 audio]] — buses (Master/Outside/Reactor/Music/SFX), música de fundo por cena/level (MusicManager) + Gerenciador de Música
 - [[🐞 debug-overlay]] — DebugOverlay + tela developer em 2 colunas (Debug 2D amarelo / Debug 3D ciano), grid, rótulos 3D
 - [[⚡ performance-hud]] — PerformanceHUD (barra FPS/NET/RAM/CPU/GPU) + StabilityGuard (proteção crash/freeze)

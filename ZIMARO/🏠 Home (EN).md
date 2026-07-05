@@ -2,7 +2,7 @@
 tipo: moc
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-05
 ---
 
 # 🏠 ZIMARO — Neuron Vault
@@ -13,6 +13,9 @@ atualizado: 2026-07-04
 > Claude's persistent memory for the **ZIMARO** project — a third-person shooter sandbox
 > built with **Godot 4**, featuring server-authoritative multiplayer. The vault is updated at the
 > end of every relevant task and mirrors the actual state of the code.
+>
+> 📁 **Vault folder:** `ZIMARO/` at the repository root (`C:\GODOT\ZIMARO\ZIMARO`) — renamed
+> from `OBSIDIAN/` to the project name on 2026-07-05.
 
 ## ⚡ Executive summary
 
@@ -52,6 +55,7 @@ atualizado: 2026-07-04
 - [[🗿 biblioteca-de-modelos (EN)|model library]] — Models screen: mesh browser/extractor, Exported gallery, Structures category + CORPO fallback member
 - [[🧩 templates-de-level (EN)|level templates]] — per-level Template (characters) and Scenery managers: cascading folder navigation, independent actives
 - [[🌌 ambiente-dos-levels (EN)|level environment]] — procedural sky + fog + neon grid floor shader (Level 1 cyan / Level 2 amber), 60 FPS on the .exe
+- [[🌀 fundos-2D-animados (EN)|animated 2D backgrounds]] — per-shader animated backgrounds for 2D screens (portal/vortex); the `atan()` left-axis seam rule
 - [[🔊 audio (EN)|audio]] — buses (Master/Outside/Reactor/Music/SFX), background music per scene/level (MusicManager) + Music Manager UI
 - [[🐞 debug-overlay (EN)|debug overlay]] — DebugOverlay + 2-column developer screen (Debug 2D yellow / Debug 3D cyan), grid, 3D labels
 - [[⚡ performance-hud (EN)|performance HUD]] — PerformanceHUD (FPS/NET/RAM/CPU/GPU bar) + StabilityGuard (crash/freeze protection)

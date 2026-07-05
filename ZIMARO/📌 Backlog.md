@@ -72,7 +72,7 @@ erro de script/runtime** (só os avisos benignos `ObjectDB leaked` / `resources 
 Branch de reestruturação com muitas mudanças ainda não commitadas. Levada a estado consistente,
 testável e revisável.
 
-- **Cofre movido** `OBSIDIAN/CLAUDE/` → `OBSIDIAN/` (raiz do vault agora é `C:\GODOT\ZIMARO\OBSIDIAN`,
+- **Cofre movido e renomeado** `OBSIDIAN/CLAUDE/` → `OBSIDIAN/` → `ZIMARO/` (renomeado para o nome do projeto; raiz do vault agora é `C:\GODOT\ZIMARO\ZIMARO`,
   índice em `000-INDEX.md`). Os arquivos aparecem como `D` (caminho antigo) + `??` (caminho novo) no git.
 - **Sistema de templates de level** em construção: `scenes2D/level_templates/level_template_dialog.gd`,
   `library3D/structures/` (novo, não rastreado), mais `scenes3D/models/`, `levels`, `net_spawn`,

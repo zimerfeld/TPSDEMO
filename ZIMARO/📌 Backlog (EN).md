@@ -73,7 +73,7 @@ the session) and the **publish by the user**.
 Restructuring branch with many changes not yet committed. Brought to a consistent, testable and
 reviewable state.
 
-- **Vault moved** `OBSIDIAN/CLAUDE/` → `OBSIDIAN/` (the vault root is now `C:\GODOT\ZIMARO\OBSIDIAN`,
+- **Vault moved and renamed** `OBSIDIAN/CLAUDE/` → `OBSIDIAN/` → `ZIMARO/` (renamed to the project name; the vault root is now `C:\GODOT\ZIMARO\ZIMARO`,
   index in `000-INDEX.md`). The files show up as `D` (old path) + `??` (new path) in git.
 - **Level template system** under construction: `scenes2D/level_templates/level_template_dialog.gd`,
   `library3D/structures/` (new, untracked), plus `scenes3D/models/`, `levels`, `net_spawn`,

@@ -40,7 +40,9 @@ void fragment() {
 	float core  = smoothstep(radius * 0.42 * pulse, 0.0, rad);
 
 	// Cor ciclada no tempo e ao longo do vórtice — sempre mudando, bem descontraído.
-	vec3 swirl_col = mix(color_a.rgb, color_b.rgb, 0.5 + 0.5 * sin(twist * 1.5 + t * 0.8));
+	// O multiplicador do ângulo PRECISA ser inteiro: senão, quando atan() "vira" de +PI para -PI no
+	// eixo esquerdo, a cor troca de sinal e aparece uma emenda (a "divisão" visível à esquerda).
+	vec3 swirl_col = mix(color_a.rgb, color_b.rgb, 0.5 + 0.5 * sin(twist * 2.0 + t * 0.8));
 
 	vec3 col = base_color.rgb;
 	col = mix(col, swirl_col, disc * (0.25 + 0.75 * energy));
@@ -51,7 +53,10 @@ void fragment() {
 	col += mix(color_a.rgb, color_b.rgb, 0.5 + 0.5 * sin(t * 1.5)) * rim * 0.7;
 
 	// Cintilância: partículas de energia orbitando, puxadas para o centro (setor angular x anel).
-	float sparkle = hash(floor(vec2(ang * 20.0, rad * 30.0 - t * 3.0)));
+	// Ângulo normalizado e "enrolado" em 0..1 (fract) para os setores fecharem o círculo sem emenda
+	// no eixo esquerdo — assim a borda +PI/-PI vira só mais uma divisa de setor, não uma linha.
+	float na = fract(ang / 6.2831853 + 0.5);
+	float sparkle = hash(floor(vec2(na * 40.0, rad * 30.0 - t * 3.0)));
 	sparkle = step(0.985, sparkle) * disc;
 	col += core_color.rgb * sparkle * 0.8;
 

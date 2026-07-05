@@ -43,7 +43,7 @@ models. `cyberpunkhud` é cena avulsa de preview, fora do fluxo de navegação.)
 - **library3D/** (assets 3D por tipo): `characters`, `propulsores`, `structures`, `weapons`, + `geometry`/`textures` (suporte)
 - **effects_shared/** (helpers entre personagens): `limb_colliders.gd`, `body_parts.gd`, `weapon_parts.gd` + assets de blast/sombra
 - **autoload/**: `crash_handler`, `player_selection`, `debug_overlay` (o **Settings** fica em `scenes2D/settings/config.gd`)
-- **themes/**: temas (`ui_theme.tres`, `cyberpunk.tres`) · **addons/**: plugin `godot_ai` (MCP) · **OBSIDIAN/**: este cofre
+- **themes/**: temas (`ui_theme.tres`, `cyberpunk.tres`) · **addons/**: plugin `godot_ai` (MCP) · **ZIMARO/**: este cofre
 
 ## Autoloads
 

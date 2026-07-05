@@ -2,7 +2,7 @@
 
 > Documentação detalhada e extensa em português. Para o resumo bilíngue de alto nível veja
 > [README.md](README.md); a versão em inglês é [README.en-US.md](README.en-US.md).
-> O cofre [`OBSIDIAN/`](OBSIDIAN) espelha este conteúdo com notas por sistema.
+> O cofre [`ZIMARO/`](ZIMARO) espelha este conteúdo com notas por sistema.
 
 ZIMARO é um sandbox de tiro em terceira pessoa feito com a [Godot Engine](https://godotengine.org).
 
@@ -501,7 +501,7 @@ reutilizáveis em `library3D/`:
 - `<cena>/Resources/*.pt.json` + `*.en.json` — dicionários de idioma da UI por cena, varridos e
   mesclados pelo autoload `Locale`.
 - `themes/` — recursos de tema compartilhados.
-- `OBSIDIAN/` — cofre de documentação do projeto (espelha este README).
+- `ZIMARO/` — cofre de documentação do projeto (espelha este README).
 
 Fluxo de telas:
 
@@ -565,7 +565,7 @@ ZIMARO/
 │                        # dicionários da UI por cena: <cena>/Resources/*.pt.json + *.en.json (lidos pelo Locale)
 ├─ themes/               # recursos de Theme compartilhados (ui_theme.tres, cyberpunk.tres)
 ├─ addons/               # plugins do editor Godot (godot_ai — o servidor MCP)
-├─ OBSIDIAN/             # cofre de documentação do projeto (espelha este README)
+├─ ZIMARO/               # cofre de documentação do projeto (espelha este README)
 ├─ screenshots/          # imagens de preview capturadas
 └─ project.godot · default_bus_layout.tres · file_format.sh   # config do projeto · buses de áudio · formatador
 ```
@@ -594,7 +594,7 @@ C++/GDExtension. As únicas abstrações próprias são helpers `RefCounted` de 
 
 O sistema de hitboxes por membro é o exemplo canônico: `limb_colliders.gd` é um `Node3D` comum que
 **monta** `StaticBody3D` + `CollisionShape3D` + `BoneAttachment3D` nativos. A nota do Obsidian
-[`recursos-nativos-godot`](OBSIDIAN/CLAUDE/sistemas/recursos-nativos-godot.md) traz o inventário completo.
+[`recursos-nativos-godot`](<ZIMARO/🧩 Sistemas/🧱 recursos-nativos-godot.md>) traz o inventário completo.
 
 ## Controles
 
@@ -638,7 +638,7 @@ formatador o remove.
 
 O `README.md` é um resumo bilíngue de alto nível; este arquivo (`README.pt-BR.md`) e o
 [`README.en-US.md`](README.en-US.md) guardam a documentação extensa e detalhada, e o cofre
-[`OBSIDIAN/`](OBSIDIAN) os espelha com notas por sistema. **Os três arquivos README são mantidos
+[`ZIMARO/`](ZIMARO) os espelha com notas por sistema. **Os três arquivos README são mantidos
 atualizados ao final de cada mudança** para continuarem sendo uma base de conhecimento confiável
 para qualquer análise ou tomada de decisão.
 

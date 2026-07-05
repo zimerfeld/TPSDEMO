@@ -57,7 +57,7 @@ pwsh -File build_windows.ps1
   sem build custom.)
 - `build/` e `export_presets.cfg` são **ignorados pelo git** (ver `.gitignore`); ficam locais.
 - **Skip se nada mudou:** sem `-Force`, o script compara a data do `.exe` com a do arquivo-fonte
-  mais novo (ignora `.godot/`, `build/`, `.git/`, `OBSIDIAN/`, `.md`, `.ps1`) e **sai na hora** se o
+  mais novo (ignora `.godot/`, `build/`, `.git/`, `ZIMARO/`, `.md`, `.ps1`) e **sai na hora** se o
   `.exe` já está em dia. `pwsh -File build_windows.ps1 -Force` builda sempre.
 - **Automatizado por hook (2026-06-21):** há um hook **`Stop`** em `.claude/settings.json` (hooks só
   deste projeto; `pwsh … build_windows.ps1`, `async`, `timeout 180`) — roda ao fim de **todo turno**

@@ -136,7 +136,7 @@ disabled = true
 layout_mode = 2
 text = "Quantidade"
 
-[node name="Count" type="SpinBox" parent="Body/FieldsGrid"]
+[node name="Counts" type="SpinBox" parent="Body/FieldsGrid"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 0)
 layout_mode = 2
@@ -160,7 +160,7 @@ size_flags_horizontal = 0
 layout_mode = 2
 text = "Rotação Y"
 
-[node name="Rotation" type="SpinBox" parent="Body/FieldsGrid"]
+[node name="Rotations" type="SpinBox" parent="Body/FieldsGrid"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 0)
 layout_mode = 2
