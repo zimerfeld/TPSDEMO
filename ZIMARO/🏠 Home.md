@@ -2,7 +2,7 @@
 tipo: moc
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-05
+atualizado: 2026-07-06
 ---
 
 # 🏠 ZIMARO — Cofre de Neurônios
@@ -88,3 +88,6 @@ atualizado: 2026-07-05
 
 ## 📌 Retomada
 - [[📌 Backlog]] — **comece por aqui** ao retomar o projeto em outra sessão
+
+## ⚖️ Licença
+- **CC BY-NC-ND 4.0** (Creative Commons Atribuição-NãoComercial-SemDerivações 4.0 Internacional) · © 2026 Renato Zimerfeld — compartilhamento não comercial com atribuição; **sem uso comercial** e **sem derivações**. Fonte da verdade: `LICENSE.md` na raiz; nomeada nos READMEs (`README.md`, `README.en-US.md`, `README.pt-BR.md`).

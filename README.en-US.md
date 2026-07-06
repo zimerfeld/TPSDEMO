@@ -648,4 +648,4 @@ decision-making.
 
 ## License
 
-See [LICENSE.md](LICENSE.md) for details.
+© 2026 Renato Zimerfeld. This work is licensed under the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License (CC BY-NC-ND 4.0)** — you are free to share it for non-commercial purposes with appropriate credit, but you may **not** use it commercially and may **not** distribute modified versions. See [LICENSE.md](LICENSE.md) for the full terms.
