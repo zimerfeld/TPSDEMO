@@ -652,4 +652,4 @@ para qualquer análise ou tomada de decisão.
 
 ## Licença
 
-Veja [LICENSE.md](LICENSE.md) para detalhes.
+© 2026 Renato Zimerfeld. Este trabalho está licenciado sob a **Licença Creative Commons Atribuição-NãoComercial-SemDerivações 4.0 Internacional (CC BY-NC-ND 4.0)** — você pode compartilhá-lo para fins não comerciais com a devida atribuição, mas **não** pode usá-lo comercialmente nem distribuir versões modificadas. Veja [LICENSE.md](LICENSE.md) para os termos completos.

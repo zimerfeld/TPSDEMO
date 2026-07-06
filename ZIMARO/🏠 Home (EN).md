@@ -2,7 +2,7 @@
 tipo: moc
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-05
+atualizado: 2026-07-06
 ---
 
 # 🏠 ZIMARO — Neuron Vault
@@ -88,3 +88,6 @@ atualizado: 2026-07-05
 
 ## 📌 Resuming work
 - [[📌 Backlog (EN)|Backlog]] — **start here** when picking the project back up in another session
+
+## ⚖️ License
+- **CC BY-NC-ND 4.0** (Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International) · © 2026 Renato Zimerfeld — non-commercial sharing with credit; **no commercial use** and **no derivatives**. Source of truth: `LICENSE.md` at the repo root; named in the READMEs (`README.md`, `README.en-US.md`, `README.pt-BR.md`).

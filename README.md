@@ -219,7 +219,9 @@ final de cada mudança.
 
 ## License · Licença
 
-![EN](screenshots/screenshotGB.png) / ![PT](screenshots/screenshotBR.png) See / Veja [LICENSE.md](LICENSE.md).
+![EN](screenshots/screenshotGB.png) © 2026 Renato Zimerfeld. Licensed under **CC BY-NC-ND 4.0** (Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International) — free to share for non-commercial purposes with credit; no commercial use, no derivatives. See [LICENSE.md](LICENSE.md).
+
+![PT](screenshots/screenshotBR.png) © 2026 Renato Zimerfeld. Licenciado sob **CC BY-NC-ND 4.0** (Creative Commons Atribuição-NãoComercial-SemDerivações 4.0 Internacional) — livre para compartilhar para fins não comerciais com atribuição; sem uso comercial, sem derivações. Veja [LICENSE.md](LICENSE.md).
 
 ---
 
