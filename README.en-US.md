@@ -602,7 +602,7 @@ The per-limb hitbox system is the canonical example: `limb_colliders.gd` is a pl
 - <kbd>Right Mouse Button</kbd>, <kbd>Gamepad Left Trigger (L2)</kbd> (press to toggle, or hold and release): Aim
 - <kbd>Left Mouse Button</kbd>, <kbd>Gamepad Right Trigger (R2)</kbd>: Shoot (only while aiming)
 - <kbd>Arrow keys</kbd> / <kbd>Gamepad D-Pad</kbd> (in menus): Move focus between buttons
-- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Cancel an active field edit, else go back / to main menu (the menu asks to confirm quitting)
+- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Cancel an active field edit, else go back / to main menu (the menu asks to confirm quitting). **In an offline match it asks to confirm — "Leave the match?" (Yes → back to the level select, No → resume) — pausing the game while you decide.**
 - <kbd>F11</kbd> or <kbd>Alt + Enter</kbd>: Toggle fullscreen
 - <kbd>F3</kbd>: Toggle debugging information (such as FPS counter)
 

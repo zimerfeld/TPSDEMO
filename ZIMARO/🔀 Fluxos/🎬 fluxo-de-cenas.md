@@ -2,7 +2,7 @@
 tipo: fluxo
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-07-07
 ---
 
 # 🎬 Fluxo de Cenas
@@ -168,6 +168,16 @@ Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas*
   janela `FloatingDialog.confirm` central **"Deseja sair do Zimaro ?"** (Sim/Não); só fecha o jogo no "Sim". As
   strings ficam em `menu.*.json` (`"Deseja sair do Zimaro ?"`, `"Sair do jogo"`); Sim/Não reusam a
   tabela global do `Locale` (de `settings.*.json`).
+- **Abandonar a partida (ESC no nível, 2026-07-07)** — centralizado no helper `LevelExit`
+  (`scenes3D/level_exit.gd`), chamado no `_input` de `level_1`/`level_2` na ação `quit`.
+  **Offline** (`PlayerSelection.online_mode == false`): abre `FloatingDialog.confirm`
+  **"Abandonar a partida ?"** (Sim/Não) e **pausa a partida** (`get_tree().paused = true`; a
+  janela recebe `process_mode = ALWAYS` p/ seguir respondendo pausada). **Sim** → despausa e emite
+  `replace_main_scene(levels.tscn)` (volta à tela de níveis); **Não / × / ESC** → despausa,
+  recaptura o mouse e **retoma a partida** de onde parou. **Online** (salas host/cliente): mantém o
+  comportamento antigo — ESC libera o mouse e emite `quit` (→ menu principal). As strings
+  (`"Abandonar a partida"`, `"Abandonar a partida ?"`) ficam em `levels.*.json`; Sim/Não reusam a
+  tabela global do `Locale`.
 
 ---
 
@@ -175,8 +185,8 @@ Centralizado no autoload **UINav** (`autoload/ui_nav.gd`), aplicado por **todas*
 
 | Sinal | Emitido por | Recebido por |
 |---|---|---|
-| `replace_main_scene(scene)` | menu, settings, chooseplayer, developer, models, Exported, levels | `main.gd` → troca de cena |
-| `quit` | chooseplayer, developer | `main.gd` → `go_to_main_menu()` |
+| `replace_main_scene(scene)` | menu, settings, chooseplayer, developer, models, Exported, levels, **level_1/level_2 (offline: Abandonar → levels)** | `main.gd` → troca de cena |
+| `quit` | chooseplayer, developer, **level_1/level_2 (online: ESC → menu)** | `main.gd` → `go_to_main_menu()` |
 
 ---
 

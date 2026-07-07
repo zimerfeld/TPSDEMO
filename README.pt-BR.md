@@ -606,7 +606,7 @@ O sistema de hitboxes por membro é o exemplo canônico: `limb_colliders.gd` é 
 - <kbd>Botão direito do mouse</kbd>, <kbd>Gatilho esquerdo (L2)</kbd> (pressione p/ alternar, ou segure e solte): Mirar
 - <kbd>Botão esquerdo do mouse</kbd>, <kbd>Gatilho direito (R2)</kbd>: Atirar (apenas mirando)
 - <kbd>Setas</kbd> / <kbd>D-Pad</kbd> (nos menus): Mover o foco entre os botões
-- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Cancela um campo em edição, senão volta / vai ao menu principal (o menu pede confirmação para sair)
+- <kbd>Escape</kbd>, <kbd>Gamepad Start</kbd>: Cancela um campo em edição, senão volta / vai ao menu principal (o menu pede confirmação para sair). **Numa partida offline, pede confirmação — "Abandonar a partida ?" (Sim → volta à seleção de níveis, Não → continua) — pausando o jogo enquanto você decide.**
 - <kbd>F11</kbd> ou <kbd>Alt + Enter</kbd>: Alternar tela cheia
 - <kbd>F3</kbd>: Alternar informações de debug (como o contador de FPS)
 

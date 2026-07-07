@@ -1,6 +1,7 @@
 extends Node3D
 
 signal quit
+signal replace_main_scene
 
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 @onready var spawned_nodes: Node3D = $SpawnedNodes
@@ -40,5 +41,6 @@ func _ready() -> void:
 
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"quit"):
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-		quit.emit()
+		get_viewport().set_input_as_handled()
+		# Offline: confirma "Abandonar a partida ?" (Sim → níveis, Não → continua). Online: volta ao menu.
+		LevelExit.request_exit(self)
