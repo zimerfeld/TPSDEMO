@@ -2,7 +2,7 @@
 tipo: fluxo
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-07
 ---
 
 # 🎬 Scene Flow
@@ -168,6 +168,16 @@ Centralized in the **UINav** autoload (`autoload/ui_nav.gd`), applied by **all**
   central `FloatingDialog.confirm` window **"Quit Zimaro ?"** (Yes/No); it only closes the game on "Yes". The
   strings are in `menu.*.json` (`"Deseja sair do Zimaro ?"`, `"Sair do jogo"`); Yes/No reuse the
   global `Locale` table (from `settings.*.json`).
+- **Leave the match (ESC in a level, 2026-07-07)** — centralized in the `LevelExit` helper
+  (`scenes3D/level_exit.gd`), called from `level_1`/`level_2`'s `_input` on the `quit` action.
+  **Offline** (`PlayerSelection.online_mode == false`): opens a `FloatingDialog.confirm`
+  **"Leave the match?"** (Yes/No) and **pauses the match** (`get_tree().paused = true`; the dialog gets
+  `process_mode = ALWAYS` so it keeps responding while paused). **Yes** → unpause and emit
+  `replace_main_scene(levels.tscn)` (back to the levels screen); **No / × / ESC** → unpause, recapture
+  the mouse and **resume the match** where it left off. **Online** (host/client rooms): keeps the old
+  behavior — ESC releases the mouse and emits `quit` (→ main menu). The strings
+  (`"Abandonar a partida"`, `"Abandonar a partida ?"`) live in `levels.*.json`; Yes/No reuse the global
+  `Locale` table.
 
 ---
 
@@ -175,8 +185,8 @@ Centralized in the **UINav** autoload (`autoload/ui_nav.gd`), applied by **all**
 
 | Signal | Emitted by | Received by |
 |---|---|---|
-| `replace_main_scene(scene)` | menu, settings, chooseplayer, developer, models, Exported, levels | `main.gd` → scene change |
-| `quit` | chooseplayer, developer | `main.gd` → `go_to_main_menu()` |
+| `replace_main_scene(scene)` | menu, settings, chooseplayer, developer, models, Exported, levels, **level_1/level_2 (offline: Leave → levels)** | `main.gd` → scene change |
+| `quit` | chooseplayer, developer, **level_1/level_2 (online: ESC → menu)** | `main.gd` → `go_to_main_menu()` |
 
 ---
 
