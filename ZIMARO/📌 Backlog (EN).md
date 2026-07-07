@@ -2,7 +2,7 @@
 tipo: backlog
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-07
 ---
 
 # 🗂️ Prioritized Backlog — ZIMARO
@@ -19,6 +19,23 @@ atualizado: 2026-07-04
 > `build_windows.ps1` at the end; eliminate errors/warnings after compiling.
 
 **Last review:** 2026-07-03 · **Active branch:** `feature/fable`
+
+---
+
+## 🟢 Landing page — PT title/subtitle line break — SHIPPED (2026-07-07)
+
+The landing page (`index.html`, served at **zimaro.zimerfeld.com** via GitHub Pages) shares an i18n
+template with the rule `html[data-lang="pt"] .lang-pt{display:inline}`, which forced **every** Portuguese
+element to `inline` — including `h2`/`h3` — making the title/subtitle collapse into the following text when
+the site opens in PT (EN was fine, since `h2`/`h3` are `block` by default). **1-line CSS fix:**
+`html[data-lang="pt"] h2.lang-pt,html[data-lang="pt"] h3.lang-pt{display:block}` — restores the break only
+on PT titles/subtitles, with no effect on EN. Shipped via GitFlow (release `develop`→`main`; the fix was
+already on `develop` from an earlier session — only the promotion to production was missing) + tag
+**`202607071915pt-heading-break`**; `CNAME` preserved; GitHub Pages deploy verified live.
+
+> [!note] Unlike the game-code items below
+> This is an isolated **page-content** tweak and was **already published** (with the user's authorization) —
+> unlike the P0.x code items, which follow the "do not commit" rule and await review.
 
 ---
 
