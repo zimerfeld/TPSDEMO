@@ -191,12 +191,14 @@ com PCK embutido + atalho no Desktop com o ícone.
 ![EN](screenshots/screenshotGB.png) Move (WASD / arrows / stick), look (mouse / right stick), jump (Space — hold for the full
 jump, release mid-rise to smoothly cut it short), aim (RMB / L2), shoot
 (LMB / R2, only while aiming), menu focus with arrow keys, back/quit (Escape — cancels a field edit
-first; the menu confirms before quitting), fullscreen (F11 / Alt+Enter), debug info (F3).
+first; the menu confirms before quitting, and an offline match asks "Leave the match?" before returning
+to the level select), fullscreen (F11 / Alt+Enter), debug info (F3).
 
 ![PT](screenshots/screenshotBR.png) Mover (WASD / setas / analógico), olhar (mouse / analógico direito), pular (Espaço — segure
 para o pulo completo, solte no meio da subida para cortá-lo suavemente), mirar
 (botão direito / L2), atirar (botão esquerdo / R2, só mirando), foco dos menus com as setas,
-voltar/sair (Escape — cancela primeiro um campo em edição; o menu confirma antes de sair), tela
+voltar/sair (Escape — cancela primeiro um campo em edição; o menu confirma antes de sair, e numa
+partida offline pergunta "Abandonar a partida ?" antes de voltar à seleção de níveis), tela
 cheia (F11 / Alt+Enter), info de debug (F3).
 
 ## Code formatting · Formatação de código
