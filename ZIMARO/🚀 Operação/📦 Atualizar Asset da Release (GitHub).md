@@ -49,10 +49,34 @@ gh release edit 202606251203 --draft=false
   `gh release view 202606251203 --json tagName,isDraft,assets`
 - **Listar releases:** `gh release list`
 
+## ➕ Criar uma nova release (nova tag)
+
+Quando quiser **publicar sob uma nova tag** (em vez de atualizar o asset da mesma),
+crie uma release nova — o **título fica sendo a própria tag** (sem "ZIMARO v0.1.0"):
+
+```powershell
+cd C:/GODOT/ZIMARO
+# a tag precisa existir no remoto (se for local, enviar antes):
+git push origin refs/tags/202607072141
+# título = a própria tag; --notes-file para o corpo (changelog)
+gh release create 202607072141 build/windows/ZIMARO.exe --title "202607072141" --notes-file notas.md
+```
+
+- **Título só com a tag:** passe `--title "<TAG>"` — evita o nome descritivo/versão no topo.
+- **Reaproveitar as notas de uma release anterior** sem o cabeçalho de versão:
+  ```powershell
+  gh release view <TAG_ANTIGA> --json body -q .body | Set-Content notas.md
+  # remova a 1ª linha "# ZIMARO vX.Y.Z" do notas.md antes de usar
+  ```
+- Releases antigas podem ser **mantidas** — a mais nova vira **Latest** automaticamente e
+  é a que o botão **Download** do site (`/releases`) passa a servir.
+
 ## 🛟 Notas
 
-- **Tag atual:** `202606251203`. O `.exe` publicado é lido pelo botão **Download** do
-  site `zimaro.zimerfeld.com` (GitHub Pages a partir de `main`).
+- **Release Latest atual:** `202607072141` (título = só a tag; notas EN/PT sem
+  "ZIMARO v0.1.0"). A anterior `202606251203` foi **mantida** por opção. O `.exe`
+  publicado na Latest é lido pelo botão **Download** do site `zimaro.zimerfeld.com`
+  (GitHub Pages a partir de `main`, aponta para `/releases`).
 - Se por engano o `.exe` entrar no histórico do git (ex.: um commit "com exe"), **não
   envie** — desfaça com `git reset --soft HEAD~1`, garanta `build/windows/*.exe` no
   `.gitignore` e retire-o do staging (`git restore --staged`).

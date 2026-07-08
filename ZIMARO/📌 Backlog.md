@@ -40,9 +40,14 @@ Três frentes numa mesma sessão, todas concluídas:
 3. **Higiene do git.** Removido do histórico o commit `com exe` (exe de 174 MB, que o
    GitHub rejeita por >100 MB); `build/windows/*.exe` agora no `.gitignore`; recommit limpo
    só com ícones + `.gitignore` (`8fec39b`, enviado ao `develop`).
+4. **Nova release com tag de hoje + título limpo.** Criada a release **`202607072141`**
+   (`gh release create … --title "202607072141"`), agora **Latest**: título = só a tag
+   (sem "ZIMARO v0.1.0"), notas EN/PT reaproveitadas sem o cabeçalho de versão, `ZIMARO.exe`
+   (166 MB) anexado. A antiga `202606251203` foi **mantida** por opção.
 
 **Procedimento documentado no cofre:** [[📦 Atualizar Asset da Release (GitHub)]] (PT/EN)
-na pasta 🚀 Operação — como trocar/publicar o binário com `gh` sem passar pelo git.
+na pasta 🚀 Operação — como trocar/publicar o binário com `gh` sem passar pelo git, e como
+criar uma **nova release com nova tag** (título = só a tag).
 
 ---
 

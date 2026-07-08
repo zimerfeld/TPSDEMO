@@ -39,9 +39,14 @@ Three fronts in one session, all done:
 3. **Git hygiene.** Removed the `com exe` commit from history (174 MB exe, which GitHub
    rejects for being >100 MB); `build/windows/*.exe` is now in `.gitignore`; clean recommit
    with icons + `.gitignore` only (`8fec39b`, pushed to `develop`).
+4. **New release with today's tag + clean title.** Created release **`202607072141`**
+   (`gh release create … --title "202607072141"`), now **Latest**: title = tag only (no
+   "ZIMARO v0.1.0"), EN/PT notes reused without the version heading, `ZIMARO.exe` (166 MB)
+   attached. The old `202606251203` was **kept** by choice.
 
 **Procedure documented in the vault:** [[📦 Atualizar Asset da Release (GitHub) (EN)|Update the Release Asset (GitHub)]]
-(PT/EN) under 🚀 Operação — how to swap/publish the binary with `gh`, bypassing git.
+(PT/EN) under 🚀 Operação — how to swap/publish the binary with `gh` (bypassing git), and how
+to create a **new release with a new tag** (title = tag only).
 
 ---
 
