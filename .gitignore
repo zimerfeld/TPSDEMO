@@ -7,7 +7,7 @@ export.cfg
 export_presets.cfg
 
 # Build output (Windows .exe + generated icon) — see build_windows.ps1
-build/
+# build/
 
 # Claude Code project hooks (contém caminho absoluto da máquina) — ver build_windows.ps1
 .claude/settings.json
@@ -27,3 +27,4 @@ mono_crash.*.json
 
 # Blender versioning
 *.blend[0-9]*
+build/windows/*.exe
