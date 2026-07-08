@@ -18,7 +18,30 @@ atualizado: 2026-07-07
 > task with user impact, update the READMEs (`.md`/`.en-US`/`.pt-BR`) **and** this vault; run
 > `build_windows.ps1` at the end; eliminate errors/warnings after compiling.
 
-**Last review:** 2026-07-03 · **Active branch:** `feature/fable`
+**Last review:** 2026-07-07 · **Active branch:** `feature/fable`
+
+---
+
+## 🟢 PT controls collision + release `.exe` update — SHIPPED (2026-07-07)
+
+Three fronts in one session, all done:
+
+1. **Controls ("Quick reference") collision fix in PT.** The landing page
+   (`index.html`, **zimaro.zimerfeld.com** via GitHub Pages) forced the pills container to
+   `display:block` in PT (`html[data-lang="pt"] .block.lang-pt{display:block}`), making the
+   `.pill`s **inline** — and inline vertical padding overlapped the backgrounds between
+   lines. **1-line CSS fix:** `html[data-lang="pt"] .pills.lang-pt.block{display:flex}`
+   restores flex/wrap in PT only. Shipped as a hotfix straight to `main` (commit `4d79896`);
+   Pages redeployed live. (ZIMMY's identical template had the same bug — fixed there too.)
+2. **Release `.exe` updated.** The `ZIMARO.exe` asset of release **`202606251203`** was
+   replaced (`gh release upload … --clobber`): **587 MB → 166 MB** (new build), and the
+   release was **published** (`--draft=false`) — it had been a draft, invisible to the public.
+3. **Git hygiene.** Removed the `com exe` commit from history (174 MB exe, which GitHub
+   rejects for being >100 MB); `build/windows/*.exe` is now in `.gitignore`; clean recommit
+   with icons + `.gitignore` only (`8fec39b`, pushed to `develop`).
+
+**Procedure documented in the vault:** [[📦 Atualizar Asset da Release (GitHub) (EN)|Update the Release Asset (GitHub)]]
+(PT/EN) under 🚀 Operação — how to swap/publish the binary with `gh`, bypassing git.
 
 ---
 

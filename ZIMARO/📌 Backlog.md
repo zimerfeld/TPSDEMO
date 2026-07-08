@@ -18,7 +18,31 @@ atualizado: 2026-07-07
 > com impacto no usuário, atualizar READMEs (`.md`/`.en-US`/`.pt-BR`) **e** este cofre; rodar
 > `build_windows.ps1` ao final; eliminar erros/warnings após compilar.
 
-**Última revisão:** 2026-07-03 · **Branch ativa:** `feature/fable`
+**Última revisão:** 2026-07-07 · **Branch ativa:** `feature/fable`
+
+---
+
+## 🟢 Colisão dos controles em PT + atualização do `.exe` da release — PUBLICADO (2026-07-07)
+
+Três frentes numa mesma sessão, todas concluídas:
+
+1. **Fix de colisão dos controles ("Referência rápida") em PT.** A landing page
+   (`index.html`, **zimaro.zimerfeld.com** via GitHub Pages) forçava o container dos pills
+   para `display:block` no PT (`html[data-lang="pt"] .block.lang-pt{display:block}`),
+   tornando os `.pill` **inline** — e o padding vertical de inline sobrepunha os fundos
+   entre linhas. **Correção de 1 linha de CSS:**
+   `html[data-lang="pt"] .pills.lang-pt.block{display:flex}` restaura o flex/wrap só no PT.
+   Publicado como hotfix direto na `main` (commit `4d79896`); Pages redeployado ao vivo.
+   (O mesmo template do ZIMMY tinha o bug — corrigido lá também.)
+2. **`.exe` da release atualizado.** Asset `ZIMARO.exe` da release **`202606251203`**
+   substituído (`gh release upload … --clobber`): **587 MB → 166 MB** (build novo), e a
+   release **publicada** (`--draft=false`) — antes era rascunho, invisível ao público.
+3. **Higiene do git.** Removido do histórico o commit `com exe` (exe de 174 MB, que o
+   GitHub rejeita por >100 MB); `build/windows/*.exe` agora no `.gitignore`; recommit limpo
+   só com ícones + `.gitignore` (`8fec39b`, enviado ao `develop`).
+
+**Procedimento documentado no cofre:** [[📦 Atualizar Asset da Release (GitHub)]] (PT/EN)
+na pasta 🚀 Operação — como trocar/publicar o binário com `gh` sem passar pelo git.
 
 ---
 

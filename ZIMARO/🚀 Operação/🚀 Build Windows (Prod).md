@@ -73,5 +73,6 @@ pwsh -File build_windows.ps1
 
 ## 🔗 Ligações
 - [[💻 Rodar no Editor (Dev)]] — rodar/desenvolver localmente antes do build
+- [[📦 Atualizar Asset da Release (GitHub)]] — publicar o `.exe` gerado na página de releases
 - [[🧱 recursos-nativos-godot]] · [[🎬 fluxo-de-cenas]]
 - [[🏠 Home]] · [[📌 Backlog]]
