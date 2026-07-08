@@ -7,8 +7,6 @@ atualizado: 2026-07-06
 
 # 🏠 ZIMARO — Neuron Vault
 
-> 🇧🇷 Leia esta página em português → [[🏠 Home]]
-
 > [!abstract] 🧠 What this vault is
 > Claude's persistent memory for the **ZIMARO** project — a third-person shooter sandbox
 > built with **Godot 4**, featuring server-authoritative multiplayer. The vault is updated at the

@@ -7,8 +7,6 @@ atualizado: 2026-07-05
 
 # 🌀 Fundos animados das telas 2D (shaders de portal/vórtice)
 
-> 🇺🇸 Read this page in English → [[🌀 fundos-2D-animados (EN)]]
-
 > Cada tela 2D de UI tem um fundo animado próprio, feito só com **matemática por pixel** (sem
 > textura, sem draw call extra) para respeitar a meta de **60 FPS em hardware gráfico mínimo**
 > (`CLAUDE.md`). São `ColorRect` em `CanvasLayer` de fundo (`layer = -2`) com `ShaderMaterial`.

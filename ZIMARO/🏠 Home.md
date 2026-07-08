@@ -7,8 +7,6 @@ atualizado: 2026-07-06
 
 # 🏠 ZIMARO — Cofre de Neurônios
 
-> 🇺🇸 Read this page in English → [[🏠 Home (EN)]]
-
 > [!abstract] 🧠 O que é este cofre
 > Memória persistente do Claude para o projeto **ZIMARO** — sandbox de tiro em terceira pessoa
 > feito em **Godot 4**, com multiplayer server-authoritative. O cofre é atualizado ao fim de cada
