@@ -2,7 +2,7 @@
 tipo: backlog
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-07
 ---
 
 # 🗂️ Prioritized Backlog — ZIMARO
@@ -18,7 +18,47 @@ atualizado: 2026-07-04
 > task with user impact, update the READMEs (`.md`/`.en-US`/`.pt-BR`) **and** this vault; run
 > `build_windows.ps1` at the end; eliminate errors/warnings after compiling.
 
-**Last review:** 2026-07-03 · **Active branch:** `feature/fable`
+**Last review:** 2026-07-07 · **Active branch:** `feature/fable`
+
+---
+
+## 🟢 PT controls collision + release `.exe` update — SHIPPED (2026-07-07)
+
+Three fronts in one session, all done:
+
+1. **Controls ("Quick reference") collision fix in PT.** The landing page
+   (`index.html`, **zimaro.zimerfeld.com** via GitHub Pages) forced the pills container to
+   `display:block` in PT (`html[data-lang="pt"] .block.lang-pt{display:block}`), making the
+   `.pill`s **inline** — and inline vertical padding overlapped the backgrounds between
+   lines. **1-line CSS fix:** `html[data-lang="pt"] .pills.lang-pt.block{display:flex}`
+   restores flex/wrap in PT only. Shipped as a hotfix straight to `main` (commit `4d79896`);
+   Pages redeployed live. (ZIMMY's identical template had the same bug — fixed there too.)
+2. **Release `.exe` updated.** The `ZIMARO.exe` asset of release **`202606251203`** was
+   replaced (`gh release upload … --clobber`): **587 MB → 166 MB** (new build), and the
+   release was **published** (`--draft=false`) — it had been a draft, invisible to the public.
+3. **Git hygiene.** Removed the `com exe` commit from history (174 MB exe, which GitHub
+   rejects for being >100 MB); `build/windows/*.exe` is now in `.gitignore`; clean recommit
+   with icons + `.gitignore` only (`8fec39b`, pushed to `develop`).
+
+**Procedure documented in the vault:** [[📦 Atualizar Asset da Release (GitHub) (EN)|Update the Release Asset (GitHub)]]
+(PT/EN) under 🚀 Operação — how to swap/publish the binary with `gh`, bypassing git.
+
+---
+
+## 🟢 Landing page — PT title/subtitle line break — SHIPPED (2026-07-07)
+
+The landing page (`index.html`, served at **zimaro.zimerfeld.com** via GitHub Pages) shares an i18n
+template with the rule `html[data-lang="pt"] .lang-pt{display:inline}`, which forced **every** Portuguese
+element to `inline` — including `h2`/`h3` — making the title/subtitle collapse into the following text when
+the site opens in PT (EN was fine, since `h2`/`h3` are `block` by default). **1-line CSS fix:**
+`html[data-lang="pt"] h2.lang-pt,html[data-lang="pt"] h3.lang-pt{display:block}` — restores the break only
+on PT titles/subtitles, with no effect on EN. Shipped via GitFlow (release `develop`→`main`; the fix was
+already on `develop` from an earlier session — only the promotion to production was missing) + tag
+**`202607071915pt-heading-break`**; `CNAME` preserved; GitHub Pages deploy verified live.
+
+> [!note] Unlike the game-code items below
+> This is an isolated **page-content** tweak and was **already published** (with the user's authorization) —
+> unlike the P0.x code items, which follow the "do not commit" rule and await review.
 
 ---
 

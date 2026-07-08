@@ -75,5 +75,6 @@ pwsh -File build_windows.ps1
 
 ## 🔗 Links
 - [[💻 Rodar no Editor (Dev) (EN)|Run in the Editor (Dev)]] — run/develop locally before building
+- [[📦 Atualizar Asset da Release (GitHub) (EN)|Update the Release Asset (GitHub)]] — publish the built `.exe` on the releases page
 - [[🧱 recursos-nativos-godot (EN)|recursos-nativos-godot]] · [[🎬 fluxo-de-cenas (EN)|scene flow]]
 - [[🏠 Home (EN)|Home]] · [[📌 Backlog (EN)|Backlog]]
