@@ -7,8 +7,6 @@ atualizado: 2026-07-05
 
 # 🌀 Animated 2D screen backgrounds (portal/vortex shaders)
 
-> 🇧🇷 Ler em português → [[🌀 fundos-2D-animados]]
-
 > Every 2D UI screen has its own animated background made purely from **per-pixel math** (no
 > texture, no extra draw call) to honor the **60 FPS on minimum graphics hardware** target
 > (`CLAUDE.md`). They are `ColorRect`s on a background `CanvasLayer` (`layer = -2`) with a
