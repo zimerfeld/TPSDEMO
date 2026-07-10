@@ -134,8 +134,24 @@ cannon bullet/bomb in mid-air).
 
 ---
 
+## 🛡️ Faction damage — no friendly fire (2026-07-08)
+
+Damage is no longer "hit anyone but the shooter itself"; it now respects the
+[[⚔️ facções (EN)|faction system]]:
+
+- **`bullet.gd`** and **`bomb.gd`** check `Factions.can_damage(shooter/dropper, target)` before
+  applying damage. **Same faction → no damage.**
+- The **bullet PHASES THROUGH** a same-faction character (collision exception, as it already does with
+  a body that owns limb colliders) instead of exploding → it does **not block the line of fire** of
+  whoever is behind.
+- When damage lands, `Factions.note_damage(...)` **provokes** a neutral target (aligns it against the attacker).
+- Only the server applies damage (server-authoritative), so the faction only needs to exist on the server.
+
+---
+
 ## 🔗 Related
 
 - [[🎮 player (EN)|player]]
 - [[❤️ sistema-de-vida (EN)|sistema-de-vida]]
 - [[💥 bullet-gd (EN)|bullet-gd]]
+- [[⚔️ facções (EN)|facções]]

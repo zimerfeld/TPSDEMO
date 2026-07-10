@@ -18,7 +18,26 @@ atualizado: 2026-07-07
 > com impacto no usuário, atualizar READMEs (`.md`/`.en-US`/`.pt-BR`) **e** este cofre; rodar
 > `build_windows.ps1` ao final; eliminar erros/warnings após compilar.
 
-**Última revisão:** 2026-07-07 · **Branch ativa:** `feature/fable`
+**Última revisão:** 2026-07-08 · **Branch ativa:** `feature/locomocao-realista-inimigos`
+
+---
+
+## 🟢 Locomoção realista + suavização + Sistema de Facções — PRONTO p/ review (2026-07-08)
+
+Branch `feature/locomocao-realista-inimigos` (a partir de `develop`). `.exe` rebuildado; import
+headless sem erros/warnings. **Não commitado** (aguardando review).
+
+- **Locomoção terrestre sem deslizar:** passada da `Walk` medida em runtime (~0,8 m/s), cadência via
+  novo nó `AnimationNodeTimeScale`, pernas encaram a direção do movimento (deslocamento por root
+  motion), velocidades da IA reduzidas. Ver [[🤖 inimigos]].
+- **Anti-chacoalho:** rumo suavizado (`move_dir_response`), `body_turn_rate` 7→5, strafe segura 1,6–3 s.
+- **Sistema de facções (runtime, por-instância):** novo `effects_shared/factions.gd`. Sem fogo amigo
+  (bala atravessa aliado), targeting por facção, neutros dinâmicos (~8 s). Ver [[⚔️ facções]].
+- **Aliado orbita o player mais próximo sem colidir** (`player_bot_ai`): âncora no humano mais perto,
+  órbita (raio + tangencial), exceção de colisão bot↔âncora. Ver [[🎮 player]].
+- ✅ **Separação entre múltiplos bots aliados (2026-07-08):** `player_bot_ai._separation` (steering
+  estilo boids) afasta cada aliado dos outros dentro de `separation_radius` → distribuem-se na órbita
+  sem empilhar. Ver [[🎮 player]] / [[⚔️ facções]].
 
 ---
 

@@ -63,6 +63,8 @@ var _interp_seeded := false
 
 
 func _ready() -> void:
+	# Facção runtime (hostil por padrão; template tem precedência) → targeting e sem fogo amigo.
+	Factions.seed_node(self, &"criatura_alada")
 	_yaw = rotation.y
 	_bomb_cd = bomb_interval
 	_bob_phase = randf() * TAU  # desincroniza o bob/oscilação entre criaturas
@@ -251,6 +253,9 @@ func _find_nearest_player(scope: Node) -> Node3D:
 	var best_d := INF
 	var here := global_position
 	for p in candidates:
+		# Facção: só mira o lado OPOSTO (inimigo). Dinâmico → reage a neutros provocados.
+		if not Factions.are_enemies(self, p):
+			continue
 		var d := here.distance_to(p.global_position)
 		if d < best_d:
 			best_d = d

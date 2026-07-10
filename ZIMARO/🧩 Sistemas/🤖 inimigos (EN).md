@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🤖 Enemy System — Red Robot
@@ -27,8 +27,10 @@ APPROACH ──► AIM ──► SHOOTING
 | `SHOOTING (2)` | Fires a cannon bullet; waits for the reload before the next one |
 
 > **Retreat (FLEE):** beyond the 3 states, a decision from the [[🧠 red-robot-ai-gd (EN)|AI]] overrides
-> the movement when the player gets to **≤ 10 m**: the robot **runs in the opposite direction while facing the
-> player** and keeps shooting (it is not a machine `State`, it is a per-frame movement override).
+> the movement when the player gets to **≤ 10 m**: the robot opens up space in the opposite direction (it is
+> not a machine `State`, it is a per-frame movement override). Since 2026-07-08 the **legs turn toward the
+> direction of travel** (anti-slide mechanic — see below), so it **turns and runs** instead of back-pedalling;
+> the **turret/cannon keeps aiming at the player** independently.
 
 ---
 
@@ -165,6 +167,61 @@ User feedback validated in Test A. Four behavior fronts + faction marking
   `"faction"`, user:// precedence like the behaviors). Values `hostile`/`neutral`/`ally`; defaults: red_robot
   and criatura_alada = **hostile**, player = **ally**. There is still **no neutral character** — the field exists and is
   read (`is_hostile`/`is_neutral`), ready for the "neutral only reacts if threatened (shot/randomness)" logic.
+
+---
+
+## 🚶 Realistic locomotion — matched stride + legs facing travel (2026-07-08)
+
+Fix for the ground enemies' "sliding". Replaces the earlier attempt (2026-07-02 section), which **did
+not work**: scaling `AnimationPlayer.speed_scale` is **ignored** when an `AnimationTree` drives the
+animation — the cadence never actually sped up.
+
+**Diagnosis (measured):** the `Walk` animation has a natural stride of **~0.8 m/s** (its root-motion
+bone `MASTER` travels 2 m over 2.5 s), but the code assumed `walk_natural_speed = 2.2` and the AI drove
+the body at 2.4–3.8 m/s in manual mode → the body moved 3–4.75× faster than the feet. On top of that
+`Walk` is **forward-only**: moving sideways/backward with it always slides.
+
+**Solution (3 fronts):**
+
+1. **Cadence via the tree (for real):** a new `AnimationNodeTimeScale` node **`locomotion_scale`** inserted
+   into the blend tree between `state` and `aiming` (edits the `.tscn`). `_match_locomotion_cadence(speed)`
+   now writes `parameters/locomotion_scale/scale` (the mechanism the `AnimationTree` honors), no longer the
+   player's `speed_scale`. Range `[0.6, 2.6]`.
+2. **Stride calibrated at runtime:** `_calibrate_walk_natural_speed()` in `_ready` measures the real stride
+   of `Walk` (horizontal MASTER displacement ÷ length) → `walk_natural_speed ≈ 0.8`. Stays correct even if
+   the artist re-exports the animation. The `@export` (0.8) is just a fallback.
+3. **Legs face travel + displacement from root motion:** in manual mode `_face_move_direction` smoothly
+   turns the **body** (`body_turn_rate` 7 rad/s) to face where it walks, and the velocity comes from the
+   **animation's own `get_root_motion_position()`** projected along that facing. Because the body faces its
+   movement, the footstep lands exactly on the ground covered → **no sliding in any direction**. The
+   **turret/cannon aims at the player separately** (the `aim` blendspace), so it walks one way and shoots
+   the player.
+
+**Network note:** the scale is not replicated; on the client `_match_remote_cadence` estimates speed from
+the **interpolated** position and matches the local cadence (the body already arrives facing the right way,
+computed on the server) → feet locked on the client too.
+
+**AI speeds lowered** to the band the stride sustains (cadence ~1.75–2.5×): `strafe_speed` 2.4→**1.4**,
+`pressure_speed` 3.2→**1.8**, `flee_speed` 3.8→**2.0**. APPROACH stays on natural root motion (~0.8 m/s),
+feet already locked. Above 2.6× stride, speed is **capped** (never slides; just limited). Tunables (headed
+for the AI parametrization screen): `walk_natural_speed`, `body_turn_rate`, `gait_speed_scale`, and the AI
+speeds.
+
+---
+
+### Direction smoothing (anti-jitter, 2026-07-08)
+
+Because the body now **faces the direction of travel**, the AI's raw heading (strafe flips, target
+re-search, geometry probes) made the robot **shake**. Fixes: `move_dir_response` (4.0) **filters the
+heading** before turning the body; `body_turn_rate` 7→**5** rad/s (heavier turn); and the AI now
+**commits to each strafe direction for 1.6–3 s** (was ~0.5 s), including geometry and reposition
+flips. Direction changes now come in gradually.
+
+### Targeting by faction (2026-07-08)
+
+`_pick_target` filters by `Factions.are_enemies(self, target)` → the robot targets **only the
+OPPOSITE faction** (you + allied bots), never another hostile nor a neutral. The filter is at target
+**selection** (not at Area entry) → it reacts to provoked neutrals that turn ally. See [[⚔️ facções (EN)|facções]].
 
 ---
 

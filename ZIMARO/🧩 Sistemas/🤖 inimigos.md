@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🤖 Sistema de Inimigos — Red Robot
@@ -27,8 +27,10 @@ APPROACH ──► AIM ──► SHOOTING
 | `SHOOTING (2)` | Dispara bala de canhão; espera a recarga antes do próximo |
 
 > **Recuo (FLEE):** além dos 3 estados, uma decisão da [[🧠 red-robot-ai-gd|IA]] sobrepõe
-> o movimento quando o player chega a **≤ 10 m**: o robô **corre no sentido oposto encarando o
-> player** e continua atirando (não é um `State` da máquina, é um override de movimento por quadro).
+> o movimento quando o player chega a **≤ 10 m**: o robô abre espaço no sentido oposto (não é um
+> `State` da máquina, é um override de movimento por quadro). Desde 2026-07-08 as **pernas viram
+> para a direção do movimento** (mecânica anti-deslize — ver abaixo), então ele **gira e corre**
+> em vez de recuar de costas; a **torre/canhão continua mirando o player** de forma independente.
 
 ---
 
@@ -165,6 +167,58 @@ Feedback do usuário validado no Teste A. Quatro frentes de comportamento + marc
   `"faction"`, precedência user:// como os behaviors). Valores `hostile`/`neutral`/`ally`; defaults: red_robot
   e criatura_alada = **hostile**, player = **ally**. Ainda **não há personagem neutro** — o campo existe e é
   lido (`is_hostile`/`is_neutral`), pronto para a lógica "neutro só reage se ameaçado (tiro/aleatoriedade)".
+
+---
+
+## Locomoção realista — passada casada + pernas na direção do movimento (2026-07-08)
+
+Correção do "deslizar" dos inimigos terrestres. Substitui a tentativa anterior (seção 2026-07-02),
+que **não funcionava**: escalar `AnimationPlayer.speed_scale` **é ignorado** quando quem pilota a
+animação é a `AnimationTree` — a cadência nunca acelerava de fato.
+
+**Diagnóstico (medido):** a anim `Walk` tem passada natural de **~0,8 m/s** (o bone de root motion
+`MASTER` anda 2 m em 2,5 s), mas o código assumia `walk_natural_speed = 2.2` e a IA mandava o corpo
+a 2,4–3,8 m/s no modo manual → o corpo andava 3–4,75× mais rápido que os pés. Além disso a `Walk` é
+**só para frente**: mover de lado/de costas com ela sempre desliza.
+
+**Solução (3 frentes):**
+
+1. **Cadência via árvore (real):** novo nó `AnimationNodeTimeScale` **`locomotion_scale`** inserido no
+   blend tree entre `state` e `aiming` (edita o `.tscn`). `_match_locomotion_cadence(speed)` agora
+   escreve `parameters/locomotion_scale/scale` (o mecanismo que a `AnimationTree` respeita), não mais
+   o `speed_scale` do player. Faixa `[0.6, 2.6]`.
+2. **Passada calibrada em runtime:** `_calibrate_walk_natural_speed()` no `_ready` mede a passada real
+   da `Walk` (deslocamento horizontal do MASTER ÷ duração) → `walk_natural_speed ≈ 0.8`. Fica correto
+   mesmo que o artista reexporte a animação. O `@export` (0.8) é só fallback.
+3. **Pernas na direção do movimento + deslocamento por root motion:** no modo manual, `_face_move_direction`
+   gira o **corpo** suavemente (`body_turn_rate` 7 rad/s) para encarar para onde ele anda, e a velocidade
+   sai do **próprio `get_root_motion_position()`** projetado nessa direção. Como o corpo encara o movimento,
+   o passo cai exatamente sobre o chão percorrido → **sem deslize em nenhuma direção**. A **torre/canhão
+   mira o player à parte** (blendspace `aim`), então ele anda para um lado e atira para o player.
+
+**Consequência de rede:** a escala não é replicada; no cliente `_match_remote_cadence` estima a
+velocidade pela posição **interpolada** e casa a cadência local (o corpo já chega encarando a direção
+certa, calculada no servidor) → pés travados também no cliente.
+
+**Velocidades da IA reduzidas** à faixa que a passada sustenta (cadência ~1,75–2,5×): `strafe_speed`
+2,4→**1,4**, `pressure_speed` 3,2→**1,8**, `flee_speed` 3,8→**2,0**. O APPROACH segue no root motion
+natural (~0,8 m/s), pés já travados. Acima de 2,6× a passada a velocidade fica **capada** (nunca
+desliza; só limita). Tunáveis (irão para a tela de parametrização de IA): `walk_natural_speed`,
+`body_turn_rate`, `gait_speed_scale`, e as velocidades da IA.
+
+### Suavização de direção (anti-chacoalho, 2026-07-08)
+
+Como o corpo passou a **encarar a direção do movimento**, o rumo cru da IA (troca de strafe, reprocura
+de alvo, sondas de geometria) fazia o robô **tremer**. Correções: `move_dir_response` (4.0) **filtra o
+rumo** antes de virar o corpo; `body_turn_rate` 7→**5** rad/s (giro mais pesado); e a IA passou a
+**segurar cada direção de strafe 1,6–3 s** (antes ~0,5 s), incluindo as trocas por geometria e
+reposicionamento. Mudanças de direção agora entram graduais.
+
+### Alvo por facção (2026-07-08)
+
+`_pick_target` filtra por `Factions.are_enemies(self, alvo)` → o robô mira **só a facção OPOSTA**
+(você + bots aliados), nunca outro hostil nem um neutro. O filtro é na **seleção** do alvo (não na
+entrada da Area) → reage a neutros provocados que viram aliados. Ver [[⚔️ facções]].
 
 ---
 

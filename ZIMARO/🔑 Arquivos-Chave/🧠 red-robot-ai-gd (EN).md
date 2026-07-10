@@ -2,7 +2,7 @@
 tipo: arquivo-chave
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🧠 library3D/characters/red_robot/IA/red_robot_ai.gd
@@ -26,10 +26,12 @@ tunables live here, easy to adjust without touching the state machine.
 | Var | Value | Effect |
 |---|---|---|
 | `fire_rate_multiplier` | `1.5` | Reload **1.5× faster** (1st and next shots) |
-| `flee_distance` | `10.0 m` | Player at this distance or less → the robot backs away shooting |
-| `flee_speed` | `6.0 m/s` | Speed when running away from the player |
-| `formation_cohesion` | `0.55` | Strength of the return to the assigned formation slot |
-| `formation_band` | `5.0 m` | Tolerance before the robot is pulled back to the slot |
+| `flee_distance` | `10.0 m` | Player at this distance or less → the robot opens up space |
+| `flee_speed` | `2.0 m/s` | Speed when opening up space (tuned to the stride — see [[🤖 inimigos (EN)|inimigos]] 2026-07-08) |
+| `strafe_speed` | `1.4 m/s` | Lateral step in reactive combat |
+| `pressure_speed` | `1.8 m/s` | Repositioning under pressure |
+| `formation_cohesion` | `0.32` | Strength of the return to the assigned formation slot |
+| `formation_band` | `7.0 m` | Tolerance before the robot is pulled back to the slot |
 | `speed_variation` | `±0.18` | Per-individual speed variation (breaks the lockstep) |
 
 ---
@@ -53,9 +55,10 @@ func should_shoot(distance, effective_range) -> bool  # distance <= effective_ra
 
 - **Accelerated reload:** `shoot_reload` replaces `SHOOT_WAIT` in all resets of
   `shoot_countdown` (1st shot included).
-- **Backing away (FLEE):** when `decide(...) == FLEE`, `_flee_movement()` faces the player (front +Z) and
-  sets the velocity in the opposite direction (`-fwd * flee_speed`), overriding the root motion; the legs
-  play `walk` and firing continues (the player is within range).
+- **Backing away (FLEE):** when `decide(...) == FLEE`, `movement_plan` returns `direction = -forward`
+  (opposite the player) and `speed = flee_speed`. Since 2026-07-08 the body **turns its legs toward that
+  direction** and the step comes from root motion (anti-slide) → the robot **turns and runs**; the turret
+  keeps aiming/firing separately. See [[🤖 inimigos (EN)|inimigos]] ("Realistic locomotion").
 - **Firing:** the aiming logic already only fires within `effective_range`, covering ENGAGE and FLEE.
 
 ---

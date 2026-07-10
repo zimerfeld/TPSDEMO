@@ -2,7 +2,7 @@
 tipo: arquivo-chave
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🤖 library3D/characters/red_robot/red_robot.gd
@@ -95,10 +95,17 @@ e consultado a cada quadro pelo corpo (`red_robot.gd`):
   usado no 1º tiro e em todos os resets de `shoot_countdown` (vale para o 1º e os próximos).
 - **Engajar** — atira sempre que o player está dentro de `effective_range` (a mira de tiro já
   faz esse teste); na prática, abre fogo na faixa `10 m < dist ≤ alcance`.
-- **Recuar (FLEE)** — quando `dist ≤ flee_distance` (10 m), `_flee_movement()` orienta o corpo
-  para **encarar o player** (frente +Z) e define a velocidade no **sentido oposto**
-  (`-fwd * flee_speed`), sobrepondo o root motion; as pernas tocam `walk` e o tiro continua.
-- Tunáveis na IA: `fire_rate_multiplier = 1.5`, `flee_distance = 10.0`, `flee_speed = 6.0`.
+- **Recuar (FLEE)** — quando `dist ≤ flee_distance` (10 m), a IA devolve `direction = -forward`. Desde
+  2026-07-08 o corpo **vira as pernas para a direção do movimento** e o passo sai do root motion
+  (anti-deslize) → **gira e corre**; a torre segue mirando/atirando à parte.
+- Tunáveis na IA: `fire_rate_multiplier = 1.5`, `flee_distance = 10.0`, `flee_speed = 2.0`,
+  `strafe_speed = 1.4`, `pressure_speed = 1.8`.
+
+> **Locomoção (anti-deslize, 2026-07-08):** `_calibrate_walk_natural_speed` mede a passada real da anim
+> `Walk` (~0,8 m/s); `_match_locomotion_cadence` pilota o nó `AnimationNodeTimeScale` `locomotion_scale`
+> da árvore (o `speed_scale` do AnimationPlayer é ignorado sob AnimationTree); `_face_move_direction`
+> vira o corpo para onde anda e o deslocamento vem do `get_root_motion_position()`. Detalhe completo em
+> [[🤖 inimigos]] ("Locomoção realista").
 
 ---
 

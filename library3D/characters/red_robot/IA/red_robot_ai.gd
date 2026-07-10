@@ -36,15 +36,16 @@ const QUICK_RETRY_DELAY := 0.35
 @export var fire_rate_multiplier: float = 1.5
 ## Se o player chegar a esta distância (m) ou menos, o robô precisa abrir espaço.
 @export var flee_distance: float = 10.0
-## Velocidade (m/s) com que o robô recua quando o alvo invade sua zona curta.
-## Calibrada em referências humanas reais (recuo de costas olhando o alvo ~2,5-3 m/s;
-## caminhada 1,4 / trote ~3 / corrida 4,5): recuo urgente porém crível.
-@export var flee_speed: float = 3.8
-## Velocidade lateral padrão durante o combate reativo. Passo lateral humano fica em
-## ~1,5-2,5 m/s — 2,4 mantém o duelo vivo sem o antigo deslizar de 4,25 m/s.
-@export var strafe_speed: float = 2.4
-## Velocidade lateral mais agressiva em reposicionamentos de pressão (trote ~3,2 m/s).
-@export var pressure_speed: float = 3.2
+## Velocidade (m/s) com que o robô recua quando o alvo invade sua zona curta. Calibrada à passada
+## que a anim `Walk` sustenta: a passada natural (~0,8 m/s) é escalada em tempo real e o deslocamento
+## sai do próprio root motion; acima de ~2,6× a passada, a velocidade fica capada mas os pés seguem
+## travados (sem deslize). ~2,0 = recuo urgente porém sem patinar.
+@export var flee_speed: float = 2.0
+## Velocidade lateral padrão durante o combate reativo. Mantida dentro da faixa que a passada
+## acompanha (cadência ~1,75× a natural) para o duelo ficar vivo sem os pés deslizarem.
+@export var strafe_speed: float = 1.4
+## Velocidade lateral mais agressiva em reposicionamentos de pressão (cadência ~2,25× a natural).
+@export var pressure_speed: float = 1.8
 ## Distância preferida como razão do alcance efetivo da arma.
 @export_range(0.2, 0.95) var preferred_range_ratio: float = 0.68
 ## Largura da faixa "confortável" em torno da distância preferida.
@@ -282,7 +283,7 @@ func movement_plan(origin: Vector3, target_position: Vector3, effective_range: f
 func _trigger_reposition() -> void:
 	_reposition_time = maxf(_reposition_time, reposition_duration)
 	_strafe_sign *= -1.0
-	_strafe_cooldown = 0.4
+	_strafe_cooldown = 0.9  # segura a direção do reposicionamento p/ não re-flipar e tremer
 
 
 func _choose_strafe_sign(space_state: PhysicsDirectSpaceState3D, origin: Vector3,
@@ -290,7 +291,9 @@ func _choose_strafe_sign(space_state: PhysicsDirectSpaceState3D, origin: Vector3
 	if not behavior_enabled(BEHAVIOR_GEOMETRY_PROBE):
 		if _strafe_cooldown <= 0.0:
 			_strafe_sign *= -1.0
-			_strafe_cooldown = randf_range(0.7, 1.6)  # período individual: evita flips sincronizados
+			# Compromisso longo com a direção: o corpo encara para onde anda, então flips frequentes
+			# fariam o robô "chacoalhar". Período individual (evita flips sincronizados).
+			_strafe_cooldown = randf_range(1.6, 3.0)
 		return _strafe_sign
 	var from := origin + Vector3.UP
 	var right := Vector3.UP.cross(forward).normalized()
@@ -301,10 +304,11 @@ func _choose_strafe_sign(space_state: PhysicsDirectSpaceState3D, origin: Vector3
 	left_score += 0.35 * _probe_score(space_state, from, (left + forward).normalized(), probe_length * 0.75, exclude)
 	if absf(right_score - left_score) > 0.08:
 		_strafe_sign = 1.0 if right_score >= left_score else -1.0
-		_strafe_cooldown = randf_range(0.45, 0.7)
+		_strafe_cooldown = randf_range(0.9, 1.4)
 	elif _strafe_cooldown <= 0.0:
 		_strafe_sign *= -1.0
-		_strafe_cooldown = randf_range(0.6, 1.3)  # período individual: quebra o lockstep
+		# Compromisso longo com a direção → o corpo (que encara o movimento) não chacoalha.
+		_strafe_cooldown = randf_range(1.6, 3.0)  # período individual: quebra o lockstep
 	return _strafe_sign
 
 

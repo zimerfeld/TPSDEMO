@@ -45,6 +45,7 @@ atualizado: 2026-07-06
 - [[🎮 player]] — movimento, física, animação, câmera
 - [[🤖 inimigos]] — Red Robot: IA reativa (recarga 1,5× + recuo ≤10 m), estados, HUD com alcance
 - [[🔫 combate-tiro]] — bullet, RPC hit, cooldown
+- [[⚔️ facções]] — lados em runtime (hostil/aliado/neutro): sem fogo amigo, targeting por facção, neutros dinâmicos
 - [[🌐 multiplayer]] — arquitetura server-authoritative
 - [[🚪 salas]] — servidor multi-level: salas simultâneas (SubViewport+World3D) + grade de gerência
 - [[🛰️ hospedagem-online]] — jogar pela internet: playit.gg (UDP) · Tailscale/ZeroTier · port forwarding (ngrok NÃO serve)

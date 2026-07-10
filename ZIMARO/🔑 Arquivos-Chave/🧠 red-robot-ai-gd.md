@@ -2,7 +2,7 @@
 tipo: arquivo-chave
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🧠 library3D/characters/red_robot/IA/red_robot_ai.gd
@@ -26,10 +26,12 @@ tunáveis, fáceis de ajustar sem mexer na máquina de estados.
 | Var | Valor | Efeito |
 |---|---|---|
 | `fire_rate_multiplier` | `1.5` | Recarga **1,5× mais rápida** (1º e próximos tiros) |
-| `flee_distance` | `10.0 m` | Player a esta distância ou menos → o robô recua atirando |
-| `flee_speed` | `6.0 m/s` | Velocidade ao correr para longe do player |
-| `formation_cohesion` | `0.55` | Força do retorno ao slot de formação designado |
-| `formation_band` | `5.0 m` | Tolerância antes de o robô ser puxado de volta ao slot |
+| `flee_distance` | `10.0 m` | Player a esta distância ou menos → o robô abre espaço |
+| `flee_speed` | `2.0 m/s` | Velocidade ao abrir espaço (ajustada à passada — ver [[🤖 inimigos]] 2026-07-08) |
+| `strafe_speed` | `1.4 m/s` | Passo lateral no combate reativo |
+| `pressure_speed` | `1.8 m/s` | Reposicionamento sob pressão |
+| `formation_cohesion` | `0.32` | Força do retorno ao slot de formação designado |
+| `formation_band` | `7.0 m` | Tolerância antes de o robô ser puxado de volta ao slot |
 | `speed_variation` | `±0.18` | Variação de velocidade por-indivíduo (quebra o lockstep) |
 
 ---
@@ -53,9 +55,10 @@ func should_shoot(distance, effective_range) -> bool  # distance <= effective_ra
 
 - **Recarga acelerada:** `shoot_reload` substitui `SHOOT_WAIT` em todos os resets de
   `shoot_countdown` (1º tiro incluso).
-- **Recuo (FLEE):** quando `decide(...) == FLEE`, `_flee_movement()` encara o player (frente +Z) e
-  define a velocidade no sentido oposto (`-fwd * flee_speed`), sobrepondo o root motion; as pernas
-  tocam `walk` e o tiro segue (o player está dentro do alcance).
+- **Recuo (FLEE):** quando `decide(...) == FLEE`, `movement_plan` devolve `direction = -forward`
+  (sentido oposto ao player) e `speed = flee_speed`. Desde 2026-07-08 o corpo **vira as pernas para
+  essa direção** e o passo sai do root motion (anti-deslize) → o robô **gira e corre**; a torre segue
+  mirando/atirando à parte. Ver [[🤖 inimigos]] ("Locomoção realista").
 - **Tiro:** a lógica de mira já só dispara dentro de `effective_range`, cobrindo ENGAGE e FLEE.
 
 ---

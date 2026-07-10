@@ -63,8 +63,10 @@ func _explode(collider: Node) -> void:
 	_done = true
 	var target := _resolve_feedback_target(collider)
 	_report_feedback(target)
-	# Dano ao player (o servidor decide).
-	if _is_server() and _is_player_target(target) and target.has_method(&"hit"):
+	# Dano por facção (o servidor decide): só fere lados opostos — nunca a própria facção do dropper
+	# (sem fogo amigo). Um neutro atingido alinha-se contra o dropper (note_damage).
+	if _is_server() and target != null and target.has_method(&"hit") and Factions.can_damage(dropper, target):
+		Factions.note_damage(dropper, target)
 		target.hit.rpc(damage)
 	_detonate.rpc()
 
@@ -99,11 +101,6 @@ func _resolve_feedback_target(collider: Node) -> Node:
 	if collider.has_meta("character"):
 		return collider.get_meta("character") as Node
 	return collider
-
-
-func _is_player_target(target: Node) -> bool:
-	return target != null and target != dropper and (target.name == "Target" \
-		or (target.has_method(&"add_camera_shake_trauma") and target.has_method(&"hit")))
 
 
 func _report_feedback(target: Node) -> void:
