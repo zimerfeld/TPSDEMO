@@ -40,10 +40,12 @@ third-person shooter sandbox. At a high level it offers:
   seemed to leave before the aim / outside the barrel.
 - **Allied bots (covering fire)** — players of the **friendly faction** (spawned `bot_controlled` by
   the level templates) give **cover and assistance** to the human player: they engage threats near
-  the bot or the player, but **follow the player** and stay within a **leash** — when they stray too
-  far, regrouping takes priority over chasing, so they **no longer run off until falling off the
-  map**. Their behaviors (follow squad, prioritize enemies, combat spacing, pressure flank…) live in
-  a dedicated AI script (`library3D/characters/players/player/IA/player_bot_ai.gd`).
+  the bot or the player, but **orbit the nearest player** at a set distance (circling around them
+  **without ever colliding**, and **spreading out among themselves** instead of stacking) and stay
+  within a **leash** — when they stray too far, regrouping takes
+  priority over chasing, so they **no longer run off until falling off the map**. Their behaviors
+  (follow squad, prioritize enemies, combat spacing, pressure flank…) live in a dedicated AI script
+  (`library3D/characters/players/player/IA/player_bot_ai.gd`).
 - **Level templates (Template Manager)** — each level row on the Levels screen has a **template
   button** that opens the **Template Manager** (a **scrollable** floating window, also reachable from
   the host's room manager): named spawn templates per level, each with entries defining
@@ -81,21 +83,28 @@ third-person shooter sandbox. At a high level it offers:
 - **Red Robot AI** — its runtime behaviors and decisions live in a dedicated AI script
   (`library3D/characters/red_robot/IA/red_robot_ai.gd`): **1.5× faster reload** (first and
   subsequent shots); it **opens fire** as soon as the player enters weapon range and is more than
-  10 m away; and if the player gets to **10 m or closer**, the robot **runs away in the opposite
-  direction** while still facing/aiming at and shooting the player. Each robot moves
+  10 m away; and if the player gets to **10 m or closer**, the robot **opens up space** — since it
+  now **turns its legs toward where it moves** (see below), it **turns and runs** while the
+  **turret keeps aiming and shooting** at the player independently. Each robot moves
   **individually** (its own strafe sign, phase and speed, seeded at spawn) so the squad **doesn't
   march in lockstep every second**, and keeps a **loose formation** (now even **less rigid** — the
-  formation point "breathes" in a slow drift instead of converging on fixed coordinates). **Manual
-  movement** (strafe/retreat/formation) now **matches the animation cadence to the real speed** → the
-  enemies **no longer "slide"** (their feet respect the walk timing). Their **movement speeds are
-  calibrated to real human standards** (walk ~1.4 m/s, jog ~3, run ~4.5): strafe 2.4 m/s, pressure
-  repositioning 3.2 m/s and retreat 3.8 m/s, with **smooth acceleration** (velocity converges
-  instead of snapping) for weighty, believable motion. Each enemy targets the **closest
+  formation point "breathes" in a slow drift instead of converging on fixed coordinates).
+  **Realistic ground locomotion (no more foot-sliding):** the walk animation's real stride is
+  **measured at runtime** and the enemy's **legs face the direction it walks** while the step itself
+  is **driven by the animation's own root motion** — so the foot always lands exactly on the ground it
+  covers, in any direction, with the **cadence matched to speed** (feet no longer skate). Their
+  **movement speeds are tuned to the stride the walk sustains** (strafe ~1.4 m/s, pressure
+  repositioning ~1.8 m/s, retreat ~2.0 m/s) with a **smooth body turn** toward the travel direction,
+  for weighty, believable motion. Each enemy targets the **closest
   player** within its alert radius — **any enemy can shoot any player** that enters the radius
   (multiplayer). The **Criatura Alada** varies its **flight height smoothly**: it **descends** to a
-  limit to bomb more precisely and **climbs** to a limit to **escape** when it takes fire. There is
-  also a per-model **faction marker** (hostile / neutral / ally) — groundwork for future **neutral**
-  characters that would only fight back when threatened.
+  limit to bomb more precisely and **climbs** to a limit to **escape** when it takes fire.
+- **Factions (runtime sides)** — a per-character, runtime **faction** (**hostile / ally / neutral**)
+  drives combat: **no friendly fire** (a shot never hurts the same side — the bullet even **phases
+  through** an ally so it doesn't block your line of fire), **targeting by side** (enemies chase only
+  the **opposite faction**, never each other), and **dynamic neutrals** — a neutral hit by an **ally
+  turns hostile**, hit by an **enemy turns ally**, reverting after a few seconds. Movement was also
+  **smoothed** so enemies **change direction gracefully** instead of jittering while they reposition.
 - **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
   when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
   It appears when you **aim at the enemy** and hides the moment your aim leaves it; the aim ray

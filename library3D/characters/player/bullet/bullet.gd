@@ -86,6 +86,12 @@ func _physics_process(delta: float) -> void:
 		if collided is CharacterBody3D and collided.has_node(^"LimbColliders"):
 			add_collision_exception_with(collided)
 			return
+		# Sem fogo amigo: se o collider pertence a um personagem da MESMA facção do atirador (ou ao
+		# próprio), a bala ATRAVESSA sem ferir e sem explodir → não bloqueia a linha de tiro do aliado.
+		var character_hit: Node = _character_of(collided)
+		if character_hit != null and not Factions.can_damage(shooter, character_hit):
+			add_collision_exception_with(collided)
+			return
 		_apply_hit(collided)
 		_report_feedback(_resolve_feedback_target(collided))
 		hit = true
@@ -102,13 +108,15 @@ func _apply_hit(collider: Node) -> void:
 		return
 	if collider.has_meta("damage_multiplier") and collider.has_meta("character"):
 		var character: Node = collider.get_meta("character")
-		if character == shooter or character == null or not character.has_method(&"hit"):
+		if character == null or not character.has_method(&"hit") or not Factions.can_damage(shooter, character):
 			return
 		_registered = true
+		Factions.note_damage(shooter, character)  # neutro atingido alinha-se contra o atirador
 		var mult: float = collider.get_meta("damage_multiplier")
 		character.hit.rpc(int(round(weapon_damage * mult)))
-	elif collider.has_method(&"hit") and collider != shooter:
+	elif collider.has_method(&"hit") and Factions.can_damage(shooter, collider):
 		_registered = true
+		Factions.note_damage(shooter, collider)
 		collider.hit.rpc(weapon_damage)
 
 
@@ -137,6 +145,18 @@ func destroy() -> void:
 	if not multiplayer.is_server():
 		return
 	queue_free()
+
+
+# O PERSONAGEM dono deste collider (para checagem de facção): a meta "character" de um collider de
+# membro, ou o próprio collider se ele mesmo leva dano (tem `hit`); senão null (cenário/mundo).
+func _character_of(collider: Node) -> Node:
+	if collider == null:
+		return null
+	if collider.has_meta("character"):
+		return collider.get_meta("character") as Node
+	if collider.has_method(&"hit"):
+		return collider
+	return null
 
 
 func _resolve_feedback_target(collider: Node) -> Node:

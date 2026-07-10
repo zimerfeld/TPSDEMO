@@ -40,12 +40,23 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 @export_range(0.0, 1.0) var aim_accuracy: float = 0.78
 ## Só dispara quando o player estiver dentro deste alcance (mira precisa).
 @export var effective_range: float = 30.0
-## Velocidade (m/s) que a animação de caminhada percorre no chão com speed_scale = 1.0 (a "passada
-## natural"). No movimento manual (strafe/recuo/formação) a cadência da animação é escalada para casar
-## com a velocidade real → os pés NÃO patinam. Tunável (irá para a tela de parametrização de IA).
-@export var walk_natural_speed: float = 2.2
+## Velocidade (m/s) que a animação de caminhada percorre no chão com escala de tempo = 1.0 (a "passada
+## natural" da anim `Walk`). É MEDIDA em runtime no _ready a partir do deslocamento do bone de root
+## motion (MASTER) ÷ duração da animação — este valor é só o fallback. No movimento manual
+## (strafe/recuo/formação) a cadência da animação é escalada para casar com a velocidade real e o
+## deslocamento sai do PRÓPRIO root motion → os pés NÃO patinam.
+@export var walk_natural_speed: float = 0.8
 ## Multiplicador global do quanto o robô anda no modo manual (1.0 = casa a passada; >1 acelera).
 @export_range(0.5, 2.0) var gait_speed_scale: float = 1.0
+## Velocidade angular (rad/s) com que o CORPO/pernas giram para encarar a direção do movimento no modo
+## manual — a torre/canhão continua mirando o player de forma independente (blendspace `aim`). Girar as
+## pernas para onde o robô anda é o que elimina o deslize lateral (a anim `Walk` é só para frente).
+## Baixo de propósito: um giro gracioso e pesado, sem "chacoalhar" a cada reprocura de rumo.
+@export var body_turn_rate: float = 5.0
+## Suavização (1/s) do RUMO de deslocamento antes de virar o corpo. A direção que a IA calcula muda
+## rápido (troca de strafe, reprocura de alvo, sondas de geometria); passá-la por este filtro faz as
+## mudanças de direção entrarem GRADUALMENTE → nada de tremer. Menor = mais suave/pesado.
+@export var move_dir_response: float = 4.0
 
 @export var target_position := Vector3()
 @export var aim_target_position := Vector3.ZERO
@@ -63,6 +74,9 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 var _net_received: bool = false
 var _interp := NetInterp.new()
 var _interp_seeded: bool = false
+# Cliente: última posição interpolada, para estimar a velocidade e casar a cadência das pernas.
+var _remote_last_pos: Vector3 = Vector3.ZERO
+var _remote_has_last_pos: bool = false
 
 var shoot_countdown: float = SHOOT_WAIT
 var aim_countdown: float = AIM_TIME
@@ -75,6 +89,8 @@ var orientation := Transform3D()
 # AnimationPlayer de locomoção que o AnimationTree pilota — usado para escalar a cadência das pernas
 # à velocidade real no movimento manual (anti-patinação). Resolvido no _ready a partir do tree.
 var _loco_player: AnimationPlayer = null
+# Rumo de deslocamento suavizado (modo manual): filtra a direção crua da IA p/ o corpo não chacoalhar.
+var _move_dir_smooth: Vector3 = Vector3.ZERO
 
 # Controlador de IA (comportamentos/decisões), instanciado em _ready a partir de IA/.
 var ai: RedRobotAI = null
@@ -102,6 +118,8 @@ var shoot_reload: float = SHOOT_WAIT
 
 
 func _ready() -> void:
+	# Facção runtime (hostil por padrão; template tem precedência) → targeting e sem fogo amigo.
+	Factions.seed_node(self, &"red_robot")
 	orientation = global_transform
 	orientation.origin = Vector3()
 	# Semeia o proxy de rede com a pose inicial APENAS no servidor (spawn property correto). No
@@ -109,10 +127,12 @@ func _ready() -> void:
 	if multiplayer.is_server():
 		net_transform = global_transform
 	$AnimationTree.active = true
-	# AnimationPlayer que o tree pilota → escalamos seu speed_scale no movimento manual p/ a cadência
-	# das pernas casar com a velocidade real (sem patinar). Guardado com segurança (pode ser null).
+	# AnimationPlayer que o tree pilota → usado APENAS para medir a passada natural da anim `Walk`
+	# (a cadência em si é escalada pelo nó AnimationNodeTimeScale `locomotion_scale` da árvore, porque
+	# o speed_scale do AnimationPlayer é ignorado quando quem pilota é a AnimationTree). Pode ser null.
 	if animation_tree.anim_player != NodePath():
 		_loco_player = animation_tree.get_node_or_null(animation_tree.anim_player) as AnimationPlayer
+	_calibrate_walk_natural_speed()
 
 	# IA do red_robot: instancia o controlador de comportamento/decisões (pasta IA/) e
 	# aplica a recarga acelerada (1.5x mais rápida no 1º e nos próximos tiros).
@@ -324,9 +344,12 @@ func animate(delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not multiplayer.is_server():
-		# Remoto: interpola o transform recebido (~100 ms no passado) e anima.
+		# Remoto: interpola o transform recebido (~100 ms no passado) e anima. A escala de cadência
+		# não é replicada, então casamos a passada à velocidade INTERPOLADA local → os pés também não
+		# patinam no cliente (o corpo já chega encarando a direção do movimento, calculada no servidor).
 		if not dead:
 			_interpolate_remote()
+			_match_remote_cadence(delta)
 			animate(delta)
 		return
 
@@ -402,11 +425,37 @@ func _physics_process(delta: float) -> void:
 	animate(delta)
 	if bool(move_plan.get("manual", false)):
 		animation_tree["parameters/state/transition_request"] = "walk"
+		var move_dir: Vector3 = move_plan.get("direction", Vector3.ZERO)
+		move_dir.y = 0.0
 		var desired_speed: float = float(move_plan.get("speed", 0.0)) * gait_speed_scale
-		# Casa a cadência das pernas à velocidade real → sem patinar (respeita o tempo da animação).
-		_match_locomotion_cadence(desired_speed)
-		_apply_direct_movement(player.global_transform.origin, move_plan.get("direction", Vector3.ZERO),
-			desired_speed)
+		if move_dir.length() > 0.001 and desired_speed > 0.01:
+			# Realismo: as PERNAS viram para a direção do movimento (a torre mira o player à parte) e o
+			# deslocamento sai do PRÓPRIO root motion da anim `Walk` — como o corpo encara para onde anda,
+			# o passo cai exatamente sobre o chão percorrido → sem deslize, em qualquer direção.
+			move_dir = move_dir.normalized()
+			# Filtra o rumo cru da IA → mudanças de direção entram graduais (anti-chacoalho). Semeia a
+			# partir do rumo atual do corpo para não dar um pinote ao entrar no modo manual.
+			if _move_dir_smooth.length() < 0.001:
+				_move_dir_smooth = orientation.basis.z
+				_move_dir_smooth.y = 0.0
+				if _move_dir_smooth.length() < 0.001:
+					_move_dir_smooth = move_dir
+			_move_dir_smooth = _move_dir_smooth.normalized().slerp(move_dir,
+				clampf(move_dir_response * delta, 0.0, 1.0))
+			_move_dir_smooth.y = 0.0
+			if _move_dir_smooth.length() > 0.001:
+				_move_dir_smooth = _move_dir_smooth.normalized()
+			_face_move_direction(_move_dir_smooth, delta)
+			_match_locomotion_cadence(desired_speed)
+			var local_disp: Vector3 = animation_tree.get_root_motion_position()
+			var world_disp: Vector3 = orientation.basis * local_disp
+			velocity.x = world_disp.x / delta
+			velocity.z = world_disp.z / delta
+		else:
+			_reset_locomotion_cadence()
+			_move_dir_smooth = Vector3.ZERO
+			velocity.x = 0.0
+			velocity.z = 0.0
 	else:
 		# APPROACH: o deslocamento VEM da animação (root motion) → pés já travados; cadência natural.
 		_reset_locomotion_cadence()
@@ -441,27 +490,41 @@ func _interpolate_remote() -> void:
 		reset_physics_interpolation()
 
 
-# Aceleração horizontal (1/s) do movimento manual: a velocidade converge exponencialmente para o
-# alvo em vez de saltar instantânea — dá peso/inércia ao corpo (um robô pesado não inverte de
-# direção no mesmo frame) sem deixar o controle da IA "boiando".
-@export var manual_accel: float = 6.0
-
-
-# Movimento manual sobreposto ao root motion. O corpo continua ENCARANDO o alvo enquanto a
-# IA controla a direção horizontal (strafe, reposicionamento, recuo).
-func _apply_direct_movement(face_target: Vector3, move_dir: Vector3, speed: float) -> void:
-	var to_target: Vector3 = face_target - global_transform.origin
-	to_target.y = 0.0
-	if to_target.length() < 0.001:
+# Cliente: casa a cadência das pernas à velocidade horizontal INTERPOLADA (a escala não é replicada).
+func _match_remote_cadence(delta: float) -> void:
+	if delta <= 0.0:
 		return
-	var fwd: Vector3 = to_target.normalized()
-	var x_axis: Vector3 = Vector3.UP.cross(fwd).normalized()
-	var y_axis: Vector3 = fwd.cross(x_axis).normalized()
-	orientation.basis = Basis(x_axis, y_axis, fwd)
-	var motion := move_dir.normalized() if move_dir.length() > 0.001 else Vector3.ZERO
-	var blend := clampf(manual_accel * get_physics_process_delta_time(), 0.0, 1.0)
-	velocity.x = lerpf(velocity.x, motion.x * speed, blend)
-	velocity.z = lerpf(velocity.z, motion.z * speed, blend)
+	var here: Vector3 = global_transform.origin
+	if _remote_has_last_pos:
+		var flat := Vector2(here.x - _remote_last_pos.x, here.z - _remote_last_pos.z)
+		var speed := flat.length() / delta
+		if speed > 0.05:
+			_match_locomotion_cadence(speed)
+		else:
+			_reset_locomotion_cadence()
+	_remote_last_pos = here
+	_remote_has_last_pos = true
+
+
+# Gira o CORPO (pernas) suavemente para encarar a direção horizontal do movimento, até `body_turn_rate`
+# rad/s. Como o front do robô é +Z e o root motion da `Walk` avança em +Z, encarar para onde anda faz o
+# passo coincidir com o chão percorrido. A torre/canhão mira o player à parte (blendspace `aim`).
+func _face_move_direction(dir: Vector3, delta: float) -> void:
+	var cur_fwd: Vector3 = orientation.basis.z
+	cur_fwd.y = 0.0
+	if cur_fwd.length() < 0.001:
+		cur_fwd = dir
+	cur_fwd = cur_fwd.normalized()
+	var new_fwd: Vector3 = cur_fwd.slerp(dir, clampf(body_turn_rate * delta, 0.0, 1.0))
+	new_fwd.y = 0.0
+	if new_fwd.length() < 0.001:
+		return
+	new_fwd = new_fwd.normalized()
+	var x_axis: Vector3 = Vector3.UP.cross(new_fwd).normalized()
+	if x_axis.length() < 0.001:
+		return
+	var y_axis: Vector3 = new_fwd.cross(x_axis).normalized()
+	orientation.basis = Basis(x_axis, y_axis, new_fwd)
 
 
 @rpc("call_local")
@@ -487,27 +550,66 @@ func _pick_target() -> Node3D:
 	for p in _players_in_range:
 		if not is_instance_valid(p):
 			continue
+		# Facção: só mira quem é de lado OPOSTO (inimigo). Filtrado aqui (não na entrada da Area) para
+		# reagir a mudanças de facção em runtime — ex.: um neutro provocado que vira aliado.
+		if not Factions.are_enemies(self, p):
+			continue
 		var d: float = here.distance_to((p as Node3D).global_transform.origin)
 		if d < best_d:
 			best_d = d
 			best = p
 	# Mantém o alvo atual se o novo mais próximo não for margem suficiente mais perto (evita flip-flop).
-	if player != null and is_instance_valid(player) and _players_in_range.has(player) and best != null and best != player:
+	if player != null and is_instance_valid(player) and _players_in_range.has(player) \
+			and Factions.are_enemies(self, player) and best != null and best != player:
 		if here.distance_to(player.global_transform.origin) - best_d < TARGET_SWITCH_MARGIN:
 			return player
 	return best
 
 
-# Escala a cadência da locomoção para a velocidade real: leg cycle ∝ ground speed → sem patinar.
+# Caminho do parâmetro do nó AnimationNodeTimeScale que escala a cadência da locomoção na árvore.
+const LOCO_SCALE_PARAM := "parameters/locomotion_scale/scale"
+# Faixa da escala de tempo da locomoção. O piso evita passos lentos demais; o teto limita o quão
+# acelerada a `Walk` pode ficar (acima disso a velocidade fica capada, mas os pés SEGUEM travados —
+# o deslocamento vem do próprio root motion, então nunca há deslize, só um teto de velocidade).
+const LOCO_SCALE_MIN := 0.6
+const LOCO_SCALE_MAX := 2.6
+
+
+# Escala a cadência da locomoção para casar com a velocidade real: leg cycle ∝ ground speed → sem
+# patinar. Pilota o nó TimeScale da AnimationTree (o speed_scale do AnimationPlayer não vale aqui).
 func _match_locomotion_cadence(speed: float) -> void:
-	if _loco_player != null:
-		_loco_player.speed_scale = clampf(speed / maxf(walk_natural_speed, 0.1), 0.55, 2.2)
+	animation_tree[LOCO_SCALE_PARAM] = clampf(speed / maxf(walk_natural_speed, 0.1),
+		LOCO_SCALE_MIN, LOCO_SCALE_MAX)
 
 
 # Volta a locomoção à cadência natural (usado fora do movimento manual e quando não há alvo).
 func _reset_locomotion_cadence() -> void:
-	if _loco_player != null and not is_equal_approx(_loco_player.speed_scale, 1.0):
-		_loco_player.speed_scale = 1.0
+	if not is_equal_approx(float(animation_tree[LOCO_SCALE_PARAM]), 1.0):
+		animation_tree[LOCO_SCALE_PARAM] = 1.0
+
+
+# Mede a passada natural da anim `Walk` (m/s a TimeScale = 1.0): deslocamento horizontal do bone de
+# root motion (MASTER) entre a 1ª e a última chave ÷ duração. Mantém `walk_natural_speed` correto
+# mesmo que o artista reexporte a animação com outra passada. Falha silenciosa → usa o fallback.
+func _calibrate_walk_natural_speed() -> void:
+	if _loco_player == null:
+		return
+	var anim := _loco_player.get_animation(&"Walk")
+	if anim == null:
+		return
+	var track := anim.find_track(NodePath("Armature/Skeleton3D:MASTER"), Animation.TYPE_POSITION_3D)
+	if track < 0:
+		return
+	var key_count := anim.track_get_key_count(track)
+	if key_count < 2 or anim.length <= 0.01:
+		return
+	var first: Vector3 = anim.track_get_key_value(track, 0)
+	var last: Vector3 = anim.track_get_key_value(track, key_count - 1)
+	var disp := last - first
+	disp.y = 0.0
+	var measured := disp.length() / anim.length
+	if measured > 0.05:
+		walk_natural_speed = measured
 
 
 func _on_area_body_entered(body: Node3D) -> void:

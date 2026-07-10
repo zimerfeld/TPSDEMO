@@ -10169,6 +10169,9 @@ input_3/auto_advance = false
 input_3/break_loop_at_end = false
 input_3/reset = true
 
+[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_loco"]
+resource_local_to_scene = true
+
 [sub_resource type="AnimationNodeBlendTree" id="52"]
 resource_local_to_scene = true
 graph_offset = Vector2(-275.683, 17.142)
@@ -10198,8 +10201,10 @@ nodes/hit2/position = Vector2(760, 240)
 nodes/hit3/node = SubResource("50")
 nodes/hit3/position = Vector2(980, 240)
 nodes/state/node = SubResource("51")
-nodes/state/position = Vector2(60, 100)
-node_connections = [&"output", 0, &"hit3", &"aiming", 0, &"state", &"aiming", 1, &"aim", &"hit1", 0, &"aiming", &"hit1", 1, &"Animation 5", &"hit2", 0, &"hit1", &"hit2", 1, &"Animation 6", &"hit3", 0, &"hit2", &"hit3", 1, &"Animation 7", &"state", 0, &"Animation", &"state", 1, &"Animation 3", &"state", 2, &"Animation 2", &"state", 3, &"Animation 4"]
+nodes/state/position = Vector2(-180, 100)
+nodes/locomotion_scale/node = SubResource("AnimationNodeTimeScale_loco")
+nodes/locomotion_scale/position = Vector2(80, 100)
+node_connections = [&"output", 0, &"hit3", &"aiming", 0, &"locomotion_scale", &"locomotion_scale", 0, &"state", &"aiming", 1, &"aim", &"hit1", 0, &"aiming", &"hit1", 1, &"Animation 5", &"hit2", 0, &"hit1", &"hit2", 1, &"Animation 6", &"hit3", 0, &"hit2", &"hit3", 1, &"Animation 7", &"state", 0, &"Animation", &"state", 1, &"Animation 3", &"state", 2, &"Animation 2", &"state", 3, &"Animation 4"]
 
 [sub_resource type="CapsuleShape3D" id="53"]
 radius = 0.5
@@ -10785,6 +10790,7 @@ callback_mode_process = 0
 tree_root = SubResource("52")
 anim_player = NodePath("../RedRobotModel/AnimationPlayer")
 parameters/aim/blend_position = Vector2(0.00479996, 0.126638)
+parameters/locomotion_scale/scale = 1.0
 parameters/aiming/blend_amount = 1.0
 parameters/hit1/active = false
 parameters/hit1/internal_active = false

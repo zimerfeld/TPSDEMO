@@ -18,7 +18,26 @@ atualizado: 2026-07-07
 > task with user impact, update the READMEs (`.md`/`.en-US`/`.pt-BR`) **and** this vault; run
 > `build_windows.ps1` at the end; eliminate errors/warnings after compiling.
 
-**Last review:** 2026-07-07 · **Active branch:** `feature/fable`
+**Last review:** 2026-07-08 · **Active branch:** `feature/locomocao-realista-inimigos`
+
+---
+
+## 🟢 Realistic locomotion + smoothing + Faction System — READY for review (2026-07-08)
+
+Branch `feature/locomocao-realista-inimigos` (off `develop`). `.exe` rebuilt; headless import with no
+errors/warnings. **Not committed** (awaiting review).
+
+- **Ground locomotion without sliding:** `Walk` stride measured at runtime (~0.8 m/s), cadence via a
+  new `AnimationNodeTimeScale` node, legs face the direction of travel (root-motion displacement),
+  AI speeds lowered. See [[🤖 inimigos (EN)|inimigos]].
+- **Anti-jitter:** smoothed heading (`move_dir_response`), `body_turn_rate` 7→5, strafe holds 1.6–3 s.
+- **Faction system (runtime, per-instance):** new `effects_shared/factions.gd`. No friendly fire
+  (bullet phases through allies), faction targeting, dynamic neutrals (~8 s). See [[⚔️ facções (EN)|facções]].
+- **Ally orbits the nearest player without colliding** (`player_bot_ai`): anchor on the nearest human,
+  orbit (radius + tangential), bot↔anchor collision exception. See [[🎮 player (EN)|player]].
+- ✅ **Separation between multiple allied bots (2026-07-08):** `player_bot_ai._separation` (boids-style
+  steering) pushes each ally away from the others within `separation_radius` → they spread out on the
+  orbit without stacking. See [[🎮 player (EN)|player]] / [[⚔️ facções (EN)|facções]].
 
 ---
 

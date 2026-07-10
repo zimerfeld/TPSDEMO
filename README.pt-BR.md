@@ -40,10 +40,12 @@ em terceira pessoa. Em alto nível, oferece:
   **cliente**, a bala parecia sair antes da mira / fora do cano.
 - **Bots aliados (cobertura)** — players da **facção amiga** (spawnados como `bot_controlled` pelos
   templates de fase) dão **cobertura e assistência** ao jogador: engajam ameaças próximas do bot ou
-  do jogador, mas **seguem o jogador** e ficam dentro de uma **coleira** — ao se afastarem demais,
-  reagrupar tem prioridade sobre perseguir, então **não saem mais correndo até cair do mapa**. Os
-  comportamentos (seguir esquadrão, priorizar inimigos, espaçamento de combate, flanco sob pressão…)
-  ficam num script de IA dedicado (`library3D/characters/players/player/IA/player_bot_ai.gd`).
+  do jogador, mas **orbitam o player mais próximo** a uma distância definida (circulando ao redor dele
+  **sem nunca colidir**, e **espalhando-se entre si** em vez de empilhar) e ficam dentro de uma
+  **coleira** — ao se afastarem demais, reagrupar tem
+  prioridade sobre perseguir, então **não saem mais correndo até cair do mapa**. Os comportamentos
+  (seguir esquadrão, priorizar inimigos, espaçamento de combate, flanco sob pressão…) ficam num
+  script de IA dedicado (`library3D/characters/players/player/IA/player_bot_ai.gd`).
 - **Templates de fase (Gerenciador de Templates)** — cada linha de level na tela Levels tem um
   **botão de template** que abre o **Gerenciador de Templates** (janela flutuante **rolável**, também
   acessível pela gerência de salas do host): templates de spawn nomeados por level, cada um com
@@ -83,22 +85,30 @@ em terceira pessoa. Em alto nível, oferece:
 - **IA do Red Robot** — comportamentos e decisões em tempo de execução isolados num script de IA
   dedicado (`library3D/characters/red_robot/IA/red_robot_ai.gd`): recarga **1,5× mais rápida** (no
   1º e nos próximos tiros); **abre fogo** assim que o player entra no alcance da arma e está a mais
-  de 10 m; e, se o player chegar a **10 m ou menos**, o robô **recua correndo no sentido oposto**
-  enquanto continua olhando/mirando e atirando. Cada robô se move de forma **individualizada**
-  (sinal de strafe, fase e velocidade próprios, semeados no spawn) para o pelotão **não andar igual
-  a cada segundo**, e mantém uma **formação frouxa** (agora ainda **menos rígida** — o ponto de
-  formação "respira" numa oscilação lenta em vez de convergir para coordenadas fixas). O **movimento
-  manual** (strafe/recuo/formação) **casa a cadência da animação à velocidade real** → os inimigos
-  **não "deslizam" mais** (os pés respeitam o tempo da caminhada). As **velocidades de deslocamento
-  são calibradas em padrões humanos reais** (caminhada ~1,4 m/s, trote ~3, corrida ~4,5): strafe
-  2,4 m/s, reposicionamento sob pressão 3,2 m/s e recuo 3,8 m/s, com **aceleração suave** (a
-  velocidade converge em vez de saltar) — movimento com peso e crível, sem o antigo passo lateral
-  de atleta de elite. Cada inimigo mira o **player mais
+  de 10 m; e, se o player chegar a **10 m ou menos**, o robô **abre espaço** — como agora ele
+  **vira as pernas para onde se desloca** (veja abaixo), ele **gira e corre** enquanto a
+  **torre continua mirando e atirando** no player de forma independente. Cada robô se move de forma
+  **individualizada** (sinal de strafe, fase e velocidade próprios, semeados no spawn) para o pelotão
+  **não andar igual a cada segundo**, e mantém uma **formação frouxa** (agora ainda **menos rígida** —
+  o ponto de formação "respira" numa oscilação lenta em vez de convergir para coordenadas fixas).
+  **Locomoção terrestre realista (fim do deslizar dos pés):** a passada real da animação de caminhada
+  é **medida em runtime** e as **pernas do inimigo encaram a direção em que ele anda** enquanto o
+  passo é **movido pelo próprio root motion da animação** — então o pé sempre pousa exatamente sobre o
+  chão percorrido, em qualquer direção, com a **cadência casada à velocidade** (os pés não patinam
+  mais). As **velocidades são ajustadas à passada que a caminhada sustenta** (strafe ~1,4 m/s,
+  reposicionamento sob pressão ~1,8 m/s, recuo ~2,0 m/s) com uma **virada suave do corpo** para a
+  direção do movimento — movimento com peso e crível. Cada inimigo mira o **player mais
   próximo dele** dentro do raio de alerta — **qualquer inimigo pode atirar em qualquer player** que
   entre no raio (multiplayer). A **Criatura Alada** varia a **altura de voo com suavidade**: **desce**
   até um limite para bombardear com precisão e **sobe** até um limite para **escapar** quando leva
-  tiro. Há ainda uma **marcação de facção** por modelo (hostil / neutro / aliado) — base para futuros
-  personagens **neutros**, que só entrariam em confronto se ameaçados.
+  tiro.
+- **Facções (lados em runtime)** — uma **facção** por-personagem em tempo de jogo (**hostil / aliado /
+  neutro**) rege o combate: **sem fogo amigo** (um tiro nunca fere a mesma facção — a bala até
+  **atravessa** o aliado para não bloquear a sua linha de tiro), **alvo por lado** (inimigos perseguem
+  só a **facção oposta**, nunca uns aos outros) e **neutros dinâmicos** — um neutro atingido por
+  **aliado vira hostil**, atingido por **inimigo vira aliado**, revertendo após alguns segundos. A
+  movimentação também ficou **mais suave**: os inimigos **mudam de direção com graça**, sem tremer ao
+  reposicionar.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
   Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo

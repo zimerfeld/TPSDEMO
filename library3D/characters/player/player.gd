@@ -132,6 +132,9 @@ var ai: Node = null
 
 
 func _ready() -> void:
+	# Facção runtime deste nó (aliado por padrão; template "enemy" tem precedência). Usada para o
+	# targeting da IA e para cortar o fogo amigo (ver [[factions]] / effects_shared/factions.gd).
+	Factions.seed_node(self, &"player")
 	# Pre-initialize orientation transform.
 	orientation = player_model.global_transform
 	orientation.origin = Vector3()

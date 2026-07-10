@@ -2,7 +2,7 @@
 tipo: arquivo-chave
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🤖 library3D/characters/red_robot/red_robot.gd
@@ -95,10 +95,17 @@ and queried every frame by the body (`red_robot.gd`):
   used on the 1st shot and in all resets of `shoot_countdown` (applies to the 1st and the next).
 - **Engage** — fires whenever the player is within `effective_range` (the shooting aim already
   does that test); in practice, it opens fire in the range `10 m < dist ≤ range`.
-- **Back away (FLEE)** — when `dist ≤ flee_distance` (10 m), `_flee_movement()` orients the body
-  to **face the player** (front +Z) and sets the velocity in the **opposite direction**
-  (`-fwd * flee_speed`), overriding the root motion; the legs play `walk` and firing continues.
-- Tunables in the AI: `fire_rate_multiplier = 1.5`, `flee_distance = 10.0`, `flee_speed = 6.0`.
+- **Back away (FLEE)** — when `dist ≤ flee_distance` (10 m), the AI returns `direction = -forward`.
+  Since 2026-07-08 the body **turns its legs toward the direction of travel** and the step comes from
+  root motion (anti-slide) → it **turns and runs**; the turret keeps aiming/firing separately.
+- Tunables in the AI: `fire_rate_multiplier = 1.5`, `flee_distance = 10.0`, `flee_speed = 2.0`,
+  `strafe_speed = 1.4`, `pressure_speed = 1.8`.
+
+> **Locomotion (anti-slide, 2026-07-08):** `_calibrate_walk_natural_speed` measures the real stride of
+> the `Walk` anim (~0.8 m/s); `_match_locomotion_cadence` drives the tree's `AnimationNodeTimeScale`
+> `locomotion_scale` node (the AnimationPlayer's `speed_scale` is ignored under an AnimationTree);
+> `_face_move_direction` turns the body toward travel and the displacement comes from
+> `get_root_motion_position()`. Full detail in [[🤖 inimigos (EN)|inimigos]] ("Realistic locomotion").
 
 ---
 

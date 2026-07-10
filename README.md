@@ -85,8 +85,13 @@ each entry's model is picked by **cascading folder navigation** (one dropdown pe
 faction, count and placement (coordinates, random area or formation) — the fields for the chosen
 placement mode are shown grouped, one mode at a time, and numeric fields are compact; both a character template
 and a scenery can be active at once, applied when the level starts, in solo play and online rooms
-alike, in the editor and in the exported .exe. Ground enemies now move at **real human speed
-standards** (strafe 2.4 m/s, retreat 3.8 m/s) with smooth acceleration — weighty, believable motion.
+alike, in the editor and in the exported .exe. Ground enemies now have **realistic locomotion with no
+foot-sliding**: their legs face the direction they walk and each step is driven by the animation's own
+root motion (stride measured at runtime), so feet land exactly on the ground they cover — weighty,
+believable motion at speeds tuned to what the walk sustains, and they change direction smoothly instead
+of jittering. A runtime **faction system** (hostile / ally / neutral) rules combat: **no friendly
+fire** (shots phase through same-side characters), enemies target only the **opposite faction**, allied
+bots **orbit the nearest player without colliding**, and **neutrals** flip side depending on who hits them.
 Each arena ships its own cyberpunk atmosphere — procedural gradient sky, distance fog and an
 emissive **neon grid floor** (Level 1 cyan, Level 2 amber sunset) — engineered for the project's
 goal of **60+ FPS on minimal graphics hardware**, so it looks striking at near-zero GPU cost.
@@ -138,8 +143,13 @@ dropdown por nível da biblioteca), com facção, quantidade e posicionamento (c
 aleatória ou formação) — os campos do posicionamento escolhido aparecem agrupados, um modo por vez,
 e os campos numéricos são compactos; um template de personagens e um cenário podem estar ativos ao mesmo tempo,
 aplicados quando o level inicia, no solo e nas salas online, no editor e no .exe exportado. Os
-inimigos terrestres agora se movem em **padrões de velocidade humanos reais** (strafe 2,4 m/s,
-recuo 3,8 m/s) com aceleração suave — movimento com peso e crível.
+inimigos terrestres agora têm **locomoção realista sem deslizar os pés**: as pernas encaram a direção
+em que andam e cada passo é movido pelo próprio root motion da animação (passada medida em runtime),
+então o pé pousa exatamente sobre o chão percorrido — movimento com peso e crível, em velocidades
+ajustadas ao que a caminhada sustenta, e mudam de direção com suavidade, sem tremer. Um **sistema de
+facções** em runtime (hostil / aliado / neutro) rege o combate: **sem fogo amigo** (tiros atravessam
+personagens do mesmo lado), inimigos miram só a **facção oposta**, bots aliados **orbitam o player mais
+próximo sem colidir**, e **neutros** trocam de lado conforme quem os atinge.
 Cada arena tem sua própria atmosfera cyberpunk — céu procedural em gradiente, névoa de distância e
 um **piso-grade neon** emissivo (Level 1 ciano, Level 2 pôr-do-sol âmbar) — projetada para a meta do
 projeto de **60+ FPS em hardware gráfico mínimo**: visual marcante com custo de GPU quase zero.

@@ -12,6 +12,14 @@ const BEHAVIOR_FRIENDLY_FIRE_GUARD := "friendly_fire_guard"
 const BEHAVIOR_PRESSURE_FLANK := "pressure_flank"
 
 @export var follow_distance := 5.5
+## Folga (m) em torno de `follow_distance` antes de o aliado corrigir o raio da órbita.
+@export var orbit_band := 1.6
+## Peso do componente tangencial da órbita (0 = só mantém distância; maior = circula mais).
+@export var orbit_strength := 0.7
+## Raio (m) em que um aliado começa a se afastar de OUTRO aliado (separação/anti-empilhamento).
+@export var separation_radius := 3.0
+## Peso do empurrão de separação em relação ao movimento normal (0 = desligado).
+@export var separation_strength := 1.0
 @export var preferred_combat_distance := 18.0
 @export var combat_band := 4.5
 @export var weapon_range := 52.0
@@ -34,6 +42,13 @@ const BEHAVIOR_PRESSURE_FLANK := "pressure_flank"
 var _behaviors: Dictionary = {}
 var _target: Node3D = null
 var _anchor: Node3D = null
+# Corpo do bot (setado a cada update_input) — referência de facção nas checagens de alvo/aliado.
+var _bot: CharacterBody3D = null
+# Última âncora com exceção de colisão aplicada, para não colidir com o player que orbita.
+var _prev_anchor: Node3D = null
+# Outros aliados por perto (exceto a âncora) — recalculado no scan; usado na separação anti-empilhamento.
+var _allies: Array[Node3D] = []
+var _orbit_sign := 1.0
 var _scan_cd := 0.0
 var _flank_sign := 1.0
 var _flank_time := 0.0
@@ -44,6 +59,7 @@ var _miss_streak := 0
 
 func _ready() -> void:
 	reload_config()
+	_orbit_sign = 1.0 if randf() < 0.5 else -1.0  # sentido de órbita individual (quebra o lockstep)
 
 
 func reload_config() -> void:
@@ -59,6 +75,7 @@ func behavior_enabled(key: String) -> bool:
 func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: float) -> void:
 	if bot == null or input == null or not bot.is_inside_tree():
 		return
+	_bot = bot
 	_scan_cd -= delta
 	_flank_time = maxf(0.0, _flank_time - delta)
 	if _scan_cd <= 0.0:
@@ -67,7 +84,9 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 		if scope == null:
 			scope = bot.get_tree().current_scene
 		_target = _find_enemy(scope, bot.global_position)
-		_anchor = _find_human_ally(scope, bot)
+		_anchor = _find_nearest_human_ally(scope, bot)
+		_allies = _collect_allies(scope, bot)
+		_sync_anchor_collision(bot)
 	var bot_pos := bot.global_position
 	var has_anchor := behavior_enabled(BEHAVIOR_ALLY_FOLLOW) and _is_valid_anchor(_anchor)
 	var anchor_pos := _anchor.global_position if has_anchor else bot_pos
@@ -101,6 +120,8 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 			aim_point = _target.global_position + Vector3.UP
 		else:
 			aim_point = bot_pos + _flat_or_forward(move_dir, -bot.global_transform.basis.z) * 20.0 + Vector3.UP
+	# Separação: afasta-se dos outros aliados por perto → não empilham na órbita nem no combate.
+	move_dir += _separation(bot_pos) * separation_strength
 	input.motion = _world_dir_to_motion(input, move_dir)
 	input.aiming = should_aim
 	input.shooting = should_shoot
@@ -169,12 +190,84 @@ func _combat_move(origin: Vector3, target_position: Vector3, anchor_position: Ve
 	return move.normalized() if move.length() > 0.01 else Vector3.ZERO
 
 
+# Sem ameaça: o aliado ORBITA o player mais próximo a `follow_distance` — mantém o raio (aproxima se
+# longe, recua se colado) e circula devagar (componente tangencial). Como o raio > corpo e há a
+# exceção de colisão bot↔âncora, ele fica no entorno SEM colidir com o player.
 func _follow_move(origin: Vector3, anchor_position: Vector3) -> Vector3:
 	var to_anchor := anchor_position - origin
 	to_anchor.y = 0.0
-	if to_anchor.length() <= follow_distance:
+	var dist := to_anchor.length()
+	if dist < 0.01:
 		return Vector3.ZERO
-	return to_anchor.normalized()
+	var radial := to_anchor.normalized()
+	var move := Vector3.ZERO
+	var radial_err := dist - follow_distance
+	if absf(radial_err) > orbit_band:
+		# aproxima (err>0) ou afasta (err<0), proporcional ao quanto saiu da folga.
+		move += radial * signf(radial_err) * clampf(absf(radial_err) / (orbit_band * 2.0), 0.25, 1.0)
+	# componente tangencial → circula o player em vez de só ficar parado ao lado.
+	move += Vector3.UP.cross(radial).normalized() * _orbit_sign * orbit_strength
+	return move.normalized() if move.length() > 0.01 else Vector3.ZERO
+
+
+# Âncora = player HUMANO (não-bot) mais PRÓXIMO e do mesmo lado (aliado). Antes pegava o primeiro.
+func _find_nearest_human_ally(scope: Node, bot: Node) -> Node3D:
+	var best: Node3D = null
+	var best_d := INF
+	var here: Vector3 = (bot as Node3D).global_position
+	for candidate in _collect_nodes(scope):
+		if candidate == bot or not _is_ally(candidate):
+			continue
+		var bot_flag: Variant = candidate.get("bot_controlled")
+		if bot_flag is bool and bool(bot_flag):
+			continue  # ancora num HUMANO, não noutro bot
+		var d := here.distance_to((candidate as Node3D).global_position)
+		if d < best_d:
+			best_d = d
+			best = candidate as Node3D
+	return best
+
+
+# Outros aliados no escopo (mesmo lado), EXCETO a âncora (essa é tratada pela órbita + exceção de
+# colisão). É a lista contra a qual a separação empurra, para os aliados não se empilharem.
+func _collect_allies(scope: Node, bot: Node) -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	for candidate in _collect_nodes(scope):
+		if candidate == bot or candidate == _anchor or not _is_ally(candidate):
+			continue
+		out.append(candidate as Node3D)
+	return out
+
+
+# Vetor de separação (steering estilo boids): soma dos empurrões para LONGE de cada aliado dentro de
+# `separation_radius`, com peso proporcional à proximidade (mais perto → empurra mais). Zero se ninguém
+# perto → não atrapalha o movimento normal. Horizontal (y = 0).
+func _separation(pos: Vector3) -> Vector3:
+	if separation_radius <= 0.01:
+		return Vector3.ZERO
+	var push := Vector3.ZERO
+	for ally in _allies:
+		if not is_instance_valid(ally):
+			continue
+		var away := pos - ally.global_position
+		away.y = 0.0
+		var d := away.length()
+		if d < 0.01 or d >= separation_radius:
+			continue
+		push += away.normalized() * (1.0 - d / separation_radius)
+	return push
+
+
+# Mantém a exceção de colisão física com a âncora atual (e a remove da anterior) → o aliado orbita
+# "sem colidir com ele". Reaplicada quando a âncora (player mais próximo) muda.
+func _sync_anchor_collision(bot: CharacterBody3D) -> void:
+	if _anchor == _prev_anchor:
+		return
+	if is_instance_valid(_prev_anchor) and _prev_anchor is CollisionObject3D:
+		bot.remove_collision_exception_with(_prev_anchor)
+	if is_instance_valid(_anchor) and _anchor is CollisionObject3D:
+		bot.add_collision_exception_with(_anchor)
+	_prev_anchor = _anchor
 
 
 func _compute_aim_point(origin: Vector3, target_position: Vector3, target_velocity: Vector3) -> Vector3:
@@ -248,17 +341,6 @@ func _find_enemy(scope: Node, origin: Vector3) -> Node3D:
 	return best
 
 
-func _find_human_ally(scope: Node, bot: Node) -> Node3D:
-	for candidate in _collect_nodes(scope):
-		if candidate == bot or not _is_ally(candidate):
-			continue
-		var bot_flag: Variant = candidate.get("bot_controlled")
-		if bot_flag is bool and bool(bot_flag):
-			continue
-		return candidate as Node3D
-	return null
-
-
 func _collect_nodes(root: Node) -> Array[Node]:
 	var out: Array[Node] = []
 	if root == null:
@@ -278,7 +360,7 @@ func _collect_nodes(root: Node) -> Array[Node]:
 # Sem tipo, o objeto liberado entra e o is_instance_valid (1º, por curto-circuito) o rejeita.
 func _is_valid_enemy(node) -> bool:
 	return is_instance_valid(node) and node is Node3D and node.has_method(&"hit") \
-		and node.has_method(&"show_health_hud") and not _is_ally(node)
+		and Factions.are_enemies(_bot, node)
 
 
 func _is_valid_anchor(node) -> bool:
@@ -287,8 +369,9 @@ func _is_valid_anchor(node) -> bool:
 	return is_instance_valid(node) and node is Node3D and _is_ally(node)
 
 
-func _is_ally(node: Node) -> bool:
-	return node is Node3D and node.has_method(&"add_camera_shake_trauma") and node.has_method(&"hit")
+# Aliado = do mesmo lado que ESTE bot (ambos "ally"). Facção runtime, não mais duck-typing.
+func _is_ally(node) -> bool:
+	return is_instance_valid(node) and node is Node3D and Factions.same_side(_bot, node)
 
 
 func _resolve_character(collider: Node) -> Node:

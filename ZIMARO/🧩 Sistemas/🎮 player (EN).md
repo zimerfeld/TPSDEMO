@@ -120,6 +120,23 @@ auto-fit of the locomotion capsule"). The red_robot does the same ([[🤖 inimig
   regrouping takes priority, so the ally **does not run off the map**. The bot also goes through the
   `AIM_WARMUP_TIME` (aims before shooting).
 
+### Orbit + faction (2026-07-08)
+
+- **Runtime faction:** the player (human and bot) is seeded as **`ally`** in `_ready`
+  (`Factions.seed_node`). The bot picks enemies via `Factions.are_enemies` and allies via `same_side`
+  (no longer by "has a `hit` method"). See [[⚔️ facções (EN)|facções]].
+- **Orbits the nearest player:** the anchor is now the **NEAREST human** (`_find_nearest_human_ally`,
+  was the first one). With no threat, `_follow_move` **circles** the anchor at `follow_distance`
+  (radial radius spring + tangential `orbit_strength`, individual direction) instead of just closing in
+  and stopping.
+- **No collision:** `_sync_anchor_collision` keeps a **collision exception** between the bot and its
+  anchor (re-applied when the nearest player changes) → the ally stays around **without shoving** the player.
+- **Ally separation:** `_separation` (boids-style steering) pushes each ally away from the OTHER allies
+  within `separation_radius` (weight `separation_strength`) → multiple bots **spread out on the orbit
+  without stacking**, instead of converging on the same point. The anchor is excluded (already handled
+  by the orbit + collision exception).
+- **No friendly fire:** the ally's bullets phase through the player (see [[🔫 combate-tiro (EN)|combate-tiro]]).
+
 ---
 
 ## 🔗 Related
@@ -130,4 +147,5 @@ auto-fit of the locomotion capsule"). The red_robot does the same ([[🤖 inimig
 - [[🤖 inimigos (EN)|inimigos]]
 - [[🎮 player-gd (EN)|player-gd]]
 - [[🕹️ player-input-gd (EN)|player-input-gd]]
+- [[⚔️ facções (EN)|facções]]
 - [[🦿 limb-colliders-gd (EN)|limb-colliders-gd]]
