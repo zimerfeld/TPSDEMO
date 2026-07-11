@@ -14,10 +14,10 @@ Este jogo é construído e mantido no meu tempo livre. Se você curte o ZIMARO, 
 ![Screenshot of ZIMARO](screenshots/screenshot.png)
 
 > ![EN](screenshots/screenshotGB.png) **This file is a high-level bilingual summary.** Full, detailed docs:
-> **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)**
+> **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)** · **[📖 Español → README.es-ES.md](README.es-ES.md)**
 >
 > ![PT](screenshots/screenshotBR.png) **Este arquivo é um resumo bilíngue de alto nível.** Documentação completa e detalhada:
-> **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)**
+> **[📖 English → README.en-US.md](README.en-US.md)** · **[📖 Português → README.pt-BR.md](README.pt-BR.md)** · **[📖 Español → README.es-ES.md](README.es-ES.md)**
 
 ---
 
@@ -31,7 +31,7 @@ reactive AI that reloads faster, opens fire in range and flees when you close in
 with individual variation, no longer slide (animation cadence matched to speed), target the closest
 player in their alert radius, and the flyer varies its height smoothly to dive-bomb or escape fire),
 per-limb localized damage, several levels, a browsable 3D model library (with a model-orientation axis gizmo), reusable cyberpunk HUD
-widgets, per-scene looping background music, debug tooling, EN/PT localization and live (no-Apply) settings.
+widgets, per-scene looping background music, debug tooling, EN/PT/ES localization and live (no-Apply) settings.
 
 ![PT](screenshots/screenshotBR.png) Construído sobre a Godot Engine, o ZIMARO é um pequeno sandbox de tiro em
 terceira pessoa: fluxo por menus (seleção de personagem, seletor de fases, configurações, tela de
@@ -43,7 +43,7 @@ animação casada à velocidade), miram o **player mais próximo** no raio de al
 **varia a altura suavemente** para mergulhar e bombardear ou subir e escapar de tiros), dano
 localizado por membro, várias fases, biblioteca de
 modelos 3D navegável (com gizmo de eixos de orientação),
-widgets de HUD cyberpunk reutilizáveis, música de fundo por cena em loop, ferramentas de debug, localização EN/PT e configurações ao
+widgets de HUD cyberpunk reutilizáveis, música de fundo por cena em loop, ferramentas de debug, localização EN/PT/ES e configurações ao
 vivo (sem botão Aplicar).
 
 ## Features · Funcionalidades
@@ -68,9 +68,9 @@ robot in its own viewport) that reflects the enabled/disabled toggles in real ti
 **StabilityGuard** that throttles physics and (in single-player) force-pauses with a full-screen overlay
 before RAM/VRAM/collision-pairs/node-count/FPS can freeze or crash the machine — limits calibrated for
 real 3D levels, and during an online session it only throttles (never pauses, to avoid breaking netcode);
-a floor grid for 3D screens; and an EN/PT localization system where **every screen carries
-Português/English buttons** and each scene ships its own JSON dictionaries
-(`<scene>/Resources/*.pt.json` + `*.en.json`), merged at load. Online play is **rooms-based**: pick **Host** or **Client** on the Play Online screen. **Host** opens a
+a floor grid for 3D screens; and an EN/PT/ES localization system where **every screen carries
+Português/English/Español buttons** and each scene ships its own JSON dictionaries
+(`<scene>/Resources/*.pt.json` + `*.en.json` + `*.es.json`), merged at load. Online play is **rooms-based**: pick **Host** or **Client** on the Play Online screen. **Host** opens a
 room manager to start levels as isolated rooms and, per room, **Play** into it, **Observe** with a
 free-fly no-collision camera, **Restart** or **Stop** it (both warn the room's clients with a distinct
 "level stopped/restarted by host" notice); **Client** opens a room browser that lists the
@@ -119,8 +119,8 @@ overlay de tela cheia antes que RAM/VRAM/collision pairs/contagem de nós/FPS co
 máquina — com limites calibrados para os níveis 3D reais e, em sessão online, só estrangulando a física
 (nunca pausa, p/ não quebrar o netcode); uma
 malha no solo
-para telas 3D; e um sistema de localização EN/PT em que **toda tela tem botões Português/English** e
-cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json`),
+para telas 3D; e um sistema de localização EN/PT/ES em que **toda tela tem botões Português/English/Español** e
+cada cena traz seus próprios dicionários JSON (`<cena>/Resources/*.pt.json` + `*.en.json` + `*.es.json`),
 mesclados no carregamento. O jogo online é **por salas**: escolha **Host** ou **Client** na tela Jogar
 Online. **Host** abre um gerenciador de salas para iniciar levels como salas isoladas e, por sala,
 **Jogar** nela, **Observar** com uma câmera livre sem colisão, **Reiniciar** ou **Parar** (ambos avisam
@@ -173,13 +173,13 @@ LFS is not required.
 ![EN](screenshots/screenshotGB.png) `scenes2D/` (screens, UI, reusable widgets) · `scenes3D/` (levels + Models viewer) · `library3D/`
 (3D assets by type) · `effects_shared/` (cross-character helpers) · `autoload/` (global singletons:
 crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud; Settings is
-`scenes2D/settings/config.gd`) · per-scene `Resources/*.pt.json` + `*.en.json` (UI dictionaries) ·
+`scenes2D/settings/config.gd`) · per-scene `Resources/*.pt.json` + `*.en.json` + `*.es.json` (UI dictionaries) ·
 `ZIMARO/` (documentation vault).
 
 ![PT](screenshots/screenshotBR.png) `scenes2D/` (telas, UI, widgets reutilizáveis) · `scenes3D/` (fases + visualizador Models) ·
 `library3D/` (assets 3D por tipo) · `effects_shared/` (helpers entre personagens) · `autoload/`
 (singletons globais: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud; o
-Settings é `scenes2D/settings/config.gd`) · `Resources/*.pt.json` + `*.en.json` por cena (dicionários
+Settings é `scenes2D/settings/config.gd`) · `Resources/*.pt.json` + `*.en.json` + `*.es.json` por cena (dicionários
 da UI) · `ZIMARO/` (cofre de documentação).
 
 ![EN](screenshots/screenshotGB.png) **Windows build:** `pwsh -File build_windows.ps1` → `build/windows/ZIMARO.exe` (embedded PCK) + a
@@ -227,4 +227,4 @@ final de cada mudança.
 
 ---
 
-📖 **Full documentation · Documentação completa:** [English (README.en-US.md)](README.en-US.md) · [Português (README.pt-BR.md)](README.pt-BR.md)
+📖 **Full documentation · Documentação completa · Documentación completa:** [English (README.en-US.md)](README.en-US.md) · [Português (README.pt-BR.md)](README.pt-BR.md) · [Español (README.es-ES.md)](README.es-ES.md)

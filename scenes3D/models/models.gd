@@ -367,6 +367,7 @@ var _ai_window: FloatingWindow = null
 var ai_list: VBoxContainer = null
 @onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
 @onready var english_button: Button = $UI/Actions/LangBar/English
+@onready var spanish_button: Button = $UI/Actions/LangBar/Spanish
 # Rótulo LOCAL do nome da cena (nó no .tscn). Mantido OCULTO (ver _ready) — o nome da cena é
 # mostrado pelo watermark GLOBAL de debug_overlay.gd (topo direito, ao lado do título). Nó
 # preservado só para não quebrar a referência %SceneName.
@@ -528,6 +529,7 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	spanish_button.disabled = lang == "es"
 
 
 func _on_portuguese_pressed() -> void:
@@ -537,6 +539,11 @@ func _on_portuguese_pressed() -> void:
 
 func _on_english_pressed() -> void:
 	Locale.set_language("en")
+	_update_language_buttons()
+
+
+func _on_spanish_pressed() -> void:
+	Locale.set_language("es")
 	_update_language_buttons()
 
 

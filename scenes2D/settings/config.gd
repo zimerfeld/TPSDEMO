@@ -42,7 +42,7 @@ var DEFAULTS := {
 		# Performance HUD overlay (top bar; Developer screen). The crash/freeze PROTECTION
 		# is always-on via the StabilityGuard autoload and has no toggle.
 		performance_hud = false,
-		# UI language: "pt" (default) or "en". Persisted; read by the Locale autoload.
+		# UI language: "pt" (default), "en" or "es". Persisted; read by the Locale autoload.
 		language = "pt",
 	},
 	audio = {

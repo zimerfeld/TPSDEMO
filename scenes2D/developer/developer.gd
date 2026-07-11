@@ -47,6 +47,7 @@ const OPTION_DIM_FACTOR: float = 0.42
 
 @onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
 @onready var english_button: Button = $UI/Actions/LangBar/English
+@onready var spanish_button: Button = $UI/Actions/LangBar/Spanish
 
 # Toggle "Debug 2D" reutilizável injetado na barra Actions, na MESMA posição padrão das demais telas
 # (último item, à direita). Espelha o par Desativado/Ativado da coluna Debug 2D: os dois controlam a
@@ -120,6 +121,7 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	spanish_button.disabled = lang == "es"
 	# O idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar sem ele.
 	if is_node_ready():
 		_wire_tab_order.call_deferred()
@@ -132,6 +134,11 @@ func _on_portuguese_pressed() -> void:
 
 func _on_english_pressed() -> void:
 	Locale.set_language("en")
+	_update_language_buttons()
+
+
+func _on_spanish_pressed() -> void:
+	Locale.set_language("es")
 	_update_language_buttons()
 
 
