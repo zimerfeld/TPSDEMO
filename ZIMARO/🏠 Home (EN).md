@@ -7,6 +7,10 @@ atualizado: 2026-07-06
 
 # 🏠 ZIMARO — Neuron Vault
 
+> 🇧🇷 Leia esta página em português → [[🏠 Home]]
+
+> 🇪🇸 Lea esta página en español → [[🏠 Home (ES)]]
+
 > [!abstract] 🧠 What this vault is
 > Claude's persistent memory for the **ZIMARO** project — a third-person shooter sandbox
 > built with **Godot 4**, featuring server-authoritative multiplayer. The vault is updated at the
@@ -20,7 +24,7 @@ atualizado: 2026-07-06
 - **What it is:** a third-person shooter sandbox (Godot 4.x) with combat, per-limb localized damage, AI enemies and **online multiplayer** with simultaneous rooms (server-authoritative, ENet/UDP).
 - **Repository:** `C:\GODOT\ZIMARO` · GitHub: [zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) (open source, portfolio).
 - **Stack:** Godot 4.6.2 · GDScript · Windows build via `build_windows.ps1` (single .exe with embedded PCK).
-- **Differentiators:** multi-level rooms on the same server (SubViewport+World3D), per-limb hitbox damage (headshot), per-level Template/Scenery managers, EN/PT i18n on every screen.
+- **Differentiators:** multi-level rooms on the same server (SubViewport+World3D), per-limb hitbox damage (headshot), per-level Template/Scenery managers, EN/PT/ES i18n on every screen.
 - **Performance goal:** minimum **60 FPS** on minimal graphics hardware, using only cheap techniques (procedural sky, emissive shaders, fog) — validated on the `.exe`.
 - **Current state:** several P0 items done and awaiting the user's commit/review; room netcode proven on loopback; real-network validation (2 PCs) still pending. See [[📌 Backlog (EN)|Backlog]].
 - **Business angle:** open-source product in the zimerfeld portfolio (social proof via GitHub stars/downloads); funding via GitHub Sponsors and Ko-fi → [[💜 Financiamento e Patrocínio (EN)|Funding & Sponsorship]].
@@ -58,7 +62,7 @@ atualizado: 2026-07-06
 - [[🔊 audio (EN)|audio]] — buses (Master/Outside/Reactor/Music/SFX), background music per scene/level (MusicManager) + Music Manager UI
 - [[🐞 debug-overlay (EN)|debug overlay]] — DebugOverlay + 2-column developer screen (Debug 2D yellow / Debug 3D cyan), grid, 3D labels
 - [[⚡ performance-hud (EN)|performance HUD]] — PerformanceHUD (FPS/NET/RAM/CPU/GPU bar) + StabilityGuard (crash/freeze protection)
-- [[🗣️ localizacao (EN)|localization]] — EN/PT language: Locale autoload + per-scene dictionaries, persisted, buttons on ALL screens
+- [[🗣️ localizacao (EN)|localization]] — EN/PT/ES language: Locale autoload + per-scene dictionaries, persisted, buttons on ALL screens
 - [[🧱 recursos-nativos-godot (EN)|native Godot resources]] — which NATIVE nodes/resources the game uses, per subsystem; node-less RefCounted helpers
 
 ### 3️⃣ 🔀 Usage — Flows

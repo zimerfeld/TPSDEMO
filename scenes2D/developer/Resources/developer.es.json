@@ -1,0 +1,21 @@
+{
+	"Modo Desenvolvedor": "Modo Desarrollador",
+	"HUD FPS:": "HUD FPS:",
+	"Malha no Solo:": "Rejilla del Suelo:",
+	"Monitor de Saúde:": "Monitor de Salud:",
+	"Debug 2D:": "Debug 2D:",
+	"Debug 3D:": "Debug 3D:",
+	"Modelo do Player": "Modelo del Jugador",
+	"Type": "Tipo",
+	"Name": "Nombre",
+	"Id": "Id",
+	"Path": "Ruta",
+	"Members": "Miembros",
+	"Skeleton": "Esqueleto",
+	"Mesh": "Malla",
+	"Disabled": "Desactivado",
+	"Enabled": "Activado",
+	"Voltar": "Volver",
+	"Modelos 3D": "Modelos 3D",
+	"Controles 2D": "Controles 2D"
+}

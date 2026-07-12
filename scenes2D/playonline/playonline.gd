@@ -41,6 +41,7 @@ var _join_pending: bool = false
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
 @onready var portuguese_button: Button = $UI/Actions/LangBar/Portuguese
 @onready var english_button: Button = $UI/Actions/LangBar/English
+@onready var spanish_button: Button = $UI/Actions/LangBar/Spanish
 
 
 func _ready() -> void:
@@ -64,8 +65,8 @@ func _ready() -> void:
 		return
 	# Sequência de Tab na ordem de leitura: Nome (1) → Porta (2) → Histórico de porta (3) → IP (4) →
 	# Histórico de IP (5) → 3 OptionButtons de otimização (6-8) → Gerenciar/Entrar (9-10) → Voltar (11)
-	# → Português (12) → English (13) → Debug 2D (14). Re-liga quando o DebugOverlay injeta o toggle
-	# "Debug 2D" na barra Actions (ele entra DEPOIS do _ready), p/ o toggle fechar a sequência.
+	# → Português (12) → English (13) → Español (14) → Debug 2D (15). Re-liga quando o DebugOverlay injeta
+	# o toggle "Debug 2D" na barra Actions (ele entra DEPOIS do _ready), p/ o toggle fechar a sequência.
 	UINav.focus_tab_one.call_deferred(self)
 	_wire_tab_order.call_deferred()
 	($UI/Actions as HBoxContainer).child_entered_tree.connect(
@@ -284,6 +285,7 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	spanish_button.disabled = lang == "es"
 	# O botão do idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar
 	# sem ele. call_deferred: o estado disabled já assentou quando o anel é remontado.
 	if is_node_ready():
@@ -297,6 +299,11 @@ func _on_portuguese_pressed() -> void:
 
 func _on_english_pressed() -> void:
 	Locale.set_language("en")
+	_update_language_buttons()
+
+
+func _on_spanish_pressed() -> void:
+	Locale.set_language("es")
 	_update_language_buttons()
 
 

@@ -2,11 +2,11 @@ extends Node
 
 ## UI language switcher. Each scene ships its OWN pair of flat JSON dictionaries inside
 ## a "Resources/" folder next to its scene file (e.g.
-## res://scenes2D/menu/Resources/menu.pt.json + menu.en.json). Every dictionary maps the
-## canonical (authored) text of a Button/Label/CheckButton — or any string a screen passes
+## res://scenes2D/menu/Resources/menu.pt.json + menu.en.json + menu.es.json). Every dictionary maps
+## the canonical (authored) text of a Button/Label/CheckButton — or any string a screen passes
 ## to tr_key — to that language's text. At boot Locale scans SCAN_ROOTS, finds every
-## "*.pt.json" / "*.en.json" and merges them into one lookup table per language, so a new
-## screen is covered just by dropping its Resources/ dictionaries in — no autoload edit.
+## "*.pt.json" / "*.en.json" / "*.es.json" and merges them into one lookup table per language, so a
+## new screen is covered just by dropping its Resources/ dictionaries in — no autoload edit.
 ##
 ## The chosen language is persisted in Settings ("game/language") and applied at startup;
 ## switching re-localizes the live tree and emits `language_changed`.
@@ -19,6 +19,8 @@ extends Node
 signal language_changed(lang: String)
 
 const DEFAULT_LANG := "pt"
+# Idiomas suportados pela UI (código curto = sufixo dos dicionários "*.<lang>.json").
+const SUPPORTED_LANGS: Array[String] = ["pt", "en", "es"]
 # Folders scanned (recursively) for per-scene "*.<lang>.json" dictionaries.
 const SCAN_ROOTS: Array[String] = ["res://scenes2D", "res://scenes3D"]
 # Meta key holding a node's canonical source text, so it can be re-translated when the
@@ -34,7 +36,7 @@ var _table: Dictionary = {}
 
 func _ready() -> void:
 	_lang = Settings.config_file.get_value("game", "language", DEFAULT_LANG)
-	if _lang != "pt" and _lang != "en":
+	if not SUPPORTED_LANGS.has(_lang):
 		_lang = DEFAULT_LANG
 	_load_table()
 	# Localize nodes as they enter the tree (covers every screen main.gd swaps in).
@@ -50,7 +52,7 @@ func get_language() -> String:
 # Switch language, persist it and re-localize the live tree. No-op for an unknown or
 # already-active language.
 func set_language(lang: String) -> void:
-	if lang == _lang or (lang != "pt" and lang != "en"):
+	if lang == _lang or not SUPPORTED_LANGS.has(lang):
 		return
 	_lang = lang
 	Settings.config_file.set_value("game", "language", lang)

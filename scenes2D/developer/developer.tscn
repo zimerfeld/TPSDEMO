@@ -337,8 +337,17 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "English"
 
+[node name="Spanish" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 22
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Español"
+
 [connection signal="pressed" from="UI/Actions/Models3D" to="." method="_on_models_pressed"]
 [connection signal="pressed" from="UI/Actions/Controls2D" to="." method="_on_controls_pressed"]
 [connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
 [connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Spanish" to="." method="_on_spanish_pressed"]

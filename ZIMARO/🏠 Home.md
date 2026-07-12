@@ -7,6 +7,10 @@ atualizado: 2026-07-06
 
 # 🏠 ZIMARO — Cofre de Neurônios
 
+> 🇺🇸 Read this page in English → [[🏠 Home (EN)]]
+
+> 🇪🇸 Lea esta página en español → [[🏠 Home (ES)]]
+
 > [!abstract] 🧠 O que é este cofre
 > Memória persistente do Claude para o projeto **ZIMARO** — sandbox de tiro em terceira pessoa
 > feito em **Godot 4**, com multiplayer server-authoritative. O cofre é atualizado ao fim de cada
@@ -20,7 +24,7 @@ atualizado: 2026-07-06
 - **O que é:** sandbox de tiro em 3ª pessoa (Godot 4.x) com combate, dano localizado por membro, inimigos com IA e **multiplayer online** por salas simultâneas (server-authoritative, ENet/UDP).
 - **Repositório:** `C:\GODOT\ZIMARO` · GitHub: [zimerfeld/ZIMARO](https://github.com/zimerfeld/ZIMARO) (open source, portfólio).
 - **Stack:** Godot 4.6.2 · GDScript · build Windows via `build_windows.ps1` (.exe com PCK embutido).
-- **Diferenciais:** salas multi-level no mesmo servidor (SubViewport+World3D), dano por hitbox de membro (headshot), gerenciadores de Templates/Cenários por level, i18n EN/PT em todas as telas.
+- **Diferenciais:** salas multi-level no mesmo servidor (SubViewport+World3D), dano por hitbox de membro (headshot), gerenciadores de Templates/Cenários por level, i18n EN/PT/ES em todas as telas.
 - **Meta de performance:** mínimo **60 FPS** em hardware gráfico mínimo, só com técnicas baratas (céu procedural, shaders emissivos, fog) — validada no `.exe`.
 - **Estado atual:** vários P0 prontos aguardando commit/review do usuário; netcode de salas provado em loopback; falta validação em rede real (2 PCs). Ver [[📌 Backlog]].
 - **Ângulo de negócio:** produto open source do portfólio zimerfeld (prova social por stars/downloads no GitHub); financiamento via GitHub Sponsors e Ko-fi → [[💜 Financiamento e Patrocínio]].
@@ -58,7 +62,7 @@ atualizado: 2026-07-06
 - [[🔊 audio]] — buses (Master/Outside/Reactor/Music/SFX), música de fundo por cena/level (MusicManager) + Gerenciador de Música
 - [[🐞 debug-overlay]] — DebugOverlay + tela developer em 2 colunas (Debug 2D amarelo / Debug 3D ciano), grid, rótulos 3D
 - [[⚡ performance-hud]] — PerformanceHUD (barra FPS/NET/RAM/CPU/GPU) + StabilityGuard (proteção crash/freeze)
-- [[🗣️ localizacao]] — idioma EN/PT: autoload Locale + dicionários por cena, persistido, botões em TODAS as telas
+- [[🗣️ localizacao]] — idioma EN/PT/ES: autoload Locale + dicionários por cena, persistido, botões em TODAS as telas
 - [[🧱 recursos-nativos-godot]] — quais nós/recursos NATIVOS o jogo usa, por subsistema; helpers RefCounted sem nó
 
 ### 3️⃣ 🔀 Uso — Fluxos

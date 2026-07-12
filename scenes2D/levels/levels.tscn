@@ -133,6 +133,15 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "English"
 
+[node name="Spanish" type="Button" parent="UI/Actions/LangBar"]
+metadata/tab_order = 10
+unique_name_in_owner = true
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Español"
+
 [node name="Loading" type="HBoxContainer" parent="UI" unique_id=619865146]
 unique_name_in_owner = true
 visible = false
@@ -168,4 +177,5 @@ one_shot = true
 [connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
 [connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Spanish" to="." method="_on_spanish_pressed"]
 [connection signal="timeout" from="UI/Loading/DoneTimer" to="." method="_on_loading_done_timer_timeout"]

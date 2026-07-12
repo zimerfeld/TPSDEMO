@@ -1,7 +1,8 @@
 # ZIMARO — Documentação completa (Português)
 
 > Documentação detalhada e extensa em português. Para o resumo bilíngue de alto nível veja
-> [README.md](README.md); a versão em inglês é [README.en-US.md](README.en-US.md).
+> [README.md](README.md); a versão em inglês é [README.en-US.md](README.en-US.md) e a versão em
+> espanhol é [README.es-ES.md](README.es-ES.md).
 > O cofre [`ZIMARO/`](ZIMARO) espelha este conteúdo com notas por sistema.
 
 ZIMARO é um sandbox de tiro em terceira pessoa feito com a [Godot Engine](https://godotengine.org).

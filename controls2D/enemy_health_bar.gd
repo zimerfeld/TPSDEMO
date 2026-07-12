@@ -143,18 +143,19 @@ func show_enemy(enemy_name: String, current: int, maximum: int, distance: float 
 	if weapon_range >= 0.0:
 		_last_range = weapon_range
 	if _last_range >= 0.0:
-		var word: String = "Alcance" if _locale_is_pt() else "Range"
+		# "Alcance" serve para PT e ES (mesma palavra); só o EN usa "Range".
+		var word: String = "Range" if _locale_lang() == "en" else "Alcance"
 		_range_label.text = "%s: %.0f m" % [word, _last_range]
 		_range_label.show()
 	else:
 		_range_label.hide()
 
 
-func _locale_is_pt() -> bool:
+func _locale_lang() -> String:
 	var loc := get_node_or_null(^"/root/Locale")
 	if loc != null and loc.has_method("get_language"):
-		return loc.get_language() == "pt"
-	return true
+		return loc.get_language()
+	return "pt"
 
 
 func hide_now() -> void:
