@@ -16,6 +16,7 @@ var loading_path: String = ""
 @onready var loading_done_timer: Timer = %DoneTimer
 @onready var portuguese_button: Button = %Portuguese
 @onready var english_button: Button = %English
+@onready var spanish_button: Button = %Spanish
 
 var _template_buttons: Dictionary = {}
 var _scenery_buttons: Dictionary = {}
@@ -48,6 +49,7 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	spanish_button.disabled = lang == "es"
 	# O botão do idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar
 	# sem ele. call_deferred: o estado disabled já assentou quando o anel é remontado.
 	if is_node_ready():
@@ -61,6 +63,11 @@ func _on_portuguese_pressed() -> void:
 
 func _on_english_pressed() -> void:
 	Locale.set_language("en")
+	_update_language_buttons()
+
+
+func _on_spanish_pressed() -> void:
+	Locale.set_language("es")
 	_update_language_buttons()
 
 

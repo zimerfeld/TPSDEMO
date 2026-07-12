@@ -31,6 +31,7 @@ var _quit_dialog: FloatingWindow = null
 
 @onready var portuguese_button: Button = %Portuguese
 @onready var english_button: Button = %English
+@onready var spanish_button: Button = %Spanish
 
 
 func _ready() -> void:
@@ -51,7 +52,7 @@ func _ready() -> void:
 	# Foco inicial SEMPRE no controle de Tab = 1 (cabeça do anel), p/ as setas/Tab começarem do 1º (Play).
 	UINav.focus_tab_one.call_deferred(self)
 	# Tab incremental de 1 na ordem de leitura: Play → Play Online → Settings → Developer → Sair →
-	# Português → English → Debug 2D. Re-liga quando o DebugOverlay injeta o toggle "Debug 2D" na barra
+	# Português → English → Español → Debug 2D. Re-liga quando o DebugOverlay injeta o toggle "Debug 2D" na barra
 	# Actions (ele entra DEPOIS do _ready do menu), para o toggle fechar a sequência.
 	_wire_tab_order.call_deferred()
 	($UI/Actions as HBoxContainer).child_entered_tree.connect(
@@ -76,6 +77,7 @@ func _update_language_buttons() -> void:
 	var lang := Locale.get_language()
 	portuguese_button.disabled = lang == "pt"
 	english_button.disabled = lang == "en"
+	spanish_button.disabled = lang == "es"
 	# O botão do idioma ativo fica desabilitado (fora do Tab) — re-liga o anel p/ a sequência fechar
 	# sem ele. call_deferred: o estado disabled já assentou quando o anel é remontado.
 	if is_node_ready():
@@ -150,6 +152,11 @@ func _on_portuguese_pressed() -> void:
 
 func _on_english_pressed() -> void:
 	Locale.set_language("en")
+	_update_language_buttons()
+
+
+func _on_spanish_pressed() -> void:
+	Locale.set_language("es")
 	_update_language_buttons()
 
 

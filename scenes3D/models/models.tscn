@@ -466,6 +466,14 @@ theme_override_font_sizes/font_size = 20
 text = "English"
 metadata/tab_order = 34
 
+[node name="Spanish" type="Button" parent="UI/Actions/LangBar" unique_id=1783600183]
+custom_minimum_size = Vector2(135, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "Español"
+metadata/tab_order = 35
+
 [node name="SceneName" type="Label" parent="UI" unique_id=1461162459]
 unique_name_in_owner = true
 layout_mode = 1
@@ -491,3 +499,4 @@ vertical_alignment = 1
 [connection signal="pressed" from="UI/Actions/Back" to="." method="_on_back_pressed"]
 [connection signal="pressed" from="UI/Actions/LangBar/Portuguese" to="." method="_on_portuguese_pressed"]
 [connection signal="pressed" from="UI/Actions/LangBar/English" to="." method="_on_english_pressed"]
+[connection signal="pressed" from="UI/Actions/LangBar/Spanish" to="." method="_on_spanish_pressed"]
