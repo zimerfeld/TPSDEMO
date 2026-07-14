@@ -2,7 +2,7 @@
 tipo: arquivo-chave
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🧠 library3D/characters/red_robot/IA/red_robot_ai.gd
@@ -14,7 +14,7 @@ atualizado: 2026-07-04
 
 ## Responsabilidades
 
-Centraliza los **comportamientos y decisiones** de combate del Red Robot en runtime. El cuerpo
+Centraliza los **comportamientos y decisiones** de combate del Red Robot en tiempo de ejecución. El cuerpo
 (`red_robot.gd`) instancia esta IA como hijo en `_ready()` (nombre `IA`) y la consulta cada frame.
 Mantiene la física, la animación y el disparo en el cuerpo; solo las **reglas de decisión** y los
 ajustables viven aquí, fáciles de ajustar sin tocar la máquina de estados.
@@ -26,10 +26,12 @@ ajustables viven aquí, fáciles de ajustar sin tocar la máquina de estados.
 | Var | Value | Efecto |
 |---|---|---|
 | `fire_rate_multiplier` | `1.5` | Recarga **1.5× más rápida** (1.º y siguientes disparos) |
-| `flee_distance` | `10.0 m` | Jugador a esta distancia o menos → el robot se retira disparando |
-| `flee_speed` | `6.0 m/s` | Velocidad al huir del jugador |
-| `formation_cohesion` | `0.55` | Fuerza del retorno al slot de formación asignado |
-| `formation_band` | `5.0 m` | Tolerancia antes de que el robot sea traído de vuelta al slot |
+| `flee_distance` | `10.0 m` | Jugador a esta distancia o menos → el robot abre espacio |
+| `flee_speed` | `2.0 m/s` | Velocidad al abrir espacio (ajustada a la zancada — ver [[🤖 inimigos (ES)|enemigos]] 2026-07-08) |
+| `strafe_speed` | `1.4 m/s` | Paso lateral en combate reactivo |
+| `pressure_speed` | `1.8 m/s` | Reposicionamiento bajo presión |
+| `formation_cohesion` | `0.32` | Fuerza del retorno al slot de formación asignado |
+| `formation_band` | `7.0 m` | Tolerancia antes de que el robot sea traído de vuelta al slot |
 | `speed_variation` | `±0.18` | Variación de velocidad por individuo (rompe el lockstep) |
 
 ---
@@ -53,9 +55,10 @@ func should_shoot(distance, effective_range) -> bool  # distance <= effective_ra
 
 - **Recarga acelerada:** `shoot_reload` reemplaza a `SHOOT_WAIT` en todos los reinicios de
   `shoot_countdown` (1.º disparo incluido).
-- **Retirada (FLEE):** cuando `decide(...) == FLEE`, `_flee_movement()` encara al jugador (frente +Z) y
-  fija la velocidad en la dirección opuesta (`-fwd * flee_speed`), sobreescribiendo el root motion; las piernas
-  reproducen `walk` y el fuego continúa (el jugador está dentro del alcance).
+- **Retirada (FLEE):** cuando `decide(...) == FLEE`, `movement_plan` devuelve `direction = -forward`
+  (opuesto al jugador) y `speed = flee_speed`. Desde 2026-07-08 el cuerpo **gira sus piernas hacia esa
+  dirección** y el paso proviene del root motion (anti-deslizamiento) → el robot **gira y corre**; la torreta
+  sigue apuntando/disparando por separado. Ver [[🤖 inimigos (ES)|enemigos]] ("Locomoción realista").
 - **Disparo:** la lógica de puntería ya solo dispara dentro de `effective_range`, cubriendo ENGAGE y FLEE.
 
 ---

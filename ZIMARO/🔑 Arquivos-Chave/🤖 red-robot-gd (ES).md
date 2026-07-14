@@ -2,7 +2,7 @@
 tipo: arquivo-chave
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🤖 library3D/characters/red_robot/red_robot.gd
@@ -87,7 +87,7 @@ if health <= 0:
 
 ## IA (`IA/red_robot_ai.gd`)
 
-Los comportamientos/decisiones en runtime viven en un script de IA dedicado
+Los comportamientos/decisiones en tiempo de ejecución viven en un script de IA dedicado
 ([[🧠 red-robot-ai-gd (ES)|red_robot_ai.gd]], `class_name RedRobotAI`), instanciado como hijo en `_ready()`
 y consultado cada frame por el cuerpo (`red_robot.gd`):
 
@@ -95,10 +95,17 @@ y consultado cada frame por el cuerpo (`red_robot.gd`):
   usado en el 1.º disparo y en todos los reinicios de `shoot_countdown` (aplica al 1.º y al siguiente).
 - **Enganche (Engage)** — dispara siempre que el jugador está dentro de `effective_range` (la puntería de disparo ya
   hace ese test); en la práctica, abre fuego en el rango `10 m < dist ≤ range`.
-- **Retirada (FLEE)** — cuando `dist ≤ flee_distance` (10 m), `_flee_movement()` orienta el cuerpo
-  para **encarar al jugador** (frente +Z) y fija la velocidad en la **dirección opuesta**
-  (`-fwd * flee_speed`), sobreescribiendo el root motion; las piernas reproducen `walk` y el fuego continúa.
-- Ajustables en la IA: `fire_rate_multiplier = 1.5`, `flee_distance = 10.0`, `flee_speed = 6.0`.
+- **Retirada (FLEE)** — cuando `dist ≤ flee_distance` (10 m), la IA devuelve `direction = -forward`.
+  Desde 2026-07-08 el cuerpo **gira sus piernas hacia la dirección de avance** y el paso proviene del
+  root motion (anti-deslizamiento) → **gira y corre**; la torreta sigue apuntando/disparando por separado.
+- Ajustables en la IA: `fire_rate_multiplier = 1.5`, `flee_distance = 10.0`, `flee_speed = 2.0`,
+  `strafe_speed = 1.4`, `pressure_speed = 1.8`.
+
+> **Locomoción (anti-deslizamiento, 2026-07-08):** `_calibrate_walk_natural_speed` mide la zancada real de
+> la animación `Walk` (~0,8 m/s); `_match_locomotion_cadence` controla el nodo `AnimationNodeTimeScale`
+> `locomotion_scale` del tree (el `speed_scale` del AnimationPlayer se ignora bajo un AnimationTree);
+> `_face_move_direction` gira el cuerpo hacia el avance y el desplazamiento proviene de
+> `get_root_motion_position()`. Detalle completo en [[🤖 inimigos (ES)|enemigos]] ("Locomoción realista").
 
 ---
 
