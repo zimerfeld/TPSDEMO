@@ -120,6 +120,23 @@ modelo de la cápsula de locomoción"). El red_robot hace lo mismo ([[🤖 inimi
   reagruparse tiene prioridad, así que el aliado **no se va corriendo del mapa**. El bot también pasa por el
   `AIM_WARMUP_TIME` (apunta antes de disparar).
 
+### Órbita + facción (2026-07-08)
+
+- **Facción en runtime:** el jugador (humano y bot) se siembra como **`ally`** en `_ready`
+  (`Factions.seed_node`). El bot elige enemigos vía `Factions.are_enemies` y aliados vía `same_side`
+  (ya no por "tener un método `hit`"). Ver [[⚔️ facções (ES)|facções]].
+- **Orbita al jugador más cercano:** el ancla es ahora el **humano MÁS CERCANO** (`_find_nearest_human_ally`,
+  antes era el primero). Sin amenaza, `_follow_move` **rodea** el ancla a `follow_distance`
+  (muelle de radio radial + `orbit_strength` tangencial, dirección individual) en lugar de solo acercarse
+  y detenerse.
+- **Sin colisión:** `_sync_anchor_collision` mantiene una **excepción de colisión** entre el bot y su
+  ancla (reaplicada cuando cambia el jugador más cercano) → el aliado se queda alrededor **sin empujar** al jugador.
+- **Separación entre aliados:** `_separation` (dirección estilo boids) aleja a cada aliado de los OTROS aliados
+  dentro de `separation_radius` (peso `separation_strength`) → varios bots **se reparten en la órbita
+  sin amontonarse**, en lugar de converger en el mismo punto. El ancla queda excluida (ya gestionada
+  por la órbita + la excepción de colisión).
+- **Sin fuego amigo:** las balas del aliado atraviesan al jugador (ver [[🔫 combate-tiro (ES)|combate-tiro]]).
+
 ---
 
 ## 🔗 Relacionado
@@ -130,4 +147,5 @@ modelo de la cápsula de locomoción"). El red_robot hace lo mismo ([[🤖 inimi
 - [[🤖 inimigos (ES)|inimigos]]
 - [[🎮 player-gd (ES)|player-gd]]
 - [[🕹️ player-input-gd (ES)|player-input-gd]]
+- [[⚔️ facções (ES)|facções]]
 - [[🦿 limb-colliders-gd (ES)|limb-colliders-gd]]
