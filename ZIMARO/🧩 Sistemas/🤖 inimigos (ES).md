@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-07-08
 ---
 
 # 🤖 Sistema de enemigos — Red Robot
@@ -27,8 +27,10 @@ APPROACH ──► AIM ──► SHOOTING
 | `SHOOTING (2)` | Dispara una bala de cañón; espera la recarga antes de la siguiente |
 
 > **Retirada (FLEE):** además de los 3 estados, una decisión de la [[🧠 red-robot-ai-gd (ES)|IA]] anula
-> el movimiento cuando el jugador llega a **≤ 10 m**: el robot **corre en la dirección opuesta mientras encara al
-> jugador** y sigue disparando (no es un `State` de la máquina, es una anulación de movimiento por fotograma).
+> el movimiento cuando el jugador llega a **≤ 10 m**: el robot abre espacio en la dirección opuesta (no es
+> un `State` de la máquina, es una anulación de movimiento por fotograma). Desde 2026-07-08 las **piernas giran hacia la
+> dirección de avance** (mecánica anti-deslizamiento — ver abajo), así que **gira y corre** en lugar de retroceder de espaldas;
+> la **torreta/cañón sigue apuntando al jugador** de forma independiente.
 
 ---
 
@@ -165,6 +167,61 @@ Feedback del usuario validado en la Prueba A. Cuatro frentes de comportamiento +
   `"faction"`, precedencia user:// como los comportamientos). Valores `hostile`/`neutral`/`ally`; por defecto: red_robot
   y criatura_alada = **hostile**, player = **ally**. Todavía **no hay personaje neutral** — el campo existe y se
   lee (`is_hostile`/`is_neutral`), listo para la lógica "neutral solo reacciona si es amenazado (disparo/aleatoriedad)".
+
+---
+
+## 🚶 Locomoción realista — zancada emparejada + piernas encarando el avance (2026-07-08)
+
+Corrección del "deslizamiento" de los enemigos terrestres. Reemplaza el intento anterior (sección 2026-07-02), que **no
+funcionó**: escalar `AnimationPlayer.speed_scale` es **ignorado** cuando un `AnimationTree` controla la
+animación — la cadencia nunca aceleraba de verdad.
+
+**Diagnóstico (medido):** la animación `Walk` tiene una zancada natural de **~0.8 m/s** (su hueso de root-motion
+`MASTER` recorre 2 m en 2.5 s), pero el código asumía `walk_natural_speed = 2.2` y la IA conducía
+el cuerpo a 2.4–3.8 m/s en modo manual → el cuerpo se movía 3–4.75× más rápido que los pies. Además de eso,
+`Walk` es **solo hacia adelante**: moverse de lado/hacia atrás con ella siempre desliza.
+
+**Solución (3 frentes):**
+
+1. **Cadencia vía el árbol (de verdad):** un nuevo nodo `AnimationNodeTimeScale` **`locomotion_scale`** insertado
+   en el árbol de blend entre `state` y `aiming` (edita el `.tscn`). `_match_locomotion_cadence(speed)`
+   ahora escribe `parameters/locomotion_scale/scale` (el mecanismo que el `AnimationTree` respeta), ya no el
+   `speed_scale` del player. Rango `[0.6, 2.6]`.
+2. **Zancada calibrada en tiempo de ejecución:** `_calibrate_walk_natural_speed()` en `_ready` mide la zancada real
+   de `Walk` (desplazamiento horizontal de MASTER ÷ duración) → `walk_natural_speed ≈ 0.8`. Se mantiene correcta incluso si
+   el artista reexporta la animación. El `@export` (0.8) es solo un fallback.
+3. **Las piernas encaran el avance + desplazamiento desde root motion:** en modo manual `_face_move_direction` gira
+   suavemente el **cuerpo** (`body_turn_rate` 7 rad/s) para encarar hacia donde camina, y la velocidad viene del
+   **propio `get_root_motion_position()` de la animación** proyectado a lo largo de ese encaramiento. Como el cuerpo encara su
+   movimiento, la pisada aterriza exactamente sobre el suelo recorrido → **sin deslizamiento en ninguna dirección**. La
+   **torreta/cañón apunta al jugador por separado** (el blendspace `aim`), así que camina en una dirección y dispara
+   al jugador.
+
+**Nota de red:** la escala no se replica; en el cliente `_match_remote_cadence` estima la velocidad a partir de la
+posición **interpolada** y empareja la cadencia local (el cuerpo ya llega encarando en la dirección correcta,
+calculada en el servidor) → pies bloqueados también en el cliente.
+
+**Velocidades de IA reducidas** a la banda que la zancada sostiene (cadencia ~1.75–2.5×): `strafe_speed` 2.4→**1.4**,
+`pressure_speed` 3.2→**1.8**, `flee_speed` 3.8→**2.0**. APPROACH sigue con root motion natural (~0.8 m/s),
+pies ya bloqueados. Por encima de 2.6× de zancada, la velocidad se **limita** (nunca desliza; solo se acota). Ajustables (rumbo
+a la pantalla de parametrización de IA): `walk_natural_speed`, `body_turn_rate`, `gait_speed_scale`, y las velocidades
+de IA.
+
+---
+
+### Suavizado de dirección (anti-jitter, 2026-07-08)
+
+Como el cuerpo ahora **encara la dirección de avance**, el rumbo crudo de la IA (giros de strafe, re-búsqueda
+de objetivo, sondas de geometría) hacía **temblar** al robot. Correcciones: `move_dir_response` (4.0) **filtra el
+rumbo** antes de girar el cuerpo; `body_turn_rate` 7→**5** rad/s (giro más pesado); y la IA ahora
+**se compromete con cada dirección de strafe durante 1.6–3 s** (antes ~0.5 s), incluidos los giros de geometría y
+reposicionamiento. Los cambios de dirección ahora llegan gradualmente.
+
+### Selección de objetivo por facción (2026-07-08)
+
+`_pick_target` filtra por `Factions.are_enemies(self, target)` → el robot apunta **solo a la
+facción OPUESTA** (tú + bots aliados), nunca a otro hostil ni a un neutral. El filtro está en la
+**selección** de objetivo (no en la entrada al Area) → reacciona a los neutrales provocados que se vuelven aliados. Ver [[⚔️ facções (ES)|facções]].
 
 ---
 

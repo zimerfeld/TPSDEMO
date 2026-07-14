@@ -134,8 +134,24 @@ bala de cañón/bomba del enemigo en pleno vuelo).
 
 ---
 
+## 🛡️ Daño por facción — sin fuego amigo (2026-07-08)
+
+El daño ya no es "impacta a cualquiera salvo al propio tirador"; ahora respeta el
+[[⚔️ facções (ES)|sistema de facciones]]:
+
+- **`bullet.gd`** y **`bomb.gd`** comprueban `Factions.can_damage(shooter/dropper, target)` antes de
+  aplicar daño. **Misma facción → sin daño.**
+- La **bala ATRAVIESA** a un personaje de la misma facción (excepción de colisión, como ya hace con
+  un cuerpo que posee colisionadores de miembros) en lugar de explotar → **no bloquea la línea de fuego** de
+  quien esté detrás.
+- Cuando el daño impacta, `Factions.note_damage(...)` **provoca** a un objetivo neutral (lo alinea contra el atacante).
+- Solo el servidor aplica daño (autoritativo del servidor), así que la facción solo necesita existir en el servidor.
+
+---
+
 ## 🔗 Relacionado
 
 - [[🎮 player (ES)|player]]
 - [[❤️ sistema-de-vida (ES)|sistema-de-vida]]
 - [[💥 bullet-gd (ES)|bullet-gd]]
+- [[⚔️ facções (ES)|facções]]
