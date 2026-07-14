@@ -49,6 +49,7 @@ atualizado: 2026-07-06
 - [[🎮 player (ES)|jugador]] — movimiento, física, animación, cámara
 - [[🤖 inimigos (ES)|enemigos]] — Red Robot: IA reactiva (recarga 1,5× + retirada ≤10 m), estados, HUD con alcance
 - [[🔫 combate-tiro (ES)|combate/disparos]] — bala, RPC de impacto, cooldown
+- [[⚔️ facções (ES)|facciones]] — bandos en runtime (hostil/aliado/neutral): sin fuego amigo, targeting por facción, neutrales dinámicos
 - [[🌐 multiplayer (ES)|multijugador]] — arquitectura con autoridad de servidor
 - [[🚪 salas (ES)|salas]] — servidor multinivel: salas simultáneas (SubViewport+World3D) + rejilla de gestión
 - [[🛰️ hospedagem-online (ES)|hospedaje online]] — jugar por internet: playit.gg (UDP) · Tailscale/ZeroTier · redirección de puertos (ngrok NO funciona)
