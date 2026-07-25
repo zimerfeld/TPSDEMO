@@ -2,7 +2,7 @@
 tipo: backlog
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-07
+atualizado: 2026-07-23
 ---
 
 # 🗂️ Backlog priorizado — ZIMARO
@@ -18,7 +18,37 @@ atualizado: 2026-07-07
 > com impacto no usuário, atualizar READMEs (`.md`/`.en-US`/`.pt-BR`) **e** este cofre; rodar
 > `build_windows.ps1` ao final; eliminar erros/warnings após compilar.
 
-**Última revisão:** 2026-07-08 · **Branch ativa:** `feature/locomocao-realista-inimigos`
+**Última revisão:** 2026-07-23 · **Branch ativa:** `feature/jogador7-import`
+
+---
+
+## 🟢 Sub-membros distais + classificador bilíngue + desempenho do refit — PRONTO p/ review (2026-07-23)
+
+Branch `feature/jogador7-import`. **Não commitado** (aguardando review).
+
+- **Extremidades viram sub-membros automáticos** — antebraço/mão (dono BRAÇO) e canela/pé (dono
+  PERNA) ganham collider e dano PRÓPRIOS; sem valor definido **herdam o do membro-dono**. Novo virtual
+  `BodyParts.is_distal_sub_member` + `@export auto_distal_sub_members` em `LimbColliders`. **Opt-out**
+  de `player`/`red_robot` (mantêm o hitbox de membro inteiro), espelhado no preview por
+  `_MODEL_NO_AUTO_DISTAL`. Medido: humanoide/monstro = 6 membros + 8 sub-membros; player = 6 + 0.
+  Ver [[🩸 dano-localizado]] · [[🦴 body-parts-gd]] · [[🦿 limb-colliders-gd]].
+- **Classificador bilíngue PT+EN** — passa a reconhecer `cabeca/peito/bracoDireito/antebracoDireito/…`
+  além do inglês (o `monstro`, em PT, classificava **0 de 16 ossos**). O PT "pe" (pé) casa por **token
+  exato** (`BodyParts.words_of`), senão colidiria com `peito`/`perna`/`pescoco`.
+- **Desempenho do refit** (era o que derrubava o FPS na tela Models) — 6,45 → **0,318 ms/frame** (~20×):
+  cache em memória do `LimbConfig` (os getters reabriam o JSON do disco, ~140 leituras/s), grupos de
+  **osso único** pulados (AABB invariante — os termos se cancelam) e **rodízio** de 3 grupos por frame
+  no lugar do throttle adaptativo. ✅ FPS validado em tela pelo usuário.
+- **Tela Models** — o dropdown Sub-membro agora lista **todos** os sub-membros no modo "Todos os
+  membros" (rotulados com o membro-dono); **pan da câmera com o botão DIREITO** (o esquerdo segue
+  girando o modelo, a roda segue no zoom).
+- **Importação de modelos** — `humanoide` e `monstro_pedregulho3` corrigidos e reimportados (36
+  animações cada). Nomes com sufixo `" (2)"` e caminhos de raiz nos `.import`/`.tscn` quebravam a
+  importação. Nota nova [[🔌 MCP do Godot]] documenta o addon e os comandos headless.
+
+**Pendências desta frente:** validar o `red_robot` em partida (opt-out analisado, sem teste dedicado);
+o plano **quadrúpede** ainda não subdivide extremidades (só o bípede); o `README.md` raiz segue
+**bilíngue** (EN+PT, sem bloco ES) — divergente da regra de trilíngue.
 
 ---
 

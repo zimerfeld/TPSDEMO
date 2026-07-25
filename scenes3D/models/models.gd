@@ -114,6 +114,10 @@ const ZOOM_MIN: float = 1.2
 const ZOOM_MAX: float = 12.0
 const ZOOM_SMOOTH: float = 10.0
 
+# Pan (botão direito): teto do deslocamento lateral/vertical da câmera, como fração da distância
+# atual até o modelo. Impede arrastar tão longe que o modelo saia de vista e a tela pareça "vazia".
+const PAN_LIMIT_FACTOR: float = 1.5
+
 # Built at _ready by scanning LIBRARY_ROOT. Each entry:
 #   {"key": String, "label": String, "models": Array[{"name", "path"}]}
 var _categories: Array = []
@@ -146,6 +150,9 @@ var _filtered_models: Array = []
 # (horizontal -> yaw on Y, vertical -> pitch on X).
 var _auto_rotate: bool = false
 var _dragging: bool = false
+# Arraste com o botão DIREITO: desloca a CÂMERA no seu plano local (pan), em vez de girar o modelo.
+# Serve para trazer ao centro uma parte fora do enquadramento (ex.: um pé) sem precisar girar/afastar.
+var _panning: bool = false
 var _yaw: float = 0.0
 var _pitch: float = 0.0
 # Yaw frontal BASE do modelo atual (antes do drag do usuário). Padrão DEFAULT_FRONT_YAW
@@ -198,17 +205,19 @@ var _show_skeleton_lines: bool = false
 # Gizmo (ImmediateMesh) das linhas de osso do preview; recriado/removido por _refresh_skeleton_lines.
 var _skeleton_lines_mi: MeshInstance3D = null
 # LimbColliders + Skeleton3D do preview (modelos COM esqueleto). Enquanto uma animação toca,
-# `_member_lc.refit(_member_skel)` re-encaixa os colliders de membro/sub-membro à pose animada
-# (acompanham movimentos/dobra em tempo real). Null para rigs sem esqueleto (já seguem o nó animado).
+# `_member_lc.refit(_member_skel, REFIT_GROUPS_PER_FRAME)` re-encaixa os colliders de membro/sub-membro
+# à pose animada (acompanham movimentos/dobra), um LOTE de grupos por frame — ver a constante abaixo.
+# Null para rigs sem esqueleto (já seguem o nó animado).
 var _member_lc: LimbColliders = null
 var _member_skel: Skeleton3D = null
-# Throttle ADAPTATIVO do refit (a passada de skinning é cara em modelos densos): o intervalo é
-# ajustado para o refit custar ~3% do tempo (≈ elapsed × 30), com teto 10 Hz (modelos leves) e
-# piso 2 Hz (muito densos) — mantém ≥ 60 FPS. (BoneAttachment dá translação/rotação todo frame.)
-const _REFIT_MIN_INTERVAL := 0.1
-const _REFIT_MAX_INTERVAL := 0.5
-var _refit_accum := 0.0
-var _refit_interval := _REFIT_MIN_INTERVAL
+# Refit em RODÍZIO: quantos grupos (membro/sub-membro) reencaixar POR FRAME. Com a subdivisão
+# automática das extremidades um personagem tem ~14 grupos, e refazer todos de uma vez custava ~2 ms
+# concentrados num único frame — um pico visível como engasgo na animação, ainda mais numa GPU
+# integrada. Em lotes pequenos o custo por frame cai na proporção do lote e a volta completa leva
+# (grupos ÷ lote) frames: com 3, são ~5 frames (~80 ms a 60 FPS), MAIS responsivo que o antigo
+# throttle adaptativo (que só reencaixava a cada ~190 ms). (BoneAttachment já dá translação/rotação
+# todo frame; o refit só reajusta o VOLUME da caixa à dobra da pose.)
+const REFIT_GROUPS_PER_FRAME: int = 3
 # Editor de dano por membro (painel com um input de bônus % por membro). Só faz sentido
 # para personagens em "Modelo completo"; não é persistido (abre fechado a cada visita).
 var _show_damage_panel: bool = false
@@ -304,6 +313,10 @@ var _gizmo_node: Node3D = null
 # _zoom_target is nudged by the wheel; _zoom eases toward it every frame.
 var _zoom: float = 0.0
 var _zoom_target: float = 0.0
+# Posição X/Y de origem da câmera (a autorada na cena — que NÃO é (0,0): a câmera nasce com y=1 para
+# enquadrar o modelo). O pan trabalha como deslocamento em torno dela, e o reset volta exatamente a
+# ela — zerar X/Y na mão baixaria a câmera e mudaria o enquadramento.
+var _cam_home: Vector2 = Vector2.ZERO
 @onready var cbo_category: OptionButton = %Categories
 @onready var cbo_models: OptionButton = %Models
 @onready var cbo_meshes: OptionButton = %Meshes
@@ -377,6 +390,7 @@ var ai_list: VBoxContainer = null
 func _ready() -> void:
 	_zoom = camera.position.z
 	_zoom_target = _zoom
+	_cam_home = Vector2(camera.position.x, camera.position.y)
 	_setup_axis_gizmo()
 	# Watermark LOCAL do nome da cena: mantido OCULTO (o nome "Models" não deve aparecer na janela
 	# de dano). O nome da cena já é mostrado pelo watermark GLOBAL de debug_overlay.gd no canto da
@@ -691,17 +705,9 @@ func _process(delta: float) -> void:
 	# derrubar o FPS em modelos densos.
 	if _play_animation and _show_colliders and cbo_animations.selected > 0 \
 			and is_instance_valid(_member_lc) and is_instance_valid(_member_skel):
-		_refit_accum += delta
-		if _refit_accum >= _refit_interval:
-			_refit_accum = 0.0
-			var t0 := Time.get_ticks_usec()
-			_member_lc.refit(_member_skel)
-			var elapsed := float(Time.get_ticks_usec() - t0) / 1_000_000.0
-			# Próximo refit espaçado para custar ~3% do tempo: modelo mais denso → menos frequente.
-			_refit_interval = clampf(elapsed * 30.0, _REFIT_MIN_INTERVAL, _REFIT_MAX_INTERVAL)
-	else:
-		# Pronto para re-encaixar de imediato quando a animação/colisores forem (re)ativados.
-		_refit_accum = _refit_interval
+		# Um LOTE por frame (rodízio interno do LimbColliders): custo baixo e constante, sem o pico
+		# que engasgava a animação. Ver REFIT_GROUPS_PER_FRAME.
+		_member_lc.refit(_member_skel, REFIT_GROUPS_PER_FRAME)
 	# Rede de segurança do arraste da janela: se o botão foi solto fora da barra (ex.: a janela
 	# bateu no limite da viewport e o cursor escapou), encerra o arraste e salva a posição.
 	if _damage_panel_dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -793,6 +799,7 @@ func _on_model_selected(index: int) -> void:
 	# Orientação inicial deste modelo: a maioria usa o flip de 180°; player/red_robot já
 	# nascem de frente (ver _MODEL_FRONT_YAW). Lido aqui pois _current_model_key() já resolve.
 	_front_yaw_base = _MODEL_FRONT_YAW.get(_current_model_key(), DEFAULT_FRONT_YAW)
+	_reset_camera_pan()   # modelo novo entra centralizado, sem herdar o pan do anterior
 	_model_scene = load(model["path"])
 	_display_scene = load(model.get("display_path", model["path"]))
 	_mesh_catalog = _build_mesh_catalog(_model_scene)
@@ -1067,17 +1074,39 @@ func _populate_sub_members() -> void:
 		sub_member_row.visible = false
 		return
 	if msel == 1:
-		# "Todos os membros": o dropdown Sub-membro oferece SÓ "Selecione..." e "Todos os Sub-membros"
-		# (2026-06-25) — sub-membros INDIVIDUAIS só aparecem ao escolher um MEMBRO específico. "Todos os
-		# Sub-membros" não isola (mostra o modelo inteiro) e, com "Colisor de Submembro" ligado, exibe
-		# todos os gizmos de sub-membro. Só aparece se o modelo TIVER sub-membros.
-		var has_subs := false
+		# "Todos os membros": oferece "Todos os Sub-membros" (não isola; com "Colisor de Submembro"
+		# ligado mostra todos os gizmos) E TAMBÉM cada sub-membro individual do modelo, rotulado com o
+		# membro-DONO. Antes só o "Todos" aparecia aqui (regra de 2026-06-25, de quando sub-membro era
+		# peça rara promovida à mão); agora que todo personagem nasce com antebraço/mão/canela/pé
+		# automáticos, caçar um deles navegando membro a membro ficava penoso. Ordenados por dono e
+		# depois por nome, então o dropdown sai agrupado por membro.
+		var all_owners := _sub_member_owner_map()
+		var all_subs: Array = []
 		for body in _member_bodies():
-			if str((body as StaticBody3D).get_meta("group")).begins_with("PART_"):
-				has_subs = true
-				break
-		if has_subs:
+			var g := str((body as StaticBody3D).get_meta("group"))
+			if not g.begins_with("PART_"):
+				continue
+			var raw := str((body as StaticBody3D).get_meta("member_label")) \
+				if (body as StaticBody3D).has_meta("member_label") else g.substr(len("PART_"))
+			var owner_group := str(all_owners.get(g, ""))
+			# Rótulo do dono pelo plano corporal; para rigs sem plano (armas) cai no próprio group.
+			var owner_label := _current_classifier().label_of(owner_group)
+			if owner_label == "" and owner_group != "":
+				owner_label = owner_group
+			all_subs.append({
+				"group": g,
+				"raw": raw,
+				"owner": owner_group,
+				"label": ("%s (%s)" % [raw, owner_label]) if owner_label != "" else raw,
+			})
+		if not all_subs.is_empty():
 			_sub_member_entries.append({"group": ALL_SUB_MEMBERS_VALUE, "label": Locale.tr_key(ALL_SUB_MEMBERS_LABEL)})
+			all_subs.sort_custom(func(a, b):
+				if str(a["owner"]) != str(b["owner"]):
+					return str(a["owner"]) < str(b["owner"])
+				return str(a["raw"]) < str(b["raw"]))
+			for e in all_subs:
+				_sub_member_entries.append({"group": str(e["group"]), "label": str(e["label"])})
 	else:
 		# Membro específico: só os sub-membros (PART_*) DAQUELE membro.
 		var mgroup := str(_member_entries[msel - 2]["group"])
@@ -3944,6 +3973,15 @@ const _MODEL_FRONT_YAW := {
 	"red_robot": 0.0,
 }
 
+# Modelos que fazem OPT-OUT da subdivisão automática das extremidades (antebraço/mão/canela/pé em
+# sub-membros) — espelha `lc.auto_distal_sub_members = false` que o gameplay desses personagens define,
+# para o preview mostrar exatamente os mesmos membros do jogo. Player/red_robot mantêm BRAÇO/PERNA
+# inteiros; os DEMAIS (novos, ex.: humanoide/monstro) já nascem subdivididos.
+const _MODEL_NO_AUTO_DISTAL := {
+	"player": true,
+	"red_robot": true,
+}
+
 # Sub-membros (placas salientes etc.) NÃO ficam mais numa tabela aqui: vêm de LimbConfig
 # (arquivo por modelo na PASTA do modelo: res://library3D/<cat>/<model_key>/limb_config.json; override
 # de runtime em user://), editáveis na tela — o preview os recebe ao setar lc.model_key. Ver
@@ -3961,6 +3999,9 @@ func _add_member_colliders(instance: Node) -> void:
 		var lc := LimbColliders.new()
 		lc.body_type = _body_type_for_current()   # plano corporal → classificador
 		lc.model_key = _current_model_key()        # sub-membros + dano de LimbConfig
+		# Subdivisão automática das extremidades (antebraço/mão/canela/pé): espelha o opt-out do gameplay
+		# (player/red_robot mantêm o membro inteiro; novos modelos nascem subdivididos). Ver _MODEL_NO_AUTO_DISTAL.
+		lc.auto_distal_sub_members = not _MODEL_NO_AUTO_DISTAL.has(_current_model_key())
 		lc.include_suppressed = true               # PREVIEW: lista sub-membros suprimidos (gizmo escondido)
 		lc.head_shape = _MODEL_HEAD_SHAPE.get(_current_model_key(), "sphere")  # cabeça: esfera/cápsula
 		lc.torso_shape = _MODEL_TORSO_SHAPE.get(_current_model_key(), "box")   # tronco: caixa/esfera
@@ -4256,6 +4297,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		# Não inicia o arraste se o clique caiu sobre uma janela flutuante (Dano/IA ou outra).
 		_dragging = event.pressed and not _pointer_over_model_window()
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		# Botão DIREITO = PAN da câmera (o esquerdo gira o modelo). Mesma regra do arraste esquerdo:
+		# não começa se o clique caiu sobre uma janela flutuante.
+		_panning = event.pressed and not _pointer_over_model_window()
 	elif event is InputEventMouseButton and event.pressed and \
 			event.button_index == MOUSE_BUTTON_WHEEL_UP:
 		# Roda do mouse SOBRE a janela Dano/IA rola só o conteúdo dela, nunca o zoom do 3D.
@@ -4279,3 +4324,36 @@ func _unhandled_input(event: InputEvent) -> void:
 		# all the way around to its back, and pitch (up/down) tilts it all the way over.
 		_yaw = clampf(_yaw + motion.relative.x * DRAG_SENSITIVITY, -PI, PI)
 		_pitch = clampf(_pitch + motion.relative.y * DRAG_SENSITIVITY, -PI, PI)
+	elif event is InputEventMouseMotion and _panning:
+		# Mesma trava do arraste esquerdo: com o ponteiro sobre uma janela flutuante o pan congela.
+		if _pointer_over_model_window():
+			return
+		_pan_camera((event as InputEventMouseMotion).relative)
+
+
+# Desloca a câmera no seu plano local (X/Y) seguindo o arraste do botão direito, no estilo "agarrar a
+# cena": o ponto sob o cursor acompanha o movimento. O passo por pixel vem do FOV e da distância atual
+# (_zoom), então o pan tem a MESMA sensação com o modelo perto ou longe. O deslocamento é limitado a
+# PAN_LIMIT_FACTOR × distância para o modelo nunca sumir de vista.
+func _pan_camera(relative: Vector2) -> void:
+	var view_height := get_viewport().get_visible_rect().size.y
+	if view_height <= 0.0:
+		return
+	var dist := absf(_zoom)
+	var world_per_px := (2.0 * dist * tan(deg_to_rad(camera.fov) * 0.5)) / view_height
+	var limit := dist * PAN_LIMIT_FACTOR
+	# Arrastar para a direita leva a cena para a direita (câmera para a esquerda); o eixo Y da tela
+	# cresce para baixo, daí o sinal invertido em relação ao mundo. O limite é medido a partir da
+	# posição de origem (_cam_home), não do zero absoluto.
+	camera.position.x = clampf(camera.position.x - relative.x * world_per_px,
+			_cam_home.x - limit, _cam_home.x + limit)
+	camera.position.y = clampf(camera.position.y + relative.y * world_per_px,
+			_cam_home.y - limit, _cam_home.y + limit)
+
+
+# Recentraliza a vista (desfaz o pan), voltando à posição AUTORADA da câmera. Chamado ao trocar de
+# MODELO, senão um pan forte no anterior faria o novo nascer fora do enquadramento, parecendo que
+# não carregou.
+func _reset_camera_pan() -> void:
+	camera.position.x = _cam_home.x
+	camera.position.y = _cam_home.y

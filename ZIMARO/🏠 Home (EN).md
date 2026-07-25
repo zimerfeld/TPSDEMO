@@ -75,6 +75,7 @@ atualizado: 2026-07-06
 ## 🚀 Operations
 - [[💻 Rodar no Editor (Dev) (EN)|Run in the Editor (Dev)]] — open the project in the Godot 4.6.2 editor and run; multiplayer loopback with 2 instances
 - [[🚀 Build Windows (Prod) (EN)|Build Windows (Prod)]] — `pwsh -File build_windows.ps1` → single `.exe` (embedded PCK) + Desktop shortcut
+- [[🔌 MCP do Godot (EN)|Godot MCP]] — connect Claude Code to the editor via the `godot_ai` addon; headless commands (`--import`, `--script`)
 
 ## 🔖 Conventions
 - [[📄 formatacao (EN)|file formatting]] — UTF-8 without BOM, LF, no trailing whitespace, final newline + UID cache rebuild

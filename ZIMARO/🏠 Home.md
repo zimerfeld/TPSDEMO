@@ -75,6 +75,7 @@ atualizado: 2026-07-06
 ## 🚀 Operação
 - [[💻 Rodar no Editor (Dev)]] — abrir o projeto no editor Godot 4.6.2 e rodar; loopback multiplayer com 2 instâncias
 - [[🚀 Build Windows (Prod)]] — `pwsh -File build_windows.ps1` → `.exe` único (PCK embutido) + atalho no Desktop
+- [[🔌 MCP do Godot]] — ligar o Claude Code ao editor pelo addon `godot_ai`; comandos headless (`--import`, `--script`)
 
 ## 🔖 Convenções
 - [[📄 formatacao]] — UTF-8 sem BOM, LF, sem trailing ws, newline final + rebuild do cache de UIDs

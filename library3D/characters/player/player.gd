@@ -258,6 +258,7 @@ func _setup_limb_colliders() -> void:
 	lc.model_key = "player"     # busca os multiplicadores de dano por membro em LimbConfig
 	lc.head_shape = "capsule"   # cabeça do player = cápsula (mesma orientação), não esfera
 	lc.hitbox_layer = 16        # bit5 = colliders de membro do player
+	lc.auto_distal_sub_members = false  # opt-out: mantém BRAÇO/PERNA inteiros (hitbox já ajustado), sem subdividir mão/pé
 	add_child(lc)
 	lc.build_for(skel)
 	# Ajusta a cápsula de LOCOMOÇÃO (bloqueio físico) ao modelo, derivando raio/altura dos boxes

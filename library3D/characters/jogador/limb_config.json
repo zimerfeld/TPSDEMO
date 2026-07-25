@@ -1,0 +1,22 @@
+{
+	"collider_offsets": {
+
+	},
+	"collider_rotations": {
+
+	},
+	"collider_scales": {
+
+	},
+	"collider_shapes": {
+		"ARM_R": "capsule",
+		"HEAD": "sphere"
+	},
+	"damage": {
+
+	},
+	"sub_member_owners": {
+
+	},
+	"sub_members": []
+}

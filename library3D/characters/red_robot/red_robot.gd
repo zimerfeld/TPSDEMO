@@ -175,6 +175,7 @@ func _setup_limb_colliders() -> void:
 	lc.body_type = "biped"      # plano corporal → classificador de membros
 	lc.model_key = "red_robot"  # busca os multiplicadores de dano e os sub-membros em LimbConfig
 	lc.hitbox_layer = 32        # bit6 = colliders de membro do enemy
+	lc.auto_distal_sub_members = false  # opt-out: mantém BRAÇO/PERNA inteiros (rig/config manual já ajustados)
 	# A CABEÇA cobre o painel do rosto ("mouth_eyes") + os olhos ("L-EYE"/"R-EYE"). Sem os
 	# olhos (excluídos pela palavra "eye") a cabeça ficaria minúscula (~42 vértices só do
 	# painel) — esta hitbox vale para o headshot em jogo e para o gizmo do model browser.

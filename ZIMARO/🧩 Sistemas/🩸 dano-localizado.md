@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-07-23
 ---
 
 # 🩸 Sistema de Dano por Arma + Hitboxes Localizadas
@@ -33,10 +33,10 @@ abaixo); os multiplicadores são os **defaults do PLANO** (`BodyParts.default_mu
 
 | Grupo | Forma | Multiplicador (default do plano) |
 |---|---|---|
-| **CABEÇA** (head/neck) | `SphereShape3D` (cápsula opcional — ver abaixo) | `1.5` (+50%) |
-| **TRONCO** (hips/spine/chest/body) | `BoxShape3D` | `1.0` |
-| **BRAÇO D/E** (shoulder/arm/forearm/hand/**wing** + lado) | `CapsuleShape3D` (eixo longo) | `1.0` |
-| **PERNA D/E** (thigh/shin/knee/foot/leg + lado) | `CapsuleShape3D` (eixo longo) | `1.0` |
+| **CABEÇA** (head/neck · cabeca/pescoco) | `SphereShape3D` (cápsula opcional — ver abaixo) | `1.5` (+50%) |
+| **TRONCO** (hips/spine/chest/body · tronco/peito/quadril/coluna) | `BoxShape3D` | `1.0` |
+| **BRAÇO D/E** (shoulder/arm/**wing** · ombro/braco/asa + lado) | `CapsuleShape3D` (eixo longo) | `1.0` |
+| **PERNA D/E** (thigh/knee/leg · coxa/joelho/perna + lado) | `CapsuleShape3D` (eixo longo) | `1.0` |
 
 > Os multiplicadores acima são **defaults do plano corporal** (cabeça +50%, resto 1.0). Desde
 > 2026-06-20 cada modelo pode ter um multiplicador PRÓPRIO por membro, editável na tela Models e
@@ -46,6 +46,22 @@ abaixo); os multiplicadores são os **defaults do PLANO** (`BodyParts.default_mu
 
 Lado detectado por sufixo `.L/.R` (player) ou prefixo `L-/R-` (enemy). `wing` conta
 como BRAÇO (criaturas aladas: criatura_alada, robot_*_alado).
+
+> [!warning] Desde 2026-07-23, BRAÇO/PERNA da tabela = só a parte PROXIMAL
+> As **extremidades** (antebraço/mão, canela/pé) saíram do membro grande e viram **sub-membros
+> AUTOMÁTICOS**, com collider e multiplicador de dano PRÓPRIOS — ver **Sub-membros distais
+> automáticos** abaixo. Modelos que fazem **opt-out** (`player`, `red_robot`) continuam absorvendo a
+> extremidade no BRAÇO/PERNA, exatamente como na tabela acima.
+
+**Classificador bilíngue PT + EN (2026-07-23)** — os ossos passaram a ser reconhecidos em **inglês E
+português**, porque os modelos chegam nos dois idiomas: o `humanoide` veio com
+`head/chest/upper_arm.R` e o `monstro` com `cabeca/peito/bracoDireito/antebracoDireito/maoDireita/
+pernaDireita/canelaDireita/peDireito` — antes desta mudança esse rig em PT classificava **0 de 16
+ossos** (nenhum membro, nenhum hitbox). As palavras vivem em `BodyParts.group_of` (cabeça/tronco) e
+nas constantes `_ARM_ROOT_KW`/`_ARM_DISTAL_KW`/`_LEG_ROOT_KW`/`_LEG_DISTAL_KW` do `BodyPartsBiped`
+(ver [[🦴 body-parts-gd]]). ⚠️ **Detalhe técnico:** o PT **"pe"** (pé) é casado por **TOKEN EXATO**
+(`_is_foot_word` → `BodyParts.words_of`, que quebra o nome em palavras por camelCase e `_ . -`),
+porque como *substring* ele apareceria dentro de `peito`, `perna` e `pescoco`.
 
 **Overrides por modelo** (`group_of(..., head_bones, torso_bones, leg_bones)` + exports
 `head_bone_names`/`torso_bone_names`/`leg_bone_names` do `LimbColliders`): forçam bones que o
@@ -181,13 +197,32 @@ grava no novo local sem perder dados. Schema de cada arquivo:
   também o `PART_<bone>` do `damage`, o dono, o `collider_offsets`, o `collider_scales`, o
   `collider_rotations` e o `collider_shapes`), `collider_offset`/`set_collider_offset`,
   `collider_scale`/`set_collider_scale` (2026-06-22), `collider_rotation`/`set_collider_rotation`,
-  `collider_shape`/`set_collider_shape` + const `SHAPE_NONE` (2026-06-25) e `load_table`.
+  `collider_shape`/`set_collider_shape` + const `SHAPE_NONE` (2026-06-25) e `invalidate_cache`
+  (2026-07-23).
 - **Herança / "nenhum valor é obrigatório" (2026-06-21):** `effective_multiplier` — valor EXPLÍCITO
   do próprio grupo tem precedência; um `PART_*` SEM valor próprio **herda o do membro-DONO**
   (explícito do dono, senão default do plano do dono); sem nada, cai no `default_multiplier` do
   próprio grupo. `LimbColliders` carimba a meta `damage_multiplier` já RESOLVIDA (dono = explícito
   de `LimbConfig`, senão `resolve_sub_member_owner`). O arquivo só guarda ajustes do usuário (sem
   JSON = default do plano, zero regressão).
+  **A regra não mudou em 2026-07-23 — mas virou o caminho PRINCIPAL:** com os sub-membros distais
+  automáticos, quase todo modelo novo depende dessa herança para não exigir nenhum valor digitado.
+  Validado com `ARM_R` e um sub-membro `PART_*` seu:
+
+  | Cenário | Multiplicador efetivo do sub-membro |
+  |---|---|
+  | Nada definido (nem no sub, nem no dono) | `1.0` (default do plano) |
+  | Dono `ARM_R` = `2.5`, sub sem valor | `2.5` (**herda do dono**) |
+  | Dono `ARM_R` = `2.5`, sub = `4.0` | `4.0` (**valor próprio vence**) |
+- **Cache de leitura `_entry_cache` (2026-07-23) — desempenho:** antes, CADA getter
+  (`collider_shape`, `collider_scale`, `damage`…) reabria e re-parseava o JSON no disco. Como o refit
+  da tela Models chama ~2× por collider a ~5×/s, **14 colliders davam ~140 leituras de arquivo POR
+  SEGUNDO** — engasgava a animação e derrubava o FPS (e o `build_for` chamava ~6× por collider, o
+  soluço ao selecionar o modelo). Agora `_load_entry` **memoiza** a entrada por `model_key`, e **toda
+  escrita passa por `_save_entry`**, que reatualiza o cache — leitura e escrita nunca divergem.
+  `LimbConfig.invalidate_cache(model_key = "")` descarta o cache (todo ou de um modelo) para quando o
+  JSON for editado **FORA do jogo** e se queira recarregar sem reiniciar. Ver a meta de **60 FPS** do
+  projeto em [[🗿 biblioteca-de-modelos]].
 - **Editor:** a tela Models tem o toggle **"Dano"** (renomeado de "Dano por membro" em 2026-06-22) que abre um painel flutuante
   (`DamagePanel`, centralizado, **720 px de altura** — aumentado de 500 em 2026-06-20 para caber
   mais membros/sub-membros sem rolar) com um `SpinBox` em **bônus %** por membro (cabeça `+50%` ⇒
@@ -197,11 +232,59 @@ grava no novo local sem perder dados. Schema de cada arquivo:
 
 ---
 
+## Sub-membros distais automáticos (2026-07-23)
+
+> [!tip] Mudança CONCEITUAL do dano localizado
+> **Antes:** um personagem tinha **6 membros** (CABEÇA, TRONCO, BRAÇO E/D, PERNA E/D) e
+> "sub-membro" era só uma **peça avulsa** (placa, ombreira, escudo) **promovida À MÃO** pelo usuário
+> na janela de **Dano**.
+>
+> **Agora:** as **EXTREMIDADES viram sub-membros AUTOMÁTICOS** — **antebraço** e **mão**
+> (dono = BRAÇO) e **canela** e **pé** (dono = PERNA) —, cada um com **collider e multiplicador de
+> dano PRÓPRIOS**. O membro grande passa a ser só a parte **PROXIMAL** (braço superior / coxa).
+
+**Como o osso é decidido:** `LimbColliders._classify` intercepta **ANTES** do classificador de
+membro, então a extremidade **nunca é absorvida** pelo membro vizinho. Um osso vira `PART_<osso>`
+quando:
+
+1. é sub-membro **EXPLÍCITO** — `standalone_part_bones` do nó ∪ `LimbConfig.sub_members(model_key)`
+   ∪ `classifier.default_sub_members()` (ver a seção seguinte); **ou**
+2. é **DISTAL automático** — `auto_distal_sub_members` ligado **e**
+   `classifier.is_distal_sub_member(osso)` verdadeiro (no `BodyPartsBiped`: palavras de
+   `_ARM_DISTAL_KW`/`_LEG_DISTAL_KW` + pé, **com lado definido** e fora das `EXCLUDE_KEYWORDS`).
+
+**Exclusividade mantida:** um osso é **MEMBRO _ou_ SUB-MEMBRO, nunca os dois**. Quem casa como
+distal é desviado pelo `_classify` e não chega ao `group_of`; quem não casa (ou o modelo faz
+opt-out) volta a cair no BRAÇO/PERNA normalmente — por isso `group_of`/`owner_hint` continuam
+aceitando as palavras distais.
+
+**Dono e herança (é o que faz funcionar sem digitar nada):** um sub-membro distal **não precisa** de
+valor de dano próprio — ele **herda o do membro-DONO** (`LimbConfig.effective_multiplier`, regra de
+2026-06-21). O **DONO** é resolvido por `LimbConfig.sub_member_owner` (escolha EXPLÍCITA salva na
+tela Models) e, na falta, por `LimbColliders.resolve_sub_member_owner` — 1º o **NOME** da peça via
+`owner_hint` (é assim que `antebracoDireito`/`maoDireita` acham `ARM_R`), depois subindo a
+**hierarquia de ossos**.
+
+**Opt-out por modelo:** `player` e `red_robot` mantêm **BRAÇO/PERNA INTEIROS** — o hitbox deles já
+foi ajustado à mão, e subdividir agora jogaria fora esse ajuste. `player.gd`/`red_robot.gd` setam
+`lc.auto_distal_sub_members = false`, espelhado no preview pela const `_MODEL_NO_AUTO_DISTAL`
+(`models.gd`), para a tela Models mostrar exatamente os mesmos membros do jogo. **Modelos novos
+nascem subdivididos.** Resultado:
+
+| Modelo | Membros | Sub-membros DISTAIS |
+|---|---|---|
+| `humanoide`, `monstro` (novos) | 6 | **8** (antebraço/mão/canela/pé × E/D) |
+| `player`, `red_robot` (opt-out) | 6 | **0** (só os promovidos à mão continuam) |
+
+---
+
 ## Sub-membros configuráveis (2026-06-20)
 
-**Sub-membros** = ossos auxiliares salientes PROMOVIDOS a collider PRÓPRIO em caixa (grupo único
-`PART_<osso>`, p/ peças que a cápsula do membro não cobriria — ex.: as **placas das pernas** do
-red_robot). Em `LimbColliders.build_for`, os sub-membros efetivos vêm da UNIÃO de **TRÊS fontes**:
+**Sub-membros EXPLÍCITOS** = ossos auxiliares salientes PROMOVIDOS À MÃO a collider PRÓPRIO em caixa
+(grupo único `PART_<osso>`, p/ peças que a cápsula do membro não cobriria — ex.: as **placas das
+pernas** do red_robot). Convivem com os **distais automáticos** da seção anterior, que seguem outro
+caminho (`is_distal_sub_member`, direto no `_classify`, sem passar por estas fontes). Em
+`LimbColliders.build_for`, os sub-membros explícitos vêm da UNIÃO de **TRÊS fontes**:
 
 1. o `@export standalone_part_bones` do nó,
 2. `LimbConfig.sub_members(model_key)` (os editados na tela),
@@ -389,11 +472,13 @@ Em `limb_colliders.gd` (nó `LimbColliders`): `enabled`, `padding`, **`body_type
 `torso_bone_names` (força um osso de nome genérico para TRONCO — `["Bone.001"]` no red_robot, cujo
 corpo não era reconhecido e ficava **sem collider de tronco**), `standalone_part_bones` (sub-membros
 fixos no nó — UNIDOS aos de `LimbConfig` e do plano; o red_robot **não usa mais** este export, as
-placas das pernas migraram p/ `limb_config.json`), `hitbox_layer` (16 player / 32 enemy) e
+placas das pernas migraram p/ `limb_config.json`), **`auto_distal_sub_members`** (2026-07-23 — `true`
+por padrão: antebraço/mão/canela/pé viram sub-membros próprios; `false` = opt-out do player/red_robot,
+que mantêm BRAÇO/PERNA inteiros), `hitbox_layer` (16 player / 32 enemy) e
 **`model_key`** (`"player"`/`"red_robot"` — chave dos multiplicadores/sub-membros em `LimbConfig`;
 2026-06-20). Os exports de cor/raio do antigo sistema de vidro foram removidos.
 
-> Verificado via MCP do Godot ([[godot-mcp]]): laser do enemy aplica 25 (arma),
+> Verificado via MCP do Godot ([[🔌 MCP do Godot]]): laser do enemy aplica 25 (arma),
 > lookup de hitbox funcional, cache não causa mais dano no início, sem erros.
 
 ---

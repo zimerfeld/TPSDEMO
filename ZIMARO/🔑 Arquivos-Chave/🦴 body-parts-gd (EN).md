@@ -2,7 +2,7 @@
 tipo: arquivo-chave
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-23
 ---
 
 # 🦴 effects_shared/body_parts.gd (+ body plans)
@@ -48,6 +48,10 @@ an INSTANCE** (via [[#BodyPlans (factory)|BodyPlans]]).
     `…L/…R` in UPPERCASE, **and** the words `left`/`right`/`esquerd`/`direit` (fallback).
   - `front_rear_of(name) -> "F"/"R"/""` — front (front/fore/dianteira/frente) vs rear
     (rear/hind/back/traseira); used by the quadruped to separate the 4 legs.
+  - `words_of(name) -> PackedStringArray` *(2026-07-23)* — splits the name into WORDS, separating
+    camelCase and `_ . -` (`"peDireito"` → `["pe","direito"]`). It exists to match **ambiguous terms by
+    EXACT token** instead of `contains`: the PT "pe" (foot), as a substring, would show up inside
+    `peito`/`perna`/`pescoco`.
 - **Instance virtuals** (the base handles only HEAD/TORSO; subclasses extend and fall back to the base via
   `super`):
   - `members() -> Array[String]` — the groups the plan defines (for the screen to list/label).
@@ -56,11 +60,32 @@ an INSTANCE** (via [[#BodyPlans (factory)|BodyPlans]]).
   - `label_of(group) -> String` — a readable label (HEAD, L ARM…).
   - `default_multiplier(group) -> float` — the limb's **damage default**: head 1.5, the rest 1.0.
   - `default_sub_members() -> Array[String]` — the plan's default sub-members (base: none).
+  - `is_distal_sub_member(bone) -> bool` *(2026-07-23)* — is the bone an **extremity** that should become
+    an automatic SUB-MEMBER (forearm/hand, shin/foot)? Base: `false` (head/torso only). See
+    [[🩸 dano-localizado (EN)|Localized Damage]].
+
+### 🌍 Bilingual PT + EN *(2026-07-23)*
+
+The keywords now cover **English and Portuguese**, because the models arrive in both languages
+(`humanoide` came with `head/chest/upper_arm.R`; `monstro` with `cabeca/peito/bracoDireito`). Before that,
+a PT rig classified **0 out of 16 bones**.
+
+| Limb | EN | PT |
+|---|---|---|
+| HEAD | `head`, `neck` | `cabeca`, `pescoco` |
+| TORSO | `hips`, `pelvis`, `spine`, `chest`, `torso`, `body` | `tronco`, `peito`, `quadril`, `bacia`, `coluna`, `torax` |
 
 ## Subclasses
 
 - **`BodyPartsBiped`** — `ARM_L/ARM_R/LEG_L/LEG_R` (L/R ARM, L/R LEG). Side via `side_of`.
-  `wing` counts as an ARM (winged creatures). It is the **DEFAULT** (player, red_robot).
+  `wing`/`asa` counts as an ARM (winged creatures). It is the **DEFAULT** (player, red_robot).
+  - Per-segment words (EN+PT), in constants: `_ARM_ROOT_KW` (`shoulder/arm` · `ombro/braco`),
+    `_ARM_DISTAL_KW` (`forearm/hand` · `antebraco/mao`), `_LEG_ROOT_KW` (`thigh/knee/leg` ·
+    `coxa/joelho/perna`), `_LEG_DISTAL_KW` (`shin/calf/lowerleg` · `canela/panturrilha`). The **foot** has
+    its own handling (`_is_foot_word`): `foot`/`feet` by substring and the PT `pe` by **exact token**.
+  - `is_distal_sub_member` returns `true` for the DISTAL words (+ foot) **with a defined side** and outside
+    the exclusions. The distal ones also carry over into `group_of`/`owner_hint`: when the model **opts out**
+    of the subdivision, the extremity goes back to being absorbed into the ARM/LEG (player/red_robot behavior).
 - **`BodyPartsQuadruped`** — `LEG_FL/LEG_FR/LEG_RL/LEG_RR` (FRONT L/R LEG, REAR L/R LEG), no
   arms. `_leg_group` combines `front_rear_of` + `side_of`.
 - **`BodyPartsCrawler`** — snake/slug/worm: **just inherits** (elongated body = TORSO). A thin subclass,

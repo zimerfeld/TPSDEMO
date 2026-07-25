@@ -2,7 +2,7 @@
 tipo: arquivo-chave
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-07-23
 ---
 
 # 🦴 effects_shared/body_parts.gd (+ body plans)
@@ -48,6 +48,10 @@ una INSTANCIA** (vía [[#BodyPlans (factory)|BodyPlans]]).
     `…L/…R` en MAYÚSCULAS, **y** las palabras `left`/`right`/`esquerd`/`direit` (fallback).
   - `front_rear_of(name) -> "F"/"R"/""` — delantero (front/fore/dianteira/frente) vs trasero
     (rear/hind/back/traseira); usado por el cuadrúpedo para separar las 4 piernas.
+  - `words_of(name) -> PackedStringArray` *(2026-07-23)* — parte el nombre en PALABRAS, separando
+    camelCase y `_ . -` (`"peDireito"` → `["pe","direito"]`). Existe para casar términos **ambiguos por
+    token EXACTO** en vez de `contains`: el PT "pe" (pie), como substring, aparecería dentro de
+    `peito`/`perna`/`pescoco`.
 - **Virtuales de instancia** (la base maneja solo HEAD/TORSO; las subclases extienden y recurren a la base vía
   `super`):
   - `members() -> Array[String]` — los grupos que el plan define (para que la pantalla los liste/etiquete).
@@ -56,11 +60,33 @@ una INSTANCIA** (vía [[#BodyPlans (factory)|BodyPlans]]).
   - `label_of(group) -> String` — una etiqueta legible (HEAD, L ARM…).
   - `default_multiplier(group) -> float` — el **daño por defecto** del miembro: cabeza 1.5, el resto 1.0.
   - `default_sub_members() -> Array[String]` — los submiembros por defecto del plan (base: ninguno).
+  - `is_distal_sub_member(bone) -> bool` *(2026-07-23)* — ¿el hueso es una **extremidad** que debe
+    convertirse en SUBMIEMBRO automático (antebrazo/mano, espinilla/pie)? Base: `false` (solo
+    cabeza/torso). Ver [[🩸 dano-localizado (ES)|Daño Localizado]].
+
+### 🌍 Bilingüe PT + EN *(2026-07-23)*
+
+Las palabras clave pasaron a cubrir **inglés y portugués**, porque los modelos llegan en los dos idiomas
+(el `humanoide` vino con `head/chest/upper_arm.R`; el `monstro` con `cabeca/peito/bracoDireito`). Antes,
+un rig en PT clasificaba **0 de 16 huesos**.
+
+| Miembro | EN | PT |
+|---|---|---|
+| HEAD | `head`, `neck` | `cabeca`, `pescoco` |
+| TORSO | `hips`, `pelvis`, `spine`, `chest`, `torso`, `body` | `tronco`, `peito`, `quadril`, `bacia`, `coluna`, `torax` |
 
 ## Subclases
 
 - **`BodyPartsBiped`** — `ARM_L/ARM_R/LEG_L/LEG_R` (L/R ARM, L/R LEG). Lado vía `side_of`.
-  `wing` cuenta como un ARM (criaturas aladas). Es el **POR DEFECTO** (jugador, red_robot).
+  `wing`/`asa` cuenta como un ARM (criaturas aladas). Es el **POR DEFECTO** (jugador, red_robot).
+  - Palabras por segmento (EN+PT), en constantes: `_ARM_ROOT_KW` (`shoulder/arm` · `ombro/braco`),
+    `_ARM_DISTAL_KW` (`forearm/hand` · `antebraco/mao`), `_LEG_ROOT_KW` (`thigh/knee/leg` ·
+    `coxa/joelho/perna`), `_LEG_DISTAL_KW` (`shin/calf/lowerleg` · `canela/panturrilha`). El **pie** tiene
+    tratamiento propio (`_is_foot_word`): `foot`/`feet` por substring y el PT `pe` por **token exacto**.
+  - `is_distal_sub_member` devuelve `true` para las palabras DISTALES (+ pie) **con lado definido** y fuera
+    de las exclusiones. Las distales siguen también en `group_of`/`owner_hint`: cuando el modelo hace
+    **opt-out** de la subdivisión, la extremidad vuelve a ser absorbida en el ARM/LEG (comportamiento de
+    player/red_robot).
 - **`BodyPartsQuadruped`** — `LEG_FL/LEG_FR/LEG_RL/LEG_RR` (FRONT L/R LEG, REAR L/R LEG), sin
   brazos. `_leg_group` combina `front_rear_of` + `side_of`.
 - **`BodyPartsCrawler`** — serpiente/babosa/gusano: **solo hereda** (cuerpo alargado = TORSO). Una subclase fina,

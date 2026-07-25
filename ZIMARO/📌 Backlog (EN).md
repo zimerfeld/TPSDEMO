@@ -2,7 +2,7 @@
 tipo: backlog
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-07
+atualizado: 2026-07-23
 ---
 
 # 🗂️ Prioritized Backlog — ZIMARO
@@ -18,7 +18,37 @@ atualizado: 2026-07-07
 > task with user impact, update the READMEs (`.md`/`.en-US`/`.pt-BR`) **and** this vault; run
 > `build_windows.ps1` at the end; eliminate errors/warnings after compiling.
 
-**Last review:** 2026-07-08 · **Active branch:** `feature/locomocao-realista-inimigos`
+**Last review:** 2026-07-23 · **Active branch:** `feature/jogador7-import`
+
+---
+
+## 🟢 Distal sub-members + bilingual classifier + refit performance — READY for review (2026-07-23)
+
+Branch `feature/jogador7-import`. **Not committed** (awaiting review).
+
+- **Extremities become automatic sub-members** — forearm/hand (owner ARM) and shin/foot (owner LEG)
+  get their OWN collider and damage; with no value set they **inherit the owner limb's**. New virtual
+  `BodyParts.is_distal_sub_member` + `@export auto_distal_sub_members` on `LimbColliders`. **Opt-out**
+  for `player`/`red_robot` (they keep the whole-limb hitbox), mirrored in the preview by
+  `_MODEL_NO_AUTO_DISTAL`. Measured: humanoide/monstro = 6 limbs + 8 sub-members; player = 6 + 0.
+  See [[🩸 dano-localizado (EN)]] · [[🦴 body-parts-gd (EN)]] · [[🦿 limb-colliders-gd (EN)]].
+- **Bilingual PT+EN classifier** — now recognises `cabeca/peito/bracoDireito/antebracoDireito/…`
+  besides English (the PT-named `monstro` classified **0 out of 16 bones**). The PT "pe" (foot) matches
+  by **exact token** (`BodyParts.words_of`), otherwise it would collide with `peito`/`perna`/`pescoco`.
+- **Refit performance** (what dragged the FPS down in the Models screen) — 6.45 → **0.318 ms/frame**
+  (~20×): in-memory `LimbConfig` cache (its getters reopened the JSON from disk, ~140 reads/s),
+  **single-bone groups skipped** (invariant AABB — the terms cancel out) and a **round-robin** of 3
+  groups per frame replacing the adaptive throttle. ✅ FPS validated on screen by the user.
+- **Models screen** — the Sub-member dropdown now lists **every** sub-member in "All limbs" mode
+  (labelled with the owner limb); **camera pan with the RIGHT mouse button** (left still spins the
+  model, the wheel still zooms).
+- **Model importing** — `humanoide` and `monstro_pedregulho3` fixed and reimported (36 animations
+  each). Names carrying the `" (2)"` download suffix and root paths inside `.import`/`.tscn` broke the
+  import. New note [[🔌 MCP do Godot (EN)]] documents the addon and the headless commands.
+
+**Pending on this front:** validate `red_robot` in a match (opt-out analysed, no dedicated test); the
+**quadruped** plan still doesn't split extremities (biped only); the root `README.md` is still
+**bilingual** (EN+PT, no ES block) — diverging from the trilingual rule.
 
 ---
 
