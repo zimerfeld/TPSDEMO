@@ -7,7 +7,7 @@ atualizado: 2026-07-06
 
 # 🏠 ZIMARO — Neuron Vault
 
-> 🇧🇷 Leia esta página em português → [[🏠 Home]]
+> 🇧🇷 Leia esta página em português → [[🏠 Home (PT)|🏠 Home]]
 
 > 🇪🇸 Lea esta página en español → [[🏠 Home (ES)]]
 

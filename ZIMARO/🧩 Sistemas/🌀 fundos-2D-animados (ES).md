@@ -7,12 +7,12 @@ atualizado: 2026-07-05
 
 # 🌀 Fondos animados de las pantallas 2D (shaders de portal/vórtice)
 
-> 🇧🇷 Ler em português → [[🌀 fundos-2D-animados]]
+> 🇧🇷 Ler em português → [[🌀 fundos-2D-animados (PT)|🌀 fundos-2D-animados]]
 
 > Cada pantalla de UI 2D tiene su propio fondo animado hecho puramente con **matemática por píxel** (sin
 > textura, sin draw call extra) para honrar el objetivo de **60 FPS en hardware gráfico mínimo**
 > (`CLAUDE.md`). Son `ColorRect` sobre un `CanvasLayer` de fondo (`layer = -2`) con un
-> `ShaderMaterial`. No confundir con [[🌌 ambiente-dos-levels]], que es el entorno **3D**
+> `ShaderMaterial`. No confundir con [[🌌 ambiente-dos-levels (PT)|🌌 ambiente-dos-levels]], que es el entorno **3D**
 > dentro de las arenas.
 
 ## Shaders (carpeta `themes/backgrounds/`)
@@ -47,5 +47,5 @@ El usuario notó una "división" perceptible a la izquierda del portal. Dos caus
    `na = fract(ang / 6.2831853 + 0.5)` y `floor(na * 40.0, …)`.
 
 Resultado: lado izquierdo tan continuo como el derecho, **60 FPS** mantenidos, validado en el `.exe`.
-Relacionado: [[🎬 fluxo-de-cenas]] (la pantalla Levels está en chooseplayer→levels→level_x),
+Relacionado: [[🎬 fluxo-de-cenas (PT)|🎬 fluxo-de-cenas]] (la pantalla Levels está en chooseplayer→levels→level_x),
 [[optimize-when-adding-scene-elements]].

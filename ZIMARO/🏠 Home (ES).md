@@ -7,7 +7,7 @@ atualizado: 2026-07-06
 
 # 🏠 ZIMARO — Bóveda de Neuronas
 
-> 🇧🇷 Leia esta página em português → [[🏠 Home]]
+> 🇧🇷 Leia esta página em português → [[🏠 Home (PT)|🏠 Home]]
 
 > 🇺🇸 Read this page in English → [[🏠 Home (EN)]]
 
