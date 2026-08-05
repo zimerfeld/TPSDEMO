@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-23
 ---
 
 # 🗿 Model Library (Models screen)
@@ -80,6 +80,26 @@ After choosing a model, `_on_model_selected` does `load()` of both paths and
 them by the shared `Mesh` resource** (`get_instance_id`) — each distinct mesh lists once,
 ordered by number of placements, with a `[skin]` (skinning/animation) or `[+col]` mark.
 
+### 📥 Importing a new model into the library (2026-07-23)
+
+A new `.glb` must live in **`library3D/<category>/<model>/`** with a **CLEAN name** and the pair of
+files **`<name>.glb` + `<name>.glb.import`** (+ **`<name>_0.png`** and its `.png.import` when the
+texture is **extracted** out of the `.glb`).
+
+> [!warning] A name with the `" (2)"` download suffix BREAKS the import
+> Repeatedly downloaded files arrive as `jogador7 (2).glb`. With that suffix the `.import` **stops
+> matching** the `.glb` and the model **does not load**: it shows up in the dropdown, but the preview comes
+> out **with no mesh and no animation**. Rename it to the clean name (`jogador7.glb`) **before** reimporting.
+
+**ALWAYS reimport via headless** — it is the RIGHT way:
+`Godot_v4.6.2-stable_win64_console.exe --headless --path C:\GODOT\ZIMARO --import`
+
+- ❌ Do **not** let the **editor** reimport: it **bloats the `.import`** to thousands of lines.
+- ❌ **Never kill Godot in the middle of the import**: it loses the **extracted PNG** and the model stops loading.
+
+Once that is done, nothing needs to be edited in code — `_scan_library()` finds the new folder on its own.
+See [[🔌 MCP do Godot (EN)|Godot MCP]].
+
 ## 🖥️ Screen flow
 
 **Category → Model → Part**, with **sequential selection** (2026-06-16; the **Prefix**
@@ -142,6 +162,21 @@ the rotation: `_preview_whole_model()` zeroes the built-in rotation of the `.glb
 moves yaw/pitch; the **Rotate** toggle enables/disables the automatic rotation (yaw only, no
 lock — spins like a turntable). The root `UI` has `mouse_filter = 2` so the drag reaches
 `_unhandled_input`.
+
+**Camera pan with the RIGHT button (2026-07-23):** the three mouse controls over the 3D area are —
+**LEFT button + drag = rotates the model** (above), **WHEEL = zoom** and, new, **RIGHT button + drag =
+MOVES the camera** (pan). It serves to bring a part that is out of frame (e.g.: a foot) to the center
+without having to rotate or pull away. "**Grab the scene**" style: the point under the cursor follows
+the drag — `_pan_camera` derives the step per pixel from the camera's **FOV** and the **current
+distance** (`world_per_px = 2·dist·tan(fov/2) ÷ viewport height`), so it feels **the same at any zoom**.
+The displacement is limited to **`PAN_LIMIT_FACTOR = 1.5` × the distance**, measured from the camera's
+**AUTHORED position** (`_cam_home`, captured in `_ready`), so the model never goes out of sight.
+⚠️ **The camera is born at (0, 1, 4.5)** — Y is **1**, not 0 —, which is why the reset
+(`_reset_camera_pan`) goes back **to `_cam_home`** instead of zeroing X/Y (zeroing would lower the
+camera and change the framing). The pan **freezes while the pointer is over a floating window** (the
+same `_pointer_over_model_window()` lock as the left drag, in `_unhandled_input` via `_panning`) and
+**RE-CENTERS when switching models** (`_reset_camera_pan` in `_on_model_selected` — otherwise a strong
+pan on the previous model would make the new one be born out of frame, looking like it did not load).
 
 **Preview "cruft" cleanup (2026-07-03, `_strip_preview_cruft`):** some gameplay scenes
 carry nodes that do not belong in a static preview — `player.tscn`, for example,
@@ -350,7 +385,7 @@ toggle is the **master switch** of its category:
   and the detection/death areas, which were just noise surrounding everything (2026-06-18).
   - **Real-time refit during animation (2026-06-23):** the colliders are attached to the bones
     (`BoneAttachment3D`), so they already follow **translation/rotation**. While an animation plays **and** the
-    colliders are visible, `_process` calls `_member_lc.refit(_member_skel)` (`limb_colliders.gd`):
+    colliders are visible, `_process` calls `_member_lc.refit(_member_skel, REFIT_GROUPS_PER_FRAME)` (`limb_colliders.gd`):
     it recomputes the AABB of each member/sub-member in the **CURRENT pose** of the bones and re-fits the shape +
     gizmo — so the colliders **follow the bending** of the multi-bone limbs. Only in the preview (rigs without
     a skeleton already follow the animated node).
@@ -358,10 +393,21 @@ toggle is the **master switch** of its category:
       rebuilt the mesh arrays every frame. Now there is a **cache** (`_build_refit_cache`): per
       vertex it stores group + dominant bone + `bind_pose·vertex`; the refit only reads the CURRENT poses of the
       bones → **~4 ms** (33× faster). The cache is built **when constructing the colliders**
-      (`_add_member_colliders`), moving the one-time cost (~150 ms) OUT of the animation. Besides that,
-      an **adaptive throttle** in
-      `_process` (interval = `elapsed·30`, cap 10 Hz / floor 2 Hz) keeps the cost at ~3% → **≥ 60 FPS**,
-      with denser models re-fitting fewer times. (The 1st call still builds the cache ~150 ms once.)
+      (`_add_member_colliders`), moving the one-time cost (~150 ms) OUT of the animation.
+      (The 1st call still builds the cache ~150 ms once.)
+    - **ROUND-ROBIN refit — the FPS that dropped when turning on "Member collider" (2026-07-23):** the old
+      **adaptive throttle** (interval = `elapsed·30`, cap 10 Hz / floor 2 Hz) was **replaced** by a
+      **fixed-batch round-robin**: `_process` calls `_member_lc.refit(_member_skel, REFIT_GROUPS_PER_FRAME)`
+      with **`REFIT_GROUPS_PER_FRAME = 3`** groups per frame and `LimbColliders` advances an internal cursor
+      (`_refit_cursor`) until it comes full circle — the whole pose re-fits every ~5 frames (~80 ms at 60 FPS),
+      **more responsive** than the throttle's ~190 ms and **without the spike** that stuttered the animation.
+      The variables `_refit_accum`/`_refit_interval` and the constants `_REFIT_MIN_INTERVAL`/`_REFIT_MAX_INTERVAL`
+      **no longer exist**. Two more cuts add up: `LimbColliders` **skips the SINGLE-BONE groups** (locally
+      **invariant** AABB — only groups with 2+ bones enter the refit, list `_rc_dyn`; with the automatic
+      subdivision usually only the TRONCO stays dynamic) and `LimbConfig` gained an **in-memory cache**
+      (`_entry_cache` — before, each getter reopened and re-parsed the JSON: ~140 file reads PER SECOND with
+      14 colliders). Total gain measured on the **humanoide: 6.45 ms → 0.318 ms per frame**.
+      💡 Remember: the refit **only runs with the animation playing AND the "Member collider" toggle on**.
   - **Collider geometry + per-member/sub-member/standalone-bone Offset/Scale window (2026-06-25,
     replaces the inline editor):** when choosing a **real** item (not "Select..."/"All") in **Member**,
     **Sub-member** or **Skeleton**, a **geometry dropdown** appears **to the right** of that dropdown
@@ -571,8 +617,9 @@ toggle is the **master switch** of its category:
   - **Three separate dropdowns — Member · Sub-member · Skeleton (restructured in 2026-06-23):** the
     `cboSubMembers` ("Sub-member:", right below "Member") is now ALWAYS the list of sub-members —
     never again the standalone-bone filter. With a **specific member** it lists that member's `PART_*`;
-    with **"All members"** it offers **ONLY "Select..." and "All Sub-members"** (2026-06-25 — INDIVIDUAL
-    sub-members only appear when choosing a specific member). **"All Sub-members"**
+    with **"All members"** it offers **"All Sub-members" AND ALSO each individual sub-member**
+    (2026-07-23 — see the item below; between 2026-06-25 and 2026-07-23 this mode listed ONLY "Select..."
+    and "All Sub-members", and the INDIVIDUAL ones only appeared when choosing a specific member). **"All Sub-members"**
     (`ALL_SUB_MEMBERS_LABEL`/`ALL_SUB_MEMBERS_VALUE`) does not isolate, shows the whole model — **and, with "Sub-member
     Colliders" ON, it displays the gizmos of ALL the sub-members at once** (`_should_show_all_sub_colliders`).
     The **standalone bones** left for their OWN dropdown **"Skeleton"**
@@ -593,6 +640,16 @@ toggle is the **master switch** of its category:
     saved standalone bone come back). `_restore_selection_chain` does **not** restore member/sub/skeleton
     explicitly — `_on_mesh_selected(1)` runs `_populate_members`, which does the load. (The `_restoring` flag
     and the reset in `_on_member_selected` were REMOVED.)
+  - **INDIVIDUAL sub-members in "All members" mode (2026-07-23):** besides "All Sub-members", the
+    "Sub-member" dropdown lists **each individual sub-member of the model**, labeled with the **OWNER
+    member** in the `name (OWNER MEMBER)` format — e.g.: `maoDireita (BRAÇO D)`, `forearm.R (BRAÇO D)`.
+    The items are **sorted by owner and then by name**, so the dropdown comes out **grouped by member**.
+    The owner comes from the same `_sub_member_owner_map()` used by the Damage tree and the label from
+    `_current_classifier().label_of(...)` (rigs with no body plan, e.g.: weapons, fall back to their own
+    group). **Reason:** with the **automatic subdivision** every character is now born with **8 sub-members**
+    (forearm/hand/shin/foot L-R), and hunting one down by navigating **member by member** became painful.
+    Choosing a **specific MEMBER** still filters **only that member's** ones (there the label comes without
+    the owner suffix). In `_populate_sub_members`.
   - **"Skeleton Colliders" toggle (renamed from "Highlight standalone"→"Skeleton"→"Skeleton Colliders" in 2026-06-22) + "Whole skeleton" (2026-06-21; the item was previously "All standalone bones"):** since the characters are ONE
     skinned mesh (parts not separable by node), the filter **HIGHLIGHTS without hiding**: the toggle
     `AuxHighlight` (`_show_aux_highlight`, persisted) draws a **translucent orange shape**
@@ -724,6 +781,17 @@ as the only source.
 > aligned to the head's longest axis (same orientation as the bone) and keeps the **full radius**
 > (`make_member_shape` → `make_shape("capsule", aabb, cap_radius=false)`), without the `CROSS_SHRINK`
 > of the other members, to **cover the entire mesh** of the head. See [[🩸 dano-localizado (EN)|dano-localizado]].
+
+> [!note] Automatic subdivision of the extremities mirrored in the preview (2026-07-23)
+> The screen **mirrors the gameplay opt-out** through the `_MODEL_NO_AUTO_DISTAL := {"player": true,
+> "red_robot": true}` map: when building the colliders it sets `lc.auto_distal_sub_members = not
+> _MODEL_NO_AUTO_DISTAL.has(_current_model_key())`, so the preview shows **exactly the same members as the
+> game**. `player` and `red_robot` keep **whole BRAÇO/PERNA**; **the other models are born subdivided** —
+> forearm/hand/shin/foot become **automatic sub-members** (owner BRAÇO/PERNA). **Visible consequence:
+> humanoide and monstro show 6 members + 8 sub-members** (forearm/hand/shin/foot L-R). It is this
+> multiplication that motivated listing the individual sub-members in "All members" mode (see above) and
+> that makes almost every group become **single-bone** — which the refit takes advantage of to skip (see
+> the performance item under "Colliders"). See [[🩸 dano-localizado (EN)|dano-localizado]].
 
 **Posed centering (2026-06-17):** the AABB of a **skinned** mesh comes from the
 **bind** pose, which in the red_robot is ~1.4 m off the idle pose in Z. Using it would anchor the pivot

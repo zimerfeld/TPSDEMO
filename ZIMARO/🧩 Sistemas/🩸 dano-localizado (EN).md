@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-07-23
 ---
 
 # 🩸 Weapon Damage System + Localized Hitboxes
@@ -33,10 +33,10 @@ below); the multipliers are the **PLAN defaults** (`BodyParts.default_multiplier
 
 | Group | Shape | Multiplier (plan default) |
 |---|---|---|
-| **HEAD** (head/neck) | `SphereShape3D` (optional capsule — see below) | `1.5` (+50%) |
-| **TORSO** (hips/spine/chest/body) | `BoxShape3D` | `1.0` |
-| **ARM R/L** (shoulder/arm/forearm/hand/**wing** + side) | `CapsuleShape3D` (long axis) | `1.0` |
-| **LEG R/L** (thigh/shin/knee/foot/leg + side) | `CapsuleShape3D` (long axis) | `1.0` |
+| **HEAD** (head/neck · cabeca/pescoco) | `SphereShape3D` (optional capsule — see below) | `1.5` (+50%) |
+| **TORSO** (hips/spine/chest/body · tronco/peito/quadril/coluna) | `BoxShape3D` | `1.0` |
+| **ARM R/L** (shoulder/arm/**wing** · ombro/braco/asa + side) | `CapsuleShape3D` (long axis) | `1.0` |
+| **LEG R/L** (thigh/knee/leg · coxa/joelho/perna + side) | `CapsuleShape3D` (long axis) | `1.0` |
 
 > The multipliers above are **body-plan defaults** (head +50%, everything else 1.0). Since
 > 2026-06-20 each model can have its OWN per-limb multiplier, editable in the Models screen and
@@ -46,6 +46,23 @@ below); the multipliers are the **PLAN defaults** (`BodyParts.default_multiplier
 
 Side detected by `.L/.R` suffix (player) or `L-/R-` prefix (enemy). `wing` counts
 as ARM (winged creatures: criatura_alada, robot_*_alado).
+
+> [!warning] Since 2026-07-23, the table's ARM/LEG = the PROXIMAL part only
+> The **extremities** (forearm/hand, shin/foot) left the big limb and became **AUTOMATIC
+> sub-members**, each with its OWN collider and damage multiplier — see **Automatic distal
+> sub-members** below. Models that **opt out** (`player`, `red_robot`) keep absorbing the extremity
+> into the ARM/LEG, exactly as in the table above.
+
+**Bilingual PT + EN classifier (2026-07-23)** — bones are now recognized in **English AND
+Portuguese**, because the models arrive in both languages: `humanoide` came with
+`head/chest/upper_arm.R` and `monstro` with `cabeca/peito/bracoDireito/antebracoDireito/maoDireita/
+pernaDireita/canelaDireita/peDireito` — before this change that PT rig classified **0 out of 16
+bones** (no limb, no hitbox). The words live in `BodyParts.group_of` (head/torso) and in the
+`_ARM_ROOT_KW`/`_ARM_DISTAL_KW`/`_LEG_ROOT_KW`/`_LEG_DISTAL_KW` constants of `BodyPartsBiped`
+(see [[🦴 body-parts-gd (EN)\|body-parts-gd]]). ⚠️ **Technical detail:** the PT **"pe"** (foot) is
+matched by **EXACT TOKEN** (`_is_foot_word` → `BodyParts.words_of`, which splits the name into words
+by camelCase and `_ . -`), because as a *substring* it would show up inside `peito` (chest), `perna`
+(leg) and `pescoco` (neck).
 
 **Per-model overrides** (`group_of(..., head_bones, torso_bones, leg_bones)` + exports
 `head_bone_names`/`torso_bone_names`/`leg_bone_names` of `LimbColliders`): force bones the
@@ -181,13 +198,32 @@ writes to the new location without losing data. Schema of each file:
   the `PART_<bone>` from `damage`, the owner, the `collider_offsets`, the `collider_scales`, the
   `collider_rotations` and the `collider_shapes`), `collider_offset`/`set_collider_offset`,
   `collider_scale`/`set_collider_scale` (2026-06-22), `collider_rotation`/`set_collider_rotation`,
-  `collider_shape`/`set_collider_shape` + const `SHAPE_NONE` (2026-06-25) and `load_table`.
+  `collider_shape`/`set_collider_shape` + const `SHAPE_NONE` (2026-06-25) and `invalidate_cache`
+  (2026-07-23).
 - **Inheritance / "no value is mandatory" (2026-06-21):** `effective_multiplier` — an EXPLICIT value
   on the group itself takes precedence; a `PART_*` WITHOUT its own value **inherits the OWNER member's**
   (owner's explicit, otherwise the owner's plan default); with nothing, it falls back to the
   `default_multiplier` of its own group. `LimbColliders` stamps the already-RESOLVED `damage_multiplier`
   meta (owner = explicit from `LimbConfig`, otherwise `resolve_sub_member_owner`). The file only stores user
   adjustments (no JSON = plan default, zero regression).
+  **The rule did NOT change on 2026-07-23 — but it became the MAIN path:** with automatic distal
+  sub-members, nearly every new model relies on this inheritance to require no typed value at all.
+  Validated with `ARM_R` and one of its `PART_*` sub-members:
+
+  | Scenario | Sub-member's effective multiplier |
+  |---|---|
+  | Nothing defined (neither on the sub nor on the owner) | `1.0` (plan default) |
+  | Owner `ARM_R` = `2.5`, sub with no value | `2.5` (**inherits from the owner**) |
+  | Owner `ARM_R` = `2.5`, sub = `4.0` | `4.0` (**its own value wins**) |
+- **`_entry_cache` read cache (2026-07-23) — performance:** before, EVERY getter (`collider_shape`,
+  `collider_scale`, `damage`…) reopened and re-parsed the JSON on disk. Since the Models screen's
+  refit calls it ~2× per collider at ~5×/s, **14 colliders meant ~140 file reads PER SECOND** — it
+  stuttered the animation and dropped the FPS (and `build_for` called it ~6× per collider, the hitch
+  when selecting the model). Now `_load_entry` **memoizes** the entry per `model_key`, and **every
+  write goes through `_save_entry`**, which refreshes the cache — reads and writes never diverge.
+  `LimbConfig.invalidate_cache(model_key = "")` drops the cache (all of it, or one model) for when the
+  JSON is edited **OUTSIDE the game** and you want to reload without restarting. See the project's
+  **60 FPS** target in [[🗿 biblioteca-de-modelos (EN)\|biblioteca-de-modelos]].
 - **Editor:** the Models screen has the **"Damage"** toggle (renamed from "Damage per member" in 2026-06-22) that opens a floating panel
   (`DamagePanel`, centered, **720 px tall** — increased from 500 in 2026-06-20 to fit
   more members/sub-members without scrolling) with a `SpinBox` in **bonus %** per member (head `+50%` ⇒
@@ -197,11 +233,60 @@ writes to the new location without losing data. Schema of each file:
 
 ---
 
+## Automatic distal sub-members (2026-07-23)
+
+> [!tip] CONCEPTUAL change to localized damage
+> **Before:** a character had **6 members** (HEAD, TORSO, ARM L/R, LEG L/R) and a "sub-member" was
+> only a **loose part** (plate, shoulder pad, shield) **promoted BY HAND** by the user in the
+> **Damage** window.
+>
+> **Now:** the **EXTREMITIES become AUTOMATIC sub-members** — **forearm** and **hand**
+> (owner = ARM) and **shin** and **foot** (owner = LEG) —, each with its **OWN collider and damage
+> multiplier**. The big member becomes only the **PROXIMAL** part (upper arm / thigh).
+
+**How a bone is decided:** `LimbColliders._classify` intercepts **BEFORE** the member classifier, so
+the extremity is **never absorbed** by the neighbouring member. A bone becomes `PART_<bone>` when:
+
+1. it is an **EXPLICIT** sub-member — the node's `standalone_part_bones` ∪
+   `LimbConfig.sub_members(model_key)` ∪ `classifier.default_sub_members()` (see the next section);
+   **or**
+2. it is an **automatic DISTAL** — `auto_distal_sub_members` on **and**
+   `classifier.is_distal_sub_member(bone)` true (in `BodyPartsBiped`: words from
+   `_ARM_DISTAL_KW`/`_LEG_DISTAL_KW` + foot, **with a defined side** and outside the
+   `EXCLUDE_KEYWORDS`).
+
+**Exclusivity kept:** a bone is a **MEMBER _or_ a SUB-MEMBER, never both**. Whatever matches as
+distal is diverted by `_classify` and never reaches `group_of`; whatever doesn't match (or when the
+model opts out) falls back into the ARM/LEG normally — which is why `group_of`/`owner_hint` still
+accept the distal words.
+
+**Owner and inheritance (this is what makes it work without typing anything):** a distal sub-member
+**does not need** its own damage value — it **inherits the OWNER member's**
+(`LimbConfig.effective_multiplier`, the 2026-06-21 rule). The **OWNER** is resolved by
+`LimbConfig.sub_member_owner` (the EXPLICIT choice saved in the Models screen) and, failing that, by
+`LimbColliders.resolve_sub_member_owner` — first the part's **NAME** via `owner_hint` (this is how
+`antebracoDireito`/`maoDireita` find `ARM_R`), then by walking up the **bone hierarchy**.
+
+**Per-model opt-out:** `player` and `red_robot` keep **WHOLE ARMS/LEGS** — their hitbox was already
+tuned by hand, and subdividing now would throw that tuning away. `player.gd`/`red_robot.gd` set
+`lc.auto_distal_sub_members = false`, mirrored in the preview by the const `_MODEL_NO_AUTO_DISTAL`
+(`models.gd`), so the Models screen shows exactly the same members as the game. **New models are born
+subdivided.** Result:
+
+| Model | Members | DISTAL sub-members |
+|---|---|---|
+| `humanoide`, `monstro` (new) | 6 | **8** (forearm/hand/shin/foot × L/R) |
+| `player`, `red_robot` (opt-out) | 6 | **0** (only the hand-promoted ones remain) |
+
+---
+
 ## Configurable sub-members (2026-06-20)
 
-**Sub-members** = protruding auxiliary bones PROMOTED to their OWN box collider (unique group
-`PART_<bone>`, for parts the member's capsule wouldn't cover — e.g. the red_robot's **leg plates**).
-In `LimbColliders.build_for`, the effective sub-members come from the UNION of **THREE sources**:
+**EXPLICIT sub-members** = protruding auxiliary bones PROMOTED BY HAND to their OWN box collider
+(unique group `PART_<bone>`, for parts the member's capsule wouldn't cover — e.g. the red_robot's
+**leg plates**). They coexist with the **automatic distals** of the previous section, which take
+another path (`is_distal_sub_member`, straight in `_classify`, without going through these sources).
+In `LimbColliders.build_for`, the explicit sub-members come from the UNION of **THREE sources**:
 
 1. the node's `@export standalone_part_bones`,
 2. `LimbConfig.sub_members(model_key)` (the ones edited on screen),
@@ -389,11 +474,13 @@ In `limb_colliders.gd` (node `LimbColliders`): `enabled`, `padding`, **`body_typ
 `torso_bone_names` (forces a generically-named bone to TORSO — `["Bone.001"]` on the red_robot, whose
 body wasn't recognized and had **no torso collider**), `standalone_part_bones` (fixed sub-members
 on the node — UNIONED with `LimbConfig`'s and the plan's; the red_robot **no longer uses** this export, the
-leg plates migrated to `limb_config.json`), `hitbox_layer` (16 player / 32 enemy) and
+leg plates migrated to `limb_config.json`), **`auto_distal_sub_members`** (2026-07-23 — `true` by
+default: forearm/hand/shin/foot become their own sub-members; `false` = the player/red_robot opt-out,
+which keep whole ARMS/LEGS), `hitbox_layer` (16 player / 32 enemy) and
 **`model_key`** (`"player"`/`"red_robot"` — key of the multipliers/sub-members in `LimbConfig`;
 2026-06-20). The color/radius exports from the old glass system were removed.
 
-> Verified via the Godot MCP ([[godot-mcp]]): the enemy laser applies 25 (weapon),
+> Verified via the Godot MCP ([[🔌 MCP do Godot (EN)]]): the enemy laser applies 25 (weapon),
 > hitbox lookup working, the cache no longer causes damage at the start, no errors.
 
 ---

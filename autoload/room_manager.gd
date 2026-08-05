@@ -21,6 +21,12 @@ signal room_closed(room_id: int)
 # ClientSession volta ao navegador com o aviso "O nível foi reiniciado pelo host" (a sala recriada
 # reaparece na lista para reentrar). Distinto de room_closed só pela mensagem mostrada ao jogador.
 signal room_restarted(room_id: int)
+# Handshake de versão (build): o SERVIDOR envia a sua versão a cada peer que conecta; o CLIENTE
+# compara com a sua e emite um destes → version_verified (iguais, segue o fluxo normal) ou
+# version_rejected (diferentes, o playonline mostra "versões incompatíveis"). Evita o "erro mudo"
+# de tentar jogar entre builds diferentes (RPCs/replicação divergem). Ver playonline._on_join_rooms.
+signal version_verified
+signal version_rejected(host_version: String, client_version: String)
 
 # Motivo do encerramento de uma sala, escolhe qual aviso o cliente recebe (ver _close_room).
 enum CloseReason { SILENT, STOPPED, RESTARTED }
@@ -43,6 +49,10 @@ var _server_rooms: Array = []   # [{id, level_path}]
 # (navega/junta-se a salas do servidor); false/omitido = SERVIDOR (cria/gerencia salas).
 var client_mode: bool = false
 
+# Versão (ID de build) desta instância, resolvida uma vez (ver game_version). No editor todos batem
+# ("editor-dev"); em build exportado vem do build_id.json carimbado no export (build_windows.ps1).
+var _game_version: String = ""
+
 # Fluxo "Jogar" (invertido: a sala é escolhida ANTES do ChoosePlayer). A sessão (Host/Client)
 # seta estes marcadores, navega para o ChoosePlayer e os CONSOME ao voltar (no _ready), entrando
 # em modo de jogo na sala correspondente. pending_play_return = caminho da cena de sessão.
@@ -57,6 +67,9 @@ func _ready() -> void:
 	# Limpeza ao perder a conexão (cliente) ou cair o servidor.
 	if not multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
 		multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	# Handshake de versão: o SERVIDOR envia a sua versão a cada peer que conecta (ver _on_peer_connected).
+	if not multiplayer.peer_connected.is_connected(_on_peer_connected):
+		multiplayer.peer_connected.connect(_on_peer_connected)
 
 
 # ───────────────────────────── SERVIDOR: ciclo de vida das salas ─────────────────────────────
@@ -419,6 +432,45 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if is_instance_valid(spawned) and spawned.has_node(str(peer_id)):
 		spawned.get_node(str(peer_id)).queue_free()
 	_broadcast_room_list()
+
+
+# ───────────────────────────── Handshake de versão (build) ─────────────────────────────
+
+# ID de build desta instância p/ o handshake de versão. Editor → "editor-dev" (duas instâncias de
+# editor sempre batem, p/ testar em 2 PCs sem carimbo). Exportado → lê o build_id.json que o
+# build_windows.ps1 carimba no export. Sem arquivo (build antiga/sem carimbo) → "desconhecida"
+# (dois assim se igualariam; por isso todo export novo passa a carimbar). Resolvido uma única vez.
+func game_version() -> String:
+	if _game_version != "":
+		return _game_version
+	if OS.has_feature("editor"):
+		_game_version = "editor-dev"
+		return _game_version
+	_game_version = "desconhecida"
+	var f := FileAccess.open("res://build_id.json", FileAccess.READ)
+	if f != null:
+		var data: Variant = JSON.parse_string(f.get_as_text())
+		if data is Dictionary and (data as Dictionary).has("build_id"):
+			_game_version = String((data as Dictionary)["build_id"])
+	return _game_version
+
+
+# SERVIDOR: assim que um peer (cliente) conecta, envia a versão desta build para ele verificar. No
+# cliente is_server() é falso → no-op (quem compara é o cliente, em receive_host_version).
+func _on_peer_connected(id: int) -> void:
+	if multiplayer.is_server():
+		receive_host_version.rpc_id(id, game_version())
+
+
+# SERVIDOR → CLIENTE: a versão (ID de build) do host. O cliente compara com a sua: igual segue
+# (version_verified); diferente recusa (version_rejected) e o playonline mostra o aviso claro.
+@rpc("authority", "reliable")
+func receive_host_version(host_version: String) -> void:
+	var mine := game_version()
+	if host_version == mine:
+		version_verified.emit()
+	else:
+		version_rejected.emit(host_version, mine)
 
 
 # ───────────────────────────── HOST: jogar dentro de uma sala ─────────────────────────────

@@ -65,6 +65,23 @@ static func front_rear_of(raw_name: String) -> String:
 	return ""
 
 
+## Quebra o nome do osso em PALAVRAS minúsculas, separando por camelCase, "_", ".", "-" e espaço.
+## "peDireito" → ["pe","direito"]; "upper_arm.R" → ["upper","arm","r"]; "antebracoDireito" →
+## ["antebraco","direito"]. Usado para casar palavras AMBÍGUAS por token EXATO em vez de `contains`
+## (ex.: "pe"/pé, que como substring apareceria em "peito"/"perna"/"pescoco").
+static func words_of(raw: String) -> PackedStringArray:
+	var spaced := ""
+	for i in raw.length():
+		var ch := raw[i]
+		if ch == "_" or ch == "-" or ch == "." or ch == " ":
+			spaced += " "
+		elif ch != ch.to_lower() and i > 0:   # maiúscula no meio → fronteira camelCase
+			spaced += " " + ch.to_lower()
+		else:
+			spaced += ch.to_lower()
+	return spaced.split(" ", false)
+
+
 # ── Virtuais (a base trata só CABEÇA/TRONCO; subclasses estendem) ─────────────
 
 ## Grupos principais que este plano define (para a tela listar/rotular). Base: cabeça+tronco.
@@ -80,6 +97,23 @@ func _labels() -> Dictionary:
 ## Sub-membros padrão do plano (ossos salientes com collider próprio). Base: nenhum.
 func default_sub_members() -> Array[String]:
 	return []
+
+
+## Parte DISTAL da extremidade (antebraço/mão, canela/pé) que deve virar sub-membro AUTOMÁTICO
+## — com collider e dano próprios, herdando o dono (BRAÇO/PERNA via owner_hint) quando sem valor
+## próprio. Só quando LimbColliders.auto_distal_sub_members está ligado (novos modelos); player/
+## red_robot fazem opt-out para manter o membro inteiro. Base: nenhuma (só cabeça/tronco); as
+## subclasses com braços/pernas estendem.
+func is_distal_sub_member(_bone_name: String) -> bool:
+	return false
+
+
+## True se QUALQUER palavra-chave (lista) aparece como substring do nome já em minúsculas.
+func _has_any(lower_name: String, keywords: Array) -> bool:
+	for kw in keywords:
+		if lower_name.contains(kw):
+			return true
+	return false
 
 
 ## Membro-DONO provável de uma peça/sub-membro (placa, ombreira, cover…) a partir do
@@ -118,10 +152,17 @@ func group_of(bone_name: String, head_bones: Array = [], torso_bones: Array = []
 			return TORSO
 	if _is_excluded(n):
 		return ""
-	if n.contains("head") or n.contains("neck"):
+	# Palavras-chave EN + PT (os modelos vêm ora em inglês — head/chest —, ora em português —
+	# cabeca/peito). Nomes de osso costumam vir SEM acento (ASCII) do exportador, então as
+	# variantes principais são sem acento; as acentuadas ficam por robustez.
+	if n.contains("head") or n.contains("neck") \
+			or n.contains("cabeca") or n.contains("cabeça") \
+			or n.contains("pescoco") or n.contains("pescoço"):
 		return HEAD
 	if n.contains("hips") or n.contains("pelvis") or n.contains("spine") \
-			or n.contains("chest") or n.contains("torso") or n.contains("body"):
+			or n.contains("chest") or n.contains("torso") or n.contains("body") \
+			or n.contains("tronco") or n.contains("peito") or n.contains("quadril") \
+			or n.contains("bacia") or n.contains("coluna") or n.contains("torax") or n.contains("tórax"):
 		return TORSO
 	return ""
 

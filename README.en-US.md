@@ -119,8 +119,14 @@ third-person shooter sandbox. At a high level it offers:
   different body parts deal different damage (headshots deal extra). The members come from the
   model's **body plan**, chosen by a `body_type` (**biped** = head/torso/2 arms/2 legs — the
   default; **quadruped** = head/torso/4 legs; **crawler** = head/torso only), classified by the
-  `BodyParts` hierarchy via the `BodyPlans` factory. Shots pass through the generic body collider
-  to land on the limb colliders. **Sub-members** — protruding parts that get their OWN box collider
+  `BodyParts` hierarchy via the `BodyPlans` factory — which recognises bone names in **English or
+  Portuguese** (`head`/`cabeca`, `chest`/`peito`, `upper_arm.R`/`bracoDireito`…), so a new model gets
+  classified without renaming its skeleton. Shots pass through the generic body collider
+  to land on the limb colliders. **Extremities with their own damage** — forearm, hand, shin and foot
+  become **automatic sub-members** (the big limb narrows down to the upper arm / thigh), each with its
+  own collider and damage bonus; with no value set they **inherit the ARM/LEG** they belong to — you can
+  hit "the hand", not just "the arm". Already-balanced characters (**Player** and **Red Robot**) opt out
+  of the split and keep the whole-limb hitbox. **Sub-members** — protruding parts that get their OWN box collider
   (e.g. the Red Robot's **rear leg guard plates** and the Player's **shoulder plates**, which the
   limb capsule wouldn't wrap) — are now **editable in the Models screen** (add/remove + a bonus-%
   each), not hardcoded; each part is grouped and labeled under the limb it belongs to by name
@@ -169,7 +175,10 @@ third-person shooter sandbox. At a high level it offers:
   interpolation **Smooth / Balanced / Responsive** (render delay 100 / 60 / 35 ms — smoothness vs.
   responsiveness), **sync rate 30 / 60 Hz** (server→client updates per second), and **host render
   Window / Pure-server** (skip room rendering to free the GPU). All dynamic models (players, enemies,
-  bullets, bombs) replicate from the host server. The Play Online screen persists every option (last
+  bullets, bombs) replicate from the host server. On connect, host and client exchange a **build ID** —
+  mismatched builds are refused with a clear **"Incompatible versions — Host / You"** notice (PT/EN/ES)
+  instead of failing silently, so both players know to run the **same `.exe`** (build stamped at export).
+  The Play Online screen persists every option (last
   Port/IP, interpolation, sync rate, host render) and restores them next time; the **IP/Domain**
   dropdown lists recent addresses **and saved full domains** (FQDNs kept apart, not rolled out by
   recent IPs) to reselect later; the Host/Client screens
@@ -222,9 +231,13 @@ third-person shooter sandbox. At a high level it offers:
   chain exactly as it was left — without auto-selecting any item: the first selector with no saved
   choice sits on "Selecione…" ready to continue, and if a saved choice no longer exists in the
   library that selector (and the ones below it) are disabled. Navigation is guided purely by the
-  sequential dropdown gating (no status line). Drag to hand-rotate the
-  model up to 180° on both axes (rotation **freezes** while the pointer is over a floating window —
-  Damage/AI or any other — and resumes when it leaves or the window closes). A **3D axis gizmo**
+  sequential dropdown gating (no status line). Drag with the **left button** to hand-rotate the
+  model up to 180° on both axes, and with the **right button** to **move the camera** (pan) — bringing
+  an off-frame part (a hand, a foot) to the centre without having to spin and zoom out. The pan works
+  "grab the scene" style (the point under the cursor follows the drag, feeling the same at any zoom),
+  is clamped so the model never leaves the view, and re-centres when you switch models; the mouse
+  wheel still zooms. Rotating and panning **freeze** while the pointer is over a floating window —
+  Damage/AI or any other — and resume when it leaves or the window closes. A **3D axis gizmo**
   (editor-style: red X, green Y, blue Z, with a ball and letter at each tip) sits at the **top
   right** — in its own overlaid SubViewport, left of the toggles, without covering the model — and
   **rotates together with the model**, showing its orientation. Toggling any option acts on the live preview in place — it

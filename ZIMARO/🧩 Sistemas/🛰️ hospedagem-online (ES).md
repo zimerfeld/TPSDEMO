@@ -94,6 +94,16 @@ wharf-pos…:54417  ─UDP►   playit relay server    ─►   playit agent   �
 - **IP en bruto** (`147.185.221.26:...`): **compartida/anycast, puede cambiar** — **no la compartas**. Pasa siempre el **dominio**.
 - Dirección permanente/personalizada: solo en los planes **de pago**.
 
+### Handshake de versión (host y cliente en la misma build)
+Desde el 2026-08-05, al conectar, host y cliente intercambian un **ID de build**: el `RoomManager` envía
+su versión en `peer_connected` y el cliente compara en `receive_host_version`. Si las versiones **difieren**,
+el cliente **rechaza** con el aviso *"Versiones incompatibles — Host: X, Tú: Y"* (PT/EN/ES) en vez de fallar
+a oscuras; si el host es una build antigua que ni responde, un **timeout de 5 s** muestra *"No se pudo
+verificar la versión del host"*. El ID se sella en el export con `build_windows.ps1` (`build_id.json` = SHA
+corto de git + `-dirty` + timestamp; leído por `RoomManager.game_version`, incrustado en el `.exe`). En el
+**editor** todos coinciden (`editor-dev`). Regla práctica: **ambos deben usar el mismo `.exe`** — ahora las
+versiones distintas avisan en vez de fallar mudo. Ver [[🌐 multiplayer (ES)]].
+
 ### Errores comunes
 - **`RequiresVerifiedAccount`**: la cuenta de playit necesita un **e-mail verificado**. Resuélvelo en https://playit.gg/account añadiendo un e-mail + confirmando, **o** iniciando sesión vía **Discord/Google** (ya verificados).
 - El **puerto público** puede diferir de 4383 — el amigo debe usar el puerto mostrado en el **panel de playit**.

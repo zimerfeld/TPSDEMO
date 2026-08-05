@@ -30,5 +30,7 @@
 	"OK": "OK",
 	"Desconectar": "Disconnect",
 	"Desconectar e voltar para a lista de salas ?": "Disconnect and return to the room list ?",
-	"Desconectar e voltar para a gerência de salas ?": "Disconnect and return to the room manager ?"
+	"Desconectar e voltar para a gerência de salas ?": "Disconnect and return to the room manager ?",
+	"Versões incompatíveis.\n\nHost: {host}\nVocê: {client}\n\nAtualizem os dois para a mesma versão do jogo.": "Incompatible versions.\n\nHost: {host}\nYou: {client}\n\nBoth players must run the same game build.",
+	"Não foi possível verificar a versão do host.\n\nO host pode estar numa versão antiga. Atualizem os dois para a mesma versão do jogo.": "Could not verify the host's version.\n\nThe host may be on an old build. Both players must run the same game build."
 }

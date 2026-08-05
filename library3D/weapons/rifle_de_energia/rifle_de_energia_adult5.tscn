@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" uid="uid://nkkh245r95c2" path="res://rifle_de_energia_adult5.glb" id="1"]
+
+[node name="Rifle_de_energia_adult5" type="Node3D"]
+
+[node name="Model" parent="." instance=ExtResource("1")]

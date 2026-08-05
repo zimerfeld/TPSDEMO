@@ -48,7 +48,7 @@ vivo (sem botão Aplicar).
 
 ## Features · Funcionalidades
 
-![EN](screenshots/screenshotGB.png) Highlights: a per-model physical body (the locomotion capsule is auto-fitted to each model from its limb colliders, one cheap shape each); localized damage (native per-limb 3D colliders, headshots deal extra) with a
+![EN](screenshots/screenshotGB.png) Highlights: a per-model physical body (the locomotion capsule is auto-fitted to each model from its limb colliders, one cheap shape each); localized damage (native per-limb 3D colliders, headshots deal extra — and extremities like hand/foot split into their own sub-members, inheriting the limb's damage when unset) with a
 per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
 character, in the model's own folder `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits) where the body type (biped/quadruped/crawler) defines the members and
 protruding sub-members (plates, guards) are editable too (and any model with no classified member — e.g. Structures like the bronze statues — gets a single fallback **CORPO** member wrapping the whole model, so a collider can always be defined); a Models viewer with per-category master toggles (rotation, animation,
@@ -74,7 +74,9 @@ Português/English/Español buttons** and each scene ships its own JSON dictiona
 room manager to start levels as isolated rooms and, per room, **Play** into it, **Observe** with a
 free-fly no-collision camera, **Restart** or **Stop** it (both warn the room's clients with a distinct
 "level stopped/restarted by host" notice); **Client** opens a room browser that lists the
-running rooms with a **Play** button. Each player's chosen variant/colour shows for everyone,
+running rooms with a **Play** button. Host and client exchange a **build ID** on connect, refusing
+mismatched builds with a clear **"Incompatible versions"** notice (PT/EN/ES) so both run the same `.exe`.
+Each player's chosen variant/colour shows for everyone,
 and other players/enemies are smoothed with a timestamped interpolation buffer for a flicker-free,
 high-FPS client view. A pre-session **Optimization** selector picks interpolation (Smooth/Balanced/
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
@@ -101,7 +103,7 @@ looped by slow, alternating **electric energy**), and every **confirmation windo
 floating-window control (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a
 standard × close and a modal backdrop — the same base other floating windows can reuse.
 
-![PT](screenshots/screenshotBR.png) Destaques: corpo físico proporcional ao modelo (a cápsula de locomoção é auto-ajustada a cada modelo pelos colliders de membro, um único shape barato); dano localizado (colliders 3D nativos por membro, headshots causam dano extra) com um
+![PT](screenshots/screenshotBR.png) Destaques: corpo físico proporcional ao modelo (a cápsula de locomoção é auto-ajustada a cada modelo pelos colliders de membro, um único shape barato); dano localizado (colliders 3D nativos por membro, headshots causam dano extra — e extremidades como mão/pé viram sub-membros próprios, herdando o dano do membro quando não definido) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
 por personagem, na pasta do próprio modelo `library3D/<cat>/<modelo>/limb_config.json`, com override gravável em `user://` para edições no jogo), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
 os sub-membros salientes (placas, guardas) também são editáveis (e todo modelo sem membro classificado — ex.: Estruturas como as estátuas de bronze — ganha um único membro **CORPO** de fallback que envolve o modelo inteiro, para sempre dar para definir um collider); um visualizador Models com toggles mestres por categoria (rotação, animação,
@@ -130,7 +132,9 @@ mesclados no carregamento. O jogo online é **por salas**: escolha **Host** ou *
 Online. **Host** abre um gerenciador de salas para iniciar levels como salas isoladas e, por sala,
 **Jogar** nela, **Observar** com uma câmera livre sem colisão, **Reiniciar** ou **Parar** (ambos avisam
 os clientes daquela sala com um aviso distinto "nível parado/reiniciado pelo host"); **Client**
-abre um navegador que lista as salas em execução com um botão **Jogar**. A variante/cor escolhida por cada
+abre um navegador que lista as salas em execução com um botão **Jogar**. Host e cliente trocam um **ID de
+build** ao conectar, recusando versões diferentes com um aviso claro **"Versões incompatíveis"** (PT/EN/ES)
+para os dois rodarem o mesmo `.exe`. A variante/cor escolhida por cada
 jogador aparece para todos, e os outros players/inimigos são suavizados por um buffer de interpolação
 com snapshots datados para uma visão do cliente sem flicker e com FPS alto. Um seletor de **Otimização**
 pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync (30/60 Hz) e render do host

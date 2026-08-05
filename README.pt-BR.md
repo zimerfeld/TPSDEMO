@@ -124,8 +124,14 @@ em terceira pessoa. Em alto nível, oferece:
   extra). Os membros vêm do **plano corporal** do modelo, escolhido por um `body_type`
   (**bípede** = cabeça/tronco/2 braços/2 pernas — o padrão; **quadrúpede** = cabeça/tronco/4
   pernas; **rastejante** = só cabeça/tronco), classificados pela hierarquia `BodyParts` via a
-  factory `BodyPlans`. Os tiros atravessam o collider de corpo genérico e acertam os colliders de
-  membro. **Sub-membros** — peças salientes que ganham um collider PRÓPRIO em caixa (ex.: as
+  factory `BodyPlans` — que reconhece nomes de osso em **inglês ou português** (`head`/`cabeca`,
+  `chest`/`peito`, `upper_arm.R`/`bracoDireito`…), então um modelo novo é classificado sem precisar
+  renomear o esqueleto. Os tiros atravessam o collider de corpo genérico e acertam os colliders de
+  membro. **Extremidades com dano próprio** — antebraço, mão, canela e pé viram **sub-membros
+  automáticos** (o membro grande passa a ser só o braço superior / a coxa), cada um com collider e
+  bônus de dano próprios; sem valor definido, **herdam o do BRAÇO/PERNA** a que pertencem — dá para
+  acertar "a mão" e não só "o braço". Personagens já balanceados (**Player** e **Red Robot**) ficam
+  de fora dessa subdivisão e mantêm o hitbox de membro inteiro. **Sub-membros** — peças salientes que ganham um collider PRÓPRIO em caixa (ex.: as
   **placas traseiras das pernas** do Red Robot e as **placas de ombro** do Player, que a cápsula
   do membro não cobriria) — agora são **editáveis na tela Models** (adicionar/remover + um bônus %
   cada), não mais hardcoded; cada peça é agrupada e rotulada sob o membro a que pertence pelo nome
@@ -177,7 +183,10 @@ em terceira pessoa. Em alto nível, oferece:
   (atraso de render 100 / 60 / 35 ms — suavidade × resposta), **taxa de sincronização 30 / 60 Hz**
   (updates servidor→cliente por segundo) e **render do host Janela / Servidor puro** (sem renderizar as
   salas, libera a GPU). Todos os modelos dinâmicos (players, inimigos, balas, bombas) sincronizam a
-  partir do servidor host. A tela Jogar Online persiste todas as opções (última Porta/IP, interpolação,
+  partir do servidor host. Ao conectar, host e cliente trocam um **ID de build** — versões diferentes são
+  recusadas com um aviso claro **"Versões incompatíveis — Host / Você"** (PT/EN/ES) em vez de falhar no
+  escuro, avisando os dois a rodar o **mesmo `.exe`** (build carimbada no export). A tela Jogar Online
+  persiste todas as opções (última Porta/IP, interpolação,
   taxa de sync, render do host) e as recarrega na próxima vez; o dropdown de **IP/Domínio** lista os
   endereços recentes **e os domínios completos salvos** (FQDN guardados à parte, sem rolarem com os
   IPs recentes) para reusar pela seleção; as telas Host/Client são em tela cheia,
@@ -230,9 +239,13 @@ em terceira pessoa. Em alto nível, oferece:
   deixada — sem auto-selecionar nenhum item: o primeiro seletor sem escolha salva fica em "Selecione…"
   pronto para continuar; se uma escolha salva não existir mais na biblioteca, esse seletor (e os
   abaixo) ficam desabilitados. A navegação é guiada apenas pelo gating sequencial dos dropdowns
-  (sem linha de status). Arraste para girar o modelo à mão em
-  até 180° nos dois eixos (a rotação **congela** enquanto o ponteiro está sobre uma janela
-  flutuante — Dano/IA ou outra — e volta a responder ao sair dela ou fechá-la). Um **gizmo de eixos
+  (sem linha de status). Arraste com o **botão esquerdo** para girar o modelo à mão em
+  até 180° nos dois eixos, e com o **botão direito** para **mover a câmera** (pan) — trazendo ao centro
+  uma parte fora do enquadramento (uma mão, um pé) sem precisar girar e afastar. O pan funciona no
+  estilo "agarrar a cena" (o ponto sob o cursor acompanha o arraste, com a mesma sensação em qualquer
+  zoom), é limitado para o modelo nunca sumir de vista e recentraliza ao trocar de modelo; a roda do
+  mouse segue dando zoom. Girar e mover **congelam** enquanto o ponteiro está sobre uma janela
+  flutuante — Dano/IA ou outra — e voltam a responder ao sair dela ou fechá-la. Um **gizmo de eixos
   3D** (estilo editor: X vermelho, Y verde, Z azul, com bola e letra na ponta) fica no **topo à
   direita** — num SubViewport próprio sobreposto, à esquerda dos toggles, sem cobrir o modelo — e
   **gira junto com o modelo**, indicando sua orientação. Alternar qualquer opção age no preview ao vivo, no lugar — nunca recarrega

@@ -110,8 +110,15 @@ disparos en tercera persona. A grandes rasgos ofrece:
   distintas partes del cuerpo infligen distinto daño (los disparos a la cabeza infligen extra). Los miembros provienen del
   **plan corporal** del modelo, elegido por un `body_type` (**biped** = cabeza/torso/2 brazos/2 piernas — el
   valor por defecto; **quadruped** = cabeza/torso/4 piernas; **crawler** = solo cabeza/torso), clasificados por la
-  jerarquía `BodyParts` a través de la fábrica `BodyPlans`. Los disparos atraviesan el colisionador de cuerpo genérico
-  para impactar en los colisionadores de miembro. Los **submiembros** — partes sobresalientes que obtienen su PROPIO colisionador de caja
+  jerarquía `BodyParts` a través de la fábrica `BodyPlans` — que reconoce nombres de hueso en **inglés o
+  portugués** (`head`/`cabeca`, `chest`/`peito`, `upper_arm.R`/`bracoDireito`…), así que un modelo nuevo
+  se clasifica sin renombrar su esqueleto. Los disparos atraviesan el colisionador de cuerpo genérico
+  para impactar en los colisionadores de miembro. **Extremidades con daño propio** — antebrazo, mano,
+  espinilla y pie pasan a ser **submiembros automáticos** (el miembro grande queda solo con el brazo
+  superior / el muslo), cada uno con colisionador y bonificación de daño propios; sin valor definido
+  **heredan el del BRAZO/PIERNA** al que pertenecen — se puede acertar "la mano", no solo "el brazo".
+  Los personajes ya balanceados (**Player** y **Red Robot**) quedan fuera de esta subdivisión y mantienen
+  el hitbox de miembro entero. Los **submiembros** — partes sobresalientes que obtienen su PROPIO colisionador de caja
   (p. ej. las **placas de protección de la pierna trasera** del Red Robot y las **placas de hombro** del jugador, que la
   cápsula de miembro no envolvería) — ahora son **editables en la pantalla Models** (añadir/quitar + un % de bonificación
   cada uno), no codificados a mano; cada parte se agrupa y etiqueta bajo el miembro al que pertenece por su nombre
@@ -160,7 +167,10 @@ disparos en tercera persona. A grandes rasgos ofrece:
   interpolación **Suave / Equilibrada / Reactiva** (retardo de render 100 / 60 / 35 ms — suavidad vs.
   reactividad), **tasa de sincronización 30 / 60 Hz** (actualizaciones servidor→cliente por segundo) y **render del host
   Ventana / Servidor puro** (omitir el renderizado de la sala para liberar la GPU). Todos los modelos dinámicos (jugadores, enemigos,
-  balas, bombas) se replican desde el servidor host. La pantalla Jugar en línea persiste cada opción (último
+  balas, bombas) se replican desde el servidor host. Al conectar, host y cliente intercambian un **ID de
+  build** — las versiones distintas se rechazan con un aviso claro **"Versiones incompatibles — Host / Tú"**
+  (PT/EN/ES) en vez de fallar a oscuras, avisando a ambos que usen el **mismo `.exe`** (build sellada en el
+  export). La pantalla Jugar en línea persiste cada opción (último
   Puerto/IP, interpolación, tasa de sincronización, render del host) y las restaura la próxima vez; el desplegable **IP/Dominio**
   lista las direcciones recientes **y los dominios completos guardados** (los FQDN se mantienen aparte, no se mezclan con las
   IP recientes) para volver a seleccionarlas más tarde; las pantallas Host/Cliente
@@ -212,9 +222,13 @@ disparos en tercera persona. A grandes rasgos ofrece:
   cadena exactamente como se dejó — sin autoseleccionar ningún elemento: el primer selector sin elección
   guardada se queda en "Selecione…" listo para continuar, y si una elección guardada ya no existe en la
   biblioteca, ese selector (y los inferiores) se deshabilitan. La navegación se guía puramente por el
-  bloqueo secuencial de los desplegables (sin línea de estado). Arrastra para rotar a mano el
-  modelo hasta 180° en ambos ejes (la rotación **se congela** mientras el puntero está sobre una ventana flotante —
-  Daño/IA o cualquier otra — y se reanuda cuando la abandona o la ventana se cierra). Un **gizmo de ejes 3D**
+  bloqueo secuencial de los desplegables (sin línea de estado). Arrastra con el **botón izquierdo** para rotar a mano el
+  modelo hasta 180° en ambos ejes, y con el **botón derecho** para **mover la cámara** (pan) — llevando al
+  centro una parte fuera del encuadre (una mano, un pie) sin tener que rotar y alejar. El pan funciona al
+  estilo "agarrar la escena" (el punto bajo el cursor sigue el arrastre, con la misma sensación en cualquier
+  zoom), está limitado para que el modelo nunca salga de la vista y se recentra al cambiar de modelo; la
+  rueda del ratón sigue haciendo zoom. Rotar y mover **se congelan** mientras el puntero está sobre una ventana flotante —
+  Daño/IA o cualquier otra — y se reanudan cuando la abandona o la ventana se cierra. Un **gizmo de ejes 3D**
   (estilo editor: X rojo, Y verde, Z azul, con una bola y una letra en cada punta) se sitúa **arriba a la
   derecha** — en su propio SubViewport superpuesto, a la izquierda de los interruptores, sin cubrir el modelo — y
   **rota junto con el modelo**, mostrando su orientación. Activar cualquier opción actúa sobre la previsualización en vivo en el sitio — nunca

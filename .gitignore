@@ -9,6 +9,9 @@ export_presets.cfg
 # Build output (Windows .exe + generated icon) — see build_windows.ps1
 # build/
 
+# Carimbo de build gerado no export (handshake de versão) — see build_windows.ps1
+build_id.json
+
 # Claude Code project hooks (contém caminho absoluto da máquina) — ver build_windows.ps1
 .claude/settings.json
 
@@ -28,3 +31,6 @@ mono_crash.*.json
 # Blender versioning
 *.blend[0-9]*
 build/windows/*.exe
+
+/.godot/editor/filesystem_cache10
+/.godot/uid_cache.bin

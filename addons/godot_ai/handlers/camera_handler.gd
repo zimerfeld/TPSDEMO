@@ -204,13 +204,6 @@ func _logical_current_camera(scene_root: Node, type_str: String = "") -> Node:
 	return null
 
 
-func _is_logical_current(scene_root: Node, cam: Node) -> bool:
-	if scene_root == null or cam == null:
-		return false
-	var logical := _logical_current_camera(scene_root, _camera_type_str(cam))
-	return logical != null and logical == cam
-
-
 # Public introspection for tests that need to distinguish "handler has a
 # logical marker" from "handler is falling back to engine state". `get_camera`
 # / `list_cameras` both use `_resolve_current` which falls through to
@@ -316,7 +309,7 @@ func _apply_make_current(cam: Node) -> void:
 		_force_camera_refresh(cam)
 		# Godot's make_current is supposed to atomically displace siblings,
 		# but on macOS headless the displaced camera occasionally still
-		# answers is_current() after this returns (#140 / #278 / #301).
+		# answers is_current() == true after this returns (#140 / #278 / #301).
 		# Sweep same-class siblings and clear any that lag.
 		_force_clear_other_currents(cam, type_str, scene_root)
 		if not _is_current_settled(cam):
@@ -800,7 +793,8 @@ func follow_2d(params: Dictionary) -> Dictionary:
 		return ErrorCodes.make(ErrorCodes.MISSING_REQUIRED_PARAM, "Missing required param: target_path")
 	var target := McpScenePath.resolve(target_path, scene_root)
 	if target == null:
-		return ErrorCodes.make(ErrorCodes.NODE_NOT_FOUND, "Target not found: %s" % target_path)
+		return ErrorCodes.make(ErrorCodes.NODE_NOT_FOUND,
+			"target_path: %s" % McpScenePath.format_node_error(target_path, scene_root))
 	if not (target is Node2D) and target != scene_root:
 		return ErrorCodes.make(
 			ErrorCodes.WRONG_TYPE,

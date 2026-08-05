@@ -45,6 +45,11 @@ const _PART_PREFIX := "PART_"
 ## construídos com a forma automática e gizmo escondido (meta "suppressed"), p/ continuarem na árvore/
 ## dropdown e poderem ser reconfigurados. No gameplay (false, default) são PULADOS (sem hitbox).
 @export var include_suppressed: bool = false
+## Subdivisão AUTOMÁTICA das extremidades: antebraço/mão e canela/pé viram sub-membros próprios
+## (collider e dano localizados, herdando o BRAÇO/PERNA quando sem valor próprio), em vez de serem
+## absorvidos no membro grande. Ligado por padrão (modelos novos). player/red_robot fazem opt-out
+## (false) para manter o hitbox de braço/perna INTEIRO já ajustado. Ver BodyParts.is_distal_sub_member.
+@export var auto_distal_sub_members: bool = true
 
 @export_group("Mapeamento de Bones")
 ## Nomes de bones forçados para o grupo HEAD (ignora exclusões).
@@ -114,11 +119,15 @@ func get_limb_bodies() -> Array[StaticBody3D]:
 
 # ── Coleta de vértices por membro ─────────────────────────────────────────────
 
-# Classifica um osso num grupo de MEMBRO, ou num grupo individual "PART_<osso>" quando o
-# osso está em standalone_part_bones (peça com collider próprio). Intercepta ANTES do
-# classificador normal, então a peça nunca é absorvida pelo membro vizinho.
+# Classifica um osso num grupo de MEMBRO, ou num grupo individual "PART_<osso>" quando é sub-membro:
+# (a) explícito — em standalone_part_bones/LimbConfig/default do plano (_sub_member_set); ou
+# (b) DISTAL automático — antebraço/mão/canela/pé, quando auto_distal_sub_members está ligado.
+# Intercepta ANTES do classificador de membro, então a extremidade nunca é absorvida pelo membro
+# vizinho (o dono para herança de dano é resolvido depois via resolve_sub_member_owner).
 func _classify(bone_name: String) -> String:
 	if _sub_member_set.has(bone_name.to_lower()):
+		return _PART_PREFIX + bone_name
+	if auto_distal_sub_members and _classifier.is_distal_sub_member(bone_name):
 		return _PART_PREFIX + bone_name
 	return _classifier.group_of(bone_name, head_bone_names, torso_bone_names, leg_bone_names)
 
@@ -413,16 +422,32 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 # guardamos o grupo, o osso DOMINANTE e `bind_pose * vértice` (mesh→skel, fixo). O refit depois
 # só lê as poses ATUAIS dos ossos — sem reconstruir arrays de malha — então fica barato.
 var _rc_ready := false
-var _rc_group := PackedInt32Array()    # índice do grupo por vértice
+# Vértices ORDENADOS POR GRUPO: os de cada grupo ocupam o intervalo contíguo
+# [_rc_gstart[gi], _rc_gstart[gi] + _rc_gcount[gi]) em _rc_bone/_rc_bv. É o que permite refitar só
+# UM SUBCONJUNTO de grupos (rodízio) percorrendo apenas os vértices deles, em vez de varrer o cache
+# inteiro descartando o que não interessa.
 var _rc_bone := PackedInt32Array()     # osso do esqueleto por vértice
 var _rc_bv := PackedVector3Array()     # bind_pose * vértice (fixo)
 var _rc_names: Array[String] = []      # índice do grupo → nome
 var _rc_root := PackedInt32Array()     # índice do grupo → osso-raiz
+var _rc_gstart := PackedInt32Array()   # índice do grupo → 1º vértice seu
+var _rc_gcount := PackedInt32Array()   # índice do grupo → quantos vértices tem
+# Grupos que REALMENTE mudam de forma com a pose (2+ ossos). Um grupo de OSSO ÚNICO tem AABB local
+# INVARIANTE: como o osso-raiz é o próprio osso dos seus vértices, o termo inv(pose_raiz)·pose_osso se
+# cancela e o resultado não depende da pose — ele já gira/transladada junto via BoneAttachment3D.
+# Depois da subdivisão automática quase todo grupo virou de osso único (só o TRONCO costuma ter 2+),
+# então refitar todos era recalcular o mesmo valor. O refit percorre apenas esta lista.
+var _rc_dyn := PackedInt32Array()
+# Cursor do RODÍZIO: próximo grupo DINÂMICO a processar quando refit() recebe um lote (max_groups > 0).
+var _refit_cursor := 0
 
 
 func _build_refit_cache(skel: Skeleton3D) -> void:
-	_rc_group = PackedInt32Array(); _rc_bone = PackedInt32Array(); _rc_bv = PackedVector3Array()
+	_rc_bone = PackedInt32Array(); _rc_bv = PackedVector3Array()
 	_rc_names = []; _rc_root = PackedInt32Array()
+	_rc_gstart = PackedInt32Array(); _rc_gcount = PackedInt32Array()
+	_rc_dyn = PackedInt32Array()
+	_refit_cursor = 0
 	var group_bones := {}
 	for b in skel.get_bone_count():
 		var g := _classify(skel.get_bone_name(b))
@@ -442,6 +467,14 @@ func _build_refit_cache(skel: Skeleton3D) -> void:
 		gidx[g] = _rc_names.size()
 		_rc_names.append(g)
 		_rc_root.append(best)
+		# 2+ ossos → a forma do grupo muda ao animar (ex.: TRONCO = quadril+peito, ou um BRAÇO inteiro
+		# quando o modelo faz opt-out da subdivisão). 1 osso → AABB local invariante: não entra no refit.
+		if (group_bones[g] as Array).size() > 1:
+			_rc_dyn.append(int(gidx[g]))
+	# Coleta PLANA numa passada (grupo/osso/vértice); a ordenação por grupo vem depois.
+	var tmp_group := PackedInt32Array()
+	var tmp_bone := PackedInt32Array()
+	var tmp_bv := PackedVector3Array()
 	for mi in _skinned_meshes(skel):
 		var skin: Skin = mi.skin
 		if skin == null:
@@ -476,45 +509,85 @@ func _build_refit_cache(skel: Skeleton3D) -> void:
 				var g := _classify(skel.get_bone_name(skb))
 				if g == "":
 					continue
-				_rc_group.append(gidx[g])
-				_rc_bone.append(skb)
-				_rc_bv.append(bind_pose[best_i] * verts[vi])
+				tmp_group.append(gidx[g])
+				tmp_bone.append(skb)
+				tmp_bv.append(bind_pose[best_i] * verts[vi])
+	# COUNTING SORT por grupo: deixa os vértices de cada grupo CONTÍGUOS em _rc_bone/_rc_bv, com o
+	# intervalo registrado em _rc_gstart/_rc_gcount — é o que permite refitar um subconjunto de grupos
+	# sem varrer o cache inteiro. (Acumular em "baldes" Packed*Array dentro de um Array NÃO funciona:
+	# ao ser lido de dentro do Array, um Packed*Array vem COPIADO, e os appends se perdem.)
+	var ng := _rc_names.size()
+	var total := tmp_group.size()
+	_rc_gstart.resize(ng); _rc_gcount.resize(ng)
+	for gi in ng:
+		_rc_gcount[gi] = 0
+	for i in total:
+		_rc_gcount[tmp_group[i]] += 1
+	var cursor := 0
+	for gi in ng:
+		_rc_gstart[gi] = cursor
+		cursor += _rc_gcount[gi]
+	_rc_bone.resize(total); _rc_bv.resize(total)
+	var fill := PackedInt32Array(); fill.resize(ng)
+	for gi in ng:
+		fill[gi] = _rc_gstart[gi]
+	for i in total:
+		var gi: int = tmp_group[i]
+		var pos: int = fill[gi]
+		_rc_bone[pos] = tmp_bone[i]
+		_rc_bv[pos] = tmp_bv[i]
+		fill[gi] = pos + 1
 	_rc_ready = true
 
 
-# Re-encaixa cada collider de membro/sub-membro à pose ANIMADA atual (acompanham movimentos/dobra),
+# Re-encaixa os colliders de membro/sub-membro à pose ANIMADA atual (acompanham movimentos/dobra),
 # usando o cache acima — barato, sem `surface_get_arrays`. Preview da tela Models. A 1ª chamada monta
 # o cache (custo único). Mantém offset/escala editados e atualiza o gizmo "_ColliderGizmo".
-func refit(skel: Skeleton3D) -> void:
+#
+# `max_groups` > 0 ativa o RODÍZIO: processa só esse tanto de grupos por chamada, avançando o cursor
+# a cada passada até dar a volta. Chamando todo frame com um lote pequeno, o custo por frame cai na
+# proporção do lote e o pico que engasgava a animação desaparece — com a pose completa reencaixada
+# a cada (nº de grupos ÷ lote) frames. 0 (padrão) = todos de uma vez, como antes.
+func refit(skel: Skeleton3D, max_groups: int = 0) -> void:
 	if skel == null:
 		return
 	if not _rc_ready:
 		_build_refit_cache(skel)
-	if _rc_names.is_empty():
+	# Só os grupos DINÂMICOS (2+ ossos) entram: os de osso único têm AABB local invariante e já foram
+	# resolvidos no build (ver _rc_dyn). Com a subdivisão automática isso costuma sobrar só o TRONCO.
+	var nd := _rc_dyn.size()
+	if nd == 0:
 		return
-	var ng := _rc_names.size()
+	# Lote desta passada: TODOS os dinâmicos (max_groups <= 0, comportamento original) ou apenas os
+	# próximos `max_groups` a partir do cursor — o RODÍZIO, que espalha o custo por vários frames
+	# em vez de concentrar tudo num pico que estoura o orçamento de 16,67 ms do frame.
+	var batch: int = nd if max_groups <= 0 else mini(max_groups, nd)
 	var gpose: Array[Transform3D] = []; gpose.resize(skel.get_bone_count())
 	for b in skel.get_bone_count():
 		gpose[b] = skel.get_bone_global_pose(b)
-	var root_inv: Array[Transform3D] = []; root_inv.resize(ng)
-	for gi in ng:
-		root_inv[gi] = gpose[_rc_root[gi]].affine_inverse()
-	var has := PackedByteArray(); has.resize(ng)
-	var mn: Array[Vector3] = []; mn.resize(ng)
-	var mx: Array[Vector3] = []; mx.resize(ng)
-	var n := _rc_bv.size()
-	for i in n:
-		var gi := _rc_group[i]
-		var p: Vector3 = root_inv[gi] * (gpose[_rc_bone[i]] * _rc_bv[i])
-		if has[gi] == 0:
-			mn[gi] = p; mx[gi] = p; has[gi] = 1
-		else:
-			mn[gi] = mn[gi].min(p); mx[gi] = mx[gi].max(p)
 	var pad := Vector3(padding, padding, padding)
 	var boxes := {}
-	for gi in ng:
-		if has[gi] == 1:
-			boxes[_rc_names[gi]] = AABB(mn[gi] - pad, (mx[gi] - mn[gi]) + pad * 2.0)
+	for k in batch:
+		var gi: int = _rc_dyn[(_refit_cursor + k) % nd]
+		var cnt: int = _rc_gcount[gi]
+		if cnt <= 0:
+			continue
+		# Só os vértices DESTE grupo (intervalo contíguo montado por _build_refit_cache).
+		var root_inv := gpose[_rc_root[gi]].affine_inverse()
+		var start: int = _rc_gstart[gi]
+		var mn := Vector3.ZERO
+		var mx := Vector3.ZERO
+		var first := true
+		for i in range(start, start + cnt):
+			var p: Vector3 = root_inv * (gpose[_rc_bone[i]] * _rc_bv[i])
+			if first:
+				mn = p; mx = p; first = false
+			else:
+				mn = mn.min(p); mx = mx.max(p)
+		if not first:
+			boxes[_rc_names[gi]] = AABB(mn - pad, (mx - mn) + pad * 2.0)
+	if max_groups > 0:
+		_refit_cursor = (_refit_cursor + batch) % nd
 	for body in _bodies:
 		if not is_instance_valid(body) or not body.has_meta("group"):
 			continue
@@ -530,8 +603,11 @@ func refit(skel: Skeleton3D) -> void:
 		sn.transform = fresh.transform
 		sn.scale = LimbConfig.collider_scale(model_key, g)
 		fresh.free()
+		# get_debug_mesh() GERA geometria a cada chamada — só vale para um gizmo de fato VISÍVEL.
+		# Um gizmo escondido (toggle do tipo desligado, ou fora do membro em foco) é atualizado no
+		# primeiro refit depois de reaparecer; a defasagem máxima é um intervalo de refit.
 		var giz := sn.get_node_or_null(NodePath("_ColliderGizmo"))
-		if giz is MeshInstance3D and sn.shape != null:
+		if giz is MeshInstance3D and sn.shape != null and (giz as MeshInstance3D).is_visible_in_tree():
 			(giz as MeshInstance3D).mesh = sn.shape.get_debug_mesh()
 
 
