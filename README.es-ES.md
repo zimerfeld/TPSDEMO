@@ -160,7 +160,10 @@ disparos en tercera persona. A grandes rasgos ofrece:
   interpolación **Suave / Equilibrada / Reactiva** (retardo de render 100 / 60 / 35 ms — suavidad vs.
   reactividad), **tasa de sincronización 30 / 60 Hz** (actualizaciones servidor→cliente por segundo) y **render del host
   Ventana / Servidor puro** (omitir el renderizado de la sala para liberar la GPU). Todos los modelos dinámicos (jugadores, enemigos,
-  balas, bombas) se replican desde el servidor host. La pantalla Jugar en línea persiste cada opción (último
+  balas, bombas) se replican desde el servidor host. Al conectar, host y cliente intercambian un **ID de
+  build** — las versiones distintas se rechazan con un aviso claro **"Versiones incompatibles — Host / Tú"**
+  (PT/EN/ES) en vez de fallar a oscuras, avisando a ambos que usen el **mismo `.exe`** (build sellada en el
+  export). La pantalla Jugar en línea persiste cada opción (último
   Puerto/IP, interpolación, tasa de sincronización, render del host) y las restaura la próxima vez; el desplegable **IP/Dominio**
   lista las direcciones recientes **y los dominios completos guardados** (los FQDN se mantienen aparte, no se mezclan con las
   IP recientes) para volver a seleccionarlas más tarde; las pantallas Host/Cliente

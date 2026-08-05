@@ -74,7 +74,9 @@ Português/English/Español buttons** and each scene ships its own JSON dictiona
 room manager to start levels as isolated rooms and, per room, **Play** into it, **Observe** with a
 free-fly no-collision camera, **Restart** or **Stop** it (both warn the room's clients with a distinct
 "level stopped/restarted by host" notice); **Client** opens a room browser that lists the
-running rooms with a **Play** button. Each player's chosen variant/colour shows for everyone,
+running rooms with a **Play** button. Host and client exchange a **build ID** on connect, refusing
+mismatched builds with a clear **"Incompatible versions"** notice (PT/EN/ES) so both run the same `.exe`.
+Each player's chosen variant/colour shows for everyone,
 and other players/enemies are smoothed with a timestamped interpolation buffer for a flicker-free,
 high-FPS client view. A pre-session **Optimization** selector picks interpolation (Smooth/Balanced/
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
@@ -130,7 +132,9 @@ mesclados no carregamento. O jogo online é **por salas**: escolha **Host** ou *
 Online. **Host** abre um gerenciador de salas para iniciar levels como salas isoladas e, por sala,
 **Jogar** nela, **Observar** com uma câmera livre sem colisão, **Reiniciar** ou **Parar** (ambos avisam
 os clientes daquela sala com um aviso distinto "nível parado/reiniciado pelo host"); **Client**
-abre um navegador que lista as salas em execução com um botão **Jogar**. A variante/cor escolhida por cada
+abre um navegador que lista as salas em execução com um botão **Jogar**. Host e cliente trocam um **ID de
+build** ao conectar, recusando versões diferentes com um aviso claro **"Versões incompatíveis"** (PT/EN/ES)
+para os dois rodarem o mesmo `.exe`. A variante/cor escolhida por cada
 jogador aparece para todos, e os outros players/inimigos são suavizados por um buffer de interpolação
 com snapshots datados para uma visão do cliente sem flicker e com FPS alto. Um seletor de **Otimização**
 pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync (30/60 Hz) e render do host
