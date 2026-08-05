@@ -320,7 +320,9 @@ global lo escanea como cualquier otro esqueleto, de modo que los interruptores d
 Members / Type / Name / Id) se le aplican en vivo — activar cualquier botón habilitado/deshabilitado muestra el efecto
 en el robot de inmediato.
 
-Encima de las columnas, una sección general contiene **HUD FPS** (`hud_fps`), **Health Monitor**
+Encima de las columnas, una sección general contiene **HUD Versión** (`hud_version`, el **primer** toggle de
+la sección — muestra el `build_id` de esta build en la esquina inferior derecha, la MISMA cadena que el
+`RoomManager` compara en el handshake de red; sirve para confirmar que todos están en la misma versión publicada), **HUD FPS** (`hud_fps`), **Health Monitor**
 (`performance_hud`, la etiqueta de la fila de desarrollador para el Performance HUD; ver abajo) y **Malha no Solo** (`show_grid`) — una rejilla
 de suelo de alambre de 100 m × 100 m dibujada en el origen en cualquier pantalla que contenga contenido 3D (Modelos 3D, niveles).
 Como `main.gd` intercambia pantallas como hijas del nodo `Main` (de modo que `current_scene` siempre

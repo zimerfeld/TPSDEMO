@@ -329,7 +329,9 @@ idle animation. Because the preview model sits **outside** the `no_debug_overlay
 Members / Type / Name / Id) apply to it live — flipping any enabled/disabled button shows the effect
 on the robot immediately.
 
-Above the columns, a general section holds **HUD FPS** (`hud_fps`), **Health Monitor**
+Above the columns, a general section holds **Version HUD** (`hud_version`, the **first** toggle of the
+section — shows this build's `build_id` in the bottom-right corner, the SAME string the `RoomManager`
+compares in the network handshake; use it to confirm everyone is on the same published version), **HUD FPS** (`hud_fps`), **Health Monitor**
 (`performance_hud`, the developer-row label for the Performance HUD; see below) and **Malha no Solo** (`show_grid`) — a 100 m × 100 m wireframe
 floor grid drawn at the origin in any screen that contains 3D content (Modelos 3D, levels).
 Because `main.gd` swaps screens in as children of the `Main` node (so `current_scene` always
