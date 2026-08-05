@@ -174,7 +174,7 @@ template_manager_base.gd::GDScript::340131288892778639::1783207602::0::1::::Temp
 ui_nav.gd::GDScript::8066163686518468714::1783199012::0::1::::<>Node<><>0<>0<><>::
 ::res://build/::1783471281
 icon.ico::OtherFile::-1::1783471281::0::1::::<><><>0<>0<><>::
-::res://build/windows/::1784841978
+::res://build/windows/::1784850549
 ::res://controls2D/::1784752228
 debug2d_toggle.gd::GDScript::5816466045801966744::1783199015::0::1::::Debug2DToggle<>CheckButton<><>0<>0<><>::
 enemy_health_bar.gd::GDScript::1538669343273556771::1784752228::0::1::::<>CanvasLayer<><>0<>0<><>::
@@ -422,14 +422,14 @@ pistola_adult4_2.png::CompressedTexture2D::2497728877353420204::1784840551::1784
 pistola_adult4_3.png::CompressedTexture2D::1133303638539820663::1784840551::1784840554::1::::<><><>0<>0<>9bb913803250e6133aafd387255f3684<>res://.godot/imported/pistola_adult4_3.png-179ec3c005265f1c486e099f0189e406.s3tc.ctex::
 ::res://library3D/weapons/pistola_infantil/::1783199045
 pistola_infantil.tscn::PackedScene::-1::1783199045::0::1::::<><><>0<>0<><>::
-::res://library3D/weapons/rifle_de_energia/::1784843282
-rifle_de_energia_adult5_4.png::CompressedTexture2D::2548514290472373737::1784850545::1784850545::1::::<><><>0<>0<>7abc2dfdd05b150e5bb0ae440aff5012<>res://.godot/imported/rifle_de_energia_adult5_4.png-1401b4a96c6e9552c7c2b09a64756296.ctex::
-rifle_de_energia_adult5_3.png::CompressedTexture2D::9077497785195386758::1784850545::1784850545::1::::<><><>0<>0<>e2d5aca6f5097503e1e8fb7ca6b7830d<>res://.godot/imported/rifle_de_energia_adult5_3.png-63f48a31b200d1459c8fc9c15873313c.ctex::
-rifle_de_energia_adult5_2.png::CompressedTexture2D::1018594695882886664::1784850545::1784850545::1::::<><><>0<>0<>c108d2a40ad338efb23d3145b90f2f3b<>res://.godot/imported/rifle_de_energia_adult5_2.png-469d4a46158048904deafaef149cf757.ctex::
-rifle_de_energia_adult5_1.png::CompressedTexture2D::2386185438079475052::1784850545::1784850545::1::::<><><>0<>0<>971b2712fc2bf6c5b1dbf8359f84b830<>res://.godot/imported/rifle_de_energia_adult5_1.png-e162147e9162c3ced994ba7ec377190e.ctex::
-rifle_de_energia_adult5_0.png::CompressedTexture2D::1538344009273327210::1784850545::1784850545::1::::<><><>0<>0<>5143bc493639873e28d7e49c6651e0a2<>res://.godot/imported/rifle_de_energia_adult5_0.png-257062229e4350e2e8adc80a357f01b3.ctex::
+::res://library3D/weapons/rifle_de_energia/::1784850546
 rifle_de_energia_adult5.glb::PackedScene::933719879636951159::1784843205::1784850546::1::::<><><>0<>0<>2dc98493a6f799e9ed97ab26e210facf<>res://.godot/imported/rifle_de_energia_adult5.glb-2f59441d5a8e64048b4f236fb8d25fb2.scn::uid://v6gkibtggmak::::res://library3D/weapons/rifle_de_energia/rifle_de_energia_adult5_0.png<>uid://885ejego30tc::::res://library3D/weapons/rifle_de_energia/rifle_de_energia_adult5_1.png<>uid://oroduliuxfq3::::res://library3D/weapons/rifle_de_energia/rifle_de_energia_adult5_2.png<>uid://d2lhcd88hbpow::::res://library3D/weapons/rifle_de_energia/rifle_de_energia_adult5_3.png<>uid://bckrwmw42bwq0::::res://library3D/weapons/rifle_de_energia/rifle_de_energia_adult5_4.png
 rifle_de_energia_adult5.tscn::PackedScene::-1::1784843205::0::1::::<><><>0<>0<><>::uid://nkkh245sa5c2::::res://rifle_de_energia_adult5.glb
+rifle_de_energia_adult5_0.png::CompressedTexture2D::1538344009273327210::1784850545::1784850545::1::::<><><>0<>0<>5143bc493639873e28d7e49c6651e0a2<>res://.godot/imported/rifle_de_energia_adult5_0.png-257062229e4350e2e8adc80a357f01b3.ctex::
+rifle_de_energia_adult5_1.png::CompressedTexture2D::2386185438079475052::1784850545::1784850545::1::::<><><>0<>0<>971b2712fc2bf6c5b1dbf8359f84b830<>res://.godot/imported/rifle_de_energia_adult5_1.png-e162147e9162c3ced994ba7ec377190e.ctex::
+rifle_de_energia_adult5_2.png::CompressedTexture2D::1018594695882886664::1784850545::1784850545::1::::<><><>0<>0<>c108d2a40ad338efb23d3145b90f2f3b<>res://.godot/imported/rifle_de_energia_adult5_2.png-469d4a46158048904deafaef149cf757.ctex::
+rifle_de_energia_adult5_3.png::CompressedTexture2D::9077497785195386758::1784850545::1784850545::1::::<><><>0<>0<>e2d5aca6f5097503e1e8fb7ca6b7830d<>res://.godot/imported/rifle_de_energia_adult5_3.png-63f48a31b200d1459c8fc9c15873313c.ctex::
+rifle_de_energia_adult5_4.png::CompressedTexture2D::2548514290472373737::1784850545::1784850545::1::::<><><>0<>0<>7abc2dfdd05b150e5bb0ae440aff5012<>res://.godot/imported/rifle_de_energia_adult5_4.png-1401b4a96c6e9552c7c2b09a64756296.ctex::
 ::res://scenes2D/::1783105636
 ::res://scenes2D/chooseplayer/::1784752228
 chooseplayer.gd::GDScript::6378845830578934113::1784752228::0::1::::<>Node<><>0<>0<><>::
@@ -556,147 +556,147 @@ developer_bg.gdshader::Shader::5471995300348881648::1783199058::0::1::::<><><>0<
 levels_bg.gdshader::Shader::2375690967412455883::1783265588::0::1::::<><><>0<>0<><>::
 playonline_bg.gdshader::Shader::5380138827369306505::1783199059::0::1::::<><><>0<>0<><>::
 settings_bg.gdshader::Shader::1413512082946433007::1783199059::0::1::::<><><>0<>0<><>::
-::res://ZIMARO/::1784842052
-sortspec.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
-🏠 Home (EN).md::TextFile::-1::1784840444::0::1::::<><><>0<>0<><>::
-🏠 Home (ES).md::TextFile::-1::1784840450::0::1::::<><><>0<>0<><>::
-🏠 Home.md::TextFile::-1::1784840434::0::1::::<><><>0<>0<><>::
+::res://ZIMARO/::1785006649
+sortspec (PT).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🏠 Home (EN).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+🏠 Home (ES).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+🏠 Home (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 📌 Backlog (EN).md::TextFile::-1::1784842052::0::1::::<><><>0<>0<><>::
 📌 Backlog (ES).md::TextFile::-1::1784842052::0::1::::<><><>0<>0<><>::
-📌 Backlog.md::TextFile::-1::1784842052::0::1::::<><><>0<>0<><>::
-::res://ZIMARO/💼 Negócio/::1784752228
+📌 Backlog (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+::res://ZIMARO/💼 Negócio/::1785006649
 💜 Financiamento e Patrocínio (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 💜 Financiamento e Patrocínio (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-💜 Financiamento e Patrocínio.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
-::res://ZIMARO/🔀 Fluxos/::1784752228
+💜 Financiamento e Patrocínio (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+::res://ZIMARO/🔀 Fluxos/::1785006649
 ⌨️ fluxo-de-input (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 ⌨️ fluxo-de-input (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-⌨️ fluxo-de-input.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+⌨️ fluxo-de-input (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🎬 fluxo-de-cenas (EN).md::TextFile::-1::1783462556::0::1::::<><><>0<>0<><>::
 🎬 fluxo-de-cenas (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🎬 fluxo-de-cenas.md::TextFile::-1::1783462556::0::1::::<><><>0<>0<><>::
+🎬 fluxo-de-cenas (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🎯 fluxo-de-tiro (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🎯 fluxo-de-tiro (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🎯 fluxo-de-tiro.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🎯 fluxo-de-tiro (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🧪 teste-salas-multiplayer (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🧪 teste-salas-multiplayer (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🧪 teste-salas-multiplayer.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
-::res://ZIMARO/🔑 Arquivos-Chave/::1784841804
+🧪 teste-salas-multiplayer (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+::res://ZIMARO/🔑 Arquivos-Chave/::1785006649
 🎮 player-gd (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🎮 player-gd (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🎮 player-gd.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🎮 player-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 💚 health-bar-gd (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 💚 health-bar-gd (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-💚 health-bar-gd.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+💚 health-bar-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 💥 bullet-gd (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 💥 bullet-gd (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-💥 bullet-gd.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+💥 bullet-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🕹️ player-input-gd (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🕹️ player-input-gd (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🕹️ player-input-gd.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🕹️ player-input-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🤖 red-robot-gd (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
 🤖 red-robot-gd (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🤖 red-robot-gd.md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+🤖 red-robot-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🦴 body-parts-gd (EN).md::TextFile::-1::1784841621::0::1::::<><><>0<>0<><>::
 🦴 body-parts-gd (ES).md::TextFile::-1::1784841642::0::1::::<><><>0<>0<><>::
-🦴 body-parts-gd.md::TextFile::-1::1784841479::0::1::::<><><>0<>0<><>::
+🦴 body-parts-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🦿 limb-colliders-gd (EN).md::TextFile::-1::1784841727::0::1::::<><><>0<>0<><>::
 🦿 limb-colliders-gd (ES).md::TextFile::-1::1784841804::0::1::::<><><>0<>0<><>::
-🦿 limb-colliders-gd.md::TextFile::-1::1784841681::0::1::::<><><>0<>0<><>::
+🦿 limb-colliders-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🧠 red-robot-ai-gd (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
 🧠 red-robot-ai-gd (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🧠 red-robot-ai-gd.md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+🧠 red-robot-ai-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🧭 main-gd (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🧭 main-gd (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🧭 main-gd.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🧭 main-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🩹 enemy-health-bar-gd (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🩹 enemy-health-bar-gd (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🩹 enemy-health-bar-gd.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
-::res://ZIMARO/🔖 Convenções/::1784752228
+🩹 enemy-health-bar-gd (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+::res://ZIMARO/🔖 Convenções/::1785006649
 📄 formatacao (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 📄 formatacao (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-📄 formatacao.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+📄 formatacao (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 📌 ancoragem-ui (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 📌 ancoragem-ui (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-📌 ancoragem-ui.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+📌 ancoragem-ui (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 📐 layout-responsivo (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 📐 layout-responsivo (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-📐 layout-responsivo.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+📐 layout-responsivo (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🔁 navegacao-tab (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🔁 navegacao-tab (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🔁 navegacao-tab.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🔁 navegacao-tab (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🔽 dropdowns (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🔽 dropdowns (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🔽 dropdowns.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
-::res://ZIMARO/🚀 Operação/::1784840414
+🔽 dropdowns (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+::res://ZIMARO/🚀 Operação/::1785006649
 💻 Rodar no Editor (Dev) (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 💻 Rodar no Editor (Dev) (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-💻 Rodar no Editor (Dev).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+💻 Rodar no Editor (Dev) (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 📦 Atualizar Asset da Release (GitHub) (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
 📦 Atualizar Asset da Release (GitHub) (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-📦 Atualizar Asset da Release (GitHub).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+📦 Atualizar Asset da Release (GitHub) (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🔌 MCP do Godot (EN).md::TextFile::-1::1784840394::0::1::::<><><>0<>0<><>::
 🔌 MCP do Godot (ES).md::TextFile::-1::1784840414::0::1::::<><><>0<>0<><>::
-🔌 MCP do Godot.md::TextFile::-1::1784840374::0::1::::<><><>0<>0<><>::
+🔌 MCP do Godot (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🚀 Build Windows (Prod) (EN).md::TextFile::-1::1783471281::0::1::::<><><>0<>0<><>::
 🚀 Build Windows (Prod) (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🚀 Build Windows (Prod).md::TextFile::-1::1783471281::0::1::::<><><>0<>0<><>::
-::res://ZIMARO/🧩 Sistemas/::1784842026
+🚀 Build Windows (Prod) (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+::res://ZIMARO/🧩 Sistemas/::1785006649
 ⚔️ facções (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
 ⚔️ facções (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-⚔️ facções.md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+⚔️ facções (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 ⚡ performance-hud (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 ⚡ performance-hud (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-⚡ performance-hud.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+⚡ performance-hud (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 ❤️ sistema-de-vida (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 ❤️ sistema-de-vida (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-❤️ sistema-de-vida.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
-🌀 fundos-2D-animados (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🌀 fundos-2D-animados (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🌀 fundos-2D-animados.md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+❤️ sistema-de-vida (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+🌀 fundos-2D-animados (EN).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+🌀 fundos-2D-animados (ES).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+🌀 fundos-2D-animados (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🌌 ambiente-dos-levels (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🌌 ambiente-dos-levels (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🌌 ambiente-dos-levels.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🌌 ambiente-dos-levels (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🌐 multiplayer (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🌐 multiplayer (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🌐 multiplayer.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🌐 multiplayer (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🎮 player (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
 🎮 player (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🎮 player.md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+🎮 player (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🐞 debug-overlay (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🐞 debug-overlay (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🐞 debug-overlay.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🐞 debug-overlay (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🔊 audio (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🔊 audio (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🔊 audio.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🔊 audio (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🔫 combate-tiro (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
 🔫 combate-tiro (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🔫 combate-tiro.md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+🔫 combate-tiro (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🗣️ localizacao (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
 🗣️ localizacao (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🗣️ localizacao.md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+🗣️ localizacao (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🗿 biblioteca-de-modelos (EN).md::TextFile::-1::1784841965::0::1::::<><><>0<>0<><>::
 🗿 biblioteca-de-modelos (ES).md::TextFile::-1::1784841967::0::1::::<><><>0<>0<><>::
-🗿 biblioteca-de-modelos.md::TextFile::-1::1784841963::0::1::::<><><>0<>0<><>::
+🗿 biblioteca-de-modelos (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🚪 salas (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🚪 salas (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🚪 salas.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🚪 salas (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🛰️ hospedagem-online (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🛰️ hospedagem-online (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🛰️ hospedagem-online.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🛰️ hospedagem-online (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🤖 inimigos (EN).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
 🤖 inimigos (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🤖 inimigos.md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
+🤖 inimigos (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🧩 templates-de-level (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🧩 templates-de-level (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🧩 templates-de-level.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🧩 templates-de-level (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🧱 recursos-nativos-godot (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 🧱 recursos-nativos-godot (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-🧱 recursos-nativos-godot.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+🧱 recursos-nativos-godot (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
 🩸 dano-localizado (EN).md::TextFile::-1::1784842017::0::1::::<><><>0<>0<><>::
 🩸 dano-localizado (ES).md::TextFile::-1::1784842026::0::1::::<><><>0<>0<><>::
-🩸 dano-localizado.md::TextFile::-1::1784842010::0::1::::<><><>0<>0<><>::
-::res://ZIMARO/🧭 Meta/::1784752228
+🩸 dano-localizado (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::
+::res://ZIMARO/🧭 Meta/::1785006649
 📌 Fatos-Chave (EN).md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
 📌 Fatos-Chave (ES).md::TextFile::-1::1784752228::0::1::::<><><>0<>0<><>::
-📌 Fatos-Chave.md::TextFile::-1::1783265588::0::1::::<><><>0<>0<><>::
+📌 Fatos-Chave (PT).md::TextFile::-1::1785006649::0::1::::<><><>0<>0<><>::

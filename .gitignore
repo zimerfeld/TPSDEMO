@@ -28,3 +28,6 @@ mono_crash.*.json
 # Blender versioning
 *.blend[0-9]*
 build/windows/*.exe
+
+/.godot/editor/filesystem_cache10
+/.godot/uid_cache.bin
