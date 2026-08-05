@@ -438,8 +438,10 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 # ID de build desta instância p/ o handshake de versão. Editor → "editor-dev" (duas instâncias de
 # editor sempre batem, p/ testar em 2 PCs sem carimbo). Exportado → lê o build_id.json que o
-# build_windows.ps1 carimba no export. Sem arquivo (build antiga/sem carimbo) → "desconhecida"
-# (dois assim se igualariam; por isso todo export novo passa a carimbar). Resolvido uma única vez.
+# build_windows.ps1 carimba no export de forma DETERMINÍSTICA (git describe: a tag exata, ex.
+# "202608051426", ou <tag>-<n>-g<sha> [+ "-dirty"]). Determinístico ⇒ dois PCs que buildam o MESMO
+# commit geram o MESMO ID e batem aqui — não é preciso rodar o mesmíssimo arquivo .exe. Sem arquivo
+# (build antiga/sem carimbo) → "desconhecida" (dois assim se igualariam). Resolvido uma única vez.
 func game_version() -> String:
 	if _game_version != "":
 		return _game_version

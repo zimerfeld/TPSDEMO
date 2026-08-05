@@ -99,10 +99,12 @@ Desde el 2026-08-05, al conectar, host y cliente intercambian un **ID de build**
 su versión en `peer_connected` y el cliente compara en `receive_host_version`. Si las versiones **difieren**,
 el cliente **rechaza** con el aviso *"Versiones incompatibles — Host: X, Tú: Y"* (PT/EN/ES) en vez de fallar
 a oscuras; si el host es una build antigua que ni responde, un **timeout de 5 s** muestra *"No se pudo
-verificar la versión del host"*. El ID se sella en el export con `build_windows.ps1` (`build_id.json` = SHA
-corto de git + `-dirty` + timestamp; leído por `RoomManager.game_version`, incrustado en el `.exe`). En el
-**editor** todos coinciden (`editor-dev`). Regla práctica: **ambos deben usar el mismo `.exe`** — ahora las
-versiones distintas avisan en vez de fallar mudo. Ver [[🌐 multiplayer (ES)]].
+verificar la versión del host"*. El ID se sella en el export con `build_windows.ps1` de forma
+**determinista** vía `git describe --tags --dirty --always` (`build_id.json` = la etiqueta exacta cuando el
+commit está en un tag, ej.: `202608051426`; si no `<tag>-<n>-g<sha>`; sufijo `-dirty` si hay cambios sin
+commitear; leído por `RoomManager.game_version`, incrustado en el `.exe`). En el **editor** todos coinciden
+(`editor-dev`). Regla práctica: **usar el mismo `.exe`** — y como el ID ahora es determinista, **compilar el
+mismo commit** también produce el mismo ID y coincide en el handshake. Ver [[🌐 multiplayer (ES)]].
 
 ### Errores comunes
 - **`RequiresVerifiedAccount`**: la cuenta de playit necesita un **e-mail verificado**. Resuélvelo en https://playit.gg/account añadiendo un e-mail + confirmando, **o** iniciando sesión vía **Discord/Google** (ya verificados).
