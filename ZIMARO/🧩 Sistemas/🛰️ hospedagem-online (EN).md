@@ -99,10 +99,12 @@ Since 2026-08-05, on connect the host and client exchange a **build ID**: `RoomM
 on `peer_connected` and the client compares in `receive_host_version`. If the versions **differ**, the
 client **refuses** with *"Incompatible versions — Host: X, You: Y"* (PT/EN/ES) instead of failing silently;
 if the host is an old build that never answers, a **5 s timeout** shows *"Could not verify the host's
-version"*. The ID is stamped at export by `build_windows.ps1` (`build_id.json` = short git SHA + `-dirty`
-+ timestamp; read by `RoomManager.game_version`, embedded in the `.exe`). In the **editor** everyone
-matches (`editor-dev`). Rule of thumb: **both must run the same `.exe`** — different versions now warn
-instead of failing mute. See [[🌐 multiplayer (EN)]].
+version"*. The ID is stamped at export by `build_windows.ps1` **deterministically** via
+`git describe --tags --dirty --always` (`build_id.json` = the exact tag when the commit sits on a tag, e.g.
+`202608051426`; else `<tag>-<n>-g<sha>`; `-dirty` suffix if there are uncommitted changes; read by
+`RoomManager.game_version`, embedded in the `.exe`). In the **editor** everyone matches (`editor-dev`). Rule
+of thumb: **run the same `.exe`** — and since the ID is now deterministic, **building the same commit** also
+yields the same ID and matches in the handshake. See [[🌐 multiplayer (EN)]].
 
 ### Common errors
 - **`RequiresVerifiedAccount`**: the playit account needs a **verified e-mail**. Resolve at https://playit.gg/account by adding an e-mail + confirming, **or** logging in via **Discord/Google** (already verified).
