@@ -115,17 +115,17 @@ Stop-RunningZimaro $exeOut
 # 2026-07-03: o .exe saía com a cena VELHA mesmo com -Force) — limpa antes de todo export para o
 # .exe sempre refletir o estado atual dos fontes. Custo: re-converter as cenas (segundos).
 Remove-Item (Join-Path $proj ".godot\exported") -Recurse -Force -ErrorAction SilentlyContinue
-# Carimbo de build p/ o handshake de versao no jogo: grava build_id.json com um ID unico por export
-# (SHA curto do git + flag -dirty + timestamp). O RoomManager le esse arquivo no .exe (game_version)
-# e recusa peers de builds diferentes com aviso claro. build_id.json e gitignored (artefato gerado).
-# UTF-8 SEM BOM para o JSON.parse do Godot nao engasgar com o cabecalho.
-$sha = ""
-try { $sha = (& git -C $proj rev-parse --short HEAD 2>$null) } catch {}
-$sha = "$sha".Trim()
-if (-not $sha) { $sha = "nogit" }
-$dirty = ""
-try { if (& git -C $proj status --porcelain 2>$null) { $dirty = "-dirty" } } catch {}
-$buildId = "$sha$dirty-$(Get-Date -Format 'yyyyMMddHHmmss')"
+# Carimbo de build DETERMINISTICO p/ o handshake de versao no jogo: grava build_id.json com um ID
+# derivado SO do git via `git describe` - a MESMA entrada (commit) gera sempre a MESMA saida. Na tag
+# exata vira o nome da tag (ex.: 202608051426); senao <tag>-<n>-g<sha-curto>; sufixo -dirty se houver
+# mudanca nao commitada (tracked); fallback p/ SHA curto (--always) quando nao ha tags. Determinismo
+# importa: dois PCs que buildam o MESMO commit geram o MESMO build_id, entao o handshake do RoomManager
+# (game_version) casa e eles jogam juntos. build_id.json e gitignored (artefato gerado).
+# build_id.json em UTF-8 SEM BOM para o JSON.parse do Godot nao engasgar com o cabecalho.
+$buildId = ""
+try { $buildId = (& git -C $proj describe --tags --dirty --always 2>$null) } catch {}
+$buildId = "$buildId".Trim()
+if (-not $buildId) { $buildId = "nogit" }
 [System.IO.File]::WriteAllText((Join-Path $proj "build_id.json"), "{`"build_id`":`"$buildId`"}", (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "build_id = $buildId"
 Write-Host "Exportando $exeOut ..."
