@@ -24,7 +24,12 @@ apply instantly (`DebugOverlay.refresh()`).
 
 ## Developer screen
 
-- **General** (`GridContainer`): **FPS HUD** (`hud_fps`) and **Health Monitor** (`performance_hud`).
+- **General** (`GridContainer`): **Version HUD** (`hud_version`, **1st option**, before the FPS HUD), **FPS HUD**
+  (`hud_fps`) and **Health Monitor** (`performance_hud`). The **Version HUD** draws a discreet label in the
+  **bottom-right corner** with `"v " + RoomManager.game_version()` — the same `build_id` as the network
+  handshake (`editor-dev` in the editor; the `build_windows.ps1` stamp in the `.exe`). It lets the user
+  confirm by eye they are on the same published build as their friends. Implemented in `_update_version_hud`
+  (lives on the same `CanvasLayer` as the FPS HUD; static text, resolved once).
 - **Debug 2D** (single column): master `debug_2d` + rows `show_type` / `show_name` / `show_id` /
   `show_path` / `show_tab` (**Tab is the last option**). Draws 2D tooltips (colored border +
   TYPE/Name/ID/PATH/TAB, **one line per value, in the SAME order as the toggles** of the developer screen — the

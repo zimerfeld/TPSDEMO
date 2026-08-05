@@ -24,7 +24,12 @@ aplicam na hora (`DebugOverlay.refresh()`).
 
 ## Tela developer
 
-- **Geral** (`GridContainer`): **HUD FPS** (`hud_fps`) e **Monitor de Saúde** (`performance_hud`).
+- **Geral** (`GridContainer`): **HUD Versão** (`hud_version`, **1ª opção**, antes do HUD FPS), **HUD FPS**
+  (`hud_fps`) e **Monitor de Saúde** (`performance_hud`). O **HUD Versão** desenha um rótulo discreto no
+  **canto inferior direito** com `"v " + RoomManager.game_version()` — o mesmo `build_id` do handshake de
+  rede (no editor, `editor-dev`; no `.exe`, o carimbo do `build_windows.ps1`). Serve para o usuário conferir
+  a olho que está na mesma build publicada dos amigos. Implementado em `_update_version_hud` (vive no mesmo
+  `CanvasLayer` do HUD FPS; texto estático, resolvido uma vez).
 - **Debug 2D** (coluna única): master `debug_2d` + linhas `show_type` / `show_name` / `show_id` /
   `show_path` / `show_tab` (**Tab é a última opção**). Desenha tooltips 2D (borda colorida +
   TYPE/Name/ID/PATH/TAB, **uma linha por valor, na MESMA ordem dos toggles** da tela developer — a

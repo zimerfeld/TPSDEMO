@@ -24,6 +24,7 @@ const _TOGGLES: Dictionary = {
 # para alinhar os botões em colunas — então não têm um nó "row" (HBox) como os demais. Cada
 # chave de config mapeia o par [botão Desativado, botão Ativado], com nomes únicos no grid.
 const _GENERAL_TOGGLES: Dictionary = {
+	"hud_version": ["VersionDisabled", "VersionEnabled"],
 	"hud_fps": ["FPSDisabled", "FPSEnabled"],
 	"performance_hud": ["PerfDisabled", "PerfEnabled"],
 }
