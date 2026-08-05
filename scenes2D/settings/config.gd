@@ -29,6 +29,9 @@ var DEFAULTS := {
 	game = {
 		# Debug 2D (tooltips de controles na tela developer). A inspeção 3D foi para a Models.
 		debug_2d = false,
+		# HUD de versão (build_id) no canto inferior direito — mesma string que o RoomManager usa no
+		# handshake de rede (game_version), para o usuário conferir que está na mesma build dos amigos.
+		hud_version = false,
 		hud_fps = false,
 		# 2D tooltip lines (Debug 2D column).
 		show_id = false,

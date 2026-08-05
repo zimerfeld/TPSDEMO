@@ -336,7 +336,9 @@ girando lentamente com sua animação idle. Como o modelo do preview fica **fora
 de **Debug 3D** (Skeleton / Mesh / Members / Type / Name / Id) se aplicam a ele ao vivo — clicar
 qualquer botão ativado/desativado mostra o efeito no robô na hora.
 
-Acima das colunas, uma seção geral tem **HUD FPS** (`hud_fps`), **Monitor de Saúde**
+Acima das colunas, uma seção geral tem **HUD Versão** (`hud_version`, o **primeiro** toggle da seção —
+mostra o `build_id` desta build no canto inferior direito, a MESMA string que o `RoomManager` compara
+no handshake de rede; serve para conferir que todos estão na mesma versão publicada), **HUD FPS** (`hud_fps`), **Monitor de Saúde**
 (`performance_hud`, rótulo da linha na tela developer para o Performance HUD; veja abaixo) e **Malha no Solo** (`show_grid`) — uma grade wireframe de
 100 m × 100 m na origem, em qualquer tela que contenha conteúdo 3D (Modelos 3D, fases). Como o
 `main.gd` troca as telas como filhas do nó `Main` (então `current_scene` permanece sempre `Main`,

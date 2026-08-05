@@ -52,6 +52,8 @@ var _canvas_layer: CanvasLayer = null
 # inst_id → {tooltip: PanelContainer, ctrl_border: Panel, color: Color}
 var _overlay_map: Dictionary = {}
 var _fps_label: Label = null
+# HUD de versão (build_id) no canto inferior direito — texto estático resolvido de RoomManager.game_version().
+var _version_label: Label = null
 var _palette_index: int = 0
 var _last_scene: Node = null
 
@@ -76,6 +78,8 @@ func _ready() -> void:
 		call_deferred("_build_overlays")
 	if _is_fps_on():
 		call_deferred("_update_fps_hud")
+	if _is_version_on():
+		call_deferred("_update_version_hud")
 
 
 # 2D (Control) overlays are shown when the "Show Debug 2D" toggle
@@ -91,6 +95,10 @@ func _is_overlay_active() -> bool:
 
 func _is_fps_on() -> bool:
 	return Settings.config_file.get_value("game", "hud_fps", false)
+
+
+func _is_version_on() -> bool:
+	return Settings.config_file.get_value("game", "hud_version", false)
 
 
 # 2D tooltip lines (Debug 2D column).
@@ -198,6 +206,7 @@ func refresh() -> void:
 	if _is_overlay_active():
 		_build_overlays()
 	_update_fps_hud()
+	_update_version_hud()
 
 
 func _setup_scene_name_label() -> void:
@@ -659,6 +668,7 @@ func _clear_all() -> void:
 		_canvas_layer.queue_free()
 	_canvas_layer = null
 	_fps_label = null
+	_version_label = null
 
 
 func _update_fps_hud() -> void:
@@ -683,6 +693,38 @@ func _update_fps_hud() -> void:
 	elif is_instance_valid(_fps_label):
 		_fps_label.queue_free()
 		_fps_label = null
+
+
+# HUD de versão: rótulo discreto no canto inferior direito com o build_id desta instância — a MESMA
+# string que o RoomManager compara no handshake de rede (game_version). No editor mostra "editor-dev";
+# no .exe, o build_id carimbado pelo build_windows.ps1. Texto estático (resolvido uma vez).
+func _update_version_hud() -> void:
+	if _is_version_on():
+		_ensure_canvas()
+		if not is_instance_valid(_version_label):
+			_version_label = Label.new()
+			_version_label.add_theme_font_size_override("font_size", 14)
+			_version_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.6))
+			_version_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1.0))
+			_version_label.add_theme_constant_override("shadow_offset_x", 1)
+			_version_label.add_theme_constant_override("shadow_offset_y", 1)
+			_version_label.add_theme_constant_override("shadow_as_outline", 1)
+			_version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_version_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			_version_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			# Ancorado no canto inferior direito, crescendo para a esquerda/cima (encostado na borda).
+			_version_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+			_version_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+			_version_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+			_version_label.offset_left = -460.0
+			_version_label.offset_top = -34.0
+			_version_label.offset_right = -12.0
+			_version_label.offset_bottom = -8.0
+			_version_label.text = "v " + RoomManager.game_version()
+			_canvas_layer.add_child(_version_label)
+	elif is_instance_valid(_version_label):
+		_version_label.queue_free()
+		_version_label = null
 
 
 func _scan(node: Node) -> void:
