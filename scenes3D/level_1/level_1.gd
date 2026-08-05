@@ -6,10 +6,15 @@ signal replace_main_scene
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 @onready var spawned_nodes: Node3D = $SpawnedNodes
 @onready var player_spawn_points: Node3D = $PlayerSpawnpoints
+@onready var multiplayer_spawner: MultiplayerSpawner = $MultiplayerSpawner
 
 
 func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
+
+	# Lista de cenas replicaveis montada DINAMICAMENTE da biblioteca (server E cliente, mesma ordem):
+	# qualquer modelo de template — inclusive os novos — replica sem editar a whitelist fixa do .tscn.
+	SpawnableLibrary.configure(multiplayer_spawner)
 
 	if multiplayer == null:
 		CrashHandler.show_error(

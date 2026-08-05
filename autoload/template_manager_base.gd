@@ -186,14 +186,40 @@ func _template_by_id(id: String) -> Dictionary:
 	return {}
 
 
-# Aplica o template ATIVO do level (se houver) ao iniciar — solo ou sala online. True se instanciou.
+# Aplica o template ATIVO do level (se houver) ao iniciar — solo ou "Hospedar Somente". True se HÁ
+# template ativo (mesmo que alguma entrada tenha caminho morto e seja pulada). Spawn IMEDIATO.
 func apply_active(level_path: String, spawned_nodes: Node3D) -> bool:
 	if spawned_nodes == null:
 		return false
 	var template := active(level_path)
 	if template.is_empty():
 		return false
-	_apply_template(template, spawned_nodes)
+	for job in _plan_template(template):
+		_spawn_job(job, spawned_nodes)
+	return true
+
+
+# Igual a apply_active, mas ESPALHA os spawns ao longo de vários frames (per_frame por frame de física)
+# em vez de materializar tudo de uma vez. Usado nas SALAS online: 16+ entidades nascendo no mesmo frame
+# davam um pico de stall no CLIENTE (compilação de shader + construção de LimbColliders) longo o
+# bastante p/ o inimigo "congelar" e, em hardware fraco, estourar o timeout do ENet (a conexão cai e o
+# tiro deixa de chegar ao servidor → "não detecta colisão"). Espalhando o spawn, o cliente recebe as
+# entidades ao longo de frames → sem pico. Corrotina (fire-and-forget): aparecem nos próximos frames.
+# Ver [[salas-multilevel-fases]].
+func apply_active_gradual(level_path: String, spawned_nodes: Node3D, per_frame: int = 1) -> bool:
+	if spawned_nodes == null:
+		return false
+	var template := active(level_path)
+	if template.is_empty():
+		return false
+	var count := 0
+	for job in _plan_template(template):
+		if not is_instance_valid(spawned_nodes):
+			return true  # sala fechada no meio do spawn gradual
+		_spawn_job(job, spawned_nodes)
+		count += 1
+		if count % maxi(1, per_frame) == 0:
+			await get_tree().physics_frame
 	return true
 
 
@@ -304,36 +330,53 @@ func _find_model_path(dir_path: String, key: String) -> String:
 
 # ---- Instanciação no level ----------------------------------------------------------------
 
-func _apply_template(template: Dictionary, spawned_nodes: Node3D) -> void:
+# Monta a lista PLANA de spawns (cena + posição + entrada) SEM tocar na árvore. Entradas com caminho
+# de cena inexistente (modelo removido/movido — ex.: a extinta library3D/structures) são PULADAS com
+# aviso, sem derrubar o resto do template. Cada job: {scene, entry, position, index}.
+func _plan_template(template: Dictionary) -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
+	var jobs: Array = []
 	var index := 0
 	for raw_entry in template.get("entries", []):
 		if not raw_entry is Dictionary:
 			continue
 		var entry: Dictionary = raw_entry
 		var scene_path := String(entry.get("scene_path", ""))
+		# Caminho morto (modelo removido/movido, ex.: a extinta library3D/structures): checa ANTES de
+		# load() p/ pular a entrada sem o log de erro da engine, sem derrubar o resto do template.
+		if scene_path == "" or not ResourceLoader.exists(scene_path):
+			push_warning("%s: cena inexistente no template (entrada pulada): %s" % [get_class(), scene_path])
+			continue
 		var scene := load(scene_path) as PackedScene
 		if scene == null:
-			push_warning("%s: cena inválida no template: %s" % [get_class(), scene_path])
 			continue
-		var positions := _positions_for(entry, rng)
-		for position in positions:
-			var node := scene.instantiate()
-			if not node is Node3D:
-				node.queue_free()
-				continue
-			var n3d := node as Node3D
-			n3d.name = "%s_%s_%03d" % [
-				String(entry.get("kind", "node")).capitalize(),
-				String(entry.get("model_key", scene_path.get_file().get_basename())),
-				index,
-			]
+		for position in _positions_for(entry, rng):
+			jobs.append({"scene": scene, "entry": entry, "position": position, "index": index})
 			index += 1
-			n3d.position = position
-			n3d.rotation.y = deg_to_rad(float(entry.get("rotation_y", 0.0)))
-			_configure_spawned_node(n3d, entry)
-			spawned_nodes.add_child(n3d, true)
+	return jobs
+
+
+# Instancia e posiciona UM job no SpawnedNodes. O child_entered_tree do RoomManager aplica a
+# visibilidade da sala; o MultiplayerSpawner replica a cena aos peers da sala.
+func _spawn_job(job: Dictionary, spawned_nodes: Node3D) -> void:
+	var scene: PackedScene = job["scene"]
+	var entry: Dictionary = job["entry"]
+	var node := scene.instantiate()
+	if not node is Node3D:
+		node.queue_free()
+		return
+	var n3d := node as Node3D
+	var scene_path := String(entry.get("scene_path", ""))
+	n3d.name = "%s_%s_%03d" % [
+		String(entry.get("kind", "node")).capitalize(),
+		String(entry.get("model_key", scene_path.get_file().get_basename())),
+		int(job["index"]),
+	]
+	n3d.position = job["position"]
+	n3d.rotation.y = deg_to_rad(float(entry.get("rotation_y", 0.0)))
+	_configure_spawned_node(n3d, entry)
+	spawned_nodes.add_child(n3d, true)
 
 
 func _configure_spawned_node(node: Node3D, entry: Dictionary) -> void:
