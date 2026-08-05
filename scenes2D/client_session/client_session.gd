@@ -14,6 +14,8 @@ const CLIENT_SESSION_PATH: String = "res://scenes2D/client_session/client_sessio
 
 var _playing_room: int = -1            # sala em que o cliente está jogando (-1 = navegando)
 var _confirm_dialog: FloatingWindow = null
+# Guarda contra tratar a queda de conexão mais de uma vez (o aviso + volta ao PlayOnline rodam 1x).
+var _server_lost: bool = false
 
 # Scaffold ESTÁTICO no .tscn (2026-06-30): título/info/lista/Voltar/Actions já vêm da cena; o código só
 # popula as linhas de sala (dinâmicas) e religa o foco. Antes a tela inteira era montada em runtime.
@@ -36,6 +38,10 @@ func _ready() -> void:
 	RoomManager.rooms_changed.connect(_refresh_rooms)
 	RoomManager.room_closed.connect(_on_room_closed)
 	RoomManager.room_restarted.connect(_on_room_restarted)
+	# Queda de conexão com o host (rede, host fechou, ou timeout por stall de render): sem tratar,
+	# o cliente ficava preso na sala congelada. Avisa e volta ao PlayOnline. Ver _on_server_lost.
+	if not multiplayer.server_disconnected.is_connected(_on_server_lost):
+		multiplayer.server_disconnected.connect(_on_server_lost)
 	RoomManager.request_room_list.rpc_id(1)  # pede a lista de salas ao servidor
 	# Voltou do ChoosePlayer para ENTRAR numa sala? espelha a sala e spawna o player.
 	if RoomManager.pending_play_room >= 0:
@@ -172,6 +178,27 @@ func _on_room_restarted(room_id: int) -> void:
 
 func _alert(message: String) -> void:
 	FloatingDialog.alert(self, "Aviso", message, "OK")
+
+
+# A conexão com o host CAIU no meio da sessão (queda de rede, host encerrou, ou um stall de render
+# longo o bastante para estourar o timeout do ENet). Sem tratar isto, o cliente ficava PRESO numa sala
+# congelada — os inimigos param de sincronizar e o tiro não chega mais ao servidor ("não detecta
+# colisão"). Aqui avisamos e voltamos ao PlayOnline (o peer já está morto; só reseta e navega).
+func _on_server_lost() -> void:
+	if _server_lost:
+		return
+	_server_lost = true
+	_playing_room = -1
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	var dlg := FloatingDialog.alert(self, "Conexão perdida", "A conexão com o host foi perdida.", "OK")
+	dlg.closed.connect(_return_to_playonline)
+
+
+func _return_to_playonline() -> void:
+	if multiplayer.multiplayer_peer != null:
+		multiplayer.multiplayer_peer.close()
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	emit_signal("replace_main_scene", load(PLAYONLINE_PATH))
 
 
 # ───────────────────────────── navegação / ESC ─────────────────────────────
