@@ -10,7 +10,7 @@ atualizado: 2026-07-05
 > Every 2D UI screen has its own animated background made purely from **per-pixel math** (no
 > texture, no extra draw call) to honor the **60 FPS on minimum graphics hardware** target
 > (`CLAUDE.md`). They are `ColorRect`s on a background `CanvasLayer` (`layer = -2`) with a
-> `ShaderMaterial`. Not to be confused with [[🌌 ambiente-dos-levels]], which is the **3D**
+> `ShaderMaterial`. Not to be confused with [[🌌 ambiente-dos-levels (PT)|🌌 ambiente-dos-levels]], which is the **3D**
 > environment inside the arenas.
 
 ## Shaders (folder `themes/backgrounds/`)
@@ -45,5 +45,5 @@ The user noticed a perceptible "division" on the left of the portal. Two causes,
    `na = fract(ang / 6.2831853 + 0.5)` and `floor(na * 40.0, …)`.
 
 Result: left side as seamless as the right, **60 FPS** kept, validated in the `.exe`.
-Related: [[🎬 fluxo-de-cenas]] (Levels screen sits in chooseplayer→levels→level_x),
+Related: [[🎬 fluxo-de-cenas (PT)|🎬 fluxo-de-cenas]] (Levels screen sits in chooseplayer→levels→level_x),
 [[optimize-when-adding-scene-elements]].

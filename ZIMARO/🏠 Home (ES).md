@@ -7,7 +7,7 @@ atualizado: 2026-07-06
 
 # 🏠 ZIMARO — Bóveda de Neuronas
 
-> 🇧🇷 Leia esta página em português → [[🏠 Home]]
+> 🇧🇷 Leia esta página em português → [[🏠 Home (PT)|🏠 Home]]
 
 > 🇺🇸 Read this page in English → [[🏠 Home (EN)]]
 
@@ -75,6 +75,7 @@ atualizado: 2026-07-06
 ## 🚀 Operaciones
 - [[💻 Rodar no Editor (Dev) (ES)|Ejecutar en el Editor (Dev)]] — abrir el proyecto en el editor de Godot 4.6.2 y ejecutar; loopback multijugador con 2 instancias
 - [[🚀 Build Windows (Prod) (ES)|Build Windows (Prod)]] — `pwsh -File build_windows.ps1` → un único `.exe` (PCK embebido) + acceso directo en el Escritorio
+- [[🔌 MCP do Godot (ES)|MCP de Godot]] — conectar Claude Code al editor mediante el addon `godot_ai`; comandos headless (`--import`, `--script`)
 
 ## 🔖 Convenciones
 - [[📄 formatacao (ES)|formato de archivos]] — UTF-8 sin BOM, LF, sin espacios finales, salto de línea final + reconstrucción de la caché de UID

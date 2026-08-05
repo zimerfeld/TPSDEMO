@@ -2,7 +2,7 @@
 tipo: backlog
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-07
+atualizado: 2026-07-23
 ---
 
 # 🗂️ Backlog priorizado — ZIMARO
@@ -18,7 +18,39 @@ atualizado: 2026-07-07
 > tarea con impacto para el usuario, actualizar los READMEs (`.md`/`.en-US`/`.pt-BR`) **y** este cofre; ejecutar
 > `build_windows.ps1` al final; eliminar errores/advertencias tras compilar.
 
-**Última revisión:** 2026-07-08 · **Rama activa:** `feature/locomocao-realista-inimigos`
+**Última revisión:** 2026-07-23 · **Rama activa:** `feature/jogador7-import`
+
+---
+
+## 🟢 Submiembros distales + clasificador bilingüe + rendimiento del refit — LISTO p/ revisión (2026-07-23)
+
+Rama `feature/jogador7-import`. **Sin commit** (a la espera de revisión).
+
+- **Las extremidades pasan a ser submiembros automáticos** — antebrazo/mano (dueño BRAZO) y
+  espinilla/pie (dueño PIERNA) obtienen colisionador y daño PROPIOS; sin valor definido **heredan el
+  del miembro-dueño**. Nuevo virtual `BodyParts.is_distal_sub_member` + `@export
+  auto_distal_sub_members` en `LimbColliders`. **Opt-out** de `player`/`red_robot` (mantienen el
+  hitbox de miembro entero), reflejado en la vista previa por `_MODEL_NO_AUTO_DISTAL`. Medido:
+  humanoide/monstro = 6 miembros + 8 submiembros; player = 6 + 0.
+  Ver [[🩸 dano-localizado (ES)]] · [[🦴 body-parts-gd (ES)]] · [[🦿 limb-colliders-gd (ES)]].
+- **Clasificador bilingüe PT+EN** — ahora reconoce `cabeca/peito/bracoDireito/antebracoDireito/…`
+  además del inglés (el `monstro`, con huesos en PT, clasificaba **0 de 16 huesos**). El PT "pe" (pie)
+  se empareja por **token exacto** (`BodyParts.words_of`); si no, chocaría con `peito`/`perna`/`pescoco`.
+- **Rendimiento del refit** (lo que hundía los FPS en la pantalla Models) — 6,45 → **0,318 ms/frame**
+  (~20×): caché en memoria de `LimbConfig` (sus getters reabrían el JSON del disco, ~140 lecturas/s),
+  grupos de **hueso único** omitidos (AABB invariante — los términos se cancelan) y **rotación** de 3
+  grupos por frame en lugar del throttle adaptativo. ✅ FPS validado en pantalla por el usuario.
+- **Pantalla Models** — el desplegable Submiembro ahora lista **todos** los submiembros en el modo
+  "Todos los miembros" (etiquetados con el miembro-dueño); **pan de la cámara con el botón DERECHO**
+  (el izquierdo sigue rotando el modelo, la rueda sigue con el zoom).
+- **Importación de modelos** — `humanoide` y `monstro_pedregulho3` corregidos y reimportados (36
+  animaciones cada uno). Los nombres con el sufijo de descarga `" (2)"` y las rutas de raíz en los
+  `.import`/`.tscn` rompían la importación. La nueva nota [[🔌 MCP do Godot (ES)]] documenta el addon
+  y los comandos headless.
+
+**Pendiente en este frente:** validar `red_robot` en partida (opt-out analizado, sin prueba dedicada);
+el plan **cuadrúpedo** aún no subdivide extremidades (solo el bípedo); el `README.md` raíz sigue
+**bilingüe** (EN+PT, sin bloque ES) — divergente de la regla trilingüe.
 
 ---
 

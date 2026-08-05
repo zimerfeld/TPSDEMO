@@ -54,6 +54,22 @@ const LEGACY_PATH := "res://data/limb_config.json"
 # categorias. "" quando o modelo não está na biblioteca. Evita re-varrer a cada leitura/escrita.
 static var _dir_cache: Dictionary = {}
 
+# Cache model_key → entrada (dicionário) já lida do disco. SEM ele, cada getter (collider_shape,
+# collider_scale, damage…) reabria e re-parseava o JSON: o refit da tela Models chama 2x por collider,
+# ~5x/s — com 14 colliders davam ~140 leituras de arquivo POR SEGUNDO, o que engasgava a animação e
+# derrubava o FPS. O build_for chama ~6x por collider (o hitch ao selecionar o modelo). Escrita passa
+# só por _save_entry, que reatualiza o cache — então leitura e escrita nunca divergem.
+static var _entry_cache: Dictionary = {}
+
+
+## Descarta o cache de entradas (releitura do disco na próxima consulta). Para quando o JSON for
+## alterado FORA do jogo (edição manual do arquivo) e se queira recarregar sem reiniciar.
+static func invalidate_cache(model_key: String = "") -> void:
+	if model_key == "":
+		_entry_cache.clear()
+	else:
+		_entry_cache.erase(model_key)
+
 
 # Pasta do modelo na biblioteca (res://library3D/<cat>/<model_key>), ou "" se não achar.
 static func _model_dir(model_key: String) -> String:
@@ -101,20 +117,25 @@ static func _read_json(path: String) -> Dictionary:
 static func _load_entry(model_key: String) -> Dictionary:
 	if model_key == "":
 		return {}
+	# Memoizado (ver _entry_cache): sem isto o refit/build reabriria o JSON dezenas de vezes por segundo.
+	if _entry_cache.has(model_key):
+		return _entry_cache[model_key]
+	var entry := {}
 	var up := _user_path(model_key)
-	if FileAccess.file_exists(up):
-		return _read_json(up)
 	var mp := _model_path(model_key)
-	if mp != "" and FileAccess.file_exists(mp):
-		return _read_json(mp)
 	var oldp := "%s/%s.json" % [OLD_DIR, model_key]
-	if FileAccess.file_exists(oldp):
-		return _read_json(oldp)
-	if FileAccess.file_exists(LEGACY_PATH):
+	if FileAccess.file_exists(up):
+		entry = _read_json(up)
+	elif mp != "" and FileAccess.file_exists(mp):
+		entry = _read_json(mp)
+	elif FileAccess.file_exists(oldp):
+		entry = _read_json(oldp)
+	elif FileAccess.file_exists(LEGACY_PATH):
 		var lparsed := _read_json(LEGACY_PATH)
 		if lparsed.has(model_key) and lparsed[model_key] is Dictionary:
-			return lparsed[model_key]
-	return {}
+			entry = lparsed[model_key]
+	_entry_cache[model_key] = entry
+	return entry
 
 
 # Grava a entrada do modelo: tenta a PASTA DO MODELO (res://, editor) — fonte canônica, versionável;
@@ -123,6 +144,9 @@ static func _load_entry(model_key: String) -> Dictionary:
 static func _save_entry(model_key: String, entry: Dictionary) -> void:
 	if model_key == "":
 		return
+	# Mantém o cache de leitura coerente com o que acabou de ser gravado (toda escrita passa aqui),
+	# para os getters devolverem o valor novo sem reler o disco.
+	_entry_cache[model_key] = entry
 	var json := JSON.stringify(entry, "\t")
 	var mp := _model_path(model_key)
 	if mp != "":
