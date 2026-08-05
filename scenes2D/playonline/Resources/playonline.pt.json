@@ -17,5 +17,7 @@
 	"OK": "OK",
 	"Desconectar": "Desconectar",
 	"Desconectar e voltar para a lista de salas ?": "Desconectar e voltar para a lista de salas ?",
-	"Desconectar e voltar para a gerência de salas ?": "Desconectar e voltar para a gerência de salas ?"
+	"Desconectar e voltar para a gerência de salas ?": "Desconectar e voltar para a gerência de salas ?",
+	"Versões incompatíveis.\n\nHost: {host}\nVocê: {client}\n\nAtualizem os dois para a mesma versão do jogo.": "Versões incompatíveis.\n\nHost: {host}\nVocê: {client}\n\nAtualizem os dois para a mesma versão do jogo.",
+	"Não foi possível verificar a versão do host.\n\nO host pode estar numa versão antiga. Atualizem os dois para a mesma versão do jogo.": "Não foi possível verificar a versão do host.\n\nO host pode estar numa versão antiga. Atualizem os dois para a mesma versão do jogo."
 }

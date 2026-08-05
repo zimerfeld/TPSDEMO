@@ -6,9 +6,15 @@ signal quit
 const DEFAULT_ROOM_LEVEL: String = "res://scenes3D/level_1/level_1.tscn"
 const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn"
 const CLIENT_SESSION_PATH: String = "res://scenes2D/client_session/client_session.tscn"
-# Timeout (s) da checagem de conexão do "Entrar em Salas": se o servidor não responder a tempo, a
-# tentativa é CANCELADA (não fica tentando indefinidamente) e a tela volta com um aviso.
-const JOIN_TIMEOUT_SEC: float = 2.0
+# Após CONECTAR, quanto tempo (s) esperar o host enviar a sua versão (handshake). Se o host for uma
+# build antiga que nem responde ao handshake, a tentativa é abortada com aviso (não fica pendurada
+# no loading). Generoso p/ cobrir relays lentos (playit): o RPC é confiável e chega logo ao conectar.
+const VERSION_TIMEOUT_SEC: float = 5.0
+# Mensagens do handshake de versão (chaves canônicas PT nos dicionários playonline.{pt,en,es}.json,
+# traduzidas por Locale.tr_key). Em MSG_VERSION_INCOMPAT, {host}/{client} são preenchidos com os IDs
+# de build via String.format.
+const MSG_VERSION_INCOMPAT := "Versões incompatíveis.\n\nHost: {host}\nVocê: {client}\n\nAtualizem os dois para a mesma versão do jogo."
+const MSG_VERSION_TIMEOUT := "Não foi possível verificar a versão do host.\n\nO host pode estar numa versão antiga. Atualizem os dois para a mesma versão do jogo."
 # Quantos valores recentes (porta/IP) guardar para seleção.
 const HISTORY_MAX: int = 3
 # Domínios completos (FQDN) ficam num histórico PRÓPRIO e persistente (não rolam junto com os IPs
@@ -358,7 +364,8 @@ func _on_manage_rooms_pressed() -> void:
 
 # "Entrar em Salas" (Client): conecta como CLIENTE a um servidor de salas e abre o NAVEGADOR de salas
 # (ClientSession), onde escolhe em qual sala entrar. Abre a ClientSession só após o connected_to_server
-# (o peer precisa estar conectado para pedir a lista de salas via RPC).
+# E o handshake de versão OK (host e cliente na mesma build) — versões diferentes recusam com aviso
+# claro (ver _on_version_rejected), evitando o "erro mudo" de tentar jogar entre builds divergentes.
 func _on_join_rooms_pressed() -> void:
 	if _join_pending:
 		return  # já há uma checagem/conexão em andamento
@@ -382,24 +389,54 @@ func _on_join_rooms_pressed() -> void:
 	RoomManager.client_mode = true
 	loading.show()
 	# Reconexão idempotente: uma tentativa anterior (que falhou e voltou pelo retry do CrashHandler,
-	# ou que conectou e deixou o connection_failed ONE_SHOT pendente) pode ter deixado o sinal preso
-	# nesta mesma tela. Sem limpar, o connect() repetido estoura "Signal already connected".
-	if multiplayer.connected_to_server.is_connected(_open_rooms_client):
-		multiplayer.connected_to_server.disconnect(_open_rooms_client)
-	if multiplayer.connection_failed.is_connected(_on_rooms_connect_failed):
-		multiplayer.connection_failed.disconnect(_on_rooms_connect_failed)
-	multiplayer.connected_to_server.connect(_open_rooms_client, CONNECT_ONE_SHOT)
+	# ou que conectou e deixou sinais ONE_SHOT pendentes) pode ter deixado sinais presos nesta mesma
+	# tela. Sem limpar, o connect() repetido estoura "Signal already connected".
+	_disconnect_join_signals()
+	# Fluxo: connected_to_server → aguarda o host enviar a sua versão (handshake); o RoomManager
+	# compara e emite version_verified (abre as salas) ou version_rejected (aviso "incompatíveis").
+	multiplayer.connected_to_server.connect(_on_client_connected_await_version, CONNECT_ONE_SHOT)
 	multiplayer.connection_failed.connect(_on_rooms_connect_failed, CONNECT_ONE_SHOT)
-	# Pendente: bloqueia re-clique e torna o cancelamento idempotente (o 1º de {conectou, falhou}
-	# "vence"). O limite de tempo é do ENet (set_timeout acima) → connection_failed dispara a tempo.
+	RoomManager.version_verified.connect(_on_version_verified, CONNECT_ONE_SHOT)
+	RoomManager.version_rejected.connect(_on_version_rejected, CONNECT_ONE_SHOT)
+	# Pendente: bloqueia re-clique e torna o cancelamento idempotente — o 1º de {versão OK, versão
+	# recusada, falha de conexão, timeout do handshake} "vence" e zera o pending.
 	_join_pending = true
 
 
-func _open_rooms_client() -> void:
+# Conectou ao servidor (o ENet fechou o handshake de rede). Agora AGUARDA o host enviar a sua versão
+# (RoomManager._on_peer_connected → receive_host_version). Arma um timeout: se o host for uma build
+# antiga que nem responde ao handshake de versão, abortamos com aviso em vez de travar no loading.
+func _on_client_connected_await_version() -> void:
+	if not _join_pending:
+		return
+	get_tree().create_timer(VERSION_TIMEOUT_SEC).timeout.connect(_on_version_timeout, CONNECT_ONE_SHOT)
+
+
+# Versão do host == a nossa → segue o fluxo normal: abre o navegador de salas (ClientSession).
+func _on_version_verified() -> void:
 	if not _join_pending:
 		return
 	_join_pending = false
+	_disconnect_join_signals()
 	emit_signal("replace_main_scene", ResourceLoader.load(CLIENT_SESSION_PATH))
+
+
+# Versão do host != a nossa → recusa com aviso claro (fim do "erro mudo" entre builds diferentes).
+func _on_version_rejected(host_version: String, client_version: String) -> void:
+	if not _join_pending:
+		return
+	_join_pending = false
+	var msg := Locale.tr_key(MSG_VERSION_INCOMPAT).format({"host": host_version, "client": client_version})
+	_abort_join(msg)
+
+
+# O host conectou mas não respondeu ao handshake de versão a tempo (provável build antiga, sem o
+# handshake) → aborta com aviso em vez de ficar pendurado no loading.
+func _on_version_timeout() -> void:
+	if not _join_pending:
+		return
+	_join_pending = false
+	_abort_join(Locale.tr_key(MSG_VERSION_TIMEOUT))
 
 
 func _on_rooms_connect_failed() -> void:
@@ -409,16 +446,26 @@ func _on_rooms_connect_failed() -> void:
 	_abort_join("Falha ao conectar em %s:%d.\n\nVerifique o endereço e a porta." % [address.text, int(port.value)])
 
 
-# Encerra uma tentativa de join pendente: esconde o loading, desliga os sinais de conexão (o que
-# ainda não disparou), fecha o peer (volta a Offline) e mostra o aviso com opção de tentar de novo.
+# Encerra uma tentativa de join pendente: esconde o loading, desliga os sinais do handshake (os que
+# ainda não dispararam), fecha o peer (volta a Offline) e mostra o aviso com opção de tentar de novo.
 func _abort_join(msg: String) -> void:
 	loading.hide()
-	if multiplayer.connected_to_server.is_connected(_open_rooms_client):
-		multiplayer.connected_to_server.disconnect(_open_rooms_client)
-	if multiplayer.connection_failed.is_connected(_on_rooms_connect_failed):
-		multiplayer.connection_failed.disconnect(_on_rooms_connect_failed)
+	_disconnect_join_signals()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	CrashHandler.show_error(msg, _on_join_rooms_pressed)
+
+
+# Desliga TODOS os sinais de uma tentativa de join (conexão + handshake de versão). Idempotente —
+# chamado no (re)início da tentativa, ao concluir e ao abortar, para nenhum sinal ficar preso.
+func _disconnect_join_signals() -> void:
+	if multiplayer.connected_to_server.is_connected(_on_client_connected_await_version):
+		multiplayer.connected_to_server.disconnect(_on_client_connected_await_version)
+	if multiplayer.connection_failed.is_connected(_on_rooms_connect_failed):
+		multiplayer.connection_failed.disconnect(_on_rooms_connect_failed)
+	if RoomManager.version_verified.is_connected(_on_version_verified):
+		RoomManager.version_verified.disconnect(_on_version_verified)
+	if RoomManager.version_rejected.is_connected(_on_version_rejected):
+		RoomManager.version_rejected.disconnect(_on_version_rejected)
 
 
 # ───────────────────────────── Otimização (escolhida ANTES de hospedar/entrar) ─────────────────

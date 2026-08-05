@@ -42,7 +42,7 @@ function Get-NewestSourceTime {
 		$top = ($rel -split '[\\/]', 2)[0]
 		if ($exclude -contains $top) { return }
 		if ($_.Extension -in '.md', '.ps1') { return }
-		if ($_.Name -in '.gitignore', '.gitattributes') { return }
+		if ($_.Name -in '.gitignore', '.gitattributes', 'build_id.json') { return }
 		if ($null -eq $newest -or $_.LastWriteTime -gt $newest) { $newest = $_.LastWriteTime }
 	}
 	return $newest
@@ -115,8 +115,26 @@ Stop-RunningZimaro $exeOut
 # 2026-07-03: o .exe saía com a cena VELHA mesmo com -Force) — limpa antes de todo export para o
 # .exe sempre refletir o estado atual dos fontes. Custo: re-converter as cenas (segundos).
 Remove-Item (Join-Path $proj ".godot\exported") -Recurse -Force -ErrorAction SilentlyContinue
+# Carimbo de build p/ o handshake de versao no jogo: grava build_id.json com um ID unico por export
+# (SHA curto do git + flag -dirty + timestamp). O RoomManager le esse arquivo no .exe (game_version)
+# e recusa peers de builds diferentes com aviso claro. build_id.json e gitignored (artefato gerado).
+# UTF-8 SEM BOM para o JSON.parse do Godot nao engasgar com o cabecalho.
+$sha = ""
+try { $sha = (& git -C $proj rev-parse --short HEAD 2>$null) } catch {}
+$sha = "$sha".Trim()
+if (-not $sha) { $sha = "nogit" }
+$dirty = ""
+try { if (& git -C $proj status --porcelain 2>$null) { $dirty = "-dirty" } } catch {}
+$buildId = "$sha$dirty-$(Get-Date -Format 'yyyyMMddHHmmss')"
+[System.IO.File]::WriteAllText((Join-Path $proj "build_id.json"), "{`"build_id`":`"$buildId`"}", (New-Object System.Text.UTF8Encoding($false)))
+Write-Host "build_id = $buildId"
 Write-Host "Exportando $exeOut ..."
 & $godot --headless --path $proj --export-release "Windows Desktop" $exeOut
+# Espera o .exe aparecer: o Godot renomeia .tmp->.exe no fim do export e o antivirus (Defender) pode
+# segurar o arquivo recem-criado por alguns segundos, fazendo o Test-Path falhar em FALSO logo apos o
+# export (o .exe existe, mas so aparece um instante depois). Tenta por ate ~10s antes de desistir.
+$tries = 0
+while (-not (Test-Path $exeOut) -and $tries -lt 20) { Start-Sleep -Milliseconds 500; $tries++ }
 if (-not (Test-Path $exeOut)) { throw "Export falhou: $exeOut não foi criado." }
 
 # 3) (Re)cria o atalho no Desktop com o ícone.

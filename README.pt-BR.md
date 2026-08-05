@@ -183,7 +183,10 @@ em terceira pessoa. Em alto nível, oferece:
   (atraso de render 100 / 60 / 35 ms — suavidade × resposta), **taxa de sincronização 30 / 60 Hz**
   (updates servidor→cliente por segundo) e **render do host Janela / Servidor puro** (sem renderizar as
   salas, libera a GPU). Todos os modelos dinâmicos (players, inimigos, balas, bombas) sincronizam a
-  partir do servidor host. A tela Jogar Online persiste todas as opções (última Porta/IP, interpolação,
+  partir do servidor host. Ao conectar, host e cliente trocam um **ID de build** — versões diferentes são
+  recusadas com um aviso claro **"Versões incompatíveis — Host / Você"** (PT/EN/ES) em vez de falhar no
+  escuro, avisando os dois a rodar o **mesmo `.exe`** (build carimbada no export). A tela Jogar Online
+  persiste todas as opções (última Porta/IP, interpolação,
   taxa de sync, render do host) e as recarrega na próxima vez; o dropdown de **IP/Domínio** lista os
   endereços recentes **e os domínios completos salvos** (FQDN guardados à parte, sem rolarem com os
   IPs recentes) para reusar pela seleção; as telas Host/Client são em tela cheia,

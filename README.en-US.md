@@ -175,7 +175,10 @@ third-person shooter sandbox. At a high level it offers:
   interpolation **Smooth / Balanced / Responsive** (render delay 100 / 60 / 35 ms — smoothness vs.
   responsiveness), **sync rate 30 / 60 Hz** (server→client updates per second), and **host render
   Window / Pure-server** (skip room rendering to free the GPU). All dynamic models (players, enemies,
-  bullets, bombs) replicate from the host server. The Play Online screen persists every option (last
+  bullets, bombs) replicate from the host server. On connect, host and client exchange a **build ID** —
+  mismatched builds are refused with a clear **"Incompatible versions — Host / You"** notice (PT/EN/ES)
+  instead of failing silently, so both players know to run the **same `.exe`** (build stamped at export).
+  The Play Online screen persists every option (last
   Port/IP, interpolation, sync rate, host render) and restores them next time; the **IP/Domain**
   dropdown lists recent addresses **and saved full domains** (FQDNs kept apart, not rolled out by
   recent IPs) to reselect later; the Host/Client screens
