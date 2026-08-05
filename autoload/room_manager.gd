@@ -32,6 +32,15 @@ signal version_rejected(host_version: String, client_version: String)
 enum CloseReason { SILENT, STOPPED, RESTARTED }
 
 const ROOM_RESOLUTION := Vector2i(1280, 720)
+# Timeout tolerante do ENet (ms) aplicado a cada conexão. O CLIENTE, ao renderizar a sala pela 1ª vez,
+# pode dar um stall de vários segundos (compilação de shader + LimbColliders das entidades). Com o
+# timeout PADRÃO do ENet (min 5 s), esse stall estoura o limite e a conexão CAI → inimigos congelam e o
+# tiro não chega ao servidor. Subimos o piso p/ 20 s (e o teto p/ 40 s) para o stall não derrubar a
+# conexão; o spawn gradual das entidades já reduz o stall, e o handler de server_disconnected trata a
+# queda real de forma limpa. Aplicado dos DOIS lados (cada peer configura quem acabou de conectar).
+const PEER_TIMEOUT_LIMIT: int = 32
+const PEER_TIMEOUT_MIN_MS: int = 20000
+const PEER_TIMEOUT_MAX_MS: int = 40000
 # Câmera livre p/ o host OBSERVAR cada sala (não replicada — filha do nível, fora do SpawnedNodes).
 const SpectatorCamera: PackedScene = preload("res://scenes3D/spectator_camera/spectator_camera.tscn")
 const DEFAULT_VARIANT: int = 0
@@ -240,8 +249,11 @@ func _ensure_template_spawned(room_id: int) -> void:
 	if not is_instance_valid(spawned):
 		return
 	var level_path := String(room.get("level_path", ""))
-	CharacterTemplateManager.apply_active(level_path, spawned)
-	SceneryTemplateManager.apply_active(level_path, spawned)
+	# Spawn GRADUAL (1 entidade por frame de física): materializar 16+ entidades no mesmo frame dava um
+	# pico de stall no cliente (shader + LimbColliders) que congelava os inimigos e podia derrubar a
+	# conexão em hardware fraco. Espalhado, o cliente recebe as entidades sem pico. Ver apply_active_gradual.
+	CharacterTemplateManager.apply_active_gradual(level_path, spawned, 1)
+	SceneryTemplateManager.apply_active_gradual(level_path, spawned, 1)
 
 
 # Interest management: o nó (e seus sub-nós) só é replicado (spawn + sync) para peers QUE ESTÃO
@@ -460,8 +472,20 @@ func game_version() -> String:
 # SERVIDOR: assim que um peer (cliente) conecta, envia a versão desta build para ele verificar. No
 # cliente is_server() é falso → no-op (quem compara é o cliente, em receive_host_version).
 func _on_peer_connected(id: int) -> void:
+	_apply_peer_timeout(id)  # tolera stall de render sem derrubar a conexão (ver constantes acima)
 	if multiplayer.is_server():
 		receive_host_version.rpc_id(id, game_version())
+
+
+# Aplica o timeout tolerante do ENet ao peer `peer_id` recém-conectado. Cada lado configura quem
+# acabou de conectar: o servidor afrouxa o timeout de cada cliente (o cliente é quem trava ao
+# renderizar a sala), e o cliente afrouxa o do servidor (id 1). No-op fora do ENet (ex.: offline).
+func _apply_peer_timeout(peer_id: int) -> void:
+	var mp: MultiplayerPeer = multiplayer.multiplayer_peer
+	if mp is ENetMultiplayerPeer:
+		var enet_peer := (mp as ENetMultiplayerPeer).get_peer(peer_id)
+		if enet_peer != null:
+			enet_peer.set_timeout(PEER_TIMEOUT_LIMIT, PEER_TIMEOUT_MIN_MS, PEER_TIMEOUT_MAX_MS)
 
 
 # SERVIDOR → CLIENTE: a versão (ID de build) do host. O cliente compara com a sua: igual segue
