@@ -137,6 +137,31 @@ modelo de la cápsula de locomoción"). El red_robot hace lo mismo ([[🤖 inimi
   por la órbita + la excepción de colisión).
 - **Sin fuego amigo:** las balas del aliado atraviesan al jugador (ver [[🔫 combate-tiro (ES)|combate-tiro]]).
 
+### ⚠️ Convención INVERTIDA de movimiento (2026-08-06)
+
+El `input.motion` del bot es un vector en el espacio de la **cámara**, igual que el que produce el
+teclado. Pero `apply_input` usa `target = camera_x*motion.x + camera_z*motion.y` **solo para ORIENTAR**
+el cuerpo (`Basis.looking_at`) — el desplazamiento viene del **root motion** de la animación, que corre
+por el `+Z` local ("The animation's forward/backward axis is reversed", `player.gd`). Resultado: el
+cuerpo **viaja en sentido opuesto al `target`**, y la malla del GLB (que mira al `+Z`) hace que se vea
+bien en pantalla. Para el humano todo encaja porque la tecla W ya manda `motion.y = -1`.
+
+**Medido en el harness:** un player *sin IA* con `motion=(0,-1)` se desplaza hacia `-camFwd`
+(alineación **-1,00**). La IA proyectaba con el signo equivocado — por eso el aliado **corría en línea
+recta hasta morir**, ignorando puesto y objetivo, y **disparaba en una dirección con el proyectil
+yendo hacia otra**.
+
+Tres arreglos en `player_bot_ai.gd`:
+
+1. **`_world_dir_to_motion` proyecta `-dir`** (y no `dir`).
+2. **`_face_point` apunta el `-Z` del `camera_base` al lado OPUESTO del objetivo** — el frente efectivo
+   del cuerpo es el `+Z` de esa base — con el pitch espejado.
+3. **Girar ANTES de proyectar:** la ida y la vuelta usan la misma base en el mismo frame. Antes había
+   un desfase de un frame que **realimentaba** el error en cada tick.
+
+Después: la escolta converge a **2,53 m** (`follow_distance` 2,5) y se detiene; puntería y proyectil
+quedan con alineación **1,00** con el enemigo.
+
 ### Postura de seguridad — `guard_stance` (2026-08-06)
 
 Comportamiento **por defecto** del aliado (activable/desactivable en la pantalla **Models → IA**).

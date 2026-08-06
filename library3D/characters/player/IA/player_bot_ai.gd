@@ -167,15 +167,22 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 			aim_point = bot_pos + _flat_or_forward(move_dir, -bot.global_transform.basis.z) * 20.0 + Vector3.UP
 	# Separação: afasta-se dos outros aliados por perto → não empilham na órbita nem no combate.
 	move_dir += _separation(bot_pos) * separation_strength
-	input.motion = _world_dir_to_motion(input, move_dir)
 	input.aiming = should_aim
 	input.shooting = should_shoot
 	input.shoot_target = aim_point
 	input.jumping = false
+	# ORDEM IMPORTA: virar ANTES de projetar o movimento.
+	# O `input.motion` é um vetor no frame da CÂMERA (é o que o teclado produz para um humano) e o
+	# `player.apply_input` o reconstrói em coordenadas de mundo com a base da câmera DAQUELE quadro.
+	# Enquanto projetávamos antes do `_face_point`, a base usada na ida era a do quadro anterior e a
+	# da volta já vinha girada para a nova direção: a cada tick o vetor era reinterpretado girado, o
+	# erro se realimentava e o bot saía em LINHA RETA, ignorando posto e alvo. Virando primeiro, ida
+	# e volta usam a mesma base e o deslocamento sai exatamente na direção decidida.
 	if should_aim:
 		_face_point(input, bot_pos + Vector3.UP, aim_point)
 	elif move_dir.length() > 0.01:
 		_face_point(input, bot_pos + Vector3.UP, bot_pos + move_dir + Vector3.UP)
+	input.motion = _world_dir_to_motion(input, move_dir)
 
 
 func note_shot_fired(distance: float, target_speed: float) -> void:
@@ -428,9 +435,13 @@ func _face_point(input: PlayerInputSynchronizer, from: Vector3, point: Vector3) 
 		return
 	var flat := Vector3(to.x, 0.0, to.z)
 	if flat.length() > 0.01:
-		input.camera_base.look_at(input.camera_base.global_position + flat.normalized(), Vector3.UP)
+		# Mesma convenção invertida de _world_dir_to_motion: a "frente" efetiva do corpo é o +Z da
+		# base da câmera, então apontamos o -Z do camera_base para o lado OPOSTO ao alvo. Assim o
+		# corpo encara o alvo de fato (e não de costas), tanto ao andar quanto ao mirar.
+		input.camera_base.look_at(input.camera_base.global_position - flat.normalized(), Vector3.UP)
 	var flat_len := maxf(flat.length(), 0.01)
-	input.camera_rot.rotation.x = clampf(atan2(to.y, flat_len), deg_to_rad(-55.0), deg_to_rad(45.0))
+	# O yaw espelhado inverte também o sentido do pitch.
+	input.camera_rot.rotation.x = clampf(-atan2(to.y, flat_len), deg_to_rad(-55.0), deg_to_rad(45.0))
 
 
 func _world_dir_to_motion(input: PlayerInputSynchronizer, world_dir: Vector3) -> Vector2:
@@ -444,7 +455,15 @@ func _world_dir_to_motion(input: PlayerInputSynchronizer, world_dir: Vector3) ->
 	camera_x.y = 0.0
 	camera_z = camera_z.normalized()
 	camera_x = camera_x.normalized()
-	return Vector2(clampf(dir.dot(camera_x), -1.0, 1.0), clampf(dir.dot(camera_z), -1.0, 1.0))
+	# SINAL INVERTIDO — a convenção do projeto é essa, não um ajuste arbitrário.
+	# O `apply_input` monta `target = camera_x*motion.x + camera_z*motion.y` e usa esse vetor só para
+	# ORIENTAR o corpo (`Basis.looking_at`); o deslocamento vem do ROOT MOTION da animação, que corre
+	# no +Z local ("The animation's forward/backward axis is reversed", player.gd) — ou seja, o corpo
+	# VIAJA no sentido OPOSTO ao `target`. O PlayerModel carrega o giro de 180° que faz isso parecer
+	# certo em tela, e para o humano tudo fecha porque a tecla W já manda motion.y = -1.
+	# Medido no harness: um player sem IA com motion=(0,-1) desloca-se para -camFwd (alinhamento
+	# -1.00). Logo, para andar na direção `dir` do mundo, projetamos `-dir`.
+	return Vector2(clampf(-dir.dot(camera_x), -1.0, 1.0), clampf(-dir.dot(camera_z), -1.0, 1.0))
 
 
 func _find_enemy(scope: Node, origin: Vector3) -> Node3D:
