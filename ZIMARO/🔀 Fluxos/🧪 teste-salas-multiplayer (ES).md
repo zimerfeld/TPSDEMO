@@ -20,7 +20,7 @@ atualizado: 2026-07-04
 
 ## Datos del build (del código, para la prueba)
 
-- **Puerto por defecto:** `4383` (el `Port` SpinBox de `playonline`; editable/persistido mediante historial).
+- **Puerto por defecto:** `44000` y **dirección por defecto:** `zimaro.playit.game` (el `Port` SpinBox / `Address` LineEdit de `playonline`; editables y persistidos mediante historial). Para las pruebas locales de este documento, cambia a `127.0.0.1` y el puerto que prefieras.
 - **Servidor:** botón **"Manage Rooms"** → `ENetMultiplayerPeer.create_server(port)` → abre `host_session`.
 - **Cliente:** botón **"Join Rooms"** → `create_client(address, port)` → abre `client_session`.
 - **Sala por defecto (solo servidor headless):** `level_1` (`DEFAULT_ROOM_LEVEL`). En la GUI el host elige el nivel.

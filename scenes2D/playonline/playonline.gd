@@ -174,7 +174,9 @@ func _select_in_history(option: OptionButton, current: String) -> void:
 
 
 # Pré-preenche Porta e IP/Domínio com o ÚLTIMO valor válido usado (histórico guarda o mais recente
-# em [0], via _remember/push_front). Sem histórico, mantém os defaults do .tscn (4383 / 127.0.0.1).
+# em [0], via _remember/push_front). Sem histórico, mantém os defaults do .tscn — o túnel público
+# do projeto: 44000 / zimaro.playit.game (o cliente conecta direto pelo playit; para loopback local
+# basta digitar 127.0.0.1, que passa a ser o último usado).
 # Assim o jogador não precisa redigitar a cada vez — basta confirmar o último que funcionou.
 func _prefill_last_used() -> void:
 	# Preferimos o "último valor" dedicado (gravado em qualquer mudança, mesmo sem commit); se não

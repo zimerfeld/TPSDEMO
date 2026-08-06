@@ -15,7 +15,7 @@ atualizado: 2026-07-04
 ## Contexto técnico
 
 - El juego usa **ENetMultiplayerPeer** → `create_server()` / `create_client()` en `scenes2D/playonline/playonline.gd`.
-- ENet corre sobre **UDP**. El puerto por defecto es **UDP 4383** (`playonline.tscn`, `Port` SpinBox, `value = 4383`).
+- ENet corre sobre **UDP**. El puerto por defecto es **UDP 44000** (`playonline.tscn`, `Port` SpinBox, `value = 44000`) — el mismo puerto del túnel playit del proyecto. Era `4383` hasta el 2026-08-06.
 - El campo **Address** acepta un hostname, así que puedes usar dominios en lugar de una IP. Una **pista de formato** bajo el campo (`AddressFormatHint`) lo indica: "Acepta dominio (ej.: `zimaro.playit.game`) o IP — el puerto va en el campo Puerto."
 - **Resolución de DNS asíncrona (2026-08-06).** El `create_client` de ENet resuelve hostnames por su cuenta, pero de forma **bloqueante** — en una red lenta el frame se congela hasta que responde el DNS y el juego parece colgado. Ahora `_on_join_rooms_pressed` solo llama a `create_client` con una **IP ya resuelta**:
   - IP literal (`is_valid_ip_address()`) → conecta directo, no hay nada que resolver.
