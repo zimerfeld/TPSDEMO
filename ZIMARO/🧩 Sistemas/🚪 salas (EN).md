@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-08-05
 ---
 
 # 🚪 Simultaneous rooms (multi-level server)
@@ -14,7 +14,7 @@ atualizado: 2026-07-04
 > [[🎬 fluxo-de-cenas (EN)\|fluxo-de-cenas]].
 >
 > 🧪 **To validate in the field:** see [[🧪 teste-salas-multiplayer (EN)\|teste-salas-multiplayer]] (loopback → LAN → internet script).
-> Code review of the flow done on 2026-07-01 — **consistent, no known bugs**; execution still pending.
+> ✅ **VALIDATED on 2 real PCs (2026-08-05)** via **playit.gg** (UDP tunnel `zimaro.playit.game:44000` → host `192.168.0.211:44000`), after fixing the **enemy freeze on the client** — see the *Enemy freeze on the client* section below (release `202608051826`).
 
 ---
 
@@ -99,7 +99,51 @@ players): it only replicates to peers whose `_peer_room[peer] == room_id`. When 
 > enemy not syncing. The `red_robot`'s death *parts* are born `public_visibility=false` on
 > purpose (they only sync when exploding, via `part.gd`) — preserved: they get only the filter.
 
+## Enemy freeze on the client = render stall (fixed, VALIDATED 2 PCs 2026-08-05)
+
+Symptom: the client enters the host's room and the enemies appear **frozen**; the shot hits but **does not
+detect collision**. Reproduced in a **headless 2-process harness** with the REAL `RoomManager`: the
+**core of the room netcode is correct** — replication, visibility filter, interpolation
+(`net_transform`) and even the **server-side collision inside the SubViewport** work (the bullet killed the
+enemies in the test). The failure only appears with the **client RENDERING**: when materializing the ~16
+template entities **all at once**, the main loop **stalls several seconds** (shader/pipeline compilation on the
+GPU + building the `red_robot`s' `LimbColliders` on the CPU, in the same frame). On **weak graphics
+hardware** this stall (a) makes the enemy "freeze" on screen and (b) **blows the DEFAULT ENet timeout
+(min 5 s) → the connection DROPS**; and since **no handler was treating `server_disconnected`** (only
+`connection_failed` existed on the initial connection), the client got **stuck in the frozen room** and,
+disconnected, the shot never reached the server → "doesn't detect collision". The `StabilityGuard` **doesn't
+catch** this: it runs in `_process` (not even called during the stalled frame) and the FPS trigger requires
+10 samples in a row, not 1 giant spike.
+
+**Fixes (release `202608051826`, validated on 2 PCs via playit.gg on 2026-08-05):**
+- **GRADUAL spawn** of the template entities (1/physics frame) instead of all at once —
+  `TemplateManagerBase.apply_active_gradual()` (refactored `_apply_template` into `_plan_template`
+  [skips the dead path via `ResourceLoader.exists`] + `_spawn_job`), used by
+  `RoomManager._ensure_template_spawned`.
+- **TOLERANT ENet timeout** (limit 32, min 20 s, max 40 s) applied to each peer that connects —
+  `RoomManager._apply_peer_timeout` in `_on_peer_connected` — a render stall no longer drops the
+  connection. *(Validated in the harness: a 3.7 s stall did NOT drop and the sync recovered.)*
+- **`client_session` handles `server_disconnected`** (`_on_server_lost`): it warns "The connection to the
+  host was lost" and returns to `playonline`, instead of a frozen room.
+- **DYNAMIC `MultiplayerSpawner` whitelist** — new `SpawnableLibrary.configure(spawner)`
+  (`effects_shared/spawnable_library.gd`), called in the `_ready` of `level_1`/`level_2`: it scans `library3D`
+  in **deterministic lexicographic order** (indices match across peers) → any template model,
+  **including the new ones** (`humanoide/jogador/monstro/mulher`), replicates to the client. Before, the
+  whitelist was fixed in the `.tscn` and only had the old models.
+- **`StabilityGuard` loosened** (2026-08-05): `col_pairs` **16000/40000**, `node` **20000/45000**,
+  `vram_warn` **3072** (crit 5120), `fps_crit_frames` **20** (10 s), `physics_throttle_tps` **45** —
+  headroom for the multi-room host and tolerates the loading hitch without throttling the physics. See the
+  section below.
+
+⏳ **Remaining** is a *loading hitch on the 1st room entry* (shader compilation), **non-fatal** and
+smaller with a warm shader cache; the optional next step is to **pre-warm shaders** (branch
+`feature/salas-prewarm-shaders`). See [[salas-freeze-render-stall]] in memory.
+
 ## Black screen on the client (level_base/level_2) — StabilityGuard (2026-06-24, `feature/spawnplayer2`)
+
+> ⤴ **Values updated on 2026-08-05** (see the *Enemy freeze on the client* section): `col_pairs`
+> 16000/40000, `node` 20000/45000, `vram_warn` 3072, `fps_crit_frames` 20, `physics_throttle_tps` 45.
+> The limits below (8000/25000 etc.) are the **history** of the original 2026-06-24 calibration.
 
 > 🗑️ **Historical note (2026-07-01):** the `level_base` level was **REMOVED** from the project in the
 > `feature/restrutu` restructure (scene, `.ogg` and all references in `levels`/`host_session`/`playonline`/
@@ -266,8 +310,12 @@ canonical if the scene is born in EN (the language is persisted) and the label w
   keeps receiving `receive_room_list` during character selection). If the host STOPPED/restarted the room
   in the meantime, it does NOT spawn into a dead room: it returns to the browser with the notice "The room is no longer
   available" (helper `_server_has_room`). Avoids the empty scene of entering a room that no longer runs.
-- ⏳ **Pending items:** validate on a REAL network between 2 PCs (client join/leave, Stop kick, per-room
-  spawn, interest management) and the **host playing** in a room (camera/aim/shot in the SubViewport).
+- ✅ **REAL network between 2 PCs VALIDATED (2026-08-05):** tested via **playit.gg** (UDP tunnel), after
+  fixing the **enemy freeze on the client** (render stall + ENet timeout + missing
+  `server_disconnected` handler) — see the *Enemy freeze on the client* section (release
+  `202608051826`).
+- ⏳ **Pending items:** *loading hitch on the 1st room entry* on weak hardware (shader
+  compilation — next step: pre-warm shaders, branch `feature/salas-prewarm-shaders`).
   `enemy_health_bar.get_shared(get_tree().current_scene)` (enemy HUD) is still global —
   on the client with 1 fullscreen room it works; on the host spectating/playing it may appear in the wrong place.
   See [[🌐 multiplayer (EN)\|multiplayer]].
