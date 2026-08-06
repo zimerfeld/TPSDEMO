@@ -120,6 +120,26 @@ catch** this: it runs in `_process` (not even called during the stalled frame) a
   `TemplateManagerBase.apply_active_gradual()` (refactored `_apply_template` into `_plan_template`
   [skips the dead path via `ResourceLoader.exists`] + `_spawn_job`), used by
   `RoomManager._ensure_template_spawned`.
+
+  > **The room loads FULLY before releasing the player (2026-08-06).** The gradual spawn was fired and
+  > **abandoned** (`_ensure_template_spawned` without `await`): the player spawned mid-population and
+  > watched the entities pop in one by one. Now `_ensure_template_spawned` is a coroutine that waits
+  > for the gradual spawn to finish and flags `template_ready` on the room (signal `room_populated`);
+  > **`join_room` (client) and `host_spawn_in_room` (host) `await` it before spawning the player** —
+  > and re-validate everything afterwards, since the room may have been stopped meanwhile. Anyone
+  > arriving while another peer is already populating waits for the same completion
+  > (`_await_template_ready`), capped by `TEMPLATE_READY_TIMEOUT_SEC` (15 s) so nobody ever gets stuck.
+  >
+  > The peer's **visibility is registered BEFORE the population**: that way every entity is born
+  > replicating to them, in creation order. Without it the client received sync for sub-nodes (the
+  > red_robot's death parts) whose spawn it hadn't processed yet — `Node not found …
+  > MultiplayerSynchronizer` (observed and fixed on 2026-08-06).
+  >
+  > On the UI side, `LoadingScreen.cover()` gained an optional **`ready_check`**: the loading screen
+  > only reveals once it returns true. The client waits for its **own player** to show up in the
+  > mirror (`RoomManager.player_ready_in_room`) — since the server only spawns it after populating,
+  > seeing it implies a complete scene; a host who **plays** waits for peer 1, and a host who
+  > **observes** waits for `room_is_populated`.
 - **TOLERANT ENet timeout** (limit 32, min 20 s, max 40 s) applied to each peer that connects —
   `RoomManager._apply_peer_timeout` in `_on_peer_connected` — a render stall no longer drops the
   connection. *(Validated in the harness: a 3.7 s stall did NOT drop and the sync recovered.)*
@@ -160,6 +180,16 @@ ENet timeout survives it and the `server_disconnected` handler recovers cleanly.
 See [[salas-freeze-render-stall]] in memory.
 
 ## "Loading" screen (`LoadingScreen`) — 2026-08-05
+
+> 🖱️ **Cursor GOTCHA (2026-08-06).** The startup pre-payment instantiates `level_1` as an observer, and
+> `spectator_camera` **captured the mouse** in `_ready`. Capturing and releasing within a handful of
+> frames leaves the pointer **undrawn** on Windows: `Input.get_mouse_mode()` is back to `VISIBLE`
+> (measured: `0` throughout the whole boot, even 3 s later) and yet **the cursor is not shown** — it
+> only returns on the next mode change. The cure is not to reinforce `set_mouse_mode(VISIBLE)` at the
+> end (that treats the symptom): it is **not to capture at all**. The **`LoadingScreen.preloading`**
+> flag is honoured by `spectator_camera` and `player_input` — nobody plays during the pre-payment, so
+> nobody captures. Measured afterwards: modes seen during boot = `[0]` only (previously `[0, 2]`).
+> The screen's text is **"Preparando os gráficos"** ("for the first match" was dropped on 2026-08-06).
 
 Autoload **`LoadingScreen`** (`autoload/loading_screen.gd`), a `CanvasLayer` (layer 200,
 `PROCESS_MODE_ALWAYS`) with an opaque background + "Loading..." — canonical texts in pt, translated by

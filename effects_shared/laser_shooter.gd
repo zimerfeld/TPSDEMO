@@ -43,7 +43,8 @@ static func fire(muzzle: Node3D, beam_mesh: MeshInstance3D, blast_scene: PackedS
 		var character = hb.collider.get_meta("character")
 		if character != null and character.has_method("hit"):
 			var mult: float = hb.collider.get_meta("damage_multiplier")
-			character.hit.rpc(int(round(damage * mult)))
+			# Grupo do membro atingido junto do dano — ver [[limb-health]].
+			character.hit.rpc(int(round(damage * mult)), String(hb.collider.get_meta("group", "")))
 
 	# Clip the beam mesh to the hit distance via its shader's "clip" parameter.
 	if beam_mesh != null:

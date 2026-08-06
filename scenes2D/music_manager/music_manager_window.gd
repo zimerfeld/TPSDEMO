@@ -1,9 +1,12 @@
 class_name MusicManagerWindow
 extends Node
 
-## Gerenciador de Música: ouvir qualquer faixa de audios/ e ATRIBUIR / REMOVER a trilha de cada
-## cena ou level. Aberto pela tela Settings ao habilitar "Música". As atribuições viram overrides
+## Gerenciador de Música: ATRIBUIR / REMOVER a trilha de cada cena ou level e OUVIR a escolhida.
+## Aberto pela tela Settings, no botão "Gerenciar Músicas". As atribuições viram overrides
 ## persistidos pelo autoload MusicManager (seção "music" do Settings) e valem na hora.
+##
+## Audição: clicar no seletor de uma cena a SELECIONA (linha realçada); o trio ▶/⏸/⏹ do topo, único
+## para a janela toda, age sobre a trilha efetiva dessa linha.
 ##
 ## Controlador: monta o formulário DENTRO da janela flutuante reutilizável (FloatingWindow), num
 ## CanvasLayer no topo — herda o tema 2D do projeto e o Debug 2D funciona sobre a janela, igual às
@@ -15,14 +18,18 @@ const FLOATING_SCENE := preload("res://controls2D/floating_window/floating_windo
 # default de uma cena não configurada. "Padrão" é uma opção à parte (resolve pelo nome da cena).
 const SELECT_LABEL := "Selecione..."
 const DEFAULT_LABEL := "Padrão (pelo nome da cena)"
-# Estado de UI persistido (a faixa escolhida no "Ouvir faixa"), restaurado na próxima abertura.
-const UI_SECTION := "music_ui"
-const LISTEN_KEY := "listen"
+# Realce da linha SELECIONADA (a que os botões ▶/⏸/⏹ do topo controlam) e cor normal das demais.
+const ACTIVE_COLOR := Color(1, 1, 0.313726, 1)
+const IDLE_COLOR := Color(1, 1, 1, 1)
 
 var _tracks: Array = []
 var _win: FloatingWindow = null
-var _listen_picker: OptionButton
 var _scene_pickers: Dictionary = {}   # scene_key -> OptionButton
+var _scene_labels: Dictionary = {}    # scene_key -> Label (realce da linha selecionada)
+# Cena/level SELECIONADO: os controles de audição do topo agem sobre a trilha DELE. "" = nenhum.
+var _active_key: String = ""
+# Botões ▶/⏸/⏹ do topo, guardados para habilitar/desabilitar o ▶ conforme a linha selecionada.
+var _listen_buttons: Array[Button] = []
 
 
 # Abre o Gerenciador de Música numa janela flutuante (ou ignora se já está aberta). Chamado pela tela
@@ -36,11 +43,18 @@ func popup_centered() -> void:
 # Monta a janela flutuante (num CanvasLayer no topo), constrói o formulário no conteúdo e os botões de
 # ação no rodapé, e a centraliza. Larga o bastante p/ caber, em cada linha de cena, o rótulo + dropdown
 # + os 3 botões ▶/⏸/⏹ sem cortar. O CanvasLayer e a pré-escuta são liberados ao fechar.
+#
+# Os dropdowns usam `clip_text`: sem ele o OptionButton dimensiona pelo item MAIS LARGO (são ~43 faixas,
+# com nomes NCS longos) e sozinho empurrava a janela para ~1530 px de largura. Truncado, o botão mostra
+# o nome curto e a lista aberta continua exibindo o texto inteiro.
 func _open_window() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 128
 	_win = FLOATING_SCENE.instantiate()
-	_win.min_window_size = Vector2(900, 540)
+	# Mínimo modesto: o conteúdo mínimo real é ~552 px de largura (rótulo + dropdown truncado + ▶⏸⏹) e a
+	# lista de cenas ROLA. Assim a janela cabe até em telas pequenas (1024×600); nas grandes ela cresce
+	# até o teto de viewport da própria FloatingWindow.
+	_win.min_window_size = Vector2(760, 420)
 	layer.add_child(_win)
 	add_child(layer)
 	_win.set_title("Gerenciador de Música")
@@ -53,6 +67,7 @@ func _open_window() -> void:
 
 func _on_window_closed(layer: CanvasLayer) -> void:
 	MusicManager.stop_preview()
+	MusicManager.resume_scene_track()
 	if is_instance_valid(layer):
 		layer.queue_free()
 	_win = null
@@ -61,32 +76,27 @@ func _on_window_closed(layer: CanvasLayer) -> void:
 func _exit_tree() -> void:
 	# Garante que a pré-escuta pare se o controlador for liberado junto com a tela.
 	MusicManager.stop_preview()
+	MusicManager.resume_scene_track()
 
 
 func _build_ui(content: VBoxContainer) -> void:
 	var root := content
 	root.add_theme_constant_override("separation", 12)
 
-	# ── Ouvir qualquer faixa ─────────────────────────────────────────────
-	root.add_child(_section_title("Ouvir faixa"))
+	# ── Ouvir a música da cena SELECIONADA ───────────────────────────────
+	# Um único trio ▶/⏸/⏹ centralizado, para a janela inteira: ele age sobre a linha selecionada lá
+	# embaixo (clicar no seletor de uma cena a seleciona e a realça). Antes havia um dropdown de faixa
+	# aqui em cima e mais um trio de botões por linha — três lugares para tocar a mesma coisa.
 	var listen_row := HBoxContainer.new()
 	listen_row.name = "ListenRow"
+	listen_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	listen_row.add_theme_constant_override("separation", 8)
 	root.add_child(listen_row)
-	_listen_picker = OptionButton.new()
-	_listen_picker.name = "ListenTracks"
-	_listen_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	listen_row.add_child(_listen_picker)
-	# Persiste a faixa escolhida para ouvir → restaurada na próxima abertura (persistir estado).
-	_listen_picker.item_selected.connect(func(_i: int) -> void:
-		if not _tracks.is_empty():
-			Settings.config_file.set_value(UI_SECTION, LISTEN_KEY, String(_listen_picker.get_item_metadata(_listen_picker.selected)))
-			Settings.save_settings())
-	_add_button(listen_row, "▶ Tocar", func() -> void:
-		if _listen_picker.selected > 0:   # 0 = "Selecione..." (nada para ouvir)
-			MusicManager.preview_or_resume(String(_listen_picker.get_item_metadata(_listen_picker.selected))))
-	_add_button(listen_row, "⏸ Pausar", func() -> void: MusicManager.pause_preview())
-	_add_button(listen_row, "⏹ Parar", func() -> void: MusicManager.stop_preview())
+	_listen_buttons = [
+		_add_button(listen_row, "▶ Tocar", _on_listen_play),
+		_add_button(listen_row, "⏸ Pausar", func() -> void: MusicManager.pause_playback()),
+		_add_button(listen_row, "⏹ Parar", func() -> void: MusicManager.stop_playback()),
+	]
 
 	var listen_separator := HSeparator.new()
 	listen_separator.name = "ListenSeparator"
@@ -96,7 +106,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	root.add_child(_section_title("Trilha por cena / level"))
 	var hint := Label.new()
 	hint.name = "Hint"
-	hint.text = "\"%s\" = sem música (silêncio, padrão). \"%s\" toca audios/<nome-da-cena>. Ou escolha uma faixa." % [SELECT_LABEL, DEFAULT_LABEL]
+	hint.text = "\"%s\" = sem música (silêncio, padrão). \"%s\" toca audios/<nome-da-cena>. Ou escolha uma faixa. Clique num seletor para ouvi-lo com os botões acima." % [SELECT_LABEL, DEFAULT_LABEL]
 	hint.modulate = Color(1, 1, 1, 0.7)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(hint)
@@ -123,22 +133,20 @@ func _build_ui(content: VBoxContainer) -> void:
 		lbl.text = String(scene["label"])
 		lbl.custom_minimum_size.x = 230
 		row.add_child(lbl)
+		_scene_labels[key] = lbl
 		var picker := OptionButton.new()
 		picker.name = "Tracks_%s" % key
 		picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		picker.clip_text = true
 		_populate_scene_picker(picker)
 		picker.item_selected.connect(_on_scene_track_selected.bind(key, picker))
+		# Clicar no seletor (ou alcançá-lo por Tab) SELECIONA a linha: ela ganha realce e passa a ser
+		# o alvo dos ▶/⏸/⏹ do topo. `focus_entered` cobre os dois caminhos — o clique dá foco ao
+		# OptionButton antes de abrir a lista.
+		picker.focus_entered.connect(_set_active_scene.bind(key))
+		picker.item_selected.connect(func(_i: int) -> void: _set_active_scene(key))
 		row.add_child(picker)
 		_scene_pickers[key] = picker
-		# ▶ / ⏸ / ⏹ por linha: ouve, pausa e para a trilha EFETIVA daquela cena (já considerando a
-		# escolha atual). Pausa/parar agem na pré-escuta compartilhada (só uma toca por vez).
-		var play_btn := _add_button(row, "▶", func() -> void:
-			var fname := MusicManager.effective_track(key)
-			if fname != "":
-				MusicManager.preview_or_resume(fname))
-		play_btn.tooltip_text = "Tocar"
-		_add_button(row, "⏸", func() -> void: MusicManager.pause_preview()).tooltip_text = "Pausar"
-		_add_button(row, "⏹", func() -> void: MusicManager.stop_preview()).tooltip_text = "Parar"
 
 	# ── Rodapé ───────────────────────────────────────────────────────────
 	# "Sortear": sorteia uma faixa aleatória p/ cada cena/level e SALVA (recarregam na próxima
@@ -148,20 +156,37 @@ func _build_ui(content: VBoxContainer) -> void:
 
 
 func _refresh() -> void:
-	_listen_picker.clear()
-	if _tracks.is_empty():
-		_listen_picker.add_item("(nenhuma faixa em audios/)")
-		_listen_picker.disabled = true
-	else:
-		_listen_picker.disabled = false
-		_listen_picker.add_item(SELECT_LABEL)                      # 0: "Selecione..." (nada p/ ouvir)
-		_listen_picker.set_item_metadata(0, "")
-		for t in _tracks:
-			_listen_picker.add_item(_clean_label(String(t)))
-			_listen_picker.set_item_metadata(_listen_picker.item_count - 1, String(t))
-		_restore_listen_choice()
 	for key in _scene_pickers:
 		_select_value(_scene_pickers[key], MusicManager.assignment_of(key))
+	_update_listen_row()
+
+
+# Marca a cena/level SELECIONADO: realça sua linha (rótulo + seletor) e aponta para ela os ▶/⏸/⏹.
+func _set_active_scene(key: String) -> void:
+	if key == _active_key:
+		return
+	_active_key = key
+	for k in _scene_pickers:
+		var on: bool = k == _active_key
+		(_scene_pickers[k] as Control).modulate = ACTIVE_COLOR if on else IDLE_COLOR
+		(_scene_labels[k] as Control).modulate = ACTIVE_COLOR if on else IDLE_COLOR
+	_update_listen_row()
+
+
+# Habilitação dos controles de audição conforme a linha selecionada. Qual cena está no alvo é dito
+# pelo REALCE da própria linha (não há rótulo aqui em cima).
+# ⏸/⏹ agem na pré-escuta compartilhada e valem sempre; só o ▶ depende de haver trilha para tocar.
+func _update_listen_row() -> void:
+	if _listen_buttons.is_empty():
+		return
+	var track: String = MusicManager.effective_track(_active_key) if _active_key != "" else ""
+	_listen_buttons[0].disabled = track == ""
+
+
+func _on_listen_play() -> void:
+	var track: String = MusicManager.effective_track(_active_key) if _active_key != "" else ""
+	if track != "":
+		MusicManager.preview_or_resume(track)
 
 
 # Sorteia uma faixa aleatória de audios/ para CADA cena/level, persiste (override do MusicManager) e
@@ -170,19 +195,8 @@ func _on_shuffle() -> void:
 	if _tracks.is_empty():
 		return
 	for scene in MusicManager.scene_list():
-		MusicManager.set_assignment(String(scene["key"]), String(_tracks[randi() % _tracks.size()]))
+		MusicManager.randomize_track(String(scene["key"]))
 	_refresh()
-
-
-# Reseleciona no "Ouvir faixa" a faixa salva da última vez (casa por metadata = nome do arquivo).
-func _restore_listen_choice() -> void:
-	var saved := String(Settings.config_file.get_value(UI_SECTION, LISTEN_KEY, ""))
-	if saved == "":
-		return
-	for i in _listen_picker.item_count:
-		if String(_listen_picker.get_item_metadata(i)) == saved:
-			_listen_picker.select(i)
-			return
 
 
 # Itens do seletor de uma cena: Padrão / Sem música / cada faixa. O VALOR (default/none/arquivo) vai
@@ -200,6 +214,8 @@ func _populate_scene_picker(picker: OptionButton) -> void:
 
 func _on_scene_track_selected(idx: int, key: String, picker: OptionButton) -> void:
 	MusicManager.set_assignment(key, String(picker.get_item_metadata(idx)))
+	# A trilha efetiva da linha mudou: o rótulo do topo (e o ▶) precisam refletir a escolha nova.
+	_update_listen_row()
 
 
 # Seleciona no picker o item cujo VALOR (metadata) bate com `value`; senão cai em "Padrão" (0).

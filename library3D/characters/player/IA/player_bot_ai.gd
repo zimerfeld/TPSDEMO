@@ -10,34 +10,72 @@ const BEHAVIOR_PREDICTIVE_ASSIST_AIM := "predictive_assist_aim"
 const BEHAVIOR_COMBAT_SPACING := "combat_spacing"
 const BEHAVIOR_FRIENDLY_FIRE_GUARD := "friendly_fire_guard"
 const BEHAVIOR_PRESSURE_FLANK := "pressure_flank"
+const BEHAVIOR_GUARD_STANCE := "guard_stance"
 
-@export var follow_distance := 5.5
+## Distância (m) em que o aliado acompanha o player. Na postura de segurança é o raio do POSTO
+## (atrás e ao lado do protegido), não o raio de uma órbita.
+@export var follow_distance := 2.5
 ## Folga (m) em torno de `follow_distance` antes de o aliado corrigir o raio da órbita.
-@export var orbit_band := 1.6
+## Só vale fora da postura de segurança (esta usa `station_tolerance`).
+@export var orbit_band := 0.9
 ## Peso do componente tangencial da órbita (0 = só mantém distância; maior = circula mais).
-@export var orbit_strength := 0.7
+## Fora da postura de segurança. Baixo de propósito: circular demais lê como "correr sem direção".
+@export var orbit_strength := 0.15
+## ─── Postura de segurança (guard_stance) ───
+## Quanto do `follow_distance` fica ATRÁS do protegido (o resto vai para o lado). 0.8 atrás + 0.6 ao
+## lado = posto na diagonal traseira, a `follow_distance` do player, sem tapar a linha de tiro dele.
+@export_range(0.0, 1.0) var guard_back_ratio := 0.8
+@export_range(0.0, 1.0) var guard_side_ratio := 0.6
+## Com uma ameaça perto do protegido, o posto vai para a FRENTE dele, na direção da ameaça (o
+## segurança se INTERPÕE). Fração do `follow_distance` — a distância ao protegido não muda.
+@export_range(0.0, 1.0) var guard_screen_ratio := 0.8
+## Raio (m) da BOLHA de liberdade em torno do protegido: dentro dela o aliado anda para onde quiser
+## (orbitar, flanquear, recuar, avançar). Ao ultrapassá-la, a volta passa a dominar o movimento —
+## proporcionalmente, até virar obrigatória em `max_leash`. É o que dá "liberdade sem se afastar".
+@export var roam_radius := 4.0
+## Zona morta (m) do posto: dentro dela o aliado PARA. Pequena para ele reagir a cada passo do
+## protegido; o vaivém é evitado pela histerese abaixo, não por uma zona morta larga.
+@export var station_tolerance := 0.6
+## Histerese: já parado, só volta a andar quando o posto se afasta `station_tolerance` × este fator.
+## Separar "chegar" (0,45 m) de "sair" (≈1,0 m) dá reação rápida SEM tremer parado.
+@export_range(1.0, 5.0) var settle_release := 2.2
+## Peso da preferência por se interpor (ficar entre o protegido e a ameaça). Enviesa o movimento
+## livre; não o substitui.
+@export_range(0.0, 2.0) var guard_screen_weight := 0.7
+## Suavização (1/s) do RUMO: a direção decidida entra GRADUALMENTE, em vez de trocar de golpe a cada
+## varredura. Menor = mais pesado/suave. É o que tira o "tremido" e os movimentos repetitivos rápidos
+## (mesmo remédio do `move_dir_response` do red_robot).
+@export var move_dir_response := 4.0
+## Distância (m) mínima do protegido: se o player andar para cima do bot, o único movimento dele é
+## recuar. Garante o "acompanha sem colidir" mesmo com a exceção de colisão física ativa.
+## Tem de ficar CONFORTAVELMENTE abaixo de `follow_distance` (posto a 2,5 m → recuo a 1,8 m dá 0,7 m
+## de margem); colado no raio do posto, ele oscilaria entre "ir ao posto" e "recuar".
+@export var min_standoff := 1.8
 ## Raio (m) em que um aliado começa a se afastar de OUTRO aliado (separação/anti-empilhamento).
 @export var separation_radius := 3.0
 ## Peso do empurrão de separação em relação ao movimento normal (0 = desligado).
 @export var separation_strength := 1.0
-@export var preferred_combat_distance := 18.0
+@export var preferred_combat_distance := 12.0
 @export var combat_band := 4.5
 @export var weapon_range := 52.0
 @export var bullet_speed := 20.0
 @export var lead_strength := 0.82
 @export var flank_duration := 1.1
-@export var scan_interval := 0.35
+## Intervalo (s) entre varreduras de alvo/âncora/aliados. Curto = o segurança percebe a ameaça
+## mudar de lado mais rápido (é o que dá a sensação de "reação" sem aumentar a agressividade).
+@export var scan_interval := 0.2
 ## Só engaja inimigos a até esta distância (m) do próprio bot — evita perseguir ameaças do
-## outro lado do mapa e abandonar a cobertura do player.
-@export var engage_range := 32.0
-## Também engaja inimigos a até esta distância (m) do player humano (para defendê-lo).
-@export var player_threat_radius := 24.0
+## outro lado do mapa e abandonar a cobertura do player. Curto: o aliado é escolta, não caçador.
+@export var engage_range := 16.0
+## Também engaja inimigos a até esta distância (m) do player humano (para defendê-lo). É o raio que
+## de fato importa numa escolta: reage ao que ameaça o protegido, não ao que passa longe.
+@export var player_threat_radius := 18.0
 ## Coleira de cobertura: a partir desta distância (m) do player o bot já é puxado de volta
 ## durante o combate, para lutar ao lado do player em vez de derivar atrás do inimigo.
-@export var soft_leash := 14.0
+@export var soft_leash := 6.0
 ## Distância (m) máxima do player: além disto, reagrupar tem prioridade sobre perseguir.
 ## É o que impede o aliado de "correr sem parar até cair do mapa".
-@export var max_leash := 20.0
+@export var max_leash := 9.0
 
 var _behaviors: Dictionary = {}
 var _target: Node3D = null
@@ -49,6 +87,16 @@ var _prev_anchor: Node3D = null
 # Outros aliados por perto (exceto a âncora) — recalculado no scan; usado na separação anti-empilhamento.
 var _allies: Array[Node3D] = []
 var _orbit_sign := 1.0
+# Posto de origem: onde o bot foi spawnado. É o que ele guarda quando NÃO há ninguém para escoltar
+# (host observando, sala antes de o jogador entrar, jogador que saiu). Sem isto ele caía no combate
+# livre e avançava no inimigo — "correndo em direção à morte".
+var _home := Vector3.ZERO
+var _home_set := false
+# Rumo suavizado entre quadros (ver _smooth_dir): tira o tremido/vaivém rápido do movimento.
+var _move_dir_smooth := Vector3.ZERO
+# True enquanto o aliado está ASSENTADO no posto (ver settle_release): a histerese que separa o
+# limiar de chegar do de sair, evitando o tremor de quem corrige a posição a cada quadro.
+var _settled := false
 var _scan_cd := 0.0
 var _flank_sign := 1.0
 var _flank_time := 0.0
@@ -76,6 +124,9 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 	if bot == null or input == null or not bot.is_inside_tree():
 		return
 	_bot = bot
+	if not _home_set:
+		_home = bot.global_position
+		_home_set = true
 	_scan_cd -= delta
 	_flank_time = maxf(0.0, _flank_time - delta)
 	if _scan_cd <= 0.0:
@@ -112,6 +163,13 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 		should_aim = true
 		should_shoot = bot_pos.distance_to(_target.global_position) <= weapon_range \
 			and _has_line_of_fire(bot, aim_point)
+	elif not has_anchor and behavior_enabled(BEHAVIOR_GUARD_STANCE):
+		# Sem ninguém para escoltar: guarda o posto de origem (volta se derivou) em vez de vagar.
+		move_dir = _hold_move(bot_pos)
+		if _is_valid_enemy(_target):
+			aim_point = _target.global_position + Vector3.UP
+		else:
+			aim_point = bot_pos + _flat_or_forward(move_dir, -bot.global_transform.basis.z) * 20.0 + Vector3.UP
 	elif has_anchor:
 		# Sem ameaça engajável: dá cobertura ao player (segue e mantém-se por perto).
 		move_dir = _follow_move(bot_pos, anchor_pos)
@@ -122,15 +180,26 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 			aim_point = bot_pos + _flat_or_forward(move_dir, -bot.global_transform.basis.z) * 20.0 + Vector3.UP
 	# Separação: afasta-se dos outros aliados por perto → não empilham na órbita nem no combate.
 	move_dir += _separation(bot_pos) * separation_strength
-	input.motion = _world_dir_to_motion(input, move_dir)
+	# Liberdade COM coleira: dentro da bolha ele anda para onde quiser; passando dela, a volta domina.
+	move_dir = _leash(move_dir, bot_pos, has_anchor)
+	# Rumo suavizado: a direção entra gradualmente → sem trocas bruscas nem vaivém rápido.
+	move_dir = _smooth_dir(move_dir, delta)
 	input.aiming = should_aim
 	input.shooting = should_shoot
 	input.shoot_target = aim_point
 	input.jumping = false
+	# ORDEM IMPORTA: virar ANTES de projetar o movimento.
+	# O `input.motion` é um vetor no frame da CÂMERA (é o que o teclado produz para um humano) e o
+	# `player.apply_input` o reconstrói em coordenadas de mundo com a base da câmera DAQUELE quadro.
+	# Enquanto projetávamos antes do `_face_point`, a base usada na ida era a do quadro anterior e a
+	# da volta já vinha girada para a nova direção: a cada tick o vetor era reinterpretado girado, o
+	# erro se realimentava e o bot saía em LINHA RETA, ignorando posto e alvo. Virando primeiro, ida
+	# e volta usam a mesma base e o deslocamento sai exatamente na direção decidida.
 	if should_aim:
 		_face_point(input, bot_pos + Vector3.UP, aim_point)
 	elif move_dir.length() > 0.01:
 		_face_point(input, bot_pos + Vector3.UP, bot_pos + move_dir + Vector3.UP)
+	input.motion = _world_dir_to_motion(input, move_dir)
 
 
 func note_shot_fired(distance: float, target_speed: float) -> void:
@@ -169,6 +238,17 @@ func _combat_move(origin: Vector3, target_position: Vector3, anchor_position: Ve
 		return Vector3.ZERO
 	var forward := to_target.normalized()
 	var move := Vector3.ZERO
+	# Postura de segurança: o aliado NÃO avança para cima do inimigo — segura o posto e atira dali.
+	# Só recua se o inimigo colar (`combat_spacing`). Sem investida e sem flanco, é o que separa uma
+	# escolta de um caçador. O posto é ao lado do protegido; SEM protegido (host observando, sala
+	# vazia, jogador que saiu), é o lugar onde ele nasceu — e não uma corrida atrás do inimigo.
+	# Sem ninguém para escoltar (host observando, sala antes de o jogador entrar): guarda o posto de
+	# origem em vez de sair caçando.
+	if behavior_enabled(BEHAVIOR_GUARD_STANCE) and not (has_anchor and _is_valid_anchor(_anchor)):
+		move = _hold_move(origin)
+		if behavior_enabled(BEHAVIOR_COMBAT_SPACING) and distance < preferred_combat_distance - combat_band:
+			move -= forward
+		return move.normalized() if move.length() > 0.01 else Vector3.ZERO
 	if behavior_enabled(BEHAVIOR_COMBAT_SPACING):
 		if distance > preferred_combat_distance + combat_band:
 			move += forward
@@ -178,6 +258,14 @@ func _combat_move(origin: Vector3, target_position: Vector3, anchor_position: Ve
 		var right := Vector3.UP.cross(forward).normalized()
 		var flank_weight := 0.55 if _flank_time > 0.0 else 0.25
 		move += right * _flank_sign * flank_weight
+	# Postura de segurança: PREFERÊNCIA (não posto rígido) por ficar entre o protegido e a ameaça.
+	# Peso moderado — o aliado continua livre para orbitar, flanquear e recuar; isto só enviesa a
+	# escolha. Quem impede o afastamento é a coleira (_leash), não uma âncora fixa.
+	if behavior_enabled(BEHAVIOR_GUARD_STANCE) and has_anchor and _is_valid_anchor(_anchor):
+		var to_station := _guard_station(_anchor) - origin
+		to_station.y = 0.0
+		if to_station.length() > station_tolerance:
+			move += to_station.normalized() * guard_screen_weight
 	# Coleira de cobertura: ao começar a se afastar do player, o bot é puxado de volta — assim
 	# combate ao lado dele em vez de derivar pelo mapa atrás do inimigo (e nunca cai do mapa).
 	if has_anchor:
@@ -190,10 +278,12 @@ func _combat_move(origin: Vector3, target_position: Vector3, anchor_position: Ve
 	return move.normalized() if move.length() > 0.01 else Vector3.ZERO
 
 
-# Sem ameaça: o aliado ORBITA o player mais próximo a `follow_distance` — mantém o raio (aproxima se
-# longe, recua se colado) e circula devagar (componente tangencial). Como o raio > corpo e há a
-# exceção de colisão bot↔âncora, ele fica no entorno SEM colidir com o player.
+# Sem ameaça: acompanha o player. Na POSTURA DE SEGURANÇA vai para um posto fixo (atrás e ao lado)
+# e para lá; fora dela, cai na órbita clássica (mantém o raio e circula devagar). Em ambos os casos
+# o raio > corpo e há exceção de colisão bot↔âncora, então ele fica no entorno SEM colidir.
 func _follow_move(origin: Vector3, anchor_position: Vector3) -> Vector3:
+	if behavior_enabled(BEHAVIOR_GUARD_STANCE) and _is_valid_anchor(_anchor):
+		return _guard_move(origin, _anchor)
 	var to_anchor := anchor_position - origin
 	to_anchor.y = 0.0
 	var dist := to_anchor.length()
@@ -208,6 +298,100 @@ func _follow_move(origin: Vector3, anchor_position: Vector3) -> Vector3:
 	# componente tangencial → circula o player em vez de só ficar parado ao lado.
 	move += Vector3.UP.cross(radial).normalized() * _orbit_sign * orbit_strength
 	return move.normalized() if move.length() > 0.01 else Vector3.ZERO
+
+
+# Postura de segurança: caminha até o POSTO ao lado do protegido e PARA ao chegar. Três regras, nesta
+# ordem: (1) colou demais → só recua (nunca esbarra no player); (2) já está no posto (dentro de
+# `station_tolerance`) → fica parado; (3) senão, vai em linha reta até o posto. Sem componente
+# tangencial: é o que elimina o "correr sem direção" da órbita.
+func _guard_move(origin: Vector3, anchor: Node3D) -> Vector3:
+	var to_anchor := anchor.global_position - origin
+	to_anchor.y = 0.0
+	var dist := to_anchor.length()
+	if dist < min_standoff:
+		_settled = false
+		return -to_anchor.normalized() if dist > 0.01 else Vector3.ZERO
+	var to_station := _guard_station(anchor) - origin
+	to_station.y = 0.0
+	var gap := to_station.length()
+	# Histerese: chega no posto com `station_tolerance` e só sai dele com `× settle_release`. Dá
+	# reação rápida (zona morta pequena) sem o tremor de corrigir a posição a cada quadro.
+	if _settled:
+		if gap <= station_tolerance * settle_release:
+			return Vector3.ZERO
+		_settled = false
+	elif gap <= station_tolerance:
+		_settled = true
+		return Vector3.ZERO
+	return to_station.normalized()
+
+
+# Coleira da bolha: DENTRO de `roam_radius` do protegido o movimento passa intacto (liberdade total
+# de direção); FORA dela, a volta entra proporcionalmente ao excesso e vira dominante em `max_leash`.
+# É isto — e não um posto fixo — que garante "anda para qualquer lado sem se afastar do player".
+# Sem protegido, o centro é o posto de origem (`_home`).
+func _leash(move: Vector3, origin: Vector3, has_anchor: bool) -> Vector3:
+	var center := _anchor.global_position if (has_anchor and _is_valid_anchor(_anchor)) else _home
+	if not has_anchor and not _home_set:
+		return move
+	var to_center := center - origin
+	to_center.y = 0.0
+	var dist := to_center.length()
+	if dist <= roam_radius or dist < 0.01:
+		return move
+	var back := to_center.normalized()
+	var pull: float = clampf((dist - roam_radius) / maxf(max_leash - roam_radius, 0.1), 0.0, 1.0)
+	var blended := move.lerp(back, pull)
+	return blended if blended.length() > 0.01 else back
+
+
+# Interpolação exponencial (independente de framerate) do rumo. Guarda o vetor entre quadros, então a
+# IA pode mudar de ideia à vontade que o CORPO muda de direção de forma gradual.
+func _smooth_dir(target: Vector3, delta: float) -> Vector3:
+	var weight: float = 1.0 - exp(-maxf(move_dir_response, 0.01) * delta)
+	_move_dir_smooth = _move_dir_smooth.lerp(target, weight)
+	if _move_dir_smooth.length() < 0.05:
+		return Vector3.ZERO   # rumo praticamente nulo → parado (não fica cutucando)
+	return _move_dir_smooth
+
+
+# Sem protegido: guarda o LUGAR onde nasceu. Volta ao posto se derivou (o empurrão de separação e o
+# recuo de combate deslocam um pouco) e para ao chegar, com a mesma histerese do posto de escolta.
+# É esta função que impede o aliado de sair caçando quando não há quem escoltar.
+func _hold_move(origin: Vector3) -> Vector3:
+	if not _home_set:
+		return Vector3.ZERO
+	var to_home := _home - origin
+	to_home.y = 0.0
+	if to_home.length() <= station_tolerance * settle_release:
+		return Vector3.ZERO
+	return to_home.normalized()
+
+
+# O posto, sempre a `follow_distance` do protegido — o que muda é o LADO:
+#   • em paz: diagonal TRASEIRA (atrás + ao lado), fora da linha de tiro do player, seguindo-o quando
+#     ele vira;
+#   • com ameaça perto dele: à FRENTE, na direção da ameaça — o segurança se INTERPÕE entre os dois.
+#     O deslocamento lateral continua, para não tapar o tiro do protegido.
+# O lado sai do `_orbit_sign` sorteado no _ready, então dois aliados cobrem lados opostos.
+func _guard_station(anchor: Node3D) -> Vector3:
+	var anchor_pos := anchor.global_position
+	var forward := -anchor.global_transform.basis.z
+	var along := -guard_back_ratio          # negativo = atrás do protegido
+	if _is_valid_enemy(_target) and anchor_pos.distance_to(_target.global_position) <= player_threat_radius:
+		var to_threat := _target.global_position - anchor_pos
+		to_threat.y = 0.0
+		if to_threat.length() > 0.01:
+			forward = to_threat
+			along = guard_screen_ratio      # positivo = entre o protegido e a ameaça
+	forward.y = 0.0
+	if forward.length() < 0.01:
+		forward = Vector3.FORWARD
+	forward = forward.normalized()
+	var right := Vector3.UP.cross(forward).normalized()
+	return anchor_pos \
+		+ forward * follow_distance * along \
+		+ right * _orbit_sign * follow_distance * guard_side_ratio
 
 
 # Âncora = player HUMANO (não-bot) mais PRÓXIMO e do mesmo lado (aliado). Antes pegava o primeiro.
@@ -307,9 +491,13 @@ func _face_point(input: PlayerInputSynchronizer, from: Vector3, point: Vector3) 
 		return
 	var flat := Vector3(to.x, 0.0, to.z)
 	if flat.length() > 0.01:
-		input.camera_base.look_at(input.camera_base.global_position + flat.normalized(), Vector3.UP)
+		# Mesma convenção invertida de _world_dir_to_motion: a "frente" efetiva do corpo é o +Z da
+		# base da câmera, então apontamos o -Z do camera_base para o lado OPOSTO ao alvo. Assim o
+		# corpo encara o alvo de fato (e não de costas), tanto ao andar quanto ao mirar.
+		input.camera_base.look_at(input.camera_base.global_position - flat.normalized(), Vector3.UP)
 	var flat_len := maxf(flat.length(), 0.01)
-	input.camera_rot.rotation.x = clampf(atan2(to.y, flat_len), deg_to_rad(-55.0), deg_to_rad(45.0))
+	# O yaw espelhado inverte também o sentido do pitch.
+	input.camera_rot.rotation.x = clampf(-atan2(to.y, flat_len), deg_to_rad(-55.0), deg_to_rad(45.0))
 
 
 func _world_dir_to_motion(input: PlayerInputSynchronizer, world_dir: Vector3) -> Vector2:
@@ -323,7 +511,15 @@ func _world_dir_to_motion(input: PlayerInputSynchronizer, world_dir: Vector3) ->
 	camera_x.y = 0.0
 	camera_z = camera_z.normalized()
 	camera_x = camera_x.normalized()
-	return Vector2(clampf(dir.dot(camera_x), -1.0, 1.0), clampf(dir.dot(camera_z), -1.0, 1.0))
+	# SINAL INVERTIDO — a convenção do projeto é essa, não um ajuste arbitrário.
+	# O `apply_input` monta `target = camera_x*motion.x + camera_z*motion.y` e usa esse vetor só para
+	# ORIENTAR o corpo (`Basis.looking_at`); o deslocamento vem do ROOT MOTION da animação, que corre
+	# no +Z local ("The animation's forward/backward axis is reversed", player.gd) — ou seja, o corpo
+	# VIAJA no sentido OPOSTO ao `target`. O PlayerModel carrega o giro de 180° que faz isso parecer
+	# certo em tela, e para o humano tudo fecha porque a tecla W já manda motion.y = -1.
+	# Medido no harness: um player sem IA com motion=(0,-1) desloca-se para -camFwd (alinhamento
+	# -1.00). Logo, para andar na direção `dir` do mundo, projetamos `-dir`.
+	return Vector2(clampf(-dir.dot(camera_x), -1.0, 1.0), clampf(-dir.dot(camera_z), -1.0, 1.0))
 
 
 func _find_enemy(scope: Node, origin: Vector3) -> Node3D:

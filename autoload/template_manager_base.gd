@@ -379,7 +379,25 @@ func _spawn_job(job: Dictionary, spawned_nodes: Node3D) -> void:
 	spawned_nodes.add_child(n3d, true)
 
 
+# Escala mínima aceita (5% do tamanho original): abaixo disso o modelo vira um ponto e seus colliders
+# degeneram. O campo "Escala (%)" dos gerenciadores já limita a entrada; aqui é a rede de segurança
+# para templates salvos à mão.
+const MIN_SCALE_FACTOR := 0.05
+
+
+# Fator de escala de uma entrada: "scale_percent" é a variação PERCENTUAL sobre o tamanho original
+# (0 = natural, +50 = uma vez e meia, -30 = 30% menor).
+static func scale_factor_of(entry: Dictionary) -> float:
+	return maxf(MIN_SCALE_FACTOR, 1.0 + float(entry.get("scale_percent", 0.0)) / 100.0)
+
+
 func _configure_spawned_node(node: Node3D, entry: Dictionary) -> void:
+	# Escala do template. Guardada também como meta para quem precisar do valor depois do spawn
+	# (o nó já nasce escalado; a meta evita ter de re-derivar o fator a partir do transform).
+	var factor := scale_factor_of(entry)
+	if not is_equal_approx(factor, 1.0):
+		node.scale = Vector3.ONE * factor
+	node.set_meta("template_scale_factor", factor)
 	var faction := String(entry.get("faction", "neutral"))
 	node.set_meta("template_faction", faction)
 	if faction == "friendly" and node.get("bot_controlled") != null:

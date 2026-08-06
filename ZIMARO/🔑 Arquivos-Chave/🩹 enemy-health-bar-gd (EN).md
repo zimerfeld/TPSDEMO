@@ -22,22 +22,31 @@ atualizado: 2026-07-04
 
 ---
 
-## Shared Singleton Pattern
-
-A single instance per client, recreated if the node is freed (level change):
+## Singleton pattern — one instance PER VIEWPORT (2026-08-06)
 
 ```gdscript
-static var _instance = null
+static var _instances: Dictionary = {}   # viewport id -> CanvasLayer
 
-static func get_shared(parent: Node):
-    if _instance != null and is_instance_valid(_instance):
-        return _instance
-    _instance = (preload("res://controls2D/enemy_health_bar.gd")).new()
-    parent.add_child(_instance)   # parent = get_tree().current_scene
-    return _instance
+static func get_shared(source: Node):    # source = the enemy ITSELF
+    var vp: Viewport = source.get_viewport() ...
+    ...
+    vp.add_child(inst)                   # born INSIDE the room's viewport
+    _instances[vp.get_instance_id()] = inst
+
+static func hide_all() -> void           # hides it across every viewport
 ```
 
-> `is_instance_valid()` avoids a dangling pointer after the previous scene is freed.
+> **Why it changed:** it used to be **one global instance** parented to `get_tree().current_scene`.
+> On the host each room lives in its own **SubViewport**, but the HUD sat at the **HostSession**
+> root — so the "running rooms" grid drew the health bar of an enemy from a match the host
+> **wasn't even watching** (reported 2026-08-06). Parented to the enemy's viewport, it only shows
+> when that room is rendered (playing or observing).
+>
+> `get_shared` returns `null` if the node isn't in the tree yet — callers check before using it.
+>
+> `hide_all()` is called when **leaving a room**: `host_session._set_observing(-1)` (back to the
+> grid) and `client_session._exit_play()` (back to the browser) — otherwise the last hit enemy's
+> bar would linger for up to `AUTO_HIDE_TIME` over the rooms screen.
 
 ---
 

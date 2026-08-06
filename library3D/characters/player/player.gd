@@ -112,8 +112,18 @@ var initial_position: Vector3 = Vector3.ZERO
 		player_name = value
 		_apply_name_label()
 
-const MAX_HP: int = 100
+## Vida TOTAL, repartida igualmente entre os 10 membros/sub-membros com collider (ver [[limb-health]]) —
+## 150 dá 15 de HP por membro. Calibrado (medido em 2026-08-06) contra o laser do red_robot, que vale
+## 10: cada membro exige 2 acertos, dando 12 acertos até o abate (os 6 membros principais; olhos, boca
+## e ombreiras caem junto com cabeça/braços). Fica perto dos 10 acertos do modelo antigo de vida única.
+## Com os 100 anteriores eram só 6 acertos — um tiro por membro —, ou seja, a mudança para HP por
+## membro tinha deixado o player MAIS frágil do que antes, não mais resistente.
+const MAX_HP: int = 150
 var hp: int = MAX_HP
+
+# HP por membro/sub-membro (ver [[limb-health]]). Enquanto houver membros definidos, é ele que decide
+# o abate; `hp` passa a espelhar a soma dos membros (a barra de vida continua mostrando o corpo todo).
+var limbs: LimbHealth = null
 
 ## Dano da arma que o player porta (atribuído a cada bullet disparado).
 @export var weapon_damage: int = 50
@@ -261,6 +271,10 @@ func _setup_limb_colliders() -> void:
 	lc.auto_distal_sub_members = false  # opt-out: mantém BRAÇO/PERNA inteiros (hitbox já ajustado), sem subdividir mão/pé
 	add_child(lc)
 	lc.build_for(skel)
+	# HP por membro/sub-membro: a mesma regra dos inimigos vale para o player e para qualquer modelo
+	# friendly/neutro — só é abatido quando TODOS os membros definidos caem. Ver [[limb-health]].
+	limbs = LimbHealth.new()
+	limbs.setup(self, lc.model_key, MAX_HP)
 	# Ajusta a cápsula de LOCOMOÇÃO (bloqueio físico) ao modelo, derivando raio/altura dos boxes
 	# de membro recém-construídos — corpo proporcional ao player em vez da cápsula default. Mantém
 	# 1 shape/personagem (barato, estável, netcode-friendly). Ver [[sistemas/player]].
@@ -543,11 +557,18 @@ func shoot() -> void:
 
 
 @rpc("call_local")
-func hit(amount: int = 25) -> void:
-	hp = maxi(hp - amount, 0)
+func hit(amount: int = 25, group: String = "") -> void:
+	# Com membros definidos o dano é localizado e o abate exige derrubar todos eles; `hp` espelha a
+	# soma. Golpe sem membro identificado (área/queda) segue descontando da vida global.
+	var by_limb: bool = limbs != null and limbs.has_limbs() and limbs.has_limb(group)
+	if by_limb:
+		limbs.apply_damage(group, amount)
+		hp = limbs.total_hp()
+	else:
+		hp = maxi(hp - amount, 0)
 	if _health_bar:
 		_health_bar.update_health(hp, MAX_HP)
-	if hp <= 0 and _safe_is_server_call(false):
+	if (limbs.is_defeated() if by_limb else hp <= 0) and _safe_is_server_call(false):
 		respawn.rpc()
 	if not bot_controlled:
 		add_camera_shake_trauma(0.75)
@@ -556,6 +577,8 @@ func hit(amount: int = 25) -> void:
 @rpc("call_local")
 func respawn() -> void:
 	hp = MAX_HP
+	if limbs != null:
+		limbs.reset()   # membros destruídos voltam inteiros junto com a vida
 	if _health_bar:
 		_health_bar.update_health(hp, MAX_HP)
 	transform.origin = initial_position

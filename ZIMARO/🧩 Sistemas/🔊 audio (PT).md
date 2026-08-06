@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # 🔊 Áudio (buses + settings)
@@ -10,6 +10,37 @@ atualizado: 2026-07-04
 Sistema de áudio do projeto: layout de buses em `default_bus_layout.tres`
 (`uid://vtdn63d3ksc2`, referenciado por `project.godot` em `[audio]
 buses/default_bus_layout`) e os controles na aba **Audio** das settings.
+
+---
+
+## 🎵 Gerenciador de Músicas — remodelado em 2026-08-06
+
+**Botão próprio.** Abrir o gerenciador deixou de ser efeito colateral do rádio **"Música: Ligado"** e
+passou a ser o botão **"Gerenciar Músicas"** (`%Songs`, `tab_order` 56) na linha da Música. O motivo é
+concreto: com as duas ações no mesmo alvo, um clique errado no "Desligado" vizinho **mutava o bus
+`Music`** sem sinal visível — foi exatamente assim que a música do jogo ficou muda até se descobrir
+`[audio] music=false` no `settings.ini`. O botão acompanha o toggle em **estado e cor** (desabilitado e
+escurecido com a música desligada; fora do anel de Tab, como manda a regra de controles `disabled`).
+
+**Uma seleção, um trio de controles.** Sumiram o dropdown "Ouvir faixa" do topo e os `▶ ⏸ ⏹` de cada
+linha — eram três lugares para tocar a mesma coisa. Agora há **um trio centralizado** que age sobre a
+**linha selecionada** (clicar no seletor de uma cena a realça em amarelo).
+
+**⏸/⏹ agem sobre o que estiver soando.** Antes falavam só com a pré-escuta; ao abrir a janela, o que
+toca é a **trilha de fundo da tela**, então os botões pareciam mortos. `MusicManager.pause_playback()`
+e `stop_playback()` escolhem o alvo: pré-escuta se houver, senão o fundo. Ao **fechar** a janela,
+`resume_scene_track()` devolve a trilha da cena ao ar — senão a tela ficaria muda.
+
+**Menu com faixa sorteada.** `MusicManager.randomize_track("menu")` roda no boot (`main.gd`), então o
+menu principal ganha uma faixa nova a cada abertura do jogo. O sorteio **persiste** a escolha, para o
+Gerenciador exibir a faixa que está de fato tocando. Servidor dedicado (headless) não sorteia.
+⚠️ Efeito colateral: uma faixa escolhida à mão para o menu é **substituída no próximo boot**.
+
+**Janela contida na tela.** A `FloatingWindow` passou a limitar-se a **88% da viewport**
+(`_fit_size_to_viewport`) — a janela do gerenciador chegava a **1534 × 3092** num viewport de
+1920 × 1061, e o `ScrollContainer` de dentro expandia em vez de rolar. Os dropdowns ganharam
+`clip_text` (o `OptionButton` se dimensionava pelo item mais largo entre ~43 faixas NCS, sozinho
+pedindo ~1530 px de largura). Resultado: **760 × 933** em 1920×1080 e **760 × 528** em 1024×600.
 
 ## Layout de buses
 

@@ -125,6 +125,20 @@ max_value = 64.0
 value = 1.0
 focus_mode = 2
 
+[node name="ScaleLabel" type="Label" parent="Body/FieldsGrid"]
+layout_mode = 2
+text = "Escala (%)"
+
+[node name="Scales" type="SpinBox" parent="Body/FieldsGrid"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+min_value = -95.0
+max_value = 900.0
+step = 5.0
+focus_mode = 2
+
 [node name="PlacementLabel" type="Label" parent="Body/FieldsGrid"]
 layout_mode = 2
 text = "Posicionamento"

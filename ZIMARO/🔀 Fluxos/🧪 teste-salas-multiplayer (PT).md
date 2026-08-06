@@ -20,7 +20,7 @@ atualizado: 2026-07-04
 
 ## Fatos do build (do código, para o teste)
 
-- **Porta padrão:** `4383` (SpinBox `Port` da `playonline`; editável/persistida por histórico).
+- **Porta padrão:** `44000` e **endereço padrão:** `zimaro.playit.game` (SpinBox `Port` / LineEdit `Address` da `playonline`; editáveis e persistidos por histórico). Nos testes locais deste documento, troque para `127.0.0.1` e a porta que preferir.
 - **Servidor:** botão **"Gerenciar Salas"** → `ENetMultiplayerPeer.create_server(porta)` → abre `host_session`.
 - **Cliente:** botão **"Entrar em Salas"** → `create_client(endereço, porta)` → abre `client_session`.
 - **Sala padrão (só servidor headless):** `level_1` (`DEFAULT_ROOM_LEVEL`). Na GUI o host escolhe o nível.

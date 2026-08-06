@@ -50,8 +50,11 @@ third-person shooter sandbox. At a high level it offers:
 - **Level templates (Template Manager)** — each level row on the Levels screen has a **template
   button** that opens the **Template Manager** (a **scrollable** floating window, also reachable from
   the host's room manager): named spawn templates per level, each with entries defining
-  **model**, **faction** (friendly/enemy/neutral), **count** and **placement**
-  (explicit coordinates, random area or combat formation). **"Save and Apply"** activates
+  **model**, **faction** (friendly/enemy/neutral), **count**, **scale** and **placement**
+  (explicit coordinates, random area or combat formation). The **Scale (%)** field — right below
+  Count, in both managers — grows or shrinks the model as a percentage of its original size (`0` =
+  natural, `+50` = one and a half times, `-30` = 30% smaller; range -95% to +900%). The value is
+  **saved in the template**, so it is loaded and can be changed **at runtime**, with no rebuild. **"Save and Apply"** activates
   the template, applied when the level starts (solo or as an online room). Works the same in the
   editor and in the **exported .exe**: the model scanner resolves the `.remap` names the export
   produces (same pattern as the Models screen), saving a **new** template stores the generated id (so
@@ -111,7 +114,15 @@ third-person shooter sandbox. At a high level it offers:
   It only appears with **aiming active** and with the crosshair on one of the enemy's **limbs or
   sub-members**, and hides the moment your aim leaves it or you stop aiming — so simply walking
   past an enemy no longer pops the overlay. Any **protruding sub-member** (e.g. the leg guards)
-  counts as a valid target and reveals the enemy's health.
+  counts as a valid target and reveals the enemy's health. With the crosshair on a limb, the overlay
+  shows **that limb's name and HP** (e.g. `Red Robot — CABEÇA`) rather than the body's health — the
+  limb is what has to fall.
+- **Per-limb HP (defeat condition)** — every limb and sub-limb has **its own HP**, and an enemy is
+  only defeated once **all of them** are destroyed. The character's total health is split among them
+  (the **head is worth double** an ordinary limb) and the percentages from the Models screen remain a
+  **damage multiplier**. Destroying a limb **takes its sub-limbs down with it**; hitting the **face**
+  (eyes/mouth) **takes the whole head down** — the reward for precise aim. It applies to enemies,
+  friendlies and neutrals alike.
 - **Per-model physical body** — the locomotion capsule (physical blocking between characters) is
   **auto-fitted to each model** from its limb colliders (radius from the standing footprint, height
   from the full extent), instead of one hand-authored default for everyone. It stays a single cheap,
@@ -440,12 +451,15 @@ making the current choice stand out even more.
   de Som** (the `SFX` bus, into which the `Outside`/`Reactor` gameplay buses route), each
   saved and applied globally. The **background music is per scene/level**, driven by the **MusicManager**
   autoload in an **infinite loop**, switching on every screen (see `audios/README.md`). By default a
-  scene is **"Selecione…" = silent** (no music) until you assign it a track. Clicking **Música → Enabled**
-  opens the **Music Manager**: listen to any track and **assign** each scene/level a specific track,
-  **"Padrão"** (resolve by the scene name, `audios/<scene-name>.<ext>`) or **"Selecione…"** (silence);
-  assignments are persisted. Each **▶ Play** button has a
-  **⏸ Pause** and a **⏹ Stop** beside it (both on the "Listen" row and in the per-scene list); a **🎲 Shuffle** button assigns a
-  random track to every scene/level and saves it for next time. To the right of each row
+  scene is **"Selecione…" = silent** (no music) until you assign it a track. The **"Manage Music"**
+  button (next to the Music on/off, enabled only while music is on) opens the **Music Manager**:
+  **assign** each scene/level a specific track, **"Padrão"** (resolve by the scene name,
+  `audios/<scene-name>.<ext>`) or **"Selecione…"** (silence); assignments are persisted. Clicking a
+  scene's picker **selects and highlights** it, and the **▶ Play · ⏸ Pause · ⏹ Stop** trio at the top
+  acts on that row — ⏸/⏹ also **pause and stop whatever track the screen is playing**, and closing the
+  window puts the scene's track back on air. A **🎲 Shuffle** button assigns a random track to every
+  scene/level and saves it for next time; the **main menu draws a fresh track every time the game
+  opens**. To the right of each row
   (**Música** and **Efeitos de Som**) sits an **equalizer-style volume control** (`VolumeBar`, 10
   gradient-colored segments): with audio on, click/drag to set that bus's volume from **1 to 100**.
 

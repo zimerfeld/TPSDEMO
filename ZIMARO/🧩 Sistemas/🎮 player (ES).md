@@ -137,6 +137,59 @@ modelo de la cápsula de locomoción"). El red_robot hace lo mismo ([[🤖 inimi
   por la órbita + la excepción de colisión).
 - **Sin fuego amigo:** las balas del aliado atraviesan al jugador (ver [[🔫 combate-tiro (ES)|combate-tiro]]).
 
+### ⚠️ Convención INVERTIDA de movimiento (2026-08-06)
+
+El `input.motion` del bot es un vector en el espacio de la **cámara**, igual que el que produce el
+teclado. Pero `apply_input` usa `target = camera_x*motion.x + camera_z*motion.y` **solo para ORIENTAR**
+el cuerpo (`Basis.looking_at`) — el desplazamiento viene del **root motion** de la animación, que corre
+por el `+Z` local ("The animation's forward/backward axis is reversed", `player.gd`). Resultado: el
+cuerpo **viaja en sentido opuesto al `target`**, y la malla del GLB (que mira al `+Z`) hace que se vea
+bien en pantalla. Para el humano todo encaja porque la tecla W ya manda `motion.y = -1`.
+
+**Medido en el harness:** un player *sin IA* con `motion=(0,-1)` se desplaza hacia `-camFwd`
+(alineación **-1,00**). La IA proyectaba con el signo equivocado — por eso el aliado **corría en línea
+recta hasta morir**, ignorando puesto y objetivo, y **disparaba en una dirección con el proyectil
+yendo hacia otra**.
+
+Tres arreglos en `player_bot_ai.gd`:
+
+1. **`_world_dir_to_motion` proyecta `-dir`** (y no `dir`).
+2. **`_face_point` apunta el `-Z` del `camera_base` al lado OPUESTO del objetivo** — el frente efectivo
+   del cuerpo es el `+Z` de esa base — con el pitch espejado.
+3. **Girar ANTES de proyectar:** la ida y la vuelta usan la misma base en el mismo frame. Antes había
+   un desfase de un frame que **realimentaba** el error en cada tick.
+
+Después: la escolta converge a **2,53 m** (`follow_distance` 2,5) y se detiene; puntería y proyectil
+quedan con alineación **1,00** con el enemigo.
+
+### Postura de seguridad — `guard_stance` (2026-08-06)
+
+Comportamiento **por defecto** del aliado (activable/desactivable en la pantalla **Models → IA**).
+Deja de ser un cazador y pasa a actuar como un **guardaespaldas**: escolta a una distancia segura,
+sin chocar y sin correr sin rumbo.
+
+| Regla | Cómo |
+| --- | --- |
+| **Puesto** en vez de órbita | `_guard_station` calcula un punto siempre a `follow_distance` del protegido. **En paz:** diagonal **trasera** (`guard_back_ratio` 0.8 detrás + `guard_side_ratio` 0.6 al lado), fuera de su línea de tiro y acompañándolo cuando gira. El lado sale del `_orbit_sign` sorteado, así que dos aliados cubren lados opuestos. |
+| **Libertad con correa** (2026-08-06) | El puesto rígido dejaba al aliado **demasiado quieto**. Ahora anda en **cualquier dirección** (orbitar, flanquear, retroceder) dentro de una **burbuja** de `roam_radius` (4 m) alrededor del protegido; al pasarla, la vuelta entra proporcional al exceso y domina en `max_leash` (`_leash`). Es la correa — y no un puesto fijo — la que impide alejarse, y también la que impide la embestida. El puesto de escolta pasó a ser **preferencia** (`guard_screen_weight`), no ancla. Medido: **35,5 m recorridos**, máxima de **4,15 m** del protegido. |
+| **Sin movimientos bruscos** (2026-08-06) | El rumbo pasa por `_smooth_dir` (interpolación exponencial, `move_dir_response`) — la IA puede cambiar de idea en cada barrido mientras el CUERPO gira gradualmente. Medido: **0 inversiones bruscas** en 7 s. El mismo remedio que ya existía en `red_robot` (`move_dir_response`), ahora también en `criatura_alada`, cuyo rumbo horizontal se aplicaba crudo (el `look_at` giraba de golpe cada frame). |
+| **Se interpone** (2026-08-06) | Con un enemigo a menos de `player_threat_radius` del protegido, el puesto pasa **delante**, hacia la amenaza (`guard_screen_ratio` 0.8) — el aliado queda **entre los dos**, manteniendo el desvío lateral para no taparle el tiro. De aquí sale la "reacción": se reposiciona cada vez que la amenaza cambia de lado, sin salir nunca de `follow_distance`. |
+| **Se detiene al llegar, con histéresis** | Llega al puesto con `station_tolerance` (0.6 m) y solo vuelve a andar cuando este se aleja `× settle_release` (2.2 → ≈1.3 m). La zona muerta pequeña da reacción; la histéresis evita el temblor de corregir cada cuadro. `scan_interval` 0.35 → **0.2 s** para notar antes el cambio de lado de la amenaza. |
+| **Nunca toca** | Por debajo de `min_standoff` (1.8 m) el único movimiento posible es **retroceder** — incluso con la excepción de colisión física activa. |
+| **No avanza sobre el enemigo** | En combate, `_combat_move` devuelve el mismo movimiento de puesto; solo retrocede si el enemigo se acerca más que `preferred_combat_distance - combat_band`. Sin embestida y **sin flanqueo** (`pressure_flank` queda suprimido en esta postura). |
+| **Sin protegido, guarda su puesto de origen** (2026-08-06) | `_hold_move` mantiene el lugar donde nació el bot (`_home`, capturado en el 1er `update_input`): vuelve si derivó, se detiene al llegar, con la misma histéresis. **Bug corregido:** toda la postura dependía de `has_anchor`, y el ancla exige un **humano** (`_find_nearest_human_ally` ignora a los bots) — así que con el host observando, en una sala antes de que entre el jugador, o después de que salga, el código caía en la rama antigua (avanzar + flanquear) y el aliado **cargaba contra el enemigo hasta morir**. Ahora, sin nadie a quien escoltar, guarda el puesto y dispara desde ahí. |
+
+**Números recalibrados a la vez** (defaults de los `@export`): `follow_distance` 5.5 → **2.5** m ·
+`orbit_strength` 0.7 → **0.15** · `preferred_combat_distance` 18 → **12** m · `engage_range` 32 →
+**16** m · `player_threat_radius` 24 → **18** m · `soft_leash` 14 → **6** m · `max_leash` 20 → **9** m.
+
+> **Dónde regular la "reacción"** sin volver a convertirlo en cazador: `station_tolerance` (menor =
+> corrige antes), `settle_release` (menor = deja el puesto más fácil), `scan_interval` (menor = nota
+> antes) y `guard_screen_ratio` (mayor = se adelanta más hacia la amenaza).
+
+> Al desactivar `guard_stance` en la pantalla Models, el aliado vuelve a la **órbita** clásica
+> descrita arriba (con los números nuevos, o sea más pegado que antes).
+
 ---
 
 ## 🔗 Relacionado

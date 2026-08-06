@@ -15,13 +15,14 @@ atualizado: 2026-07-04
 ## Technical context
 
 - The game uses **ENetMultiplayerPeer** → `create_server()` / `create_client()` in `scenes2D/playonline/playonline.gd`.
-- ENet runs over **UDP**. The default port is **UDP 4383** (`playonline.tscn`, `Port` SpinBox, `value = 4383`).
+- ENet runs over **UDP**. The default port is **UDP 44000** (`playonline.tscn`, `Port` SpinBox, `value = 44000`) — the same port as the project's playit tunnel. It was `4383` until 2026-08-06.
 - The **Address** field accepts a hostname, so you can use domains instead of an IP. A **format hint** below the field (`AddressFormatHint`) says so: "Accepts a domain (e.g. `zimaro.playit.game`) or an IP — the port goes in the Port field."
 - **Asynchronous DNS resolution (2026-08-06).** ENet's `create_client` resolves hostnames on its own, but **blocking** — on a slow network the frame stalls until DNS answers and the game looks frozen. Now `_on_join_rooms_pressed` only calls `create_client` with an **already-resolved IP**:
   - Literal IP (`is_valid_ip_address()`) → connects straight away, nothing to resolve.
   - Hostname → `IP.resolve_hostname_queue_item(host, IP.TYPE_ANY)` (resolver queue, runs on a thread) and `_process` polls the status via `_poll_resolve()` without blocking; on completion it calls `_start_client(ip, host)`.
   - **IPv4 preference** (`_pick_address`): playit publishes both A and AAAA and the resolver usually returns the IPv6 first (`zimaro.playit.game` → `2602:fbaf:824:1::1d` and `147.185.221.29`). Connecting over IPv6 would shut out players with no IPv6 route, so we pick the first address **without** a colon; IPv6 is used only when there is no IPv4.
   - **Status label** (`ConnectStatus`, group `loc_manual`): "Resolving address…" → "Connecting…", cleared on abort. A DNS failure shows its own notice (`MSG_RESOLVE_FAILED`) with the typed name; an empty field warns before trying (`MSG_EMPTY_ADDRESS`).
+  - **Status and "Loading" never overlap (2026-08-06).** The *Loading* panel (with its progress bar) no longer shows alongside "Connecting…": `_start_client` only sets up the peer and the signals; `loading.show()` (and `_clear_status()`) moved to `_on_client_connected_await_version`, which runs when ENet **closes** the connection. The visible order becomes *Resolving → Connecting →* (connected) *→ Loading*, the latter covering the version handshake until the room browser opens.
   - The queue item is released (`erase_resolve_item`) on completion and in `_exit_tree`, so nothing leaks between visits to the screen.
 - The **Port** field accepts **1–65535**. (Before, the SpinBox `max_value` was 49151, which **truncated** dynamic ports like playit's — e.g.: typing 54417 became 49151 and the connection failed. Fixed to 65535.)
 - **Port/IP history:** next to Port and Address there is an `OptionButton` ("Select…") with the **last 3 values** used. Persisted in `Settings.config_file` under section **`online`** (keys `ports` / `addresses`), reloaded in `_ready` (`_refresh_history`). Selecting an item fills the field and the dropdown goes back to "Select…".

@@ -19,6 +19,8 @@ var _quit_dialog: FloatingWindow = null
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
 
 @onready var ui: Control = $UI
+@onready var menu_card: Control = $UI/MenuCenter/MenuCard
+@onready var briefing: Control = $UI/Briefing
 @onready var main: Control = %MenuColumn
 @onready var play_button: Button = main.get_node(^"PlayRow/Play")
 @onready var play_online_button: Button = main.get_node(^"PlayOnlineRow/PlayOnline")
@@ -42,9 +44,15 @@ func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
 	Settings.apply_window_resolution(get_window())
 	Settings.apply_audio_settings()
+	# O menu reaplica a resolução e o ÁUDIO salvos (centralizando a janela, religando a trilha) —
+	# reafirma as escolhas do piloto automático por cima, senão as duas janelas voltariam a se
+	# sobrepor e a do servidor voltaria a tocar música ao chegar aqui.
+	Autopilot.apply_window(get_window())
+	Autopilot.apply_audio()
 
-	if DisplayServer.get_name() == "headless":
-		# Servidor dedicado: pula chooseplayer/levels e abre direto a tela online.
+	if DisplayServer.get_name() == "headless" or Autopilot.is_active():
+		# Servidor dedicado OU piloto automático (`-- autohost`/`autojoin`): pula chooseplayer/levels
+		# e abre direto a tela online, que hospeda ou conecta sozinha.
 		_start_online_headless.call_deferred()
 
 	_update_language_buttons()
@@ -58,12 +66,44 @@ func _ready() -> void:
 	($UI/Actions as HBoxContainer).child_entered_tree.connect(
 		func(_n: Node) -> void: _wire_tab_order.call_deferred())
 
+	# O painel de briefing acompanha o card de botões (ver _layout_briefing) — reposiciona a cada
+	# mudança de tamanho da tela e uma vez agora, com o layout já assentado.
+	_layout_briefing.call_deferred()
+	ui.resized.connect(_layout_briefing)
 
-# Headless auto-host: vai direto para playonline (que auto-hospeda uma sala com o Level 1).
+
+# Headless auto-host / piloto automático: vai direto para playonline (que hospeda ou conecta sozinha).
 # Deferido porque main.gd só conecta replace_main_scene DEPOIS do _ready do menu.
 func _start_online_headless() -> void:
 	PlayerSelection.online_mode = true
 	emit_signal("replace_main_scene", load(PLAYONLINE_PATH))
+
+
+# Respiro (px) entre a borda direita do card de botões e o painel de briefing, e entre o painel e a
+# borda da tela. Larguras do painel abaixo do mínimo não são úteis (o texto vira uma coluna de sílabas).
+const BRIEFING_GAP := 96.0
+const BRIEFING_SCREEN_MARGIN := 48.0
+const BRIEFING_MIN_WIDTH := 260.0
+# Topo do painel, em fração da altura da tela (alinhado com o início do card).
+const BRIEFING_TOP_RATIO := 0.24
+
+
+# Posiciona o briefing À DIREITA do card de botões, e não numa fração fixa da largura. O card é
+# CENTRALIZADO e tem largura fixa (500 px): com âncoras proporcionais o painel encostava nele — em
+# 1920×1080 já se sobrepunham 58 px, e quanto mais estreita a tela, pior. Ancorado ao card, o respiro
+# é o mesmo em qualquer resolução. Se não sobrar largura útil, o painel some em vez de invadir o menu.
+func _layout_briefing() -> void:
+	if briefing == null or menu_card == null or not is_inside_tree():
+		return
+	var screen := ui.size
+	var left: float = menu_card.position.x + menu_card.size.x + BRIEFING_GAP
+	var width: float = screen.x - BRIEFING_SCREEN_MARGIN - left
+	briefing.visible = width >= BRIEFING_MIN_WIDTH
+	if not briefing.visible:
+		return
+	briefing.set_anchors_preset(Control.PRESET_TOP_LEFT, true)
+	briefing.position = Vector2(left, screen.y * BRIEFING_TOP_RATIO).floor()
+	briefing.size = Vector2(width, briefing.get_combined_minimum_size().y).floor()
 
 
 # (Re)liga o anel de Tab da tela na ordem de leitura. Idempotente — pode ser chamado quantas vezes

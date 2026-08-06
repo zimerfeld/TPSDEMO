@@ -62,6 +62,14 @@ func _ready() -> void:
 		_set_playing(rid)
 	else:
 		_set_observing(-1)
+	# Piloto automático (`-- autohost`): cria a sala inicial sozinho, para o cliente da outra janela
+	# ter em que entrar. Roda uma única vez por execução (ver Autopilot.should_start_room).
+	# (O servidor dedicado headless ja cria a sala no playonline — dai o "sem salas ainda".)
+	if RoomManager.get_rooms().is_empty() and Autopilot.should_start_room():
+		# O template tem de estar ativo ANTES do start_room (é ele quem aplica os personagens).
+		Autopilot.apply_template(Autopilot.level_path)
+		RoomManager.start_room(Autopilot.level_path)
+		_refresh_template_picker()
 	# Toggle "Debug 2D" na barra Actions (injetado pelo DebugOverlay como nas demais telas) + sequência
 	# de Tab. Re-liga ao injetar o toggle e ao remontar as salas; foco inicial no controle de Tab = 1.
 	_actions_bar.child_entered_tree.connect(func(_n: Node) -> void: _rewire_tab.call_deferred())
@@ -172,10 +180,14 @@ func _set_observing(id: int) -> void:
 	if id >= 0:
 		# Passar a sala a RENDERIZAR custa o setup de render do level (stall no 1o quadro) — a tela de
 		# "Carregando" cobre a entrada e revela so com o quadro pronto. Ver [[LoadingScreen]].
+		# Observar também é "entrar na sala": a revelação espera o povoamento terminar, para o host
+		# não ver as entidades aparecendo uma a uma na frente dele.
 		await LoadingScreen.cover(func() -> void:
 			_render_only(id)
 			_show_room_view(id)
-			RoomManager.activate_spectator(id))  # câmera livre como current no SubViewport
+			RoomManager.activate_spectator(id),  # câmera livre como current no SubViewport
+			LoadingScreen.SETTLE_FRAMES,
+			func() -> bool: return RoomManager.room_is_populated(id))
 		_hint.text = "ESC volta à gerência | WASD voa | Espaço+W/S sobe/desce"
 		_hint.visible = true
 	else:
@@ -184,6 +196,9 @@ func _set_observing(id: int) -> void:
 		_room_view.texture = null
 		_panel.visible = true
 		_hint.visible = false
+		# Voltou à grade: some com a barra do último inimigo atingido (ela some sozinha só depois de
+		# alguns segundos, e a grade de salas não deve exibir nada de dentro das partidas).
+		preload("res://controls2D/enemy_health_bar.gd").hide_all()
 	_apply_mouse_mode()
 	_refresh_rooms()
 
@@ -195,10 +210,14 @@ func _set_observing(id: int) -> void:
 func _set_playing(id: int) -> void:
 	_observing_id = -1
 	_playing_id = id
-	# Idem observar: a sala passa a renderizar aqui — cobre com a tela de "Carregando".
+	# Idem observar: a sala passa a renderizar aqui — cobre com a tela de "Carregando". A revelação
+	# espera o player do host (peer 1) existir na sala: o host_spawn_in_room só o cria depois de a
+	# sala estar inteira montada, mesma regra do cliente.
 	await LoadingScreen.cover(func() -> void:
 		_render_only(id)
-		_show_room_view(id))
+		_show_room_view(id),
+		LoadingScreen.SETTLE_FRAMES,
+		func() -> bool: return RoomManager.player_ready_in_room(id, 1))
 	_hint.text = "ESC desconecta e volta à gerência"
 	_hint.visible = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)

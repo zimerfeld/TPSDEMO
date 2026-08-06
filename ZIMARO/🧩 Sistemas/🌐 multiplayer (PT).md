@@ -197,6 +197,15 @@ confiável):
     `register_loadout.rpc_id(1, variant_id)` (enviado quando `connected_to_server`); só então spawna o
     modelo certo. O `MultiplayerSpawner` replica a cena instanciada → a cor/variante aparece em TODOS
     os peers (a `playera.gd` aplica o tint no `_ready` de cada instância). Fallback de 5 s → variante padrão.
+  - **Spawn points de nível já destruído (2026-08-06).** O `NetSpawn` é autoload: ele **sobrevive à troca
+    de cena** e guarda os `Marker3D` do último `setup()`. O preload de startup do [[⏳ loading-screen (PT)|LoadingScreen]]
+    instancia um level de verdade por alguns quadros — e como o `OfflineMultiplayerPeer` faz `is_server()`
+    ser `true`, esse level registrava seus spawn points e o sinal `peer_connected`; ao ser liberado, a fila
+    ficava com marcadores mortos. O primeiro cliente a conectar caía em `_take_point()` → **"Trying to
+    return a previously freed instance"** (`net_spawn.gd:176`). Correções: `_take_point` **descarta** entradas
+    inválidas da fila (e valida o sorteio de fallback) via o novo `_valid_point`; `_await_loadout` **sai cedo**
+    se o `_spawned_nodes` não existe mais (nada a spawnar); `register_loadout`/`_loadout_timeout` revalidam o
+    ponto reservado e pegam outro se ele morreu na espera.
 
 ---
 

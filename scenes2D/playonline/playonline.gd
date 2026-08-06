@@ -80,6 +80,11 @@ func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		_on_manage_rooms_pressed.call_deferred()
 		return
+	# Piloto automático (`-- autohost` / `-- autojoin`): preenche os campos com o que veio na linha de
+	# comando e dispara a ação sozinho. Ver [[Autopilot]] / scripts/dual-window.ps1.
+	if Autopilot.is_active():
+		_run_autopilot.call_deferred()
+		return
 	# Sequência de Tab na ordem de leitura: Nome (1) → Porta (2) → Histórico de porta (3) → IP (4) →
 	# Histórico de IP (5) → 3 OptionButtons de otimização (6-8) → Gerenciar/Entrar (9-10) → Voltar (11)
 	# → Português (12) → English (13) → Español (14) → Debug 2D (15). Re-liga quando o DebugOverlay injeta
@@ -169,7 +174,9 @@ func _select_in_history(option: OptionButton, current: String) -> void:
 
 
 # Pré-preenche Porta e IP/Domínio com o ÚLTIMO valor válido usado (histórico guarda o mais recente
-# em [0], via _remember/push_front). Sem histórico, mantém os defaults do .tscn (4383 / 127.0.0.1).
+# em [0], via _remember/push_front). Sem histórico, mantém os defaults do .tscn — o túnel público
+# do projeto: 44000 / zimaro.playit.game (o cliente conecta direto pelo playit; para loopback local
+# basta digitar 127.0.0.1, que passa a ser o último usado).
 # Assim o jogador não precisa redigitar a cada vez — basta confirmar o último que funcionou.
 func _prefill_last_used() -> void:
 	# Preferimos o "último valor" dedicado (gravado em qualquer mudança, mesmo sem commit); se não
@@ -346,6 +353,34 @@ func _on_loading_done_timer_timeout() -> void:
 	emit_signal("replace_main_scene", ResourceLoader.load_threaded_get(loading_path))
 
 
+# Piloto automático: aplica porta/endereço/nome vindos da linha de comando e dispara a ação. O HOST
+# hospeda na hora; o CLIENTE espera `delay=` segundos (o servidor da outra janela ainda está subindo:
+# preload de startup + criação da sala) antes da 1ª tentativa — falhas re-tentam em _abort_join.
+func _run_autopilot() -> void:
+	Autopilot.apply_player_name()
+	if Autopilot.player_name != "":
+		player_name_field.text = Autopilot.player_name
+	port.value = float(Autopilot.port)
+	if Autopilot.is_host():
+		# O servidor hospeda SÓ pela porta (o create_server ignora o endereço) — o campo vai limpo
+		# para a tela não sugerir que o IP é usado aqui.
+		address.text = ""
+	else:
+		address.text = Autopilot.address
+	# Host: pausa só em DEPURAÇÃO, para dar tempo de ler os parâmetros preenchidos antes de a tela
+	# trocar pela sessão de salas (no .exe de release é 0 — o servidor sobe na hora).
+	# Cliente: a espera até o servidor da outra janela estar no ar.
+	var wait: float = Autopilot.host_preview_delay() if Autopilot.is_host() else Autopilot.delay_sec
+	if wait > 0.0:
+		await get_tree().create_timer(wait).timeout
+		if not is_inside_tree():
+			return
+	if Autopilot.is_host():
+		_on_manage_rooms_pressed()
+	else:
+		_on_join_rooms_pressed()
+
+
 # "Gerenciar Salas" (Host): hospeda um servidor PERSISTENTE e abre o painel de salas (host_session),
 # onde dá pra iniciar/parar/reiniciar, observar e JOGAR em vários levels ao mesmo tempo. O peer fica
 # aberto até "Voltar" (sair de uma sala NÃO encerra o servidor). Ver host_session.gd / RoomManager.
@@ -423,7 +458,9 @@ func _start_client(ip: String, shown: String) -> void:
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
 	multiplayer.multiplayer_peer = peer
 	RoomManager.client_mode = true
-	loading.show()
+	# O "Carregando" + barra de progresso NÃO aparecem aqui: enquanto o status diz "Conectando...",
+	# ainda não há nada carregando. Eles entram em _on_client_connected_await_version, quando a
+	# conexão fecha. Ver [[playonline]].
 	# Reconexão idempotente: uma tentativa anterior (que falhou e voltou pelo retry do CrashHandler,
 	# ou que conectou e deixou sinais ONE_SHOT pendentes) pode ter deixado sinais presos nesta mesma
 	# tela. Sem limpar, o connect() repetido estoura "Signal already connected".
@@ -503,6 +540,11 @@ func _exit_tree() -> void:
 func _on_client_connected_await_version() -> void:
 	if not _join_pending:
 		return
+	# "Conectando..." TERMINOU (o ENet fechou a conexão): só agora o "Carregando" e a barra de
+	# progresso entram em cena, cobrindo o handshake de versão + a abertura do navegador de salas.
+	# Os dois nunca aparecem juntos — o status sai e o loading entra.
+	_clear_status()
+	loading.show()
 	get_tree().create_timer(VERSION_TIMEOUT_SEC).timeout.connect(_on_version_timeout, CONNECT_ONE_SHOT)
 
 
@@ -547,7 +589,18 @@ func _abort_join(msg: String) -> void:
 	loading.hide()
 	_disconnect_join_signals()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	# Piloto automático: o servidor da outra janela pode ainda estar subindo — re-tenta em SILÊNCIO
+	# (sem diálogo de erro) enquanto houver tentativas. Esgotadas, cai no aviso normal.
+	if Autopilot.consume_retry():
+		_retry_join_later()
+		return
 	CrashHandler.show_error(msg, _on_join_rooms_pressed)
+
+
+func _retry_join_later() -> void:
+	await get_tree().create_timer(Autopilot.RETRY_INTERVAL_SEC).timeout
+	if is_inside_tree():
+		_on_join_rooms_pressed()
 
 
 # Desliga TODOS os sinais de uma tentativa de join (conexão + handshake de versão). Idempotente —

@@ -48,7 +48,7 @@ vivo (sem botão Aplicar).
 
 ## Features · Funcionalidades
 
-![EN](screenshots/screenshotGB.png) Highlights: a per-model physical body (the locomotion capsule is auto-fitted to each model from its limb colliders, one cheap shape each); localized damage (native per-limb 3D colliders, headshots deal extra — and extremities like hand/foot split into their own sub-members, inheriting the limb's damage when unset) with a
+![EN](screenshots/screenshotGB.png) Highlights: a per-model physical body (the locomotion capsule is auto-fitted to each model from its limb colliders, one cheap shape each); **per-limb HP** — every limb and sub-limb has its own health and a character is only defeated once all of them are destroyed, with a limb's sub-limbs falling along with it and a hit to the face taking the whole head down; localized damage (native per-limb 3D colliders, headshots deal extra — and extremities like hand/foot split into their own sub-members, inheriting the limb's damage when unset) with a
 per-model, per-limb damage multiplier you can edit right in the Models viewer (saved to one file per
 character, in the model's own folder `library3D/<cat>/<model>/limb_config.json`, with a writable `user://` override for in-game edits) where the body type (biped/quadruped/crawler) defines the members and
 protruding sub-members (plates, guards) are editable too (and any model with no classified member — e.g. Structures like the bronze statues — gets a single fallback **CORPO** member wrapping the whole model, so a collider can always be defined); a Models viewer with per-category master toggles (rotation, animation,
@@ -88,7 +88,7 @@ every entry into a level or room and prepares the graphics at startup, so the fi
 The Levels screen also carries, per level, a **Template Manager** (characters) and a **Scenery
 Manager** (glowing stage props from `library3D/sceneries`) — **scrollable** floating windows where
 each entry's model is picked by **cascading folder navigation** (one dropdown per library folder level), with
-faction, count and placement (coordinates, random area or formation) — the fields for the chosen
+faction, count, **scale (%)** and placement (coordinates, random area or formation) — the fields for the chosen
 placement mode are shown grouped, one mode at a time, and numeric fields are compact; both a character template
 and a scenery can be active at once, applied when the level starts, in solo play and online rooms
 alike, in the editor and in the exported .exe. Ground enemies now have **realistic locomotion with no
@@ -107,7 +107,7 @@ looped by slow, alternating **electric energy**), and every **confirmation windo
 floating-window control (`FloatingWindow`, a `controls2D` scene) — centered text, equal-width buttons, a
 standard × close and a modal backdrop — the same base other floating windows can reuse.
 
-![PT](screenshots/screenshotBR.png) Destaques: corpo físico proporcional ao modelo (a cápsula de locomoção é auto-ajustada a cada modelo pelos colliders de membro, um único shape barato); dano localizado (colliders 3D nativos por membro, headshots causam dano extra — e extremidades como mão/pé viram sub-membros próprios, herdando o dano do membro quando não definido) com um
+![PT](screenshots/screenshotBR.png) Destaques: corpo físico proporcional ao modelo (a cápsula de locomoção é auto-ajustada a cada modelo pelos colliders de membro, um único shape barato); **HP por membro** — cada membro e sub-membro tem vida própria e o personagem só é abatido quando todos são destruídos, com os sub-membros caindo junto com o membro e um acerto no rosto derrubando a cabeça inteira; dano localizado (colliders 3D nativos por membro, headshots causam dano extra — e extremidades como mão/pé viram sub-membros próprios, herdando o dano do membro quando não definido) com um
 multiplicador de dano por modelo e por membro **editável na própria tela Models** (salvo em um arquivo
 por personagem, na pasta do próprio modelo `library3D/<cat>/<modelo>/limb_config.json`, com override gravável em `user://` para edições no jogo), em que o tipo de corpo (bípede/quadrúpede/rastejante) define os membros e
 os sub-membros salientes (placas, guardas) também são editáveis (e todo modelo sem membro classificado — ex.: Estruturas como as estátuas de bronze — ganha um único membro **CORPO** de fallback que envolve o modelo inteiro, para sempre dar para definir um collider); um visualizador Models com toggles mestres por categoria (rotação, animação,
@@ -152,7 +152,7 @@ a primeira partida começa fluida.
 A tela de Níveis também traz, por level, um **Gerenciador de Templates** (personagens) e um
 **Gerenciador de Cenários** (objetos de palco luminosos de `library3D/sceneries`) — janelas
 flutuantes em que o modelo de cada entrada é escolhido por **navegação em cascata de pastas** (um
-dropdown por nível da biblioteca), com facção, quantidade e posicionamento (coordenadas, área
+dropdown por nível da biblioteca), com facção, quantidade, **escala (%)** e posicionamento (coordenadas, área
 aleatória ou formação) — os campos do posicionamento escolhido aparecem agrupados, um modo por vez,
 e os campos numéricos são compactos; um template de personagens e um cenário podem estar ativos ao mesmo tempo,
 aplicados quando o level inicia, no solo e nas salas online, no editor e no .exe exportado. Os

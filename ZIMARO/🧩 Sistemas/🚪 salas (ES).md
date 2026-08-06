@@ -120,6 +120,26 @@ trabado) y el gatillo de FPS exige 10 muestras seguidas, no 1 pico gigante.
   `TemplateManagerBase.apply_active_gradual()` (refactorizado `_apply_template` en `_plan_template`
   [salta el camino muerto vía `ResourceLoader.exists`] + `_spawn_job`), usada por
   `RoomManager._ensure_template_spawned`.
+
+  > **La sala carga ENTERA antes de liberar al jugador (2026-08-06).** El spawn gradual se disparaba y
+  > se **abandonaba** (`_ensure_template_spawned` sin `await`): el jugador nacía en mitad del poblado y
+  > veía las entidades apareciendo una a una. Ahora `_ensure_template_spawned` es una corrutina que
+  > espera a que el gradual termine y marca `template_ready` en la sala (señal `room_populated`);
+  > **`join_room` (cliente) y `host_spawn_in_room` (host) hacen `await` antes de spawnear al
+  > jugador** — y revalidan todo después, porque la sala pudo pararse entretanto. Quien llega mientras
+  > otro peer ya está poblando espera la misma conclusión (`_await_template_ready`), con techo de
+  > `TEMPLATE_READY_TIMEOUT_SEC` (15 s) para que nadie quede atrapado.
+  >
+  > La **visibilidad del peer se registra ANTES del poblado**: así cada entidad nace replicando hacia
+  > él, en el orden en que se crea. Sin eso el cliente recibía sync de subnodos (las piezas de muerte
+  > del red_robot) cuyo spawn aún no había procesado — `Node not found … MultiplayerSynchronizer`
+  > (observado y corregido el 2026-08-06).
+  >
+  > En la UI, `LoadingScreen.cover()` ganó un **`ready_check`** opcional: la pantalla de Cargando solo
+  > revela cuando devuelve true. El cliente espera a que **su propio player** aparezca en el espejo
+  > (`RoomManager.player_ready_in_room`) — como el servidor solo lo spawnea tras poblar, verlo implica
+  > escenario completo; el host que **juega** espera al peer 1, y el que **observa** espera
+  > `room_is_populated`.
 - **Timeout de ENet TOLERANTE** (limit 32, mín 20 s, máx 40 s) aplicado a cada peer que conecta —
   `RoomManager._apply_peer_timeout` en `_on_peer_connected` — un stall de render ya no derriba la
   conexión. *(Validado en el harness: un stall de 3,7 s NO cayó y el sync se recuperó.)*
@@ -159,6 +179,17 @@ tolerante de ENet lo sobrevive y el handler de `server_disconnected` recupera de
 Ver [[salas-freeze-render-stall]] en la memoria.
 
 ## Pantalla de "Cargando" (`LoadingScreen`) — 2026-08-05
+
+> 🖱️ **GOTCHA del cursor (2026-08-06).** El prepago del arranque instancia el `level_1` como
+> observador, y la `spectator_camera` **capturaba el ratón** en el `_ready`. Capturar y soltar en unos
+> pocos fotogramas deja el puntero **sin redibujar** en Windows: `Input.get_mouse_mode()` vuelve a
+> `VISIBLE` (medido: `0` durante todo el arranque, incluso 3 s después) y aun así **el cursor no
+> aparece** — solo vuelve en el siguiente cambio de modo. La cura no es reforzar el
+> `set_mouse_mode(VISIBLE)` al final (eso trata el síntoma): es **no capturar**. El indicador
+> **`LoadingScreen.preloading`** lo consultan `spectator_camera` y `player_input` — durante el prepago
+> nadie juega, así que nadie captura. Medido después: modos vistos en el arranque = solo `[0]` (antes
+> `[0, 2]`). El texto de la pantalla es **"Preparando os gráficos"** (el fragmento "para la primera
+> partida" se quitó el 2026-08-06).
 
 Autoload **`LoadingScreen`** (`autoload/loading_screen.gd`), un `CanvasLayer` (layer 200,
 `PROCESS_MODE_ALWAYS`) con fondo opaco + "Cargando..." — textos canónicos en pt, traducidos por el

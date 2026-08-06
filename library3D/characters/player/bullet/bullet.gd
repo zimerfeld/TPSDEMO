@@ -113,7 +113,9 @@ func _apply_hit(collider: Node) -> void:
 		_registered = true
 		Factions.note_damage(shooter, character)  # neutro atingido alinha-se contra o atirador
 		var mult: float = collider.get_meta("damage_multiplier")
-		character.hit.rpc(int(round(weapon_damage * mult)))
+		# O GRUPO do membro atingido vai junto: é ele que perde HP (ver [[limb-health]]). Personagens
+		# sem HP por membro ignoram o argumento e seguem descontando da vida única.
+		character.hit.rpc(int(round(weapon_damage * mult)), String(collider.get_meta("group", "")))
 	elif collider.has_method(&"hit") and Factions.can_damage(shooter, collider):
 		_registered = true
 		Factions.note_damage(shooter, collider)

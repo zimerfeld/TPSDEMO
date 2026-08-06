@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # 🧩 Level Templates (Template Manager + Scenery Manager)
@@ -11,6 +11,26 @@ atualizado: 2026-07-04
 > faction, count and placement, edited in-game in a floating window and applied when the level
 > starts (solo or online room). Related: [[🎬 fluxo-de-cenas (EN)|Scene Flow]] (`levels` screen),
 > [[🚪 salas (EN)|Rooms]] (host opens the same window), memory *"rooms are born clean"*.
+
+---
+
+## 📐 "Scale (%)" field (2026-08-06)
+
+Below **Count**, in **both** managers (Templates and Sceneries), a `SpinBox` sets the model's scale as
+a **percentage of its original size**:
+
+| Value | Effect |
+|---|---|
+| `0` | natural size (default) |
+| `+50` | one and a half times |
+| `-30` | 30% smaller |
+
+- Accepted range: **-95% to +900%**.
+- Persisted on the template entry under the **`scale_percent`** key (JSON in `user://`), so it is
+  loaded and can be changed **at runtime**, with no rebuild.
+- Applied on every spawn in `TemplateManagerBase._configure_spawned_node`:
+  `factor = 1 + scale_percent/100`, with a floor of **0.05** (below that the mesh becomes a dot and the
+  colliders degenerate). The factor is also stored in the node's `template_scale_factor` meta.
 
 ## Two scenes + two separate managers (2026-07-03, refactor)
 

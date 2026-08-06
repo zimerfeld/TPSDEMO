@@ -51,8 +51,11 @@ em terceira pessoa. Em alto nível, oferece:
   **botão de template** que abre o **Gerenciador de Templates** (janela flutuante **rolável**, também
   acessível pela gerência de salas do host): templates de spawn nomeados por level, cada um com
   entradas que definem **modelo**, **facção** (aliado/inimigo/neutro),
-  **quantidade** e **posicionamento** (coordenadas explícitas, área aleatória ou formação de
-  combate). **"Salvar e Aplicar"** ativa o template, aplicado quando o level inicia (solo ou
+  **quantidade**, **escala** e **posicionamento** (coordenadas explícitas, área aleatória ou formação de
+  combate). O campo **Escala (%)** — logo abaixo de Quantidade, nos dois gerenciadores — aumenta ou
+  reduz o modelo em porcentagem sobre o tamanho original (`0` = natural, `+50` = uma vez e meia,
+  `-30` = 30% menor; faixa de -95% a +900%). O valor é **salvo no template**, então é carregado e pode
+  ser alterado **em tempo de execução**, sem recompilar. **"Salvar e Aplicar"** ativa o template, aplicado quando o level inicia (solo ou
   como sala online). Funciona igual no editor e no **.exe exportado**: o scanner de modelos resolve
   os nomes `.remap` que o export produz (mesmo padrão da tela Models), salvar um template **novo**
   guarda o id gerado (ativar logo após salvar funciona e re-salvar não duplica) e o **nome do
@@ -115,7 +118,14 @@ em terceira pessoa. Em alto nível, oferece:
   Só aparece com a **mira ativada** e com a mira sobre um **membro ou sub-membro** do inimigo, e
   some assim que a mira sai dele ou a mira é desativada — passar perto do inimigo sem mirar não
   abre mais o overlay. Qualquer **sub-membro saliente** (ex.: as placas das pernas) vale como alvo
-  e exibe a vida do inimigo.
+  e exibe a vida do inimigo. Com a mira sobre um membro, o overlay mostra **o nome e o HP daquele
+  membro** (ex.: `Red Robot — CABEÇA`), não a vida do corpo — é o membro que precisa cair.
+- **HP por membro (condição de abate)** — cada membro e sub-membro tem **HP próprio**, e o inimigo
+  só é abatido quando **todos** são destruídos. A vida total do personagem é repartida entre eles
+  (a **cabeça vale o dobro** de um membro comum) e as porcentagens da tela Models seguem sendo
+  **multiplicador de dano**. Destruir um membro **leva junto os sub-membros dele**; acertar o
+  **rosto** (olhos/boca) **derruba a cabeça inteira** — é o prêmio da mira precisa. Vale para
+  inimigos, aliados e neutros.
 - **Corpo físico proporcional ao modelo** — a cápsula de locomoção (bloqueio físico entre
   personagens) é **auto-ajustada a cada modelo** a partir dos colliders de membro (raio pelo footprint
   em pé, altura pela extensão total), em vez de uma default autorada igual para todos. Continua sendo
@@ -445,12 +455,15 @@ qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (
   (o bus `SFX`, para onde os buses de gameplay `Outside`/`Reactor` são roteados), cada um salvo e
   aplicado globalmente. A **música de fundo é por cena/level**, conduzida pelo autoload **MusicManager**
   em **loop infinito**, trocando a cada tela (ver `audios/README.md`). Por padrão, uma cena fica em
-  **"Selecione…" = silêncio** (sem música) até você atribuir uma faixa. Ao clicar em **Música → Enabled**
-  abre o **Gerenciador de Música**: ouça qualquer faixa e **atribua** a cada cena/level uma faixa
-  específica, **"Padrão"** (resolve pelo nome da cena, `audios/<nome>.<ext>`) ou **"Selecione…"** (silêncio);
-  as atribuições são persistidas. Cada botão **▶ Tocar** tem ao lado um **⏸ Pausar** e um
-  **⏹ Parar** (tanto na linha "Ouvir faixa" quanto na lista por cena); um botão **🎲 Sortear faixas** sorteia uma faixa
-  aleatória para cada cena/level e salva para a próxima abertura. À direita de cada linha (**Música** e **Efeitos de
+  **"Selecione…" = silêncio** (sem música) até você atribuir uma faixa. O botão **"Gerenciar Músicas"**
+  (ao lado do liga/desliga da Música, e habilitado só com ela ligada) abre o **Gerenciador de Músicas**:
+  **atribua** a cada cena/level uma faixa específica, **"Padrão"** (resolve pelo nome da cena,
+  `audios/<nome>.<ext>`) ou **"Selecione…"** (silêncio); as atribuições são persistidas. Clicar no
+  seletor de uma cena a **seleciona e realça**, e o trio **▶ Tocar · ⏸ Pausar · ⏹ Parar** no topo age
+  sobre ela — o ⏸/⏹ também **pausam e param a trilha que estiver tocando na tela**, e ao fechar a
+  janela a trilha da cena volta ao ar. Um botão **🎲 Sortear faixas** sorteia uma faixa aleatória para
+  cada cena/level e salva para a próxima abertura; o **menu principal sorteia uma faixa nova a cada
+  abertura do jogo**. À direita de cada linha (**Música** e **Efeitos de
   Som**) há um **controle de volume tipo equalizador** (`VolumeBar`, 10 segmentos coloridos em
   gradiente): com o áudio ligado, clique/arraste para ajustar o volume daquele bus de **1 a 100**.
 

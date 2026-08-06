@@ -48,8 +48,12 @@ disparos en tercera persona. A grandes rasgos ofrece:
 - **Plantillas de nivel (Template Manager)** — cada fila de nivel en la pantalla de Niveles tiene un **botón de
   plantilla** que abre el **Template Manager** (una ventana flotante **desplazable**, también accesible desde
   el gestor de salas del host): plantillas de generación con nombre por nivel, cada una con entradas que definen
-  **modelo**, **facción** (amiga/enemiga/neutral), **cantidad** y **colocación**
-  (coordenadas explícitas, área aleatoria o formación de combate). **"Guardar y aplicar"** activa
+  **modelo**, **facción** (amiga/enemiga/neutral), **cantidad**, **escala** y **colocación**
+  (coordenadas explícitas, área aleatoria o formación de combate). El campo **Escala (%)** — justo
+  debajo de Cantidad, en ambos gestores — agranda o reduce el modelo en porcentaje sobre su tamaño
+  original (`0` = natural, `+50` = una vez y media, `-30` = 30% más pequeño; rango de -95% a +900%).
+  El valor se **guarda en la plantilla**, así que se carga y puede cambiarse **en tiempo de
+  ejecución**, sin recompilar. **"Guardar y aplicar"** activa
   la plantilla, aplicada cuando el nivel comienza (en solitario o como sala en línea). Funciona igual en el
   editor y en el **.exe exportado**: el escáner de modelos resuelve los nombres `.remap` que produce la exportación
   (mismo patrón que la pantalla Models), guardar una **nueva** plantilla almacena el id generado (de modo que
@@ -102,7 +106,15 @@ disparos en tercera persona. A grandes rasgos ofrece:
   Solo aparece con la **puntería activada** y con la mira sobre un **miembro o submiembro** del enemigo, y se
   oculta en el momento en que la mira lo abandona o se desactiva la puntería — pasar cerca del enemigo sin
   apuntar ya no abre el overlay. Cualquier **submiembro sobresaliente** (p. ej. las protecciones de las
-  piernas) vale como objetivo y revela la salud del enemigo.
+  piernas) vale como objetivo y revela la salud del enemigo. Con la mira sobre un miembro, el overlay
+  muestra **el nombre y el HP de ese miembro** (p. ej. `Red Robot — CABEÇA`), no la salud del cuerpo —
+  es el miembro el que debe caer.
+- **HP por miembro (condición de abatimiento)** — cada miembro y submiembro tiene **HP propio**, y el
+  enemigo solo es abatido cuando **todos** son destruidos. La vida total del personaje se reparte
+  entre ellos (la **cabeza vale el doble** que un miembro común) y los porcentajes de la pantalla
+  Models siguen siendo **multiplicador de daño**. Destruir un miembro **se lleva sus submiembros**;
+  acertar en el **rostro** (ojos/boca) **derriba la cabeza entera** — el premio de la puntería
+  precisa. Vale para enemigos, aliados y neutrales.
 - **Cuerpo físico por modelo** — la cápsula de locomoción (bloqueo físico entre personajes) se
   **ajusta automáticamente a cada modelo** a partir de sus colisionadores de miembro (radio a partir de la huella en pie, altura
   a partir de la extensión total), en lugar de un único valor por defecto creado a mano para todos. Sigue siendo una única forma barata e
@@ -432,12 +444,16 @@ haciendo que la elección actual destaque aún más.
   de Som** (el bus `SFX`, hacia el que enrutan los buses de juego `Outside`/`Reactor`), cada uno
   guardado y aplicado globalmente. La **música de fondo es por escena/nivel**, impulsada por el autoload **MusicManager**
   en un **bucle infinito**, cambiando en cada pantalla (ver `audios/README.md`). Por defecto una
-  escena es **"Selecione…" = silenciosa** (sin música) hasta que le asignes una pista. Al hacer clic en **Música → Enabled**
-  se abre el **Music Manager**: escucha cualquier pista y **asigna** a cada escena/nivel una pista específica,
-  **"Padrão"** (resolver por el nombre de la escena, `audios/<scene-name>.<ext>`) o **"Selecione…"** (silencio);
-  las asignaciones se persisten. Cada botón **▶ Play** tiene una
-  **⏸ Pause** y un **⏹ Stop** al lado (ambos en la fila "Listen" y en la lista por escena); un botón **🎲 Shuffle** asigna una
-  pista aleatoria a cada escena/nivel y la guarda para la próxima vez. A la derecha de cada fila
+  escena es **"Selecione…" = silenciosa** (sin música) hasta que le asignes una pista. El botón
+  **"Gestionar Músicas"** (junto al encendido/apagado de la Música, habilitado solo con ella activada)
+  abre el **Gestor de Músicas**: **asigna** a cada escena/nivel una pista específica, **"Padrão"**
+  (resolver por el nombre de la escena, `audios/<scene-name>.<ext>`) o **"Selecione…"** (silencio); las
+  asignaciones se persisten. Al hacer clic en el selector de una escena, esta queda **seleccionada y
+  resaltada**, y el trío **▶ Tocar · ⏸ Pausar · ⏹ Parar** de arriba actúa sobre ella — ⏸/⏹ también
+  **pausan y detienen la pista que esté sonando en la pantalla**, y al cerrar la ventana la pista de la
+  escena vuelve al aire. Un botón **🎲 Sortear pistas** asigna una pista aleatoria a cada escena/nivel y
+  la guarda para la próxima vez; el **menú principal sortea una pista nueva cada vez que se abre el
+  juego**. A la derecha de cada fila
   (**Música** y **Efeitos de Som**) se sitúa un **control de volumen estilo ecualizador** (`VolumeBar`, 10
   segmentos coloreados en degradado): con el audio activado, haz clic/arrastra para fijar el volumen de ese bus de **1 a 100**.
 

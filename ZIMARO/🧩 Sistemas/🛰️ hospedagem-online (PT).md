@@ -15,13 +15,14 @@ atualizado: 2026-07-04
 ## Contexto técnico
 
 - O jogo usa **ENetMultiplayerPeer** → `create_server()` / `create_client()` em `scenes2D/playonline/playonline.gd`.
-- ENet roda sobre **UDP**. A porta padrão é **UDP 4383** (`playonline.tscn`, SpinBox `Port`, `value = 4383`).
+- ENet roda sobre **UDP**. A porta padrão é **UDP 44000** (`playonline.tscn`, SpinBox `Port`, `value = 44000`) — a mesma porta do túnel playit do projeto. Era `4383` até 2026-08-06.
 - O campo **Address** aceita hostname, então dá pra usar domínios em vez de IP. Um **rótulo de formato** abaixo do campo (`AddressFormatHint`) diz isso ao jogador: "Aceita domínio (ex.: `zimaro.playit.game`) ou IP — a porta vai no campo Porta."
 - **Resolução de DNS assíncrona (2026-08-06).** O `create_client` do ENet resolve hostname sozinho, mas de forma **bloqueante** — numa rede lenta o frame trava até o DNS responder e o jogo parece congelado. Agora `_on_join_rooms_pressed` só chama `create_client` com um **IP já resolvido**:
   - IP literal (`is_valid_ip_address()`) → conecta direto, sem resolver.
   - Hostname → `IP.resolve_hostname_queue_item(host, IP.TYPE_ANY)` (fila do resolver, roda em thread) e o `_process` consulta o status por `_poll_resolve()` sem bloquear; ao concluir chama `_start_client(ip, host)`.
   - **Preferência por IPv4** (`_pick_address`): o playit publica A **e** AAAA e o resolver costuma devolver o IPv6 primeiro (`zimaro.playit.game` → `2602:fbaf:824:1::1d` e `147.185.221.29`). Conectar pelo IPv6 excluiria quem não tem rota IPv6, então escolhemos o primeiro endereço **sem** dois-pontos; só caímos no IPv6 se não houver IPv4.
   - **Rótulo de status** (`ConnectStatus`, grupo `loc_manual`): "Resolvendo endereço…" → "Conectando…", limpo ao abortar. Falha de DNS mostra aviso próprio (`MSG_RESOLVE_FAILED`) com o nome digitado; campo vazio avisa antes de tentar (`MSG_EMPTY_ADDRESS`).
+  - **Status e "Carregando" nunca se sobrepõem (2026-08-06).** O painel de *Carregando* (com a barra de progresso) não aparece mais junto com o "Conectando…": o `_start_client` só arma o peer e os sinais; o `loading.show()` (e o `_clear_status()`) passaram para o `_on_client_connected_await_version`, que roda quando o ENet **fecha** a conexão. A ordem visível vira *Resolvendo → Conectando →* (conectou) *→ Carregando*, este último cobrindo o handshake de versão até a abertura do navegador de salas.
   - O item da fila é liberado (`erase_resolve_item`) ao concluir e no `_exit_tree`, para não vazar entre entradas na tela.
 - O campo **Port** aceita **1–65535**. (Antes o `max_value` do SpinBox era 49151, que **truncava** portas dinâmicas como as do playit — ex.: digitar 54417 virava 49151 e a conexão falhava. Corrigido p/ 65535.)
 - **Histórico de porta/IP:** ao lado de Port e Address há um `OptionButton` ("Selecione…") com os **últimos 3 valores** usados. Persistido em `Settings.config_file` seção **`online`** (chaves `ports` / `addresses`), recarregado no `_ready` (`_refresh_history`). Selecionar um item preenche o campo e o dropdown volta a "Selecione…".

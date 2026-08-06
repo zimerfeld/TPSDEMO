@@ -137,6 +137,59 @@ auto-fit of the locomotion capsule"). The red_robot does the same ([[🤖 inimig
   by the orbit + collision exception).
 - **No friendly fire:** the ally's bullets phase through the player (see [[🔫 combate-tiro (EN)|combate-tiro]]).
 
+### ⚠️ INVERTED movement convention (2026-08-06)
+
+The bot's `input.motion` is a vector in **camera** space, exactly like what the keyboard produces.
+But `apply_input` uses `target = camera_x*motion.x + camera_z*motion.y` **only to ORIENT** the body
+(`Basis.looking_at`) — the displacement comes from the animation's **root motion**, which runs along
+local `+Z` ("The animation's forward/backward axis is reversed", `player.gd`). Net effect: the body
+**travels opposite to `target`**, and the GLB mesh (which faces `+Z`) makes that look right on screen.
+For a human it all lines up because the W key already sends `motion.y = -1`.
+
+**Measured in the harness:** a player *without AI* fed `motion=(0,-1)` moves toward `-camFwd`
+(alignment **-1.00**). The AI was projecting with the wrong sign — which is why the ally **ran in a
+straight line until it died**, ignoring post and target, and **shot in one direction while the
+projectile went another**.
+
+Three fixes in `player_bot_ai.gd`:
+
+1. **`_world_dir_to_motion` projects `-dir`** (not `dir`).
+2. **`_face_point` points `camera_base`'s `-Z` AWAY from the target** — the body's effective front is
+   that basis's `+Z` — with the pitch mirrored to match.
+3. **Turn BEFORE projecting:** the outbound and inbound conversions now use the same basis within the
+   same frame. Before, a one-frame mismatch **fed the error back** every tick.
+
+After: escort converges to **2.53 m** (`follow_distance` 2.5) and stops; aim and projectile both hit
+alignment **1.00** with the enemy.
+
+### Guard stance — `guard_stance` (2026-08-06)
+
+The ally's **default** behavior (toggleable in the **Models → AI** screen). It stops being a hunter
+and acts like a **bodyguard**: escorts at a safe distance, without colliding and without running
+around aimlessly.
+
+| Rule | How |
+| --- | --- |
+| **Post** instead of an orbit | `_guard_station` computes a point always at `follow_distance` from the protected player. **At peace:** the **rear** diagonal (`guard_back_ratio` 0.8 behind + `guard_side_ratio` 0.6 to the side), out of their line of fire and following them as they turn. The side comes from the randomized `_orbit_sign`, so two allies cover opposite sides. |
+| **Freedom on a leash** (2026-08-06) | The rigid post left the ally **too static**. It now moves in **any direction** (orbit, flank, back off) inside a **bubble** of `roam_radius` (4 m) around the protected player; past it, the return blends in proportionally to the excess and dominates at `max_leash` (`_leash`). The leash — not a fixed post — is what prevents straying, and it's also what prevents charging the enemy. The escort post became a **preference** (`guard_screen_weight`), not an anchor. Measured: **35.5 m travelled**, max **4.15 m** from the protected player. |
+| **No jerky movement** (2026-08-06) | The heading goes through `_smooth_dir` (exponential interpolation, `move_dir_response`) — the AI may change its mind every scan while the BODY turns gradually. Measured: **0 abrupt reversals** over 7 s. Same remedy already present in `red_robot` (`move_dir_response`), now also in `criatura_alada`, whose horizontal heading was applied raw (`look_at` snapped every frame). |
+| **Interposes** (2026-08-06) | With an enemy within `player_threat_radius` of the protected player, the post moves **forward**, toward the threat (`guard_screen_ratio` 0.8) — the ally stands **between the two**, keeping the lateral offset so it doesn't block their shot. This is where the "reactivity" comes from: it repositions whenever the threat switches sides, while never leaving `follow_distance`. |
+| **Stops on arrival, with hysteresis** | Reaches the post at `station_tolerance` (0.6 m) and only starts moving again once it drifts `× settle_release` (2.2 → ≈1.3 m). The small dead zone gives reactivity; the hysteresis prevents per-frame jitter. `scan_interval` 0.35 → **0.2 s** to notice the threat switching sides sooner. |
+| **Never touches** | Below `min_standoff` (1.8 m) the only possible movement is to **back away** — even with the physics collision exception active. |
+| **Doesn't push onto the enemy** | In combat, `_combat_move` returns the same post-keeping movement; it only backs off if the enemy gets closer than `preferred_combat_distance - combat_band`. No charge and **no flanking** (`pressure_flank` is suppressed in this stance). |
+| **With nobody to escort, it guards its home post** (2026-08-06) | `_hold_move` keeps the spot where the bot spawned (`_home`, captured on the 1st `update_input`): it walks back if it drifted, stops on arrival, same hysteresis. **Bug fixed:** the whole stance hinged on `has_anchor`, and the anchor requires a **human** (`_find_nearest_human_ally` skips bots) — so with the host spectating, in a room before the player joins, or after they leave, the code fell through to the old branch (advance + flank) and the ally **charged the enemy until it died**. Now, with nobody to escort, it holds the post and shoots from there. |
+
+**Numbers recalibrated alongside** (`@export` defaults): `follow_distance` 5.5 → **2.5** m ·
+`orbit_strength` 0.7 → **0.15** · `preferred_combat_distance` 18 → **12** m · `engage_range` 32 →
+**16** m · `player_threat_radius` 24 → **18** m · `soft_leash` 14 → **6** m · `max_leash` 20 → **9** m.
+
+> **Where to tune the "reactivity"** without turning it back into a hunter: `station_tolerance`
+> (lower = corrects sooner), `settle_release` (lower = leaves the post more easily), `scan_interval`
+> (lower = notices sooner) and `guard_screen_ratio` (higher = steps further toward the threat).
+
+> Turning `guard_stance` off in the Models screen brings back the classic **orbit** described above
+> (with the new numbers, so tighter than before).
+
 ---
 
 ## 🔗 Related

@@ -96,6 +96,12 @@ const _MODEL_BEHAVIOR_DEFS := {
 			"default_enabled": true,
 		},
 		{
+			"key": "guard_stance",
+			"label": "Postura de segurança",
+			"description": "Acompanhar o player como um segurança: assume um posto na diagonal traseira, para quando chega nele e nunca avança para cima do inimigo (suprime a órbita e o flanco).",
+			"default_enabled": true,
+		},
+		{
 			"key": "enemy_prioritization",
 			"label": "Priorizar inimigos",
 			"description": "Escolher alvos hostis próximos e vivos antes de apenas seguir o esquadrão.",
