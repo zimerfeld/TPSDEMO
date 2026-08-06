@@ -137,6 +137,31 @@ auto-fit of the locomotion capsule"). The red_robot does the same ([[🤖 inimig
   by the orbit + collision exception).
 - **No friendly fire:** the ally's bullets phase through the player (see [[🔫 combate-tiro (EN)|combate-tiro]]).
 
+### ⚠️ INVERTED movement convention (2026-08-06)
+
+The bot's `input.motion` is a vector in **camera** space, exactly like what the keyboard produces.
+But `apply_input` uses `target = camera_x*motion.x + camera_z*motion.y` **only to ORIENT** the body
+(`Basis.looking_at`) — the displacement comes from the animation's **root motion**, which runs along
+local `+Z` ("The animation's forward/backward axis is reversed", `player.gd`). Net effect: the body
+**travels opposite to `target`**, and the GLB mesh (which faces `+Z`) makes that look right on screen.
+For a human it all lines up because the W key already sends `motion.y = -1`.
+
+**Measured in the harness:** a player *without AI* fed `motion=(0,-1)` moves toward `-camFwd`
+(alignment **-1.00**). The AI was projecting with the wrong sign — which is why the ally **ran in a
+straight line until it died**, ignoring post and target, and **shot in one direction while the
+projectile went another**.
+
+Three fixes in `player_bot_ai.gd`:
+
+1. **`_world_dir_to_motion` projects `-dir`** (not `dir`).
+2. **`_face_point` points `camera_base`'s `-Z` AWAY from the target** — the body's effective front is
+   that basis's `+Z` — with the pitch mirrored to match.
+3. **Turn BEFORE projecting:** the outbound and inbound conversions now use the same basis within the
+   same frame. Before, a one-frame mismatch **fed the error back** every tick.
+
+After: escort converges to **2.53 m** (`follow_distance` 2.5) and stops; aim and projectile both hit
+alignment **1.00** with the enemy.
+
 ### Guard stance — `guard_stance` (2026-08-06)
 
 The ally's **default** behavior (toggleable in the **Models → AI** screen). It stops being a hunter

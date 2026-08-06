@@ -48,6 +48,7 @@ Duas peças:
 | `delay=<seg>` | **cliente:** espera antes da 1ª tentativa de conexão (padrão `6`). **host:** pausa entre preencher os campos e hospedar (padrão `5`), **só em build de depuração** — ver abaixo |
 | `retries=<n>` | tentativas extras, de 2 em 2 s (padrão `15`) |
 | `player=<nome>` | nome do jogador desta instância (**não** persiste em Settings) |
+| `music=<on\|off>` | trilha desta instância. Sem o argumento, o **host nasce mudo** e o cliente toca — duas trilhas ao mesmo tempo nas duas janelas atrapalham o acompanhamento. Mexe só no bus vivo, **nunca** no Settings (as duas janelas gravam no mesmo arquivo de configuração) |
 | `win=<x,y,w,h>` | posiciona/dimensiona a janela em pixels de tela |
 
 Exemplo do que o script executa:

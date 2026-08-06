@@ -48,6 +48,7 @@ Two pieces:
 | `delay=<sec>` | **client:** wait before the 1st connection attempt (default `6`). **host:** pause between filling the fields and hosting (default `5`), **debug builds only** — see below |
 | `retries=<n>` | extra attempts, every 2 s (default `15`) |
 | `player=<name>` | player name for this instance (**not** persisted to Settings) |
+| `music=<on\|off>` | soundtrack for this instance. Without the argument the **host starts muted** and the client plays — two soundtracks at once across the windows get in the way. It only touches the live bus, **never** Settings (both windows write to the same config file) |
 | `win=<x,y,w,h>` | positions/sizes the window in screen pixels |
 
 What the script actually runs:
