@@ -41,6 +41,7 @@ MusicManager="*res://autoload/music_manager.gd"
 DebugOverlay="*res://autoload/debug_overlay.gd"
 StabilityGuard="*res://autoload/stability_guard.gd"
 PerformanceHUD="*res://autoload/performance_hud.gd"
+LoadingScreen="*res://autoload/loading_screen.gd"
 UINav="*res://autoload/ui_nav.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 

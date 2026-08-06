@@ -53,8 +53,11 @@ func _ready() -> void:
 		# server_room_list() está atualizado. Se a sala sumiu, NÃO nascemos numa sala morta (evita a cena
 		# vazia de entrar numa sala que não roda mais): volta ao navegador com um aviso.
 		if _server_has_room(rid):
-			RoomManager.client_join_room(rid, path, PlayerSelection.variant_id)
-			_enter_play(rid)
+			# Espelhar a sala + nascer nela custa o setup de render do level (stall). A tela de
+			# "Carregando" cobre a entrada e revela so com o quadro pronto. Ver [[LoadingScreen]].
+			LoadingScreen.cover(func() -> void:
+				RoomManager.client_join_room(rid, path, PlayerSelection.variant_id)
+				_enter_play(rid))
 		else:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 			_refresh_rooms()

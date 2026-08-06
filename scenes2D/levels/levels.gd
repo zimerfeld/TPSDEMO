@@ -88,7 +88,11 @@ func _process(_delta: float) -> void:
 
 
 func _on_loading_done_timer_timeout() -> void:
-	emit_signal("replace_main_scene", ResourceLoader.load_threaded_get(loading_path))
+	# A cena JA foi carregada (load_threaded), mas ATIVA-LA custa o setup de render — o stall aparece
+	# aqui, no 1o quadro do level. A tela de "Carregando" cobre a troca e revela so com o quadro pronto.
+	# Ver [[LoadingScreen]] / [[salas-freeze-render-stall]].
+	var packed: PackedScene = ResourceLoader.load_threaded_get(loading_path)
+	LoadingScreen.cover(func() -> void: emit_signal("replace_main_scene", packed))
 
 
 func _on_level_1_pressed() -> void:

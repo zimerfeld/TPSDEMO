@@ -17,6 +17,13 @@ func _ready() -> void:
 	# inteira, sem barra de título alcançável). Assim o modo janela é uma janela normal, movível.
 	if get_window().mode == Window.MODE_WINDOWED:
 		Settings.apply_window_resolution(get_window())
+	# Tela de "Carregando" do startup: carrega um level DE VERDADE por alguns frames para PAGAR
+	# ADIANTADO o setup de 1o render 3D (~2,5 s) — senao ele cairia no meio da 1a partida (inimigos
+	# congelando na tela do cliente). Medido: a entrada seguinte numa sala cai de ~2,5 s p/ ~0,6 s.
+	# Servidor dedicado (headless) nao renderiza → nada a pagar; `-- nopreload` pula (medicao/baseline).
+	if not (DisplayServer.get_name() == "headless" or OS.get_cmdline_user_args().has("nopreload")):
+		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()  # o level precisa de um peer valido
+		await LoadingScreen.run_startup_preload()
 	go_to_main_menu()
 
 

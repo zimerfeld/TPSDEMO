@@ -169,13 +169,17 @@ func _on_restart_room(id: int) -> void:
 func _set_observing(id: int) -> void:
 	_playing_id = -1
 	_observing_id = id
-	_render_only(id)
 	if id >= 0:
-		_show_room_view(id)
-		RoomManager.activate_spectator(id)  # garante a câmera livre como current no SubViewport
+		# Passar a sala a RENDERIZAR custa o setup de render do level (stall no 1o quadro) — a tela de
+		# "Carregando" cobre a entrada e revela so com o quadro pronto. Ver [[LoadingScreen]].
+		await LoadingScreen.cover(func() -> void:
+			_render_only(id)
+			_show_room_view(id)
+			RoomManager.activate_spectator(id))  # câmera livre como current no SubViewport
 		_hint.text = "ESC volta à gerência | WASD voa | Espaço+W/S sobe/desce"
 		_hint.visible = true
 	else:
+		_render_only(id)
 		_room_view.visible = false
 		_room_view.texture = null
 		_panel.visible = true
@@ -191,8 +195,10 @@ func _set_observing(id: int) -> void:
 func _set_playing(id: int) -> void:
 	_observing_id = -1
 	_playing_id = id
-	_render_only(id)
-	_show_room_view(id)
+	# Idem observar: a sala passa a renderizar aqui — cobre com a tela de "Carregando".
+	await LoadingScreen.cover(func() -> void:
+		_render_only(id)
+		_show_room_view(id))
 	_hint.text = "ESC desconecta e volta à gerência"
 	_hint.visible = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
