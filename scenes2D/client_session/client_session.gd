@@ -113,6 +113,12 @@ func _refresh_rooms() -> void:
 		_rooms_list.add_child(_make_client_row(r))
 	# As linhas de sala mudaram (novos botões "Jogar") → re-liga a sequência de Tab.
 	_rewire_tab.call_deferred()
+	# Piloto automático (`-- autojoin`): assim que a PRIMEIRA sala em execução aparece na lista,
+	# entra nela sozinho (equivale a clicar "Jogar"). Uma única vez — depois a sessão é do jogador.
+	if not rooms.is_empty() and _playing_room < 0 and Autopilot.should_enter_room():
+		Autopilot.mark_room_entered()
+		var first: Dictionary = rooms[0]
+		_on_play_room.call_deferred(int(first["id"]), String(first["level_path"]))
 
 
 func _make_client_row(r: Dictionary) -> Control:
@@ -158,6 +164,9 @@ func _exit_play() -> void:
 	_playing_room = -1
 	_panel.visible = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	# Some com a barra do último inimigo atingido (ela some sozinha só depois de alguns segundos) —
+	# o navegador de salas não deve exibir nada de dentro da partida.
+	preload("res://controls2D/enemy_health_bar.gd").hide_all()
 	RoomManager.request_room_list.rpc_id(1)
 	_refresh_rooms()
 

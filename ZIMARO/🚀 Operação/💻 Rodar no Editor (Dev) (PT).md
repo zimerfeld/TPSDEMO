@@ -32,6 +32,9 @@ Abrir o projeto `C:\GODOT\ZIMARO` no **Godot 4.6.2**
    - **[CLIENTE]** Menu → **Jogar Online** → IP `127.0.0.1`, Porta `4383` → **"Entrar em Salas"** →
      **Jogar**.
    - Se falhar: rodar **pelo editor** para ver o console (`push_error`/RPC).
+   - **Atalho automatizado:** `pwsh -File scripts/dual-window.ps1` abre as duas janelas lado a lado
+     (metade da tela cada) e faz host + join sozinho — ver
+     [[🪟 Duas Janelas Lado a Lado (Dev) (PT)|🪟 Duas Janelas Lado a Lado (Dev)]].
 4. Validação sem janela (usada nas sessões): o Godot **headless** roda o jogo por ~300 frames para
    caçar erros de script/runtime — os avisos `ObjectDB leaked` / `resources still in use` no
    encerramento forçado (`--quit-after`) são benignos.

@@ -234,15 +234,19 @@ func hit(amount: int = 50) -> void:
 func show_health_hud(distance: float = -1.0) -> void:
 	if _dead or DisplayServer.get_name() == "headless":
 		return
-	var hud = preload("res://controls2D/enemy_health_bar.gd").get_shared(get_tree().current_scene)
+	# `self` (e não a cena atual): o HUD nasce no viewport DESTA sala — ver enemy_health_bar.gd.
+	var hud = preload("res://controls2D/enemy_health_bar.gd").get_shared(self)
+	if hud == null:
+		return
 	hud.show_enemy(enemy_name, maxi(health, 0), max_health, distance)
 
 
 func hide_health_hud() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
-	var hud = preload("res://controls2D/enemy_health_bar.gd").get_shared(get_tree().current_scene)
-	hud.hide_now()
+	var hud = preload("res://controls2D/enemy_health_bar.gd").get_shared(self)
+	if hud != null:
+		hud.hide_now()
 
 
 # Player VIVO mais próximo dentro do escopo (a própria sala) — qualquer inimigo mira o mais perto DELE.

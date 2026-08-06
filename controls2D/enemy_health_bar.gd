@@ -5,7 +5,11 @@ extends CanvasLayer
 
 const AUTO_HIDE_TIME: float = 6.0
 
-static var _instance = null
+# Uma instância POR VIEWPORT (não uma global). No host, cada sala vive num SubViewport próprio: o
+# HUD precisa ficar DENTRO dele para só aparecer quando aquela sala é renderizada (jogando ou
+# observando). Pendurado na cena atual — como era antes — ele desenhava por cima da grade de "Salas
+# em execução", mostrando dados de uma partida que o host nem está assistindo.
+static var _instances: Dictionary = {}
 
 var _panel: PanelContainer
 var _bar: ProgressBar
@@ -18,13 +22,31 @@ var _last_distance: float = -1.0
 var _last_range: float = -1.0
 
 
-# Retorna a instância compartilhada, criando-a sob `parent` se necessário.
-static func get_shared(parent: Node):
-	if _instance != null and is_instance_valid(_instance):
-		return _instance
-	_instance = (preload("res://controls2D/enemy_health_bar.gd")).new()
-	parent.add_child(_instance)
-	return _instance
+# Retorna o HUD do viewport de `source` (o próprio inimigo), criando-o se necessário. Devolve null
+# se o nó ainda não está na árvore (sem viewport) — o chamador simplesmente não mostra nada.
+static func get_shared(source: Node):
+	var vp: Viewport = source.get_viewport() if is_instance_valid(source) else null
+	if vp == null:
+		return null
+	var key: int = vp.get_instance_id()
+	var inst = _instances.get(key)
+	if inst != null and is_instance_valid(inst):
+		return inst
+	inst = (preload("res://controls2D/enemy_health_bar.gd")).new()
+	vp.add_child(inst)
+	_instances[key] = inst
+	return inst
+
+
+# Esconde o HUD de todos os viewports. Chamado ao sair de uma sala (host ou cliente): sem isso a
+# barra do último inimigo atingido ficaria visível por mais AUTO_HIDE_TIME sobre a tela de salas.
+static func hide_all() -> void:
+	for key in _instances.keys():
+		var inst = _instances[key]
+		if is_instance_valid(inst):
+			inst.hide_now()
+		else:
+			_instances.erase(key)
 
 
 func _ready() -> void:

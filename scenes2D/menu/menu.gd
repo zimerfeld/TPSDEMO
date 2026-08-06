@@ -42,9 +42,13 @@ func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
 	Settings.apply_window_resolution(get_window())
 	Settings.apply_audio_settings()
+	# O menu reaplica a resolução salva (centralizando a janela) — reafirma a geometria do piloto
+	# automático por cima, senão as duas janelas voltariam a se sobrepor ao chegar aqui.
+	Autopilot.apply_window(get_window())
 
-	if DisplayServer.get_name() == "headless":
-		# Servidor dedicado: pula chooseplayer/levels e abre direto a tela online.
+	if DisplayServer.get_name() == "headless" or Autopilot.is_active():
+		# Servidor dedicado OU piloto automático (`-- autohost`/`autojoin`): pula chooseplayer/levels
+		# e abre direto a tela online, que hospeda ou conecta sozinha.
 		_start_online_headless.call_deferred()
 
 	_update_language_buttons()
@@ -59,7 +63,7 @@ func _ready() -> void:
 		func(_n: Node) -> void: _wire_tab_order.call_deferred())
 
 
-# Headless auto-host: vai direto para playonline (que auto-hospeda uma sala com o Level 1).
+# Headless auto-host / piloto automático: vai direto para playonline (que hospeda ou conecta sozinha).
 # Deferido porque main.gd só conecta replace_main_scene DEPOIS do _ready do menu.
 func _start_online_headless() -> void:
 	PlayerSelection.online_mode = true
