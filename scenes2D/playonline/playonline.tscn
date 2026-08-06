@@ -175,6 +175,14 @@ text = "(preencher só para Entrar em Salas)"
 horizontal_alignment = 1
 autowrap_mode = 2
 
+[node name="AddressFormatHint" type="Label" parent="UI/Inset/Main/Form/Fields"]
+modulate = Color(1, 1, 1, 0.7)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Aceita domínio (ex.: zimaro.playit.game) ou IP — a porta vai no campo Porta."
+horizontal_alignment = 1
+autowrap_mode = 2
+
 [node name="OptimizationSeparator" type="HSeparator" parent="UI/Inset/Main/Form/Fields"]
 layout_mode = 2
 
@@ -293,6 +301,15 @@ custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Entrar em Salas"
+
+[node name="ConnectStatus" type="Label" parent="UI/Inset/Main/Form/Fields" groups=["loc_manual"]]
+unique_name_in_owner = true
+modulate = Color(0.45, 0.8, 1, 1)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="Actions" type="HBoxContainer" parent="UI"]
 layout_mode = 1
