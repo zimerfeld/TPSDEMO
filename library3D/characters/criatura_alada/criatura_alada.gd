@@ -233,7 +233,9 @@ func notify_projectile_feedback(hit_target: Node) -> void:
 
 
 @rpc("call_local")
-func hit(amount: int = 50) -> void:
+# `_group` (membro atingido) chega de quem dispara — ver [[limb-health]]. A criatura alada não monta
+# colliders de membro, então segue com vida ÚNICA e apenas aceita o argumento.
+func hit(amount: int = 50, _group: String = "") -> void:
 	if _dead:
 		return
 	health = maxi(health - amount, 0)
@@ -247,7 +249,9 @@ func hit(amount: int = 50) -> void:
 			queue_free()
 
 
-func show_health_hud(distance: float = -1.0) -> void:
+# `_group` (membro sob a mira) é aceito por compatibilidade com quem tem HP por membro; sem colliders
+# de membro, a criatura mostra sempre a vida do corpo.
+func show_health_hud(distance: float = -1.0, _group: String = "") -> void:
 	if _dead or DisplayServer.get_name() == "headless":
 		return
 	# `self` (e não a cena atual): o HUD nasce no viewport DESTA sala — ver enemy_health_bar.gd.

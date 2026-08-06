@@ -11,6 +11,7 @@
 	"Facção": "Faction",
 	"Arma": "Weapon",
 	"Quantidade": "Count",
+	"Escala (%)": "Scale (%)",
 	"Posicionamento": "Placement",
 	"Opções de posicionamento": "Placement options",
 	"Coordenadas": "Coordinates",

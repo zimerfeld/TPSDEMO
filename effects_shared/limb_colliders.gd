@@ -394,6 +394,9 @@ func _build_member_shape(skel: Skeleton3D, group: String, bone_idx: int, box_aab
 	body.set_meta("group", group)
 	body.set_meta("damage_multiplier", mult)
 	body.set_meta("member_label", label)
+	# Membro-DONO de um sub-membro ("" para membros normais). Além da herança de dano, é o que permite
+	# ao [[limb-health]] derrubar os sub-membros junto com o membro pai.
+	body.set_meta("owner_group", owner_group)
 	body.set_meta("character", _character)
 	if suppressed:
 		body.set_meta("suppressed", true)   # collider de preview (sem gizmo); sem hitbox no gameplay

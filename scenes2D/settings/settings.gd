@@ -111,6 +111,7 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 
 @onready var music_disabled: Button = %MusicDisabled
 @onready var music_enabled: Button = %MusicEnabled
+@onready var music_songs: Button = %Songs
 
 @onready var sfx_disabled: Button = %SFXDisabled
 @onready var sfx_enabled: Button = %SFXEnabled
@@ -126,7 +127,7 @@ var metalfx_supported: bool = RenderingServer.get_current_rendering_driver_name(
 # if the user cancels the confirmation popup.
 var _current_resolution_index: int = 0
 
-# Controlador do Gerenciador de Música (aberto ao habilitar "Música"); reusado entre aberturas.
+# Controlador do Gerenciador de Música (aberto pelo botão "Gerenciar Músicas"); reusado entre aberturas.
 var _music_manager_window: MusicManagerWindow = null
 
 # VolumeBars (equalizador) à direita das linhas Música / Efeitos de Som na aba Audio.
@@ -165,15 +166,18 @@ func _ready() -> void:
 		# toggled(true) e o anterior toggled(false), então conectar `toggled` em cada um mantém o realce
 		# da opção ativa em sincronia sem varrer tudo a cada clique. A cor AUTORADA (gradiente do .tscn)
 		# é guardada como base ANTES de qualquer dimming, p/ a selecionada voltar à cor cheia.
-		for btn in row.get_children():
-			if btn is BaseButton:
-				(btn as BaseButton).set_meta(_BASE_MODULATE_META, (btn as BaseButton).modulate)
-				(btn as BaseButton).toggled.connect(_on_option_toggled.bind(btn as BaseButton))
+		for btn in _option_buttons_of(row):
+			btn.set_meta(_BASE_MODULATE_META, btn.modulate)
+			btn.toggled.connect(_on_option_toggled.bind(btn))
 
 	# VolumeBar (equalizador) à direita de cada linha de áudio. Criadas ANTES de _load_current_settings
 	# (que ajusta valor/estado) e conectadas DEPOIS (para o load não disparar apply à toa).
 	_music_volume = _add_volume_bar(%MusicRow)
 	_sfx_volume = _add_volume_bar(%SFXRow)
+	# A VolumeBar é criada por código e entra no FIM da linha; o "Gerenciar Músicas" (declarado no
+	# .tscn) volta para depois dela, deixando as duas linhas de áudio com o mesmo desenho:
+	# rótulo · Desligado · Ligado · equalizador (· Gerenciar Músicas, só na Música).
+	%MusicRow.move_child(music_songs, -1)
 
 	_populate_video_resolutions()
 
@@ -191,11 +195,11 @@ func _ready() -> void:
 		if group != null:
 			group.pressed.connect(_on_setting_changed)
 
-	# Ao clicar em "Música: Enabled", abre o Gerenciador de Música (ouvir/atribuir trilhas por
-	# cena/level). Usamos button_down (e não o `pressed` do grupo) para que ele abra MESMO quando a
-	# música já está habilitada — senão, clicar no radio já ativo não dispararia nada. Só ação do
-	# usuário dispara button_down (não o button_pressed programático do load acima).
-	music_enabled.button_down.connect(_open_music_manager)
+	# O Gerenciador de Música (ouvir/atribuir trilhas por cena/level) tem BOTÃO PRÓPRIO. Antes ele
+	# abria no `button_down` do radio "Música: Ligado" — o que misturava duas ações num alvo só: quem
+	# queria apenas ligar a música via uma janela abrir, e o "Desligado" vizinho ficava a um clique
+	# errado de distância, mutando o bus Music sem o usuário perceber.
+	music_songs.pressed.connect(_open_music_manager)
 
 	_music_volume.value_changed.connect(_on_music_volume_changed)
 	_sfx_volume.value_changed.connect(_on_sfx_volume_changed)
@@ -267,8 +271,9 @@ func _populate_video_resolutions() -> void:
 	video_resolution_dropdown.item_selected.connect(_on_video_resolution_selected)
 
 
-# Largura mínima do dropdown = a do MAIOR texto de item (medido pela fonte resolvida), para nenhum
-# item ser truncado. size_flags_horizontal continua expandindo além disto quando há espaço na linha.
+# Largura do dropdown = a do MAIOR texto de item (medido pela fonte resolvida), para nenhum item ser
+# truncado e nenhum espaço sobrar: ele NÃO expande (sem size_flags_horizontal no .tscn), então esta
+# medida é a largura final — o controle ocupa exatamente o que a maior opção precisa.
 func _fit_dropdown_to_widest_item(dropdown: OptionButton) -> void:
 	var font := dropdown.get_theme_font(&"font")
 	if font == null:
@@ -306,17 +311,27 @@ func _select_saved_resolution() -> void:
 
 func _make_button_group(row: Node) -> void:
 	var group := ButtonGroup.new()
+	for btn in _option_buttons_of(row):
+		btn.button_group = group
+
+
+# Os botões de OPÇÃO (radios) de uma linha. Filtra por `toggle_mode` porque uma linha pode conter
+# botões de AÇÃO — o "Gerenciar Músicas" da linha Música. Sem o filtro, a ação entraria no ButtonGroup
+# dos radios (clicar nela mexeria na seleção Ligado/Desligado e regravaria `audio/music`) e o realce a
+# trataria como opção não selecionada, escurecendo-a.
+func _option_buttons_of(row: Node) -> Array[BaseButton]:
+	var out: Array[BaseButton] = []
 	for btn in row.get_children():
-		if btn is BaseButton:
-			btn.button_group = group
+		if btn is BaseButton and (btn as BaseButton).toggle_mode:
+			out.append(btn as BaseButton)
+	return out
 
 
 # The shared ButtonGroup of a settings row (every BaseButton in the row carries it), or
 # null if the row has no buttons. Used to listen for live changes and to re-fetch groups.
 func _group_of(row: Node) -> ButtonGroup:
-	for btn in row.get_children():
-		if btn is BaseButton:
-			return btn.button_group
+	for btn in _option_buttons_of(row):
+		return btn.button_group
 	return null
 
 
@@ -328,6 +343,20 @@ func _on_option_toggled(pressed: bool, btn: BaseButton) -> void:
 	btn.modulate = base if pressed else _dim_color(base)
 
 
+# "Gerenciar Músicas" acompanha o toggle da Música: com a música LIGADA fica habilitado e na MESMA cor
+# cheia dos botões de opção ativos (a cor autorada do .tscn, igual à do radio "Ligado"); com a música
+# desligada fica desabilitado e escurecido pelo mesmo OPTION_DIM_FACTOR das opções inativas — e, por
+# estar `disabled`, sai do anel de Tab automaticamente (ver UINav).
+func _update_music_songs() -> void:
+	if music_songs == null:
+		return
+	var on: bool = music_enabled.button_pressed
+	music_songs.disabled = not on
+	var base: Color = music_songs.get_meta(_BASE_MODULATE_META, music_songs.modulate)
+	music_songs.set_meta(_BASE_MODULATE_META, base)
+	music_songs.modulate = base if on else _dim_color(base)
+
+
 # Escurece uma cor multiplicando o RGB por OPTION_DIM_FACTOR (mantém o matiz e o alfa) — opção inativa.
 func _dim_color(c: Color) -> Color:
 	return Color(c.r * OPTION_DIM_FACTOR, c.g * OPTION_DIM_FACTOR, c.b * OPTION_DIM_FACTOR, c.a)
@@ -337,9 +366,8 @@ func _dim_color(c: Color) -> Color:
 # permanecem não selecionadas não emitem `toggled`).
 func _refresh_option_dimming() -> void:
 	for row in _rows:
-		for btn in row.get_children():
-			if btn is BaseButton:
-				_on_option_toggled((btn as BaseButton).button_pressed, btn as BaseButton)
+		for btn in _option_buttons_of(row):
+			_on_option_toggled(btn.button_pressed, btn)
 
 
 # A button in one of the option rows was clicked: persist + apply every setting now
@@ -445,6 +473,7 @@ func _load_current_settings() -> void:
 	music_enabled.button_pressed = Settings.config_file.get_value("audio", "music")
 	_music_volume.value = int(Settings.config_file.get_value("audio", "music_volume", 100))
 	_music_volume.enabled = music_enabled.button_pressed
+	_update_music_songs()
 
 	sfx_disabled.button_pressed = not Settings.config_file.get_value("audio", "sfx")
 	sfx_enabled.button_pressed = Settings.config_file.get_value("audio", "sfx")
@@ -566,6 +595,7 @@ func _apply_settings() -> void:
 		_music_volume.enabled = music_enabled.button_pressed
 	if _sfx_volume != null:
 		_sfx_volume.enabled = sfx_enabled.button_pressed
+	_update_music_songs()
 
 	Settings.save_settings()
 	Settings.apply_audio_settings()

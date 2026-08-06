@@ -55,6 +55,7 @@ atualizado: 2026-07-06
 - [[🛰️ hospedagem-online (EN)|online hosting]] — playing over the internet: playit.gg (UDP) · Tailscale/ZeroTier · port forwarding (ngrok does NOT work)
 - [[❤️ sistema-de-vida (EN)|health system]] — HP, health bar, respawn
 - [[🩸 dano-localizado (EN)|localized damage]] — per-weapon damage, per-limb Area3D hitboxes, headshot
+- [[🦴 hp-por-membro (EN)|per-limb HP]] — HP per limb/sub-limb: only falls once every limb is destroyed; the face takes the head down
 - [[🗿 biblioteca-de-modelos (EN)|model library]] — Models screen: mesh browser/extractor, Exported gallery, Structures category + CORPO fallback member
 - [[🧩 templates-de-level (EN)|level templates]] — per-level Template (characters) and Scenery managers: cascading folder navigation, independent actives
 - [[🌌 ambiente-dos-levels (EN)|level environment]] — procedural sky + fog + neon grid floor shader (Level 1 cyan / Level 2 amber), 60 FPS on the .exe

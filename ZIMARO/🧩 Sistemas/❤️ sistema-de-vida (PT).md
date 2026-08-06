@@ -2,12 +2,31 @@
 tipo: sistema
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # ❤️ Sistema de Vida (Health System)
 
 > Implementado em 2026-06-06.
+> ⚠️ **Superado como condição de morte em 2026-08-06** — ver [[🦴 hp-por-membro (PT)|🦴 hp-por-membro]].
+
+---
+
+## ⚠️ O que mudou em 2026-08-06
+
+A vida **única** deixou de decidir o abate. Ela continua existindo, mas passa a ser o **espelho da
+soma do HP dos membros** (`hp = limbs.total_hp()`); quem decide a morte é o [[🦴 hp-por-membro (PT)|HP
+por membro]] — o personagem só cai quando **todos os membros** são destruídos.
+
+| | Antes | Agora |
+|---|---|---|
+| `MAX_HP` do player | 100 | **150** (15 por membro; ver a calibragem na nota do sistema) |
+| `hit()` | `hit(amount)` | `hit(amount, group)` — o membro atingido vai junto |
+| Morte | `hp <= 0` | `limbs.is_defeated()` (vida única só como fallback) |
+| Respawn | `hp = MAX_HP` | idem **+ `limbs.reset()`** |
+
+O fallback de vida única segue valendo para golpes **sem membro identificado** (explosão de área,
+queda) e para modelos que não constroem colliders de membro (ex.: `criatura_alada`).
 
 ---
 

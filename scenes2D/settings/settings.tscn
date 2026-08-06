@@ -88,7 +88,6 @@ unique_name_in_owner = true
 modulate = Color(0.439216, 0.788235, 1, 1)
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
 
 [node name="ResolutionScaleRow" type="HFlowContainer" parent="UI/Margin/Main/Tabs/Resolution/Body" unique_id=1031780035]
@@ -824,6 +823,14 @@ layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
+[node name="Songs" type="Button" parent="UI/Margin/Main/Tabs/Audio/Body/MusicRow" unique_id=143374185]
+metadata/tab_order = 56
+unique_name_in_owner = true
+modulate = Color(1, 1, 0.313726, 1)
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Gerenciar Músicas"
+
 [node name="SFXRow" type="HFlowContainer" parent="UI/Margin/Main/Tabs/Audio/Body"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -837,7 +844,7 @@ theme_override_font_sizes/font_size = 28
 text = "Efeitos de Som:"
 
 [node name="SFXDisabled" type="Button" parent="UI/Margin/Main/Tabs/Audio/Body/SFXRow"]
-metadata/tab_order = 56
+metadata/tab_order = 57
 unique_name_in_owner = true
 modulate = Color(0.376471, 1, 0.376471, 1)
 custom_minimum_size = Vector2(0, 50)
@@ -846,7 +853,7 @@ toggle_mode = true
 text = "Disabled"
 
 [node name="SFXEnabled" type="Button" parent="UI/Margin/Main/Tabs/Audio/Body/SFXRow"]
-metadata/tab_order = 57
+metadata/tab_order = 58
 unique_name_in_owner = true
 modulate = Color(1, 1, 0.313726, 1)
 custom_minimum_size = Vector2(0, 50)
@@ -871,14 +878,14 @@ theme_override_constants/separation = 60
 alignment = 1
 
 [node name="Back" type="Button" parent="UI/Actions" unique_id=1664479691]
-metadata/tab_order = 58
+metadata/tab_order = 59
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "Voltar"
 
 [node name="Reset" type="Button" parent="UI/Actions"]
-metadata/tab_order = 59
+metadata/tab_order = 60
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -889,7 +896,7 @@ layout_mode = 2
 theme_override_constants/separation = 12
 
 [node name="Portuguese" type="Button" parent="UI/Actions/LangBar"]
-metadata/tab_order = 60
+metadata/tab_order = 61
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -898,7 +905,7 @@ theme_override_font_sizes/font_size = 20
 text = "Português"
 
 [node name="English" type="Button" parent="UI/Actions/LangBar"]
-metadata/tab_order = 61
+metadata/tab_order = 62
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2
@@ -907,7 +914,7 @@ theme_override_font_sizes/font_size = 20
 text = "English"
 
 [node name="Spanish" type="Button" parent="UI/Actions/LangBar"]
-metadata/tab_order = 62
+metadata/tab_order = 63
 unique_name_in_owner = true
 custom_minimum_size = Vector2(135, 48)
 layout_mode = 2

@@ -31,7 +31,13 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 @export var test_shoot: bool = false
 
 @export var enemy_name: String = "Red Robot"
-@export var max_health: int = 200
+## Vida TOTAL, repartida igualmente entre os 11 membros/sub-membros com collider (ver [[limb-health]]) —
+## 550 dá 50 de HP por membro. Calibrado (medido em 2026-08-06) contra o tiro do player, que vale 50:
+## é o MAIOR total que ainda derruba um membro por tiro, mantendo o abate em 6 tiros (um por membro
+## principal; os sub-membros caem com o pai). Acima de ~560 cada membro passaria a exigir 2 tiros e o
+## abate saltaria para 12. O valor antigo (200) dava só 18 por membro — granularidade grosseira demais
+## para armas fracas, como o canhão de 10 do próprio red_robot.
+@export var max_health: int = 550
 
 ## Dano-base do laser do enemy por acerto em MEMBRO do player (cabeça aplica
 ## +50% via multiplicador 1.5 da hitbox). Só há dano se acertar um membro.
@@ -61,7 +67,11 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 
 @export var target_position := Vector3()
 @export var aim_target_position := Vector3.ZERO
-@export var health: int = 200
+@export var health: int = 550
+
+# HP por membro/sub-membro (ver [[limb-health]]). Criado junto com os colliders de membro; enquanto
+# houver membros definidos, é ELE que decide o abate — `health` vira o espelho da soma dos membros.
+var limbs: LimbHealth = null
 @export var state: State = State.APPROACH
 @export var dead: bool = false
 @export var aim_preparing: float = AIM_PREPARE_TIME
@@ -191,6 +201,10 @@ func _setup_limb_colliders() -> void:
 	# override de runtime em user://) — editáveis na tela Models. Ver build_for.
 	add_child(lc)
 	lc.build_for(skel)
+	# HP por membro/sub-membro: a partir daqui o abate exige derrubar TODOS os membros definidos, cada
+	# um com sua fatia da vida total. Precisa vir DEPOIS de build_for (é dos colliders que sai a lista).
+	limbs = LimbHealth.new()
+	limbs.setup(self, lc.model_key, max_health)
 	# Ajusta a cápsula de LOCOMOÇÃO (bloqueio físico) ao red_robot a partir dos boxes de membro —
 	# corpo proporcional ao modelo em vez da cápsula default. Ver [[sistemas/inimigos]].
 	if collision_shape != null:
@@ -204,15 +218,23 @@ func resume_approach(reset_reload: bool = true) -> void:
 
 
 @rpc("call_local")
-func hit(amount: int = 50) -> void:
+func hit(amount: int = 50, group: String = "") -> void:
 	if dead:
 		return
 	var param = "parameters/hit" + str(randi() % 3 + 1) + "/request"
 	animation_tree[param] = 1
 	hit_sound.play()
-	health = maxi(health - amount, 0)
-	show_health_hud()
-	if health <= 0:
+	# Com membros definidos, o dano vai para o MEMBRO atingido e a vida global apenas espelha a soma
+	# (para barras que mostram o corpo inteiro). Sem membros — ou golpe sem membro identificado, como
+	# uma explosão de área — cai no comportamento antigo de vida única.
+	var by_limb: bool = limbs != null and limbs.has_limbs() and limbs.has_limb(group)
+	if by_limb:
+		limbs.apply_damage(group, amount)
+		health = limbs.total_hp()
+	else:
+		health = maxi(health - amount, 0)
+	show_health_hud(-1.0, group)
+	if (limbs.is_defeated() if by_limb else health <= 0):
 		dead = true
 		animation_tree.active = false
 		model.visible = false
@@ -238,7 +260,7 @@ func hit(amount: int = 50) -> void:
 # Atualiza o HUD compartilhado de vida do inimigo (apenas em clientes com tela).
 # Público: chamado por hit() e pela mira do player (player_input.gd).
 # `distance` (m) é exibida ao lado do nome; -1 oculta a distância.
-func show_health_hud(distance: float = -1.0) -> void:
+func show_health_hud(distance: float = -1.0, group: String = "") -> void:
 	if dead:
 		return
 	if DisplayServer.get_name() == "headless":
@@ -246,6 +268,12 @@ func show_health_hud(distance: float = -1.0) -> void:
 	# `self` (e não a cena atual): o HUD nasce no viewport DESTA sala — ver enemy_health_bar.gd.
 	var hud = preload("res://controls2D/enemy_health_bar.gd").get_shared(self)
 	if hud == null:
+		return
+	# Com um MEMBRO na mira (ou recém-atingido), o overlay mostra o HP DAQUELE membro e o nome dele
+	# junto do inimigo — é o membro que precisa cair, então é o número que importa ao jogador.
+	if limbs != null and limbs.has_limb(group):
+		hud.show_enemy("%s — %s" % [enemy_name, limbs.label_of(group)],
+			limbs.hp_of(group), limbs.max_hp_of(group), distance, effective_range)
 		return
 	# red_robot possui arma de tiro: informa o alcance efetivo (m) para o HUD exibi-lo.
 	hud.show_enemy(enemy_name, maxi(health, 0), max_health, distance, effective_range)

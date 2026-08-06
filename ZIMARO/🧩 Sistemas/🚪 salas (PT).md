@@ -179,6 +179,16 @@ Ver [[salas-freeze-render-stall]] na memória.
 
 ## Tela de "Carregando" (`LoadingScreen`) — 2026-08-05
 
+> 🖱️ **GOTCHA do cursor (2026-08-06).** O pré-pagamento do startup instancia o `level_1` como
+> observador, e a `spectator_camera` **capturava o mouse** no `_ready`. Capturar e soltar em poucos
+> frames deixa o ponteiro **sem ser redesenhado** no Windows: `Input.get_mouse_mode()` volta a
+> `VISIBLE` (medido: `0` durante todo o boot, inclusive 3 s depois) e mesmo assim **o cursor não
+> aparece** — só reaparece na próxima troca de modo. A cura não é reforçar o `set_mouse_mode(VISIBLE)`
+> no fim (isso trata o sintoma): é **não capturar**. O sinalizador **`LoadingScreen.preloading`** é
+> consultado por `spectator_camera` e `player_input` — durante o pré-pagamento ninguém joga, então
+> ninguém captura. Medido depois: modos vistos no boot = `[0]` apenas (antes `[0, 2]`).
+> O texto da tela é **"Preparando os gráficos"** (o trecho "para a primeira partida" saiu em 2026-08-06).
+
 Autoload **`LoadingScreen`** (`autoload/loading_screen.gd`), um `CanvasLayer` (layer 200,
 `PROCESS_MODE_ALWAYS`) com fundo opaco + "Carregando..." — textos canônicos em pt, traduzidos pelo
 [[locale]] via `scenes2D/loading/Resources/loading.{pt,en,es}.json`. **Dois papéis:**

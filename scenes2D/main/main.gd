@@ -27,6 +27,11 @@ func _ready() -> void:
 	if not (DisplayServer.get_name() == "headless" or OS.get_cmdline_user_args().has("nopreload")):
 		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()  # o level precisa de um peer valido
 		await LoadingScreen.run_startup_preload()
+	# O MENU PRINCIPAL ganha uma faixa NOVA a cada abertura do jogo: sorteia entre as de audios/ e grava
+	# como atribuição da cena "menu" (o Gerenciador de Músicas passa a mostrar a sorteada, em vez de
+	# exibir uma faixa e tocar outra). Servidor dedicado (headless) não toca nada → não sorteia.
+	if DisplayServer.get_name() != "headless":
+		MusicManager.randomize_track("menu")
 	go_to_main_menu()
 
 
@@ -47,6 +52,11 @@ func replace_main_scene(resource: PackedScene) -> void:
 
 func change_scene_to_packed(resource: PackedScene) -> void:
 	var node: Node = resource.instantiate()
+	# Rede de seguranca do cursor: o modo do mouse e GLOBAL e so o gameplay 3D o captura (player /
+	# spectator_camera). Ao entrar numa tela 2D, o cursor TEM de estar visivel — sem isto, qualquer
+	# saida de level que nao passe pelo LevelExit/session deixaria a UI 2D sem cursor.
+	if not (node is Node3D):
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()

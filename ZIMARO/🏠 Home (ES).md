@@ -55,6 +55,7 @@ atualizado: 2026-07-06
 - [[🛰️ hospedagem-online (ES)|hospedaje online]] — jugar por internet: playit.gg (UDP) · Tailscale/ZeroTier · redirección de puertos (ngrok NO funciona)
 - [[❤️ sistema-de-vida (ES)|sistema de salud]] — HP, barra de salud, respawn
 - [[🩸 dano-localizado (ES)|daño localizado]] — daño por arma, hitboxes Area3D por miembro, headshot
+- [[🦴 hp-por-membro (ES)|HP por miembro]] — HP por miembro/sub-miembro: solo cae cuando todos son destruidos; el rostro derriba la cabeza
 - [[🗿 biblioteca-de-modelos (ES)|biblioteca de modelos]] — pantalla Models: navegador/extractor de malla, galería Exported, categoría Estructuras + miembro fallback CORPO
 - [[🧩 templates-de-level (ES)|plantillas de nivel]] — gestores de Plantilla (personajes) y Escenario por nivel: navegación en cascada de carpetas, activos independientes
 - [[🌌 ambiente-dos-levels (ES)|entorno de los niveles]] — cielo procedural + niebla + shader de suelo con rejilla neón (Nivel 1 cian / Nivel 2 ámbar), 60 FPS en el .exe

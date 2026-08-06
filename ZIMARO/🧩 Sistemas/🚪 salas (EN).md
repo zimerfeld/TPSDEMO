@@ -181,6 +181,16 @@ See [[salas-freeze-render-stall]] in memory.
 
 ## "Loading" screen (`LoadingScreen`) — 2026-08-05
 
+> 🖱️ **Cursor GOTCHA (2026-08-06).** The startup pre-payment instantiates `level_1` as an observer, and
+> `spectator_camera` **captured the mouse** in `_ready`. Capturing and releasing within a handful of
+> frames leaves the pointer **undrawn** on Windows: `Input.get_mouse_mode()` is back to `VISIBLE`
+> (measured: `0` throughout the whole boot, even 3 s later) and yet **the cursor is not shown** — it
+> only returns on the next mode change. The cure is not to reinforce `set_mouse_mode(VISIBLE)` at the
+> end (that treats the symptom): it is **not to capture at all**. The **`LoadingScreen.preloading`**
+> flag is honoured by `spectator_camera` and `player_input` — nobody plays during the pre-payment, so
+> nobody captures. Measured afterwards: modes seen during boot = `[0]` only (previously `[0, 2]`).
+> The screen's text is **"Preparando os gráficos"** ("for the first match" was dropped on 2026-08-06).
+
 Autoload **`LoadingScreen`** (`autoload/loading_screen.gd`), a `CanvasLayer` (layer 200,
 `PROCESS_MODE_ALWAYS`) with an opaque background + "Loading..." — canonical texts in pt, translated by
 [[locale]] via `scenes2D/loading/Resources/loading.{pt,en,es}.json`. **Two roles:**
