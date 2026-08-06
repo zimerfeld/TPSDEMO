@@ -11,6 +11,9 @@ signal replace_main_scene
 
 func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
+	# O apply_graphics_settings acima reimpõe o display_mode salvo (tela cheia) — reafirma a geometria
+	# do piloto automático por cima, senão a janela do level sairia do lado a lado. Inerte sem `win=`.
+	Autopilot.apply_window(get_window())
 
 	# Lista de cenas replicaveis montada DINAMICAMENTE da biblioteca (server E cliente, mesma ordem):
 	# qualquer modelo de template — inclusive os novos — replica sem editar a whitelist fixa do .tscn.

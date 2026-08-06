@@ -62,6 +62,14 @@ func _ready() -> void:
 		_set_playing(rid)
 	else:
 		_set_observing(-1)
+	# Piloto automático (`-- autohost`): cria a sala inicial sozinho, para o cliente da outra janela
+	# ter em que entrar. Roda uma única vez por execução (ver Autopilot.should_start_room).
+	# (O servidor dedicado headless ja cria a sala no playonline — dai o "sem salas ainda".)
+	if RoomManager.get_rooms().is_empty() and Autopilot.should_start_room():
+		# O template tem de estar ativo ANTES do start_room (é ele quem aplica os personagens).
+		Autopilot.apply_template(Autopilot.level_path)
+		RoomManager.start_room(Autopilot.level_path)
+		_refresh_template_picker()
 	# Toggle "Debug 2D" na barra Actions (injetado pelo DebugOverlay como nas demais telas) + sequência
 	# de Tab. Re-liga ao injetar o toggle e ao remontar as salas; foco inicial no controle de Tab = 1.
 	_actions_bar.child_entered_tree.connect(func(_n: Node) -> void: _rewire_tab.call_deferred())
@@ -184,6 +192,9 @@ func _set_observing(id: int) -> void:
 		_room_view.texture = null
 		_panel.visible = true
 		_hint.visible = false
+		# Voltou à grade: some com a barra do último inimigo atingido (ela some sozinha só depois de
+		# alguns segundos, e a grade de salas não deve exibir nada de dentro das partidas).
+		preload("res://controls2D/enemy_health_bar.gd").hide_all()
 	_apply_mouse_mode()
 	_refresh_rooms()
 

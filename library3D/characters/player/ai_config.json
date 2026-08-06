@@ -1,6 +1,7 @@
 {
 	"behaviors": {
 		"ally_follow": true,
+		"guard_stance": true,
 		"enemy_prioritization": true,
 		"predictive_assist_aim": true,
 		"combat_spacing": true,

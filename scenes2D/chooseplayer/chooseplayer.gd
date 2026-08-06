@@ -35,6 +35,11 @@ var _loading_path: String = ""
 func _ready() -> void:
 	_load_character(current_index)
 	_update_language_buttons()
+	# Piloto automático (`-- autohost`/`autojoin`): a escolha do personagem é a única etapa manual
+	# entre "entrar na sala" e nascer nela — confirma o personagem padrão e segue direto.
+	if Autopilot.is_active() and RoomManager.pending_play_room >= 0:
+		_on_play_pressed.call_deferred()
+		return
 	# Foco inicial no Tab = 1 + anel de Tab na ordem de leitura. Re-liga quando o DebugOverlay injeta
 	# o toggle "Debug 2D" na barra Actions (entra DEPOIS do _ready).
 	UINav.focus_tab_one.call_deferred(self)
