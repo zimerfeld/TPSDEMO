@@ -190,7 +190,11 @@ em terceira pessoa. Em alto nível, oferece:
   taxa de sync, render do host) e as recarrega na próxima vez; o dropdown de **IP/Domínio** lista os
   endereços recentes **e os domínios completos salvos** (FQDN guardados à parte, sem rolarem com os
   IPs recentes) para reusar pela seleção; as telas Host/Client são em tela cheia,
-  no padrão do resto da UI.
+  no padrão do resto da UI. O jogo online por salas foi **validado entre 2 PCs** (inclusive via túnel
+  público como o **playit.gg**): as entidades da sala nascem de forma **gradual** para não travar
+  máquinas modestas, a conexão **tolera picos de carregamento** (um travão de shader não derruba mais a
+  partida) e, se a conexão cair, o cliente **volta ao navegador de salas com um aviso** em vez de ficar
+  preso; qualquer modelo da biblioteca — inclusive os adicionados depois — replica automaticamente.
 - **Biblioteca + visualizador de modelos 3D** — assets 3D reutilizáveis organizados por tipo em
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro

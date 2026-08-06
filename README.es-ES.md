@@ -174,7 +174,12 @@ disparos en tercera persona. A grandes rasgos ofrece:
   Puerto/IP, interpolación, tasa de sincronización, render del host) y las restaura la próxima vez; el desplegable **IP/Dominio**
   lista las direcciones recientes **y los dominios completos guardados** (los FQDN se mantienen aparte, no se mezclan con las
   IP recientes) para volver a seleccionarlas más tarde; las pantallas Host/Cliente
-  son a pantalla completa, en línea con el resto de la interfaz.
+  son a pantalla completa, en línea con el resto de la interfaz. El juego online por salas fue
+  **validado entre 2 PC** (incluso a través de un túnel público como **playit.gg**): las entidades de la
+  sala nacen de forma **gradual** para no trabar máquinas modestas, la conexión **tolera los picos de
+  carga** (un tirón de shaders ya no tumba la partida) y, si la conexión se cae, el cliente **vuelve al
+  navegador de salas con un aviso** en vez de quedar atascado; cualquier modelo de la biblioteca —
+  incluidos los añadidos después — se replica automáticamente.
 - **Biblioteca + visor de modelos 3D** — recursos 3D reutilizables organizados por tipo bajo `library3D/`,
   explorables en el juego a través de la pantalla Models (categoría → modelo → parte) con interruptores, en
   orden, para rotación, **Animação**, **Efeitos especiais** (todo lo vinculado al modelo

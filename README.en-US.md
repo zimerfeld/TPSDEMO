@@ -182,7 +182,11 @@ third-person shooter sandbox. At a high level it offers:
   Port/IP, interpolation, sync rate, host render) and restores them next time; the **IP/Domain**
   dropdown lists recent addresses **and saved full domains** (FQDNs kept apart, not rolled out by
   recent IPs) to reselect later; the Host/Client screens
-  are full-screen, matching the rest of the UI.
+  are full-screen, matching the rest of the UI. The room-based online play is **validated across 2 PCs**
+  (including through a public tunnel like **playit.gg**): room entities spawn **gradually** so modest
+  machines don't stall, the connection **tolerates loading spikes** (a shader hitch no longer drops the
+  match) and, if the connection does drop, the client **returns to the room browser with a notice**
+  instead of being stuck; any library model — including ones added later — replicates automatically.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
   browsable in-game through the Models screen (category → model → part) with toggles, in
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
