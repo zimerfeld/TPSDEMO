@@ -2,12 +2,31 @@
 tipo: sistema
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # ❤️ Health System
 
 > Implemented on 2026-06-06.
+> ⚠️ **Superseded as the death condition on 2026-08-06** — see [[🦴 hp-por-membro (EN)|🦴 hp-por-membro]].
+
+---
+
+## ⚠️ What changed on 2026-08-06
+
+**Single** health no longer decides the defeat. It still exists, but it is now the **mirror of the sum
+of the limbs' HP** (`hp = limbs.total_hp()`); what decides death is [[🦴 hp-por-membro (EN)|per-limb
+HP]] — a character only goes down once **every limb** has been destroyed.
+
+| | Before | Now |
+|---|---|---|
+| Player `MAX_HP` | 100 | **150** (15 per limb; see the calibration in the system note) |
+| `hit()` | `hit(amount)` | `hit(amount, group)` — the limb that was hit travels along |
+| Death | `hp <= 0` | `limbs.is_defeated()` (single health only as a fallback) |
+| Respawn | `hp = MAX_HP` | same **+ `limbs.reset()`** |
+
+The single-health fallback still applies to hits with **no identified limb** (splash, falling) and to
+models that do not build limb colliders (e.g. `criatura_alada`).
 
 ---
 

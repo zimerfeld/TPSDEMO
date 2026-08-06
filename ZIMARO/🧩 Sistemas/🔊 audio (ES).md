@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # 🔊 Audio (buses + ajustes)
@@ -10,6 +10,42 @@ atualizado: 2026-07-04
 Sistema de audio del proyecto: layout de buses en `default_bus_layout.tres`
 (`uid://vtdn63d3ksc2`, referenciado por `project.godot` en `[audio]
 buses/default_bus_layout`) y los controles en la pestaña **Audio** de los ajustes.
+
+---
+
+## 🎵 Gestor de Músicas — remodelado el 2026-08-06
+
+**Botón propio.** Abrir el gestor dejó de ser un efecto colateral del radio **"Música: Activado"** y
+pasó a ser el botón **"Gestionar Músicas"** (`%Songs`, `tab_order` 56) en la fila de la Música. El
+motivo es concreto: con ambas acciones en el mismo objetivo, un clic errado en el "Desactivado" vecino
+**silenciaba el bus `Music`** sin señal visible — así fue exactamente como la música del juego quedó
+muda hasta descubrir `[audio] music=false` en el `settings.ini`. El botón acompaña al toggle en
+**estado y color** (deshabilitado y oscurecido con la música apagada; fuera del anillo de Tab, como
+manda la regla de controles `disabled`).
+
+**Una selección, un trío de controles.** Desaparecieron el desplegable "Escuchar pista" de arriba y los
+`▶ ⏸ ⏹` de cada fila — eran tres sitios para reproducir lo mismo. Ahora hay **un trío centrado** que
+actúa sobre la **fila seleccionada** (al hacer clic en el selector de una escena, se resalta en
+amarillo).
+
+**⏸/⏹ actúan sobre lo que esté sonando.** Antes hablaban solo con la preescucha; al abrir la ventana,
+lo que suena es la **pista de fondo de la pantalla**, así que los botones parecían muertos.
+`MusicManager.pause_playback()` y `stop_playback()` eligen el objetivo: la preescucha si la hay, si no
+el fondo. Al **cerrar** la ventana, `resume_scene_track()` devuelve la pista de la escena al aire; de
+lo contrario la pantalla quedaría muda.
+
+**Menú con pista sorteada.** `MusicManager.randomize_track("menu")` corre en el arranque (`main.gd`),
+así que el menú principal recibe una pista nueva cada vez que se abre el juego. El sorteo **persiste**
+la elección, para que el Gestor muestre la pista que de verdad suena. El servidor dedicado (headless)
+no sortea. ⚠️ Efecto colateral: una pista elegida a mano para el menú es **sustituida en el siguiente
+arranque**.
+
+**Ventana contenida en pantalla.** `FloatingWindow` pasó a limitarse al **88% del viewport**
+(`_fit_size_to_viewport`) — la ventana del gestor llegaba a **1534 × 3092** en un viewport de
+1920 × 1061, y el `ScrollContainer` interno se expandía en vez de desplazarse. Los desplegables
+recibieron `clip_text` (el `OptionButton` se dimensionaba por el ítem más ancho entre ~43 pistas NCS,
+pidiendo por sí solo ~1530 px de ancho). Resultado: **760 × 933** en 1920×1080 y **760 × 528** en
+1024×600.
 
 ## 🎚️ Layout de buses
 

@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # 🔊 Audio (buses + settings)
@@ -10,6 +10,39 @@ atualizado: 2026-07-04
 Project audio system: bus layout in `default_bus_layout.tres`
 (`uid://vtdn63d3ksc2`, referenced by `project.godot` under `[audio]
 buses/default_bus_layout`) and the controls in the **Audio** tab of the settings.
+
+---
+
+## 🎵 Music Manager — reworked on 2026-08-06
+
+**Its own button.** Opening the manager stopped being a side effect of the **"Music: Enabled"** radio
+and became the **"Manage Music"** button (`%Songs`, `tab_order` 56) on the Music row. The reason is
+concrete: with both actions on the same target, a misclick on the neighbouring "Disabled" **muted the
+`Music` bus** with no visible sign — that is exactly how the game's music went silent until
+`[audio] music=false` was found in `settings.ini`. The button follows the toggle in **state and
+colour** (disabled and dimmed when music is off; out of the Tab ring, as the rule for `disabled`
+controls requires).
+
+**One selection, one set of controls.** The top "Listen to track" dropdown and the per-row `▶ ⏸ ⏹`
+are gone — they were three places to play the same thing. There is now **one centred trio** acting on
+the **selected row** (clicking a scene's picker highlights it in yellow).
+
+**⏸/⏹ act on whatever is playing.** They used to talk only to the preview; when you open the window,
+what is playing is the **screen's background track**, so the buttons looked dead.
+`MusicManager.pause_playback()` and `stop_playback()` pick the target: the preview if there is one,
+otherwise the background. On **close**, `resume_scene_track()` puts the scene's track back on air —
+otherwise the screen would stay silent.
+
+**Menu with a shuffled track.** `MusicManager.randomize_track("menu")` runs at boot (`main.gd`), so
+the main menu gets a fresh track every time the game opens. The draw **persists** the choice, so the
+Manager shows the track that is actually playing. A dedicated (headless) server does not shuffle.
+⚠️ Side effect: a track hand-picked for the menu is **replaced on the next boot**.
+
+**Window kept on screen.** `FloatingWindow` now caps itself at **88% of the viewport**
+(`_fit_size_to_viewport`) — the manager window reached **1534 × 3092** on a 1920 × 1061 viewport, and
+the inner `ScrollContainer` expanded instead of scrolling. The dropdowns got `clip_text` (the
+`OptionButton` sized itself by the widest item among ~43 NCS tracks, alone demanding ~1530 px of
+width). Result: **760 × 933** at 1920×1080 and **760 × 528** at 1024×600.
 
 ## 🎚️ Bus layout
 

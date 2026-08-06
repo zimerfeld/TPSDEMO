@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: en-US
-atualizado: 2026-07-23
+atualizado: 2026-08-06
 ---
 
 # 🩸 Weapon Damage System + Localized Hitboxes
@@ -10,6 +10,22 @@ atualizado: 2026-07-23
 > Implemented on 2026-06-06; migrated to **native 3D colliders** on 2026-06-14.
 > Damage from the attacker's **weapon**, with **one `StaticBody3D` per limb group** and
 > **localized damage** (physical collision, no longer a "glass" Area3D).
+> Since 2026-08-06 damage lands on **that limb's HP** — see [[🦴 hp-por-membro (EN)|🦴 hp-por-membro]].
+
+---
+
+## 2026-08-06 — damage now has a destination
+
+The percentages in this note **still mean what they always meant**: a **damage** multiplier. What
+changed is where the damage goes — instead of coming off a single bar, it lands on the **HP of the limb
+that was hit**, and the character is only defeated once **every** limb has fallen.
+
+Two practical consequences:
+
+- the shooter passes the **limb group** along with the damage:
+  `character.hit.rpc(int(round(weapon_damage * mult)), collider.get_meta("group"))`;
+- `LimbColliders` now stamps the **`owner_group`** meta (each sub-limb's owner limb), which is what
+  lets a parent limb take its children down — and the **face** take the head down.
 
 ---
 

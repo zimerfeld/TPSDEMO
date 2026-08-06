@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # 🧩 Plantillas de nivel (Template Manager + Scenery Manager)
@@ -11,6 +11,26 @@ atualizado: 2026-07-04
 > facción, cantidad y colocación, editados en el juego en una ventana flotante y aplicados cuando el nivel
 > arranca (solo o sala online). Relacionado: [[🎬 fluxo-de-cenas (ES)|Flujo de escenas]] (pantalla `levels`),
 > [[🚪 salas (ES)|Salas]] (el host abre la misma ventana), memoria *"las salas nacen limpias"*.
+
+---
+
+## 📐 Campo "Escala (%)" (2026-08-06)
+
+Debajo de **Cantidad**, en **ambos** gestores (Templates y Escenarios), un `SpinBox` define la escala
+del modelo en **porcentaje sobre el tamaño original**:
+
+| Valor | Efecto |
+|---|---|
+| `0` | tamaño natural (por defecto) |
+| `+50` | una vez y media |
+| `-30` | 30% más pequeño |
+
+- Rango aceptado: **-95% a +900%**.
+- Persistido en la entrada de la plantilla con la clave **`scale_percent`** (JSON en `user://`), por lo
+  que se carga y puede cambiarse **en tiempo de ejecución**, sin recompilar.
+- Aplicado en cada spawn en `TemplateManagerBase._configure_spawned_node`:
+  `factor = 1 + scale_percent/100`, con un suelo de **0,05** (por debajo la malla se vuelve un punto y
+  los colliders degeneran). El factor también queda en la meta `template_scale_factor` del nodo.
 
 ## Dos escenas + dos gestores separados (2026-07-03, refactor)
 

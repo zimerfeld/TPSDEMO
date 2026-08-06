@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: pt-BR
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # 🧩 Templates de Level (Gerenciador de Templates + Gerenciador de Cenários)
@@ -11,6 +11,26 @@ atualizado: 2026-07-04
 > facção, quantidade e posicionamento, editados em jogo numa janela flutuante e aplicados quando
 > o level inicia (solo ou sala online). Relacionado: [[🎬 fluxo-de-cenas (PT)|🎬 fluxo-de-cenas]] (tela `levels`),
 > [[🚪 salas (PT)|🚪 salas]] (host abre a mesma janela), memória *"salas nascem limpas"*.
+
+---
+
+## 📐 Campo "Escala (%)" (2026-08-06)
+
+Abaixo de **Quantidade**, nos **dois** gerenciadores (Templates e Cenários), um `SpinBox` define a
+escala do modelo em **porcentagem sobre o tamanho original**:
+
+| Valor | Efeito |
+|---|---|
+| `0` | tamanho natural (default) |
+| `+50` | uma vez e meia |
+| `-30` | 30% menor |
+
+- Faixa aceita: **-95% a +900%**.
+- Persistido na entrada do template com a chave **`scale_percent`** (JSON em `user://`), portanto é
+  carregado e pode ser alterado **em tempo de execução**, sem recompilar.
+- Aplicado a cada spawn em `TemplateManagerBase._configure_spawned_node`:
+  `factor = 1 + scale_percent/100`, com piso de **0,05** (abaixo disso a malha vira um ponto e os
+  colliders degeneram). O fator também fica na meta `template_scale_factor` do nó.
 
 ## Duas cenas + dois managers separados (2026-07-03, refatoração)
 

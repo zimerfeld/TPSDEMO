@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-23
+atualizado: 2026-08-06
 ---
 
 # 🩸 Sistema de daño de arma + hitboxes localizadas
@@ -10,6 +10,22 @@ atualizado: 2026-07-23
 > Implementado el 2026-06-06; migrado a **colisionadores 3D nativos** el 2026-06-14.
 > Daño del **arma** del atacante, con **un `StaticBody3D` por grupo de miembro** y
 > **daño localizado** (colisión física, ya no un Area3D "de cristal").
+> Desde el 2026-08-06 el daño cae en el **HP de ese miembro** — ver [[🦴 hp-por-membro (ES)|🦴 hp-por-membro]].
+
+---
+
+## 2026-08-06 — el daño ahora tiene destino
+
+Los porcentajes de esta nota **siguen significando lo que siempre significaron**: multiplicador de
+**daño**. Lo que cambió es adónde va el daño — en vez de descontarse de una barra única, cae en el
+**HP del miembro alcanzado**, y el personaje solo es abatido cuando **todos** los miembros caen.
+
+Dos consecuencias prácticas:
+
+- quien dispara pasa el **grupo del miembro** junto con el daño:
+  `character.hit.rpc(int(round(weapon_damage * mult)), collider.get_meta("group"))`;
+- `LimbColliders` pasó a marcar la meta **`owner_group`** (el miembro-dueño de cada sub-miembro), que
+  es lo que permite al miembro-padre derribar a sus hijos — y al **rostro** derribar la cabeza.
 
 ---
 

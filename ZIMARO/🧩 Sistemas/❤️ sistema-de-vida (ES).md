@@ -2,12 +2,32 @@
 tipo: sistema
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-08-06
 ---
 
 # ❤️ Sistema de vida
 
 > Implementado el 2026-06-06.
+> ⚠️ **Superado como condición de muerte el 2026-08-06** — ver [[🦴 hp-por-membro (ES)|🦴 hp-por-membro]].
+
+---
+
+## ⚠️ Qué cambió el 2026-08-06
+
+La vida **única** dejó de decidir el abatimiento. Sigue existiendo, pero pasa a ser el **espejo de la
+suma del HP de los miembros** (`hp = limbs.total_hp()`); quien decide la muerte es el
+[[🦴 hp-por-membro (ES)|HP por miembro]] — el personaje solo cae cuando **todos los miembros** han sido
+destruidos.
+
+| | Antes | Ahora |
+|---|---|---|
+| `MAX_HP` del player | 100 | **150** (15 por miembro; ver la calibración en la nota del sistema) |
+| `hit()` | `hit(amount)` | `hit(amount, group)` — el miembro alcanzado viaja con el daño |
+| Muerte | `hp <= 0` | `limbs.is_defeated()` (vida única solo como respaldo) |
+| Respawn | `hp = MAX_HP` | ídem **+ `limbs.reset()`** |
+
+El respaldo de vida única sigue valiendo para golpes **sin miembro identificado** (explosión de área,
+caída) y para modelos que no construyen colliders de miembro (p. ej. `criatura_alada`).
 
 ---
 
