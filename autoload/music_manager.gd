@@ -199,6 +199,17 @@ func set_assignment(key: String, value: String) -> void:
 		play_key(_current_key, true)
 
 
+# Sorteia uma faixa de audios/ para `key`, persiste como override e devolve o arquivo escolhido ("" se
+# não há faixas). Usado pelo "🎲 Sortear faixas" do Gerenciador e pelo sorteio do menu no boot (main.gd).
+func randomize_track(key: String) -> String:
+	var tracks := list_tracks()
+	if tracks.is_empty():
+		return ""
+	var chosen := String(tracks[randi() % tracks.size()])
+	set_assignment(key, chosen)
+	return chosen
+
+
 # Nome do arquivo da trilha EFETIVA de `key` (resolvendo override/default/alias) ou "" se silêncio.
 func effective_track(key: String) -> String:
 	var p := _resolve(key)
@@ -247,6 +258,34 @@ func resume_preview() -> void:
 		_preview.play()
 	if _player != null:
 		_player.stream_paused = true
+
+
+# ⏸ / ⏹ do Gerenciador de Música: agem sobre O QUE ESTIVER SOANDO. Se há pré-escuta no ar, é ela; senão
+# é a TRILHA DE FUNDO da tela (que é justamente o que o jogador ouve ao abrir a janela sem ter clicado
+# em ▶ ainda — antes esses botões só falavam com a pré-escuta e não faziam nada nesse caso).
+func pause_playback() -> void:
+	if _preview != null and _preview.stream != null and _preview.playing:
+		pause_preview()
+	elif _player != null:
+		_player.stream_paused = true
+
+
+func stop_playback() -> void:
+	if _preview != null and _preview.stream != null:
+		stop_preview()      # devolve o fundo ao ar (era ele que a pré-escuta tinha silenciado)
+	elif _player != null:
+		_player.stop()
+		_player.stream_paused = false
+
+
+# Devolve a trilha da cena atual ao ar. Chamado ao FECHAR o Gerenciador: de lá o jogador pode ter
+# pausado ou parado o fundo com ⏸/⏹, e a tela não pode continuar muda depois que a janela some.
+func resume_scene_track() -> void:
+	if _player == null:
+		return
+	_player.stream_paused = false
+	if not _player.playing and _current_key != "":
+		play_key(_current_key, true)
 
 
 func stop_preview() -> void:

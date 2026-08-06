@@ -31,6 +31,13 @@ const PAINT_FRAMES: int = 2
 
 var _hint: Label = null
 
+## `true` enquanto o pré-pagamento do startup roda. O level vive alguns frames só para aquecer o
+## renderer — ninguém joga nele —, então quem CAPTURA o mouse ao entrar em cena (spectator_camera,
+## player_input) deve se abster enquanto isto estiver ligado. Capturar e soltar no mesmo punhado de
+## frames deixava o cursor sem ser redesenhado no Windows: o modo voltava a VISIBLE, mas o ponteiro
+## só reaparecia depois de uma nova troca de modo. Não capturar é a cura, não o remendo.
+var preloading: bool = false
+
 
 func _ready() -> void:
 	layer = 200                                   # acima de tudo (inclusive HUDs e janelas flutuantes)
@@ -77,7 +84,7 @@ func _build_visual() -> void:
 
 	_hint = Label.new()
 	_hint.name = "Hint"
-	_hint.text = "Preparando os gráficos para a primeira partida"
+	_hint.text = "Preparando os gráficos"
 	_hint.modulate = Color(1.0, 1.0, 1.0, 0.7)
 	_hint.add_theme_font_size_override("font_size", 18)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -99,8 +106,10 @@ func cover(action: Callable, settle_frames: int = SETTLE_FRAMES) -> void:
 
 
 # STARTUP (main.gd): carrega um level DE VERDADE por alguns frames e o descarta, pagando adiantado o
-# setup global do renderer. Sem player controlado (spectator_host) → sem captura de mouse; sem input
-# no level → ESC nao dispara o LevelExit durante o carregamento.
+# setup global do renderer. Sem input no level → ESC nao dispara o LevelExit durante o carregamento.
+# ⚠️ O level roda como observador (spectator_host) e a spectator_camera CAPTURA o mouse no _ready.
+# O modo do mouse e GLOBAL: descartar o level nao o desfaz. Por isso restauramos VISIBLE no fim —
+# senao o menu (e todas as telas 2D) nasceriam sem cursor.
 func run_startup_preload() -> void:
 	var scene := ResourceLoader.load(PRELOAD_LEVEL) as PackedScene
 	if scene == null:
@@ -109,6 +118,7 @@ func run_startup_preload() -> void:
 	visible = true
 	for _i in PAINT_FRAMES:
 		await get_tree().process_frame
+	preloading = true
 	var prev_spectator: bool = PlayerSelection.spectator_host
 	PlayerSelection.spectator_host = true
 	var level: Node = scene.instantiate()
@@ -119,6 +129,11 @@ func run_startup_preload() -> void:
 	if is_instance_valid(level):
 		level.queue_free()
 	PlayerSelection.spectator_host = prev_spectator
+	preloading = false
+	# Cinto de segurança: se algum nó do level tiver capturado o mouse mesmo assim, a UI 2D que vem a
+	# seguir precisa do cursor de volta.
+	if Input.get_mouse_mode() != Input.MOUSE_MODE_VISIBLE:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	await get_tree().process_frame
 	_hint.visible = false
 	visible = false

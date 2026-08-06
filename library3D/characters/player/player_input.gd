@@ -77,7 +77,10 @@ func apply_authority() -> void:
 		return
 	if get_multiplayer_authority() == multiplayer.get_unique_id():
 		camera_camera.make_current()
-		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		# Idem spectator_camera: durante o pré-pagamento do startup não há partida, e capturar o mouse
+		# ali custa o cursor da UI 2D que vem depois. Ver [[loading_screen]].
+		if not LoadingScreen.preloading:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		set_process(true)
 		set_process_input(true)
 		# Taxa de envio do INPUT deste peer (o dono) = a "Taxa de sincronização" que ELE escolheu no
@@ -194,7 +197,10 @@ func _update_enemy_focus() -> void:
 
 	if enemy:
 		var dist: float = get_parent().global_position.distance_to(enemy.global_position)
-		enemy.show_health_hud(dist)
+		# Membro sob a mira: o overlay mostra o HP e o NOME dele (é esse membro que precisa cair).
+		# Personagens sem HP por membro ignoram o grupo e mostram a vida do corpo. Ver [[limb-health]].
+		var group: String = String(col.collider.get_meta(&"group", "")) if col.collider != null else ""
+		enemy.show_health_hud(dist, group)
 		_focused_enemy = enemy
 	else:
 		# A mira saiu do inimigo → esconde o HUD imediatamente.

@@ -207,9 +207,29 @@ func _layout() -> void:
 		return
 	_sync_left_pad()
 	set_uniform_footer_widths()
+	_fit_size_to_viewport()
 	if not _restore_saved_position():
 		_center_window()
 	_clamp_to_viewport()
+
+
+# Fração da tela que uma janela flutuante pode ocupar no máximo (sobra ~6% de margem de cada lado, em
+# qualquer resolução — proporcional, não em px fixos, para 720p e 4K ficarem igualmente folgados).
+const _VIEWPORT_FILL := 0.88
+
+
+# Limita o TAMANHO da janela à viewport (menos a margem). O `_window` é um PanelContainer solto: ele
+# cresce com o conteúdo e não tem teto próprio — uma lista longa (ex.: as 12 cenas do Gerenciador de
+# Música) o esticava para muito além da tela, e o ScrollContainer de dentro, tendo espaço de sobra,
+# expandia em vez de ROLAR. Com o teto aplicado aqui o conteúdo passa a caber e o scroll assume.
+# Respeita o mínimo declarado (`min_window_size`) — janela nenhuma encolhe abaixo do que precisa.
+func _fit_size_to_viewport() -> void:
+	var vp := get_viewport_rect().size
+	var limit := (vp * _VIEWPORT_FILL).max(Vector2.ONE)
+	var floor_size := _window.get_combined_minimum_size()
+	_window.size = Vector2(
+		maxf(minf(_window.size.x, limit.x), minf(floor_size.x, limit.x)),
+		maxf(minf(_window.size.y, limit.y), minf(floor_size.y, limit.y))).floor()
 
 
 # Iguala a largura do espaçador esquerdo à do botão × → o título fica CENTRALIZADO de fato.

@@ -31,7 +31,10 @@ var _pitch: float = 0.0
 
 func _ready() -> void:
 	current = true
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	# No pré-pagamento do startup o level só aquece o renderer por alguns frames e ninguém o controla:
+	# capturar o mouse ali deixaria o cursor sem voltar a ser desenhado na UI 2D. Ver [[loading_screen]].
+	if not LoadingScreen.preloading:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	# Parte da orientação atual (definida ao posicionar a câmera no level).
 	_yaw = rotation.y
 	_pitch = rotation.x

@@ -289,12 +289,12 @@ anchor_bottom = 0.62
 offset_right = -16.0
 grow_horizontal = 2
 mouse_filter = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="Subtitle" type="Label" parent="UI/Briefing"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.901961, 0.941176, 1, 0.88)
-theme_override_font_sizes/font_size = 19
+theme_override_font_sizes/font_size = 16
 text = "Treinamento surrealista de sobrevivência
 com personagens, alvos e impulso."
 autowrap_mode = 2
@@ -307,7 +307,7 @@ color = Color(0.25098, 0.866667, 1, 0.65)
 [node name="TrainingReadout" type="Label" parent="UI/Briefing"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.8, 0.572549, 0.92)
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 14
 text = "MOVA // interprete trajetos impossíveis
 MIRE // capture alvos holográficos
 SOBREVIVA // memorize a arena antes do impacto"

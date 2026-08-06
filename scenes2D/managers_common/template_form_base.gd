@@ -34,6 +34,9 @@ var _sel_scene_path := ""
 # personagem (pasta-modelo) é escolhido na cascata; opções vindas de library3D/weapons.
 @onready var _weapons_picker: OptionButton = get_node_or_null("%Weapons")
 @onready var _count_spin: SpinBox = %Counts
+# Escala do modelo em PORCENTAGEM relativa ao tamanho original: 0 = tamanho natural, +50 = uma vez e
+# meia, -30 = 30% menor. Persistida na entrada (chave "scale_percent") e aplicada a cada spawn.
+@onready var _scale_spin: SpinBox = %Scales
 @onready var _placements_picker: OptionButton = %Placements
 # Painel que agrupa os campos condicionais ao Posicionamento (some quando não há entrada).
 @onready var _placement_group: PanelContainer = %PlacementGroup
@@ -203,7 +206,7 @@ func _on_entry_name_changed(new_text: String) -> void:
 
 func _refresh_entry_fields() -> void:
 	var has_entry := _entry_index >= 0 and _entry_index < _entries().size()
-	var controls: Array = [_entry_name_edit, _count_spin,
+	var controls: Array = [_entry_name_edit, _count_spin, _scale_spin,
 			_placements_picker, _positions_edit, _random_center_edit, _random_size_edit,
 			_formations_picker, _formation_origin_edit, _spacing_spin, _rotation_spin]
 	if _factions_picker != null:
@@ -232,6 +235,7 @@ func _refresh_entry_fields() -> void:
 	if _weapons_picker != null:
 		_select_weapon(String(e.get("weapon_path", "")))
 	_count_spin.value = int(e.get("count", 1))
+	_scale_spin.value = float(e.get("scale_percent", 0.0))
 	_select_text(_placements_picker, String(e.get("placement", "random")))
 	_positions_edit.text = _positions_to_text(e.get("positions", []))
 	_random_center_edit.text = _vec_to_text(e.get("random_center", [0, 1, 0]))
@@ -332,6 +336,7 @@ func _add_entry() -> void:
 		"scene_path": "",
 		"placement": "random",
 		"count": 1,
+		"scale_percent": 0.0,
 		"positions": [[0, 1, 0]],
 		"random_center": [0, 1, 0],
 		"random_size": [34, 0, 34],
@@ -389,6 +394,7 @@ func _save_entry_fields() -> void:
 		e["model_key"] = _sel_model_key
 		e["scene_path"] = _sel_scene_path
 	e["count"] = int(_count_spin.value)
+	e["scale_percent"] = float(_scale_spin.value)
 	e["placement"] = _placements_picker.get_item_text(_placements_picker.selected)
 	e["positions"] = _parse_positions(_positions_edit.text)
 	e["random_center"] = _parse_vector_text(_random_center_edit.text)
