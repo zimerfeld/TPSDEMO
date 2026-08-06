@@ -25,32 +25,36 @@ atualizado: 2026-07-04
 
 ## `_update_enemy_focus()`
 
-Runs every frame in `_process` (only on the local player). Casts a ray from the crosshair and
-**tracks** the focused enemy (`var _focused_enemy: Node`):
+Runs every frame in `_process` (only on the local player). **Two conditions** for the HUD to
+show up: (1) **aiming must be active** (`aiming`) and (2) the ray must hit a **limb /
+sub-member** of the enemy. Meanwhile it **tracks** the focused enemy (`var _focused_enemy: Node`):
 
 ```gdscript
+if not aiming:
+    _clear_enemy_focus()   # not aiming → no overlay
+    return
 # Mask 0b100011 = body (bits 1-2) + the enemy's limb colliders (bit6=32).
-var col = ...intersect_ray(ray_from, ray_from + ray_dir*1000, 0b100011, [self])
+var col = ...intersect_ray(ray_from, ray_from + ray_dir*1000, 0b100011, _aim_ray_exclude())
 var enemy = _resolve_focus_enemy(col.collider)
 if enemy:
-    enemy.show_health_hud()       # shows/updates the boss bar
+    enemy.show_health_hud(dist)   # shows/updates the boss bar
     _focused_enemy = enemy
-elif _focused_enemy != null:
-    if is_instance_valid(_focused_enemy):
-        _focused_enemy.hide_health_hud()   # aim left → hide immediately
-    _focused_enemy = null
+else:
+    _clear_enemy_focus()          # aim left the limb → hide immediately
 ```
 
-`_resolve_focus_enemy(collider)` accepts **two** kinds of hit:
-1. **The enemy body** (`CharacterBody3D`) — already has `show_health_hud`.
-2. **A LIMB / SUB-MEMBER collider** (a passive `StaticBody3D` of the `LimbColliders`,
-   layer 32) — it stores the owner in `meta("character")`; the HUD is resolved from it.
+`_resolve_focus_enemy(collider)` only accepts a **LIMB / SUB-MEMBER collider** (a passive
+`StaticBody3D` of the `LimbColliders`, layer 32), which stores the owner in `meta("character")` —
+hitting just the enemy's **locomotion capsule** does **not** open the HUD. Fallback exception:
+an enemy that has **not built** limb colliders yet (`_has_limb_colliders()` = `false`) counts
+through its body, otherwise it would never show health.
 
 > The mask includes **layer 32** (the enemy's limb hitbox) besides the body, so that aiming
 > at a **protruding sub-member** (e.g.: the red_robot's leg plates, which escape the body's
 > silhouette and used to register nothing) also shows the enemy's health. The player is unaffected
 > (its limbs sit on layer 16, outside the mask). The HUD disappears the instant the crosshair leaves
-> the enemy. See [[🩹 enemy-health-bar-gd (EN)|enemy_health_bar.gd]] and [[🦿 limb-colliders-gd (EN)|limb_colliders.gd]]
+> the limb **or aiming is turned off** (`_clear_enemy_focus()`).
+> See [[🩹 enemy-health-bar-gd (EN)|enemy_health_bar.gd]] and [[🦿 limb-colliders-gd (EN)|limb_colliders.gd]]
 
 ---
 

@@ -112,9 +112,10 @@ em terceira pessoa. Em alto nível, oferece:
   reposicionar.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
-  Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo
-  quanto os **colliders de membro/sub-membro** — então apontar para um **sub-membro saliente**
-  (ex.: as placas das pernas) também exibe a vida do inimigo.
+  Só aparece com a **mira ativada** e com a mira sobre um **membro ou sub-membro** do inimigo, e
+  some assim que a mira sai dele ou a mira é desativada — passar perto do inimigo sem mirar não
+  abre mais o overlay. Qualquer **sub-membro saliente** (ex.: as placas das pernas) vale como alvo
+  e exibe a vida do inimigo.
 - **Corpo físico proporcional ao modelo** — a cápsula de locomoção (bloqueio físico entre
   personagens) é **auto-ajustada a cada modelo** a partir dos colliders de membro (raio pelo footprint
   em pé, altura pela extensão total), em vez de uma default autorada igual para todos. Continua sendo

@@ -82,11 +82,12 @@ pasa `effective_range`). Texto **"Range: N m"** (EN) o **"Alcance: N m"** (PT/ES
 ## Disparado por
 
 1. **Impacto:** `red_robot.gd.hit()` → `show_health_hud()` → `get_shared(...).show_enemy(...)`
-2. **Puntería del jugador (entra):** `player_input.gd._update_enemy_focus()` → `collider.show_health_hud()`.
-   El rayo registra tanto el **cuerpo** como los **colisionadores de miembro/SUBMIEMBRO** (layer 32); un
-   submiembro sobresaliente (p. ej.: una placa de pierna) resuelve al propietario vía `meta("character")`. Ver
-   [[🕹️ player-input-gd (ES)|player_input.gd]].
-3. **Puntería del jugador (sale):** `_update_enemy_focus()` llama a `_focused_enemy.hide_health_hud()` → `hide_now()`
+2. **Puntería del jugador (entra):** `player_input.gd._update_enemy_focus()` → `collider.show_health_hud()`,
+   **solo con la puntería ACTIVADA** (`aiming`) y **solo al impactar un MIEMBRO/SUBMIEMBRO** (layer 32) —
+   la cápsula de locomoción por sí sola no abre el HUD. Un submiembro sobresaliente (p. ej.: una placa de
+   pierna) resuelve al propietario vía `meta("character")`. Ver [[🕹️ player-input-gd (ES)|player_input.gd]].
+3. **Puntería del jugador (sale o se desactiva):** `_update_enemy_focus()` llama a `_clear_enemy_focus()` →
+   `_focused_enemy.hide_health_hud()` → `hide_now()`
 4. **Muerte:** `red_robot.gd` → `hide_health_hud()` → `hide_now()`
 
 Guards:
@@ -95,7 +96,8 @@ Guards:
 
 ## Visibilidad
 
-- **Puntería:** aparece cuando la mira se coloca sobre el enemigo, **desaparece inmediatamente** cuando la puntería se retira
+- **Puntería:** aparece al apuntar (**puntería activada**) a un **miembro/submiembro** del enemigo y
+  **desaparece inmediatamente** cuando la mira lo abandona **o cuando se desactiva la puntería**
   (vía el rastreo de `_focused_enemy` en `player_input.gd`).
 - **Impacto sin apuntar:** el auto-ocultado de 6 s (`AUTO_HIDE_TIME`) sirve como fallback.
 

@@ -108,9 +108,10 @@ third-person shooter sandbox. At a high level it offers:
   **smoothed** so enemies **change direction gracefully** instead of jittering while they reposition.
 - **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
   when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
-  It appears when you **aim at the enemy** and hides the moment your aim leaves it; the aim ray
-  recognizes both the body and the **limb/sub-member colliders** — so aiming at a **protruding
-  sub-member** (e.g. the leg guards) also reveals the enemy's health.
+  It only appears with **aiming active** and with the crosshair on one of the enemy's **limbs or
+  sub-members**, and hides the moment your aim leaves it or you stop aiming — so simply walking
+  past an enemy no longer pops the overlay. Any **protruding sub-member** (e.g. the leg guards)
+  counts as a valid target and reveals the enemy's health.
 - **Per-model physical body** — the locomotion capsule (physical blocking between characters) is
   **auto-fitted to each model** from its limb colliders (radius from the standing footprint, height
   from the full extent), instead of one hand-authored default for everyone. It stays a single cheap,
