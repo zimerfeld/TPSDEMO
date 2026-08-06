@@ -137,6 +137,31 @@ auto-fit of the locomotion capsule"). The red_robot does the same ([[🤖 inimig
   by the orbit + collision exception).
 - **No friendly fire:** the ally's bullets phase through the player (see [[🔫 combate-tiro (EN)|combate-tiro]]).
 
+### Guard stance — `guard_stance` (2026-08-06)
+
+The ally's **default** behavior (toggleable in the **Models → AI** screen). It stops being a hunter
+and acts like a **bodyguard**: escorts at a safe distance, without colliding and without running
+around aimlessly.
+
+| Rule | How |
+| --- | --- |
+| **Post** instead of an orbit | `_guard_station` computes a point always at `follow_distance` from the protected player. **At peace:** the **rear** diagonal (`guard_back_ratio` 0.8 behind + `guard_side_ratio` 0.6 to the side), out of their line of fire and following them as they turn. The side comes from the randomized `_orbit_sign`, so two allies cover opposite sides. |
+| **Interposes** (2026-08-06) | With an enemy within `player_threat_radius` of the protected player, the post moves **forward**, toward the threat (`guard_screen_ratio` 0.8) — the ally stands **between the two**, keeping the lateral offset so it doesn't block their shot. This is where the "reactivity" comes from: it repositions whenever the threat switches sides, while never leaving `follow_distance`. |
+| **Stops on arrival, with hysteresis** | Reaches the post at `station_tolerance` (0.6 m) and only starts moving again once it drifts `× settle_release` (2.2 → ≈1.3 m). The small dead zone gives reactivity; the hysteresis prevents per-frame jitter. `scan_interval` 0.35 → **0.2 s** to notice the threat switching sides sooner. |
+| **Never touches** | Below `min_standoff` (1.8 m) the only possible movement is to **back away** — even with the physics collision exception active. |
+| **Doesn't push onto the enemy** | In combat, `_combat_move` returns the same post-keeping movement; it only backs off if the enemy gets closer than `preferred_combat_distance - combat_band`. No charge and **no flanking** (`pressure_flank` is suppressed in this stance). |
+
+**Numbers recalibrated alongside** (`@export` defaults): `follow_distance` 5.5 → **2.5** m ·
+`orbit_strength` 0.7 → **0.15** · `preferred_combat_distance` 18 → **12** m · `engage_range` 32 →
+**16** m · `player_threat_radius` 24 → **18** m · `soft_leash` 14 → **6** m · `max_leash` 20 → **9** m.
+
+> **Where to tune the "reactivity"** without turning it back into a hunter: `station_tolerance`
+> (lower = corrects sooner), `settle_release` (lower = leaves the post more easily), `scan_interval`
+> (lower = notices sooner) and `guard_screen_ratio` (higher = steps further toward the threat).
+
+> Turning `guard_stance` off in the Models screen brings back the classic **orbit** described above
+> (with the new numbers, so tighter than before).
+
 ---
 
 ## 🔗 Related

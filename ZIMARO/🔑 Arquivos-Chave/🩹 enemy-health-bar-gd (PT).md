@@ -22,22 +22,31 @@ atualizado: 2026-07-04
 
 ---
 
-## Padrão Singleton Compartilhado
-
-Uma única instância por cliente, recriada se o nó for liberado (troca de level):
+## Padrão Singleton — uma instância POR VIEWPORT (2026-08-06)
 
 ```gdscript
-static var _instance = null
+static var _instances: Dictionary = {}   # id do viewport -> CanvasLayer
 
-static func get_shared(parent: Node):
-    if _instance != null and is_instance_valid(_instance):
-        return _instance
-    _instance = (preload("res://controls2D/enemy_health_bar.gd")).new()
-    parent.add_child(_instance)   # parent = get_tree().current_scene
-    return _instance
+static func get_shared(source: Node):    # source = o PRÓPRIO inimigo
+    var vp: Viewport = source.get_viewport() ...
+    ...
+    vp.add_child(inst)                   # nasce DENTRO do viewport da sala
+    _instances[vp.get_instance_id()] = inst
+
+static func hide_all() -> void           # esconde em todos os viewports
 ```
 
-> `is_instance_valid()` evita ponteiro pendente após a cena anterior ser liberada.
+> **Por que mudou:** antes era **uma instância global** pendurada em `get_tree().current_scene`.
+> No host, cada sala vive num **SubViewport** próprio, mas o HUD ficava na raiz da
+> **HostSession** — resultado: a grade de "Salas em execução" desenhava a barra de vida de um
+> inimigo de uma partida que o host **nem estava assistindo** (reportado 2026-08-06). Pendurado no
+> viewport do inimigo, ele só aparece quando aquela sala é renderizada (jogando ou observando).
+>
+> `get_shared` devolve `null` se o nó ainda não está na árvore — os chamadores checam antes de usar.
+>
+> `hide_all()` é chamado ao **sair da sala**: `host_session._set_observing(-1)` (volta à grade) e
+> `client_session._exit_play()` (volta ao navegador) — senão a barra do último inimigo atingido
+> ficaria visível por até `AUTO_HIDE_TIME` sobre a tela de salas.
 
 ---
 
