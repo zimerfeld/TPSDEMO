@@ -28,6 +28,9 @@ const SETTLE_FRAMES: int = 5
 ## Frames para a propria tela PINTAR antes de rodar a acao (senao o stall come o frame da tela e o
 ## jogador ve a janela congelada, que e exatamente o que queremos mascarar).
 const PAINT_FRAMES: int = 2
+# Teto (s) da espera pelo `ready_check` do cover(): passado ele, a tela revela assim mesmo. Um
+# servidor lento (ou uma sala parada no meio do povoamento) não pode prender o jogador aqui.
+const READY_TIMEOUT_SEC: float = 15.0
 
 var _hint: Label = null
 
@@ -87,12 +90,22 @@ func _build_visual() -> void:
 
 # Cobre a tela, deixa alguns frames para PINTAR, executa `action` (a ativacao pesada do level/sala),
 # aguarda o quadro assentar e revela. Chamar com `await` quando o chamador precisa continuar depois.
-func cover(action: Callable, settle_frames: int = SETTLE_FRAMES) -> void:
+func cover(action: Callable, settle_frames: int = SETTLE_FRAMES,
+		ready_check: Callable = Callable(), timeout_sec: float = READY_TIMEOUT_SEC) -> void:
 	visible = true
 	for _i in PAINT_FRAMES:
 		await get_tree().process_frame
 	if action.is_valid():
 		action.call()
+	# `ready_check` (opcional): enquanto devolver false, a tela CONTINUA cobrindo. É o que sustenta a
+	# regra "a sala carrega inteira antes de liberar o jogador" — a entrada só é revelada quando o
+	# player já existe na sala, e como o servidor o spawna DEPOIS de povoá-la, isso implica cenário
+	# completo. Timeout de segurança para nunca prender o jogador aqui.
+	if ready_check.is_valid():
+		var waited := 0.0
+		while waited < timeout_sec and not bool(ready_check.call()):
+			await get_tree().process_frame
+			waited += get_process_delta_time()
 	for _i in settle_frames:
 		await get_tree().process_frame
 	visible = false

@@ -55,9 +55,13 @@ func _ready() -> void:
 		if _server_has_room(rid):
 			# Espelhar a sala + nascer nela custa o setup de render do level (stall). A tela de
 			# "Carregando" cobre a entrada e revela so com o quadro pronto. Ver [[LoadingScreen]].
+			# A revelação espera o PRÓPRIO player aparecer no espelho da sala: o servidor só o spawna
+			# depois de povoar a sala inteira, então vê-lo implica cenário completo, nas coordenadas.
 			LoadingScreen.cover(func() -> void:
 				RoomManager.client_join_room(rid, path, PlayerSelection.variant_id)
-				_enter_play(rid))
+				_enter_play(rid),
+				LoadingScreen.SETTLE_FRAMES,
+				func() -> bool: return RoomManager.player_ready_in_room(rid, multiplayer.get_unique_id()))
 		else:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 			_refresh_rooms()
