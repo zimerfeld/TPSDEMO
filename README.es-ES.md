@@ -180,6 +180,9 @@ disparos en tercera persona. A grandes rasgos ofrece:
   carga** (un tirón de shaders ya no tumba la partida) y, si la conexión se cae, el cliente **vuelve al
   navegador de salas con un aviso** en vez de quedar atascado; cualquier modelo de la biblioteca —
   incluidos los añadidos después — se replica automáticamente.
+  Una **pantalla de "Cargando"** cubre la entrada a cualquier level (offline) o sala (online) y, en el
+  arranque, prepara los gráficos por adelantado — así la primera partida empieza fluida en vez de
+  congelarse unos segundos esperando los shaders en plena acción.
 - **Biblioteca + visor de modelos 3D** — recursos 3D reutilizables organizados por tipo bajo `library3D/`,
   explorables en el juego a través de la pantalla Models (categoría → modelo → parte) con interruptores, en
   orden, para rotación, **Animação**, **Efeitos especiais** (todo lo vinculado al modelo

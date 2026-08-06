@@ -187,6 +187,9 @@ third-person shooter sandbox. At a high level it offers:
   machines don't stall, the connection **tolerates loading spikes** (a shader hitch no longer drops the
   match) and, if the connection does drop, the client **returns to the room browser with a notice**
   instead of being stuck; any library model — including ones added later — replicates automatically.
+  A **"Loading" screen** covers every entry into a level (offline) or room (online) and, at startup,
+  prepares the graphics ahead of time — so the first match starts smooth instead of freezing for a few
+  seconds waiting on shaders mid-action.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
   browsable in-game through the Models screen (category → model → part) with toggles, in
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
