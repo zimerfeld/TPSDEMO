@@ -20,7 +20,7 @@ atualizado: 2026-07-04
 
 ## Build facts (from the code, for the test)
 
-- **Default port:** `4383` (the `Port` SpinBox of `playonline`; editable/persisted via history).
+- **Default port:** `44000` and **default address:** `zimaro.playit.game` (the `Port` SpinBox / `Address` LineEdit of `playonline`; editable and persisted via history). For the local tests in this document, switch to `127.0.0.1` and whichever port you prefer.
 - **Server:** button **"Manage Rooms"** → `ENetMultiplayerPeer.create_server(port)` → opens `host_session`.
 - **Client:** button **"Join Rooms"** → `create_client(address, port)` → opens `client_session`.
 - **Default room (headless server only):** `level_1` (`DEFAULT_ROOM_LEVEL`). In the GUI the host picks the level.
