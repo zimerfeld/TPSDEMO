@@ -134,9 +134,51 @@ pico gigante.
   `vram_warn` **3072** (crit 5120), `fps_crit_frames` **20** (10 s), `physics_throttle_tps` **45** —
   folga p/ o host multi-sala e tolera o hitch de carga sem estrangular a física. Ver a seção abaixo.
 
-⏳ **Resta** um *hitch de carregamento na 1ª entrada da sala* (compilação de shader), **não-fatal** e
-menor com o shader cache quente; próximo passo opcional é **pré-aquecer shaders** (branch
-`feature/salas-prewarm-shaders`). Ver [[salas-freeze-render-stall]] na memória.
+⏳ **Resta** um *hitch de carregamento na 1ª entrada da sala* (~1,6–2,6 s), **não-fatal**: o timeout
+tolerante do ENet sobrevive a ele e o handler de `server_disconnected` recupera limpo.
+
+> ⚠️ **PRÉ-AQUECIMENTO NÃO RESOLVE — medido em 2026-08-05, NÃO reexplorar.** Cinco abordagens testadas
+> com medição cold-cache: warm de entidades em SubViewport (~25%, ruído); warm de entidades na viewport
+> RAIZ (sem ganho); warm do **LEVEL** em SubViewport (**0%**); warm do **LEVEL** na viewport raiz
+> (**0%**); e uma fila espalhando os builds de `LimbColliders` (~40 ms, desprezível). **Todas revertidas,
+> nada shippado.** Decomposição do custo (level_1, cold cache): render inicial do **ambiente/chão do
+> level ≈ 2336 ms (86%)**, entidades ≈ 400 ms, colliders ≈ 40 ms. **Por que falha:** o custo está
+> atrelado ao level virar a **cena ATIVA com setup completo** (`apply_graphics_settings` + shadow atlas
+> + render buffers + occlusion **na janela real**) — todo pré-render offscreen deu **0 ms de stall**,
+> ou seja não reproduz o custo, logo não o antecipa. **Não é one-time:** com shader cache de disco
+> quente cai de ~2,6 s para ~1,6 s, mas **não zera** (setup de 1º render 3D da janela, por lançamento).
+> ✅ **RESOLVIDO com a TELA DE "CARREGANDO"** (autoload `LoadingScreen`, 2026-08-05) — ver a seção
+> *Tela de Carregando* abaixo. Em resumo: o startup carrega um level **DE VERDADE** (ativação completa)
+> e descarta, pagando adiantado o setup **global** do renderer (**2473 ms → 602 ms na entrada seguinte,
+> −76%**); e cada entrada em level/sala passa a ser **coberta** pela tela. **A chave:** o warm falhava
+> porque o `_ready` com meta `warmup` retornava ANTES de `Settings.apply_graphics_settings(...)` — só
+> ativação COMPLETA reproduz (e portanto antecipa) o custo. A branch `feature/salas-prewarm-shaders`
+> ficou sem propósito.
+
+Ver [[salas-freeze-render-stall]] na memória.
+
+## Tela de "Carregando" (`LoadingScreen`) — 2026-08-05
+
+Autoload **`LoadingScreen`** (`autoload/loading_screen.gd`), um `CanvasLayer` (layer 200,
+`PROCESS_MODE_ALWAYS`) com fundo opaco + "Carregando..." — textos canônicos em pt, traduzidos pelo
+[[locale]] via `scenes2D/loading/Resources/loading.{pt,en,es}.json`. **Dois papéis:**
+
+1. **`run_startup_preload()`** — chamado no `main.gd._ready` antes do menu. Instancia um level **DE
+   VERDADE** (`level_1`), deixa-o vivo ~6 frames e o descarta. É a **ativação completa** que paga
+   adiantado o setup **global** do renderer. Medido (cold cache): **2473 ms aqui → a entrada seguinte
+   numa sala cai para 602 ms (−76%)**. `spectator_host = true` (sem player controlado → sem captura de
+   mouse) e `set_process_input(false)` no level (ESC não dispara o `LevelExit`). **Headless** (servidor
+   dedicado, sem GPU) e `-- nopreload` pulam.
+2. **`cover(action)`** — cobre a tela ANTES de **cada** entrada e revela só com o quadro pronto:
+   mostra a tela, deixa **2 frames PINTAR** (senão o stall comeria o frame da própria tela e o jogador
+   veria a janela congelada), executa a `action` (a ativação pesada) e aguarda `SETTLE_FRAMES`.
+   Ligado em: **`levels.gd`** (entrada em level offline), **`client_session`** (entrar na sala) e
+   **`host_session._set_observing` / `_set_playing`** (observar/jogar uma sala). Medido: entrada
+   coberta = **896 ms mascarados** (validado com screenshot durante a cobertura).
+
+> ⚠️ Só **ativação completa** paga o custo — `cover`/preload NÃO podem virar um "warm" offscreen
+> (SubViewport ou viewport raiz dão **0 ms de stall**: não reproduzem o custo, logo não antecipam nada).
+> Ver a medição na seção *Congelamento do inimigo no cliente*.
 
 ## Tela preta no cliente (level_base/level_2) — StabilityGuard (2026-06-24, `feature/spawnplayer2`)
 
@@ -314,8 +356,11 @@ se a cena nascer em EN (o idioma é persistido) e o label não volta para pt.
   corrigir o **congelamento do inimigo no cliente** (stall de render + timeout do ENet + falta de
   handler `server_disconnected`) — ver a seção *Congelamento do inimigo no cliente* (release
   `202608051826`).
-- ⏳ **Pendências:** *hitch de carregamento na 1ª entrada da sala* em hardware fraco (compilação de
-  shader — próximo passo: pré-aquecer shaders, branch `feature/salas-prewarm-shaders`).
+- ✅ **Hitch de 1ª entrada: RESOLVIDO** (2026-08-05) pela **tela de "Carregando"** (`LoadingScreen`):
+  o startup paga adiantado o setup global do renderer (−76% na entrada seguinte) e cada entrada em
+  level/sala é coberta pela tela. **Pré-aquecimento offscreen foi medido e descartado** (5 abordagens,
+  todas 0–25%); **não reexplorar** sem ler aquela medição.
+- ⏳ **Pendências:**
   `enemy_health_bar.get_shared(get_tree().current_scene)` (HUD do inimigo) ainda é global —
   no cliente com 1 sala fullscreen funciona; no host observando/jogando pode aparecer no lugar errado.
   Ver [[🌐 multiplayer (PT)|🌐 multiplayer]].

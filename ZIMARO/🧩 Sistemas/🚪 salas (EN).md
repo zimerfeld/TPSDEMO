@@ -135,9 +135,52 @@ catch** this: it runs in `_process` (not even called during the stalled frame) a
   headroom for the multi-room host and tolerates the loading hitch without throttling the physics. See the
   section below.
 
-⏳ **Remaining** is a *loading hitch on the 1st room entry* (shader compilation), **non-fatal** and
-smaller with a warm shader cache; the optional next step is to **pre-warm shaders** (branch
-`feature/salas-prewarm-shaders`). See [[salas-freeze-render-stall]] in memory.
+⏳ **Remaining** is a *loading hitch on the 1st room entry* (~1.6–2.6 s), **non-fatal**: the tolerant
+ENet timeout survives it and the `server_disconnected` handler recovers cleanly.
+
+> ⚠️ **PRE-WARMING DOES NOT FIX IT — measured on 2026-08-05, do NOT re-explore.** Five approaches were
+> tested with cold-cache measurements: entity warm in a SubViewport (~25%, noise); entity warm on the
+> ROOT viewport (no gain); **LEVEL** warm in a SubViewport (**0%**); **LEVEL** warm on the root viewport
+> (**0%**); and a queue spreading the `LimbColliders` builds (~40 ms, negligible). **All reverted,
+> nothing shipped.** Cost breakdown (level_1, cold cache): initial render of the **level's
+> environment/floor ≈ 2336 ms (86%)**, entities ≈ 400 ms, colliders ≈ 40 ms. **Why it fails:** the cost
+> is tied to the level becoming the **ACTIVE scene with full setup** (`apply_graphics_settings` + shadow
+> atlas + render buffers + occlusion **on the real window**) — every offscreen pre-render produced
+> **0 ms of stall**, i.e. it doesn't reproduce the cost, so it can't front-load it. **It is not
+> one-time:** with a warm on-disk shader cache it drops from ~2.6 s to ~1.6 s, but **never to zero**
+> (first-3D-render window setup, per launch).
+> ✅ **SOLVED with the "LOADING" SCREEN** (autoload `LoadingScreen`, 2026-08-05) — see the
+> *Loading screen* section below. In short: the startup loads a **REAL** level (full activation)
+> and discards it, front-loading the **global** renderer setup (**2473 ms → 602 ms on the next entry,
+> −76%**); and every entry into a level/room is now **covered** by the screen. **The key:** the warm failed
+> because the `_ready` with the `warmup` meta returned BEFORE `Settings.apply_graphics_settings(...)` — only
+> COMPLETE activation reproduces (and therefore front-loads) the cost. The `feature/salas-prewarm-shaders`
+> branch is now moot.
+
+See [[salas-freeze-render-stall]] in memory.
+
+## "Loading" screen (`LoadingScreen`) — 2026-08-05
+
+Autoload **`LoadingScreen`** (`autoload/loading_screen.gd`), a `CanvasLayer` (layer 200,
+`PROCESS_MODE_ALWAYS`) with an opaque background + "Loading..." — canonical texts in pt, translated by
+[[locale]] via `scenes2D/loading/Resources/loading.{pt,en,es}.json`. **Two roles:**
+
+1. **`run_startup_preload()`** — called in `main.gd._ready` before the menu. It instantiates a **REAL**
+   level (`level_1`), keeps it alive for ~6 frames and discards it. It is the **complete activation** that
+   front-loads the **global** renderer setup. Measured (cold cache): **2473 ms here → the next entry
+   into a room drops to 602 ms (−76%)**. `spectator_host = true` (no controlled player → no mouse
+   capture) and `set_process_input(false)` on the level (ESC doesn't trigger the `LevelExit`). **Headless**
+   (dedicated server, no GPU) and `-- nopreload` skip it.
+2. **`cover(action)`** — covers the screen BEFORE **every** entry and reveals only with the frame ready:
+   it shows the screen, lets **2 frames PAINT** (otherwise the stall would eat the frame of the screen
+   itself and the player would see a frozen window), runs the `action` (the heavy activation) and waits
+   `SETTLE_FRAMES`. Wired in: **`levels.gd`** (offline level entry), **`client_session`** (entering the room) and
+   **`host_session._set_observing` / `_set_playing`** (spectating/playing a room). Measured: a covered
+   entry = **896 ms masked** (validated with a screenshot during the cover).
+
+> ⚠️ Only **complete activation** pays the cost — `cover`/preload must NOT become an offscreen "warm"
+> (SubViewport or root viewport give **0 ms of stall**: they don't reproduce the cost, so they front-load nothing).
+> See the measurement in the *Enemy freeze on the client* section.
 
 ## Black screen on the client (level_base/level_2) — StabilityGuard (2026-06-24, `feature/spawnplayer2`)
 
@@ -314,8 +357,11 @@ canonical if the scene is born in EN (the language is persisted) and the label w
   fixing the **enemy freeze on the client** (render stall + ENet timeout + missing
   `server_disconnected` handler) — see the *Enemy freeze on the client* section (release
   `202608051826`).
-- ⏳ **Pending items:** *loading hitch on the 1st room entry* on weak hardware (shader
-  compilation — next step: pre-warm shaders, branch `feature/salas-prewarm-shaders`).
+- ✅ **1st-entry hitch: SOLVED** (2026-08-05) by the **"Loading" screen** (`LoadingScreen`):
+  the startup front-loads the global renderer setup (−76% on the next entry) and every entry into a
+  level/room is covered by the screen. **Offscreen pre-warming was measured and ruled out** (5 approaches,
+  all 0–25%); **do not re-explore** without reading that measurement.
+- ⏳ **Pending items:**
   `enemy_health_bar.get_shared(get_tree().current_scene)` (enemy HUD) is still global —
   on the client with 1 fullscreen room it works; on the host spectating/playing it may appear in the wrong place.
   See [[🌐 multiplayer (EN)\|multiplayer]].

@@ -195,6 +195,9 @@ em terceira pessoa. Em alto nível, oferece:
   máquinas modestas, a conexão **tolera picos de carregamento** (um travão de shader não derruba mais a
   partida) e, se a conexão cair, o cliente **volta ao navegador de salas com um aviso** em vez de ficar
   preso; qualquer modelo da biblioteca — inclusive os adicionados depois — replica automaticamente.
+  Uma **tela de "Carregando"** cobre a entrada em qualquer level (offline) ou sala (online) e, no
+  startup, prepara os gráficos adiantado — então a primeira partida começa fluida, em vez de travar
+  alguns segundos esperando os shaders no meio da ação.
 - **Biblioteca + visualizador de modelos 3D** — assets 3D reutilizáveis organizados por tipo em
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro

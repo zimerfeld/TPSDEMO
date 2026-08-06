@@ -34,3 +34,7 @@ build/windows/*.exe
 
 /.godot/editor/filesystem_cache10
 /.godot/uid_cache.bin
+
+# Obsidian: estado de UI (muda a cada abertura do cofre, nao versionar)
+**/.obsidian/workspace.json
+**/.obsidian/workspace-mobile.json
