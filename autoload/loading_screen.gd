@@ -77,7 +77,7 @@ func _build_visual() -> void:
 
 	_hint = Label.new()
 	_hint.name = "Hint"
-	_hint.text = "Preparando os gráficos para a primeira partida"
+	_hint.text = "Preparando os gráficos"
 	_hint.modulate = Color(1.0, 1.0, 1.0, 0.7)
 	_hint.add_theme_font_size_override("font_size", 18)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
