@@ -29,12 +29,23 @@ const BEHAVIOR_GUARD_STANCE := "guard_stance"
 ## Com uma ameaça perto do protegido, o posto vai para a FRENTE dele, na direção da ameaça (o
 ## segurança se INTERPÕE). Fração do `follow_distance` — a distância ao protegido não muda.
 @export_range(0.0, 1.0) var guard_screen_ratio := 0.8
+## Raio (m) da BOLHA de liberdade em torno do protegido: dentro dela o aliado anda para onde quiser
+## (orbitar, flanquear, recuar, avançar). Ao ultrapassá-la, a volta passa a dominar o movimento —
+## proporcionalmente, até virar obrigatória em `max_leash`. É o que dá "liberdade sem se afastar".
+@export var roam_radius := 4.0
 ## Zona morta (m) do posto: dentro dela o aliado PARA. Pequena para ele reagir a cada passo do
 ## protegido; o vaivém é evitado pela histerese abaixo, não por uma zona morta larga.
 @export var station_tolerance := 0.6
 ## Histerese: já parado, só volta a andar quando o posto se afasta `station_tolerance` × este fator.
 ## Separar "chegar" (0,45 m) de "sair" (≈1,0 m) dá reação rápida SEM tremer parado.
 @export_range(1.0, 5.0) var settle_release := 2.2
+## Peso da preferência por se interpor (ficar entre o protegido e a ameaça). Enviesa o movimento
+## livre; não o substitui.
+@export_range(0.0, 2.0) var guard_screen_weight := 0.7
+## Suavização (1/s) do RUMO: a direção decidida entra GRADUALMENTE, em vez de trocar de golpe a cada
+## varredura. Menor = mais pesado/suave. É o que tira o "tremido" e os movimentos repetitivos rápidos
+## (mesmo remédio do `move_dir_response` do red_robot).
+@export var move_dir_response := 4.0
 ## Distância (m) mínima do protegido: se o player andar para cima do bot, o único movimento dele é
 ## recuar. Garante o "acompanha sem colidir" mesmo com a exceção de colisão física ativa.
 ## Tem de ficar CONFORTAVELMENTE abaixo de `follow_distance` (posto a 2,5 m → recuo a 1,8 m dá 0,7 m
@@ -81,6 +92,8 @@ var _orbit_sign := 1.0
 # livre e avançava no inimigo — "correndo em direção à morte".
 var _home := Vector3.ZERO
 var _home_set := false
+# Rumo suavizado entre quadros (ver _smooth_dir): tira o tremido/vaivém rápido do movimento.
+var _move_dir_smooth := Vector3.ZERO
 # True enquanto o aliado está ASSENTADO no posto (ver settle_release): a histerese que separa o
 # limiar de chegar do de sair, evitando o tremor de quem corrige a posição a cada quadro.
 var _settled := false
@@ -167,6 +180,10 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 			aim_point = bot_pos + _flat_or_forward(move_dir, -bot.global_transform.basis.z) * 20.0 + Vector3.UP
 	# Separação: afasta-se dos outros aliados por perto → não empilham na órbita nem no combate.
 	move_dir += _separation(bot_pos) * separation_strength
+	# Liberdade COM coleira: dentro da bolha ele anda para onde quiser; passando dela, a volta domina.
+	move_dir = _leash(move_dir, bot_pos, has_anchor)
+	# Rumo suavizado: a direção entra gradualmente → sem trocas bruscas nem vaivém rápido.
+	move_dir = _smooth_dir(move_dir, delta)
 	input.aiming = should_aim
 	input.shooting = should_shoot
 	input.shoot_target = aim_point
@@ -225,8 +242,10 @@ func _combat_move(origin: Vector3, target_position: Vector3, anchor_position: Ve
 	# Só recua se o inimigo colar (`combat_spacing`). Sem investida e sem flanco, é o que separa uma
 	# escolta de um caçador. O posto é ao lado do protegido; SEM protegido (host observando, sala
 	# vazia, jogador que saiu), é o lugar onde ele nasceu — e não uma corrida atrás do inimigo.
-	if behavior_enabled(BEHAVIOR_GUARD_STANCE):
-		move = _guard_move(origin, _anchor) if (has_anchor and _is_valid_anchor(_anchor)) else _hold_move(origin)
+	# Sem ninguém para escoltar (host observando, sala antes de o jogador entrar): guarda o posto de
+	# origem em vez de sair caçando.
+	if behavior_enabled(BEHAVIOR_GUARD_STANCE) and not (has_anchor and _is_valid_anchor(_anchor)):
+		move = _hold_move(origin)
 		if behavior_enabled(BEHAVIOR_COMBAT_SPACING) and distance < preferred_combat_distance - combat_band:
 			move -= forward
 		return move.normalized() if move.length() > 0.01 else Vector3.ZERO
@@ -239,6 +258,14 @@ func _combat_move(origin: Vector3, target_position: Vector3, anchor_position: Ve
 		var right := Vector3.UP.cross(forward).normalized()
 		var flank_weight := 0.55 if _flank_time > 0.0 else 0.25
 		move += right * _flank_sign * flank_weight
+	# Postura de segurança: PREFERÊNCIA (não posto rígido) por ficar entre o protegido e a ameaça.
+	# Peso moderado — o aliado continua livre para orbitar, flanquear e recuar; isto só enviesa a
+	# escolha. Quem impede o afastamento é a coleira (_leash), não uma âncora fixa.
+	if behavior_enabled(BEHAVIOR_GUARD_STANCE) and has_anchor and _is_valid_anchor(_anchor):
+		var to_station := _guard_station(_anchor) - origin
+		to_station.y = 0.0
+		if to_station.length() > station_tolerance:
+			move += to_station.normalized() * guard_screen_weight
 	# Coleira de cobertura: ao começar a se afastar do player, o bot é puxado de volta — assim
 	# combate ao lado dele em vez de derivar pelo mapa atrás do inimigo (e nunca cai do mapa).
 	if has_anchor:
@@ -297,6 +324,35 @@ func _guard_move(origin: Vector3, anchor: Node3D) -> Vector3:
 		_settled = true
 		return Vector3.ZERO
 	return to_station.normalized()
+
+
+# Coleira da bolha: DENTRO de `roam_radius` do protegido o movimento passa intacto (liberdade total
+# de direção); FORA dela, a volta entra proporcionalmente ao excesso e vira dominante em `max_leash`.
+# É isto — e não um posto fixo — que garante "anda para qualquer lado sem se afastar do player".
+# Sem protegido, o centro é o posto de origem (`_home`).
+func _leash(move: Vector3, origin: Vector3, has_anchor: bool) -> Vector3:
+	var center := _anchor.global_position if (has_anchor and _is_valid_anchor(_anchor)) else _home
+	if not has_anchor and not _home_set:
+		return move
+	var to_center := center - origin
+	to_center.y = 0.0
+	var dist := to_center.length()
+	if dist <= roam_radius or dist < 0.01:
+		return move
+	var back := to_center.normalized()
+	var pull: float = clampf((dist - roam_radius) / maxf(max_leash - roam_radius, 0.1), 0.0, 1.0)
+	var blended := move.lerp(back, pull)
+	return blended if blended.length() > 0.01 else back
+
+
+# Interpolação exponencial (independente de framerate) do rumo. Guarda o vetor entre quadros, então a
+# IA pode mudar de ideia à vontade que o CORPO muda de direção de forma gradual.
+func _smooth_dir(target: Vector3, delta: float) -> Vector3:
+	var weight: float = 1.0 - exp(-maxf(move_dir_response, 0.01) * delta)
+	_move_dir_smooth = _move_dir_smooth.lerp(target, weight)
+	if _move_dir_smooth.length() < 0.05:
+		return Vector3.ZERO   # rumo praticamente nulo → parado (não fica cutucando)
+	return _move_dir_smooth
 
 
 # Sem protegido: guarda o LUGAR onde nasceu. Volta ao posto se derivou (o empurrão de separação e o
