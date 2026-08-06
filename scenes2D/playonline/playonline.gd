@@ -15,6 +15,12 @@ const VERSION_TIMEOUT_SEC: float = 5.0
 # de build via String.format.
 const MSG_VERSION_INCOMPAT := "Versões incompatíveis.\n\nHost: {host}\nVocê: {client}\n\nAtualizem os dois para a mesma versão do jogo."
 const MSG_VERSION_TIMEOUT := "Não foi possível verificar a versão do host.\n\nO host pode estar numa versão antiga. Atualizem os dois para a mesma versão do jogo."
+# Rótulo de status (ConnectStatus) e aviso da resolução de DNS. O ENet resolve hostname sozinho, mas
+# de forma BLOQUEANTE (trava o frame até o DNS responder); resolvemos antes na fila assíncrona do IP.
+const MSG_RESOLVING := "Resolvendo endereço..."
+const MSG_CONNECTING := "Conectando..."
+const MSG_EMPTY_ADDRESS := "Informe o endereço do host (domínio ou IP) para entrar em salas."
+const MSG_RESOLVE_FAILED :="Não foi possível resolver o endereço \"{host}\".\n\nVerifique o nome do domínio e a sua conexão com a internet."
 # Quantos valores recentes (porta/IP) guardar para seleção.
 const HISTORY_MAX: int = 3
 # Domínios completos (FQDN) ficam num histórico PRÓPRIO e persistente (não rolam junto com os IPs
@@ -29,6 +35,10 @@ var _opt_buttons: Array[OptionButton] = []
 # True enquanto uma tentativa de "Entrar em Salas" está pendente (conectando). Bloqueia re-clique e
 # torna o cancelamento idempotente: o 1º de {conectou, falhou, timeout} "vence" e zera o pending.
 var _join_pending: bool = false
+# Item da fila de resolução de DNS em andamento (-1 = nenhum) e o hostname que ele resolve. A
+# resolução roda na thread do resolver do Godot; o _process só consulta o status (não bloqueia).
+var _resolve_id: int = -1
+var _resolve_host: String = ""
 
 @onready var player_name_field: LineEdit = %PlayerName
 @onready var port: SpinBox = %Port
@@ -42,6 +52,7 @@ var _join_pending: bool = false
 @onready var interp_picker: OptionButton = %Interpolations
 @onready var manage_rooms_button: Button = $UI/Inset/Main/Form/Fields/ButtonsRow/ManageRooms
 @onready var join_rooms_button: Button = $UI/Inset/Main/Form/Fields/ButtonsRow/JoinRooms
+@onready var connect_status: Label = %ConnectStatus
 @onready var loading: HBoxContainer = $UI/Loading
 @onready var loading_progress: ProgressBar = $UI/Loading/Progress
 @onready var loading_done_timer: Timer = $UI/Loading/DoneTimer
@@ -314,6 +325,8 @@ func _on_spanish_pressed() -> void:
 
 
 func _process(_delta: float) -> void:
+	if _resolve_id != -1:
+		_poll_resolve()
 	if loading.visible and loading_path != "":
 		var progress: Array = []
 		var status: ResourceLoader.ThreadLoadStatus = ResourceLoader.load_threaded_get_status(loading_path, progress)
@@ -367,21 +380,44 @@ func _on_manage_rooms_pressed() -> void:
 # E o handshake de versão OK (host e cliente na mesma build) — versões diferentes recusam com aviso
 # claro (ver _on_version_rejected), evitando o "erro mudo" de tentar jogar entre builds divergentes.
 func _on_join_rooms_pressed() -> void:
-	if _join_pending:
-		return  # já há uma checagem/conexão em andamento
+	if _join_pending or _resolve_id != -1:
+		return  # já há uma checagem/conexão (ou resolução de DNS) em andamento
 	PlayerSelection.spectator_host = false
 	_remember("ports", int(port.value))
-	if address.text.strip_edges() != "":
-		_remember_address(address.text.strip_edges())
+	var host := address.text.strip_edges()
+	if host == "":
+		# Sem endereço não há o que resolver nem conectar — avisa em vez de deixar o ENet falhar mudo.
+		CrashHandler.show_error(Locale.tr_key(MSG_EMPTY_ADDRESS), _on_join_rooms_pressed)
+		return
+	_remember_address(host)
+	# IP literal (ex.: 147.185.221.29) → conecta direto, não há o que resolver.
+	if host.is_valid_ip_address():
+		_start_client(host, host)
+		return
+	# Hostname (ex.: zimaro.playit.game) → resolve ANTES, na fila assíncrona do IP. Passar o nome
+	# direto ao create_client também funciona, mas o ENet resolve de forma bloqueante: numa rede
+	# lenta (ou DNS ruim) o frame trava até a resposta, dando a impressão de que o jogo congelou.
+	_resolve_host = host
+	_resolve_id = IP.resolve_hostname_queue_item(host, IP.TYPE_ANY)
+	_set_status(MSG_RESOLVING)
+	set_process(true)
+
+
+# Cria o peer de cliente e arma o handshake. `ip` é sempre um endereço numérico (já resolvido);
+# `shown` é o que o jogador digitou (domínio ou IP), usado nas mensagens de erro para ele reconhecer.
+func _start_client(ip: String, shown: String) -> void:
+	_set_status(MSG_CONNECTING)
 	peer = ENetMultiplayerPeer.new()
-	var err: Error = peer.create_client(address.text, int(port.value))
+	var err: Error = peer.create_client(ip, int(port.value))
 	if err != OK:
+		_clear_status()
 		CrashHandler.show_error(
-			"Falha ao conectar em %s:%d.\nErro: %s\n\nVerifique o endereço e a porta." % [address.text, int(port.value), error_string(err)],
+			"Falha ao conectar em %s:%d.\nErro: %s\n\nVerifique o endereço e a porta." % [shown, int(port.value), error_string(err)],
 			_on_join_rooms_pressed
 		)
 		return
 	if peer.host == null:
+		_clear_status()
 		CrashHandler.show_error("Conexão iniciada, mas host ENet é nulo.\nTente novamente.", _on_join_rooms_pressed)
 		return
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
@@ -401,6 +437,64 @@ func _on_join_rooms_pressed() -> void:
 	# Pendente: bloqueia re-clique e torna o cancelamento idempotente — o 1º de {versão OK, versão
 	# recusada, falha de conexão, timeout do handshake} "vence" e zera o pending.
 	_join_pending = true
+
+
+# Consulta (sem bloquear) o item da fila de DNS. Enquanto WAITING não faz nada; ao terminar, libera o
+# item e ou conecta com o IP resolvido, ou avisa que o nome não resolveu (domínio errado / sem net).
+func _poll_resolve() -> void:
+	var status: int = IP.get_resolve_item_status(_resolve_id)
+	if status == IP.RESOLVER_STATUS_WAITING:
+		return
+	var ip: String = ""
+	if status == IP.RESOLVER_STATUS_DONE:
+		ip = _pick_address(IP.get_resolve_item_addresses(_resolve_id))
+	IP.erase_resolve_item(_resolve_id)
+	_resolve_id = -1
+	var host := _resolve_host
+	_resolve_host = ""
+	if ip == "":
+		_clear_status()
+		CrashHandler.show_error(
+			Locale.tr_key(MSG_RESOLVE_FAILED).format({"host": host}),
+			_on_join_rooms_pressed
+		)
+		return
+	_start_client(ip, host)
+
+
+# Escolhe QUAL endereço usar entre os resolvidos, preferindo IPv4. O playit publica AAAA além de A
+# (zimaro.playit.game → 2602:fbaf:...:1d E 147.185.221.29) e o resolver costuma devolver o IPv6
+# primeiro; conectar por ele deixaria de fora quem não tem rota IPv6 (a maioria das operadoras
+# domésticas). Só cai no IPv6 se o nome não tiver IPv4 nenhum.
+func _pick_address(addresses: Array) -> String:
+	var fallback: String = ""
+	for a in addresses:
+		var s := String(a)
+		if s == "":
+			continue
+		if not s.contains(":"):   # sem dois-pontos = IPv4
+			return s
+		if fallback == "":
+			fallback = s
+	return fallback
+
+
+# Rótulo de status (ConnectStatus): fica no grupo "loc_manual", então o auto-localizador do Locale
+# não disputa o texto com o script — traduzimos aqui na hora de exibir.
+func _set_status(msg: String) -> void:
+	connect_status.text = Locale.tr_key(msg)
+
+
+func _clear_status() -> void:
+	connect_status.text = ""
+
+
+# Sair da tela com uma resolução pendente: libera o item da fila (o resolver do Godot guarda os
+# itens até serem apagados) para não vazar entre entradas na tela.
+func _exit_tree() -> void:
+	if _resolve_id != -1:
+		IP.erase_resolve_item(_resolve_id)
+		_resolve_id = -1
 
 
 # Conectou ao servidor (o ENet fechou o handshake de rede). Agora AGUARDA o host enviar a sua versão
@@ -449,6 +543,7 @@ func _on_rooms_connect_failed() -> void:
 # Encerra uma tentativa de join pendente: esconde o loading, desliga os sinais do handshake (os que
 # ainda não dispararam), fecha o peer (volta a Offline) e mostra o aviso com opção de tentar de novo.
 func _abort_join(msg: String) -> void:
+	_clear_status()
 	loading.hide()
 	_disconnect_join_signals()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
