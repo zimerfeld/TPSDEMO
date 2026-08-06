@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bafvvfq1gyx0q"
+path="res://.godot/imported/Razihel - Love U  Jersey Club  NCS - Copyright Free Music.mp3-7d29cc7d16e3c6b04a59e30b52fcb0d2.mp3str"
+
+[deps]
+
+source_file="res://audios/Razihel - Love U  Jersey Club  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Razihel - Love U  Jersey Club  NCS - Copyright Free Music.mp3-7d29cc7d16e3c6b04a59e30b52fcb0d2.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

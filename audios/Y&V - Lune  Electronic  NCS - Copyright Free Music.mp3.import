@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b4l17a3c1hdvv"
+path="res://.godot/imported/Y&V - Lune  Electronic  NCS - Copyright Free Music.mp3-108f0b24ad533112e8bec680ad85de37.mp3str"
+
+[deps]
+
+source_file="res://audios/Y&V - Lune  Electronic  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Y&V - Lune  Electronic  NCS - Copyright Free Music.mp3-108f0b24ad533112e8bec680ad85de37.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

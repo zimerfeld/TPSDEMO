@@ -37,19 +37,20 @@ Pista de fondo por **nombre de escena**, en **bucle infinito**. El autoload `Mus
 cambio de pantalla el router `main.gd` llama a `MusicManager.play_for_scene(node)`:
 
 - **Por defecto = SILENCIO (2026-06-25):** una escena SIN asignación guardada queda en **"Select..." = sin
-  música** (no reproduce). Antes, el valor por defecto se resolvía automáticamente por `Audios/<nombre-de-escena>.<ext>` — eso
+  música** (no reproduce). Antes, el valor por defecto se resolvía automáticamente por `audios/<nombre-de-escena>.<ext>` — eso
   es ahora la **opción "Default"** (override `BYNAME`), elegida por escena en el Manager.
-- **Resolución por nombre (opción "Default"):** `res://Audios/<nombre-de-escena>.<ext>` (el 1.º de `.ogg`/`.mp3`/`.wav`
-  que exista), en `_resolve_by_name`. P. ej.: `menu` → `Audios/menu.ogg`. `ALIASES` hace que `chooseplayer`
+- **Resolución por nombre (opción "Default"):** `res://audios/<nombre-de-escena>.<ext>` (el 1.º de `.ogg`/`.mp3`/`.wav`
+  que exista), en `_resolve_by_name`. P. ej.: `menu` → `audios/menu.ogg`. `ALIASES` hace que `chooseplayer`
   herede la pista de `menu`. Misma pista que la escena anterior → continúa sin reiniciar (transición suave).
-- **Bucle forzado en runtime** (`_ensure_loop`): se aplica a cualquier archivo suelto en `Audios/`,
+- **Bucle forzado en runtime** (`_ensure_loop`): se aplica a cualquier archivo suelto en `audios/`,
   aunque el import venga con `loop=false`.
 - **Online:** en las salas la escena raíz es `host_session`/`client_session`, así que su música proviene de
-  `Audios/host_session.ogg`/`client_session.ogg`. Cambiar la pista según el nivel observado dentro de una
+  `audios/host_session.ogg`/`client_session.ogg`. Cambiar la pista según el nivel observado dentro de una
   sala (su propio SubViewport) queda fuera del alcance de este autoload.
 
-Para establecer la música de una escena/nivel, basta con colocar el archivo en `res://Audios/` con el nombre de la escena.
-Pistas incluidas: `Audios/menu.ogg`. Ver `Audios/README.md` y
+Para establecer la música de una escena/nivel, basta con colocar el archivo en `res://audios/` con el nombre de la escena.
+Pistas incluidas: `audios/menu.ogg` + la biblioteca de 41 pistas NCS (Copyright Free Music) —
+eliminadas por error en el commit "limpeza" (2026-07-03) y restauradas el 2026-08-06. Ver `audios/README.md` y
 [[🎬 fluxo-de-cenas (ES)|fluxo-de-cenas]].
 
 ### 🎛️ Music Manager (Ajustes → Music → Enabled)
@@ -61,7 +62,7 @@ mismo patrón que la ventana **Template Manager** (plantillas de nivel). Así he
 y el **Debug 2D funciona sobre él** (el `FloatingWindow` se une al grupo `DebugOverlay`),
 igual que las demás ventanas flotantes. Permite:
 
-- **Escuchar** cualquier pista en `Audios/` (player de pre-escucha separado; pausa el fondo mientras suena).
+- **Escuchar** cualquier pista en `audios/` (player de pre-escucha separado; pausa el fondo mientras suena).
   Cada botón **▶ Play** tiene un **⏸ Pause** y un **⏹ Stop** al lado (2026-06-25) — tanto en la
   fila "Listen to track" como en la lista por escena. ▶ reanuda una pausa de la MISMA pista (`preview_or_resume`).
 - **Asignar** la pista de cada escena/nivel. **Todo dropdown tiene "Select..." como 1.ª opción = sin
@@ -81,7 +82,7 @@ se auto-libera al cerrarse.
 
 **Randomize + persistencia de estado (2026-06-25):** el footer tiene un botón **"🎲 Randomize tracks"**
 (en lugar del 2.º "Stop" — ya hay uno en "Listen to track") que asigna una pista **aleatoria** de
-`Audios/` a CADA escena/nivel (`set_assignment`, que persiste) y actualiza la pantalla → las elecciones
+`audios/` a CADA escena/nivel (`set_assignment`, que persiste) y actualiza la pantalla → las elecciones
 se recargan en la siguiente apertura. Cada control de la ventana **persiste al cambiar**: las asignaciones por escena
 ya se guardan vía `set_assignment`; la pista elegida en "Listen to track" ahora se guarda en
 `[music_ui] listen` y se restaura en `_refresh` (`_restore_listen_choice`).

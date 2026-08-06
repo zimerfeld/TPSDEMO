@@ -438,10 +438,10 @@ making the current choice stand out even more.
 - **Audio** — independent controls for background **Música** (the `Music` bus) and **Efeitos
   de Som** (the `SFX` bus, into which the `Outside`/`Reactor` gameplay buses route), each
   saved and applied globally. The **background music is per scene/level**, driven by the **MusicManager**
-  autoload in an **infinite loop**, switching on every screen (see `Audios/README.md`). By default a
+  autoload in an **infinite loop**, switching on every screen (see `audios/README.md`). By default a
   scene is **"Selecione…" = silent** (no music) until you assign it a track. Clicking **Música → Enabled**
   opens the **Music Manager**: listen to any track and **assign** each scene/level a specific track,
-  **"Padrão"** (resolve by the scene name, `Audios/<scene-name>.<ext>`) or **"Selecione…"** (silence);
+  **"Padrão"** (resolve by the scene name, `audios/<scene-name>.<ext>`) or **"Selecione…"** (silence);
   assignments are persisted. Each **▶ Play** button has a
   **⏸ Pause** and a **⏹ Stop** beside it (both on the "Listen" row and in the per-scene list); a **🎲 Shuffle** button assigns a
   random track to every scene/level and saves it for next time. To the right of each row
@@ -586,7 +586,7 @@ ZIMARO/
 │  ├─ weapons/           # weapons (pistola_infantil, bomb)
 │  ├─ geometry/          # shared meshes/materials (.tres)
 │  └─ textures/          # shared textures
-├─ Audios/               # per-scene/level background tracks (infinite loop; see Audios/README.md)
+├─ audios/               # per-scene/level background tracks (infinite loop; see audios/README.md)
 ├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd, …
 ├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud, music_manager
 │                        #   (Settings lives in scenes2D/settings/config.gd)

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bhgclqtygs7xj"
+path="res://.godot/imported/Unknown Brain - Say Goodbye (ft. Marvin Divine)  Trap  NCS - Copyright Free Music.mp3-2b2c8c6a55945330760a44f492558c78.mp3str"
+
+[deps]
+
+source_file="res://audios/Unknown Brain - Say Goodbye (ft. Marvin Divine)  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Unknown Brain - Say Goodbye (ft. Marvin Divine)  Trap  NCS - Copyright Free Music.mp3-2b2c8c6a55945330760a44f492558c78.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://mcy2xqbs3ltu"
+path="res://.godot/imported/Paul Flint - Savage  Dubstep  NCS - Copyright Free Music.mp3-654ff5428ea568ab37ee329c77af5fd6.mp3str"
+
+[deps]
+
+source_file="res://audios/Paul Flint - Savage  Dubstep  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Paul Flint - Savage  Dubstep  NCS - Copyright Free Music.mp3-654ff5428ea568ab37ee329c77af5fd6.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

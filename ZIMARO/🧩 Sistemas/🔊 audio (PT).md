@@ -37,19 +37,20 @@ Trilha de fundo por **nome de cena**, em **loop infinito**. O autoload `MusicMan
 troca de tela o roteador `main.gd` chama `MusicManager.play_for_scene(node)`:
 
 - **Default = SILÊNCIO (2026-06-25):** uma cena SEM atribuição salva fica em **"Selecione..." = sem
-  música** (não toca). Antes, o default resolvia automaticamente por `Audios/<nome-da-cena>.<ext>` — isso
+  música** (não toca). Antes, o default resolvia automaticamente por `audios/<nome-da-cena>.<ext>` — isso
   agora é a **opção "Padrão"** (override `BYNAME`), escolhida por cena no Gerenciador.
-- **Resolução por nome (opção "Padrão"):** `res://Audios/<nome-da-cena>.<ext>` (1ª de `.ogg`/`.mp3`/`.wav`
-  que existir), em `_resolve_by_name`. Ex.: `menu` → `Audios/menu.ogg`. `ALIASES` faz `chooseplayer`
+- **Resolução por nome (opção "Padrão"):** `res://audios/<nome-da-cena>.<ext>` (1ª de `.ogg`/`.mp3`/`.wav`
+  que existir), em `_resolve_by_name`. Ex.: `menu` → `audios/menu.ogg`. `ALIASES` faz `chooseplayer`
   herdar a trilha do `menu`. Mesma faixa da cena anterior → continua sem reiniciar (transição suave).
-- **Loop forçado em runtime** (`_ensure_loop`): vale para qualquer arquivo solto em `Audios/`,
+- **Loop forçado em runtime** (`_ensure_loop`): vale para qualquer arquivo solto em `audios/`,
   mesmo que o import venha com `loop=false`.
 - **Online:** nas salas a cena raiz é `host_session`/`client_session`, então a música delas vem de
-  `Audios/host_session.ogg`/`client_session.ogg`. Trocar a trilha pelo level observado dentro de uma
+  `audios/host_session.ogg`/`client_session.ogg`. Trocar a trilha pelo level observado dentro de uma
   sala (SubViewport próprio) está fora do escopo deste autoload.
 
-Para definir a música de uma cena/level, basta colocar o arquivo em `res://Audios/` com o nome da
-cena. Faixas inclusas: `Audios/menu.ogg`. Ver `Audios/README.md` e
+Para definir a música de uma cena/level, basta colocar o arquivo em `res://audios/` com o nome da
+cena. Faixas inclusas: `audios/menu.ogg` + a biblioteca de 41 trilhas NCS (Copyright Free Music) —
+removidas por engano no commit "limpeza" (2026-07-03) e restauradas em 2026-08-06. Ver `audios/README.md` e
 [[🎬 fluxo-de-cenas (PT)|🎬 fluxo-de-cenas]].
 
 ### Gerenciador de Música (Settings → Música → Enabled)
@@ -61,7 +62,7 @@ mesmo padrão da janela **Gerenciador de Templates** (level templates). Assim he
 projeto e o **Debug 2D funciona sobre ela** (a `FloatingWindow` entra no grupo do `DebugOverlay`),
 igual às demais janelas flutuantes. Permite:
 
-- **Ouvir** qualquer faixa de `Audios/` (player de pré-escuta separado; pausa o fundo enquanto toca).
+- **Ouvir** qualquer faixa de `audios/` (player de pré-escuta separado; pausa o fundo enquanto toca).
   Cada botão **▶ Tocar** tem ao lado um **⏸ Pausar** e um **⏹ Parar** (2026-06-25) — tanto na linha
   "Ouvir faixa" quanto na lista por cena. ▶ retoma uma pausa da MESMA faixa (`preview_or_resume`).
 - **Atribuir** a trilha de cada cena/level. **Todo dropdown tem "Selecione..." como 1ª opção = sem
@@ -81,7 +82,7 @@ fechar.
 
 **Sortear + persistência de estado (2026-06-25):** o rodapé tem um botão **"🎲 Sortear faixas"**
 (no lugar do 2º "Parar" — já há um em "Ouvir faixa") que atribui uma faixa **aleatória** de
-`Audios/` a CADA cena/level (`set_assignment`, que persiste) e atualiza a tela → as escolhas
+`audios/` a CADA cena/level (`set_assignment`, que persiste) e atualiza a tela → as escolhas
 recarregam na próxima abertura. Todo controle da janela **persiste ao mudar**: as atribuições por
 cena já gravam via `set_assignment`; a faixa escolhida no "Ouvir faixa" agora grava em
 `[music_ui] listen` e é restaurada no `_refresh` (`_restore_listen_choice`).
