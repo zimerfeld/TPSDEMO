@@ -26,7 +26,8 @@ Convenção (2026-06-16): elementos colados nas bordas da tela usam ancoragem **
     `%NomeÚnico` seguem funcionando; controls/developer/playonline/models usam o caminho
     `$UI/Actions/LangBar/...`. O botão **Voltar** também passou de `BackButton` para `Back`.
 - **Label do título** (`Title` — antes `TitleLabel` — de chooseplayer/controls/developer/levels/menu/
-  playonline/models + os `TitleCanvas/Title` dos níveis) → **`TOP_WIDE` (preset 10)**:
+  playonline/models; os níveis 3D **não têm mais** o `TitleCanvas/Title`, removido em 2026-08-06 para
+  não poluir a tela de jogo) → **`TOP_WIDE` (preset 10)**:
   `anchor_left=0`, `anchor_right=1`, `anchor_top/bottom=0`, `offset_left/right=0`, com
   `horizontal_alignment=1`. Largura toda, colado no topo, texto no centro. (O título de
   settings fica num `VBox` ancorado ao topo, então já flui correto — não é absoluto.)

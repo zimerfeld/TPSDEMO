@@ -26,7 +26,8 @@ Convención (2026-06-16): los elementos pegados a los bordes de la pantalla usan
     `%UniqueName` siguen funcionando; controls/developer/playonline/models usan la ruta
     `$UI/Actions/LangBar/...`. El botón **Back** también pasó de `BackButton` a `Back`.
 - **Etiqueta de título** (`Title` — antes `TitleLabel` — de chooseplayer/controls/developer/levels/menu/
-  playonline/models + el `TitleCanvas/Title` de los niveles) → **`TOP_WIDE` (preset 10)**:
+  playonline/models; los niveles 3D **ya no tienen** el `TitleCanvas/Title`, eliminado el 2026-08-06
+  para no ensuciar la pantalla de juego) → **`TOP_WIDE` (preset 10)**:
   `anchor_left=0`, `anchor_right=1`, `anchor_top/bottom=0`, `offset_left/right=0`, con
   `horizontal_alignment=1`. Ancho completo, pegado arriba, texto centrado. (El título de settings
   está en un `VBox` anclado arriba, así que ya fluye correctamente — no es absoluto.)
