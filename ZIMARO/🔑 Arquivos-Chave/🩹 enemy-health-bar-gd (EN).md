@@ -82,11 +82,12 @@ passes `effective_range`). Text **"Range: N m"** (EN) or **"Alcance: N m"** (PT)
 ## Triggered by
 
 1. **Hit:** `red_robot.gd.hit()` → `show_health_hud()` → `get_shared(...).show_enemy(...)`
-2. **Player aim (enters):** `player_input.gd._update_enemy_focus()` → `collider.show_health_hud()`.
-   The ray registers both the **body** and the **limb/SUB-MEMBER colliders** (layer 32); a
-   protruding sub-member (e.g.: a leg plate) resolves the owner via `meta("character")`. See
-   [[🕹️ player-input-gd (EN)|player_input.gd]].
-3. **Player aim (leaves):** `_update_enemy_focus()` calls `_focused_enemy.hide_health_hud()` → `hide_now()`
+2. **Player aim (enters):** `player_input.gd._update_enemy_focus()` → `collider.show_health_hud()`,
+   **only while aiming is ACTIVE** (`aiming`) and **only when hitting a LIMB/SUB-MEMBER** (layer 32) —
+   the locomotion capsule alone does not open the HUD. A protruding sub-member (e.g.: a leg plate)
+   resolves the owner via `meta("character")`. See [[🕹️ player-input-gd (EN)|player_input.gd]].
+3. **Player aim (leaves or is turned off):** `_update_enemy_focus()` calls `_clear_enemy_focus()` →
+   `_focused_enemy.hide_health_hud()` → `hide_now()`
 4. **Death:** `red_robot.gd` → `hide_health_hud()` → `hide_now()`
 
 Guards:
@@ -95,8 +96,9 @@ Guards:
 
 ## Visibility
 
-- **Aim:** appears when the crosshair is placed on the enemy, **disappears immediately** when the aim leaves
-  (via `_focused_enemy` tracking in `player_input.gd`).
+- **Aim:** appears when aiming (**aim active**) at a **limb/sub-member** of the enemy, and
+  **disappears immediately** when the crosshair leaves it **or aiming is turned off** (via
+  `_focused_enemy` tracking in `player_input.gd`).
 - **Hit without aiming:** the 6 s auto-hide (`AUTO_HIDE_TIME`) serves as a fallback.
 
 ---

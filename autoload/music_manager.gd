@@ -5,18 +5,22 @@ extends Node
 ## MESMA trilha, ela continua tocando sem reiniciar (transições suaves, ex.: menu → escolher personagem).
 ##
 ## Atribuição (Gerenciador de Música, na tela Settings): por DEFAULT uma cena fica em **"Selecione..."
-## = SILÊNCIO** (não toca; 2026-06-25 — antes resolvia automaticamente por `Audios/<nome-da-cena>`). O
+## = SILÊNCIO** (não toca; 2026-06-25 — antes resolvia automaticamente por `audios/<nome-da-cena>`). O
 ## jogador ATRIBUI a faixa de cada cena: um arquivo específico, **"Padrão"** (volta a resolver pelo nome
-## da cena, `Audios/<nome>.<ext>`) ou "Selecione..." (silêncio). As escolhas viram overrides persistidos
+## da cena, `audios/<nome>.<ext>`) ou "Selecione..." (silêncio). As escolhas viram overrides persistidos
 ## em Settings (seção "music"). Ver music_manager_window.gd.
 ##
-## Para definir/trocar a música por arquivo, basta colocar a faixa em `res://Audios/` com o nome da
-## cena (ex.: `Audios/menu.ogg`, `Audios/level_1.ogg`). Ver `Audios/README.md`.
+## Para definir/trocar a música por arquivo, basta colocar a faixa em `res://audios/` com o nome da
+## cena (ex.: `audios/menu.ogg`, `audios/level_1.ogg`). Ver `audios/README.md`.
+##
+## O caminho é `audios/` em MINÚSCULO, igual à pasta no disco: o PCK do .exe exportado é
+## case-sensitive e `DirAccess.open("res://audios/")` voltava null lá (lista de faixas vazia no jogo),
+## mesmo funcionando no editor do Windows.
 ##
 ## Usa o bus "Music" → respeita o mute global de música das settings (ver [[sistemas/audio]]).
 
 # Onde procurar as trilhas e a ordem de extensão testada (a 1ª que existir vence).
-const AUDIOS_DIR := "res://Audios/"
+const AUDIOS_DIR := "res://audios/"
 const EXTENSIONS := [".ogg", ".mp3", ".wav"]
 # Cenas que COMPARTILHAM a trilha de outra (sem duplicar arquivo). A tela de escolher personagem
 # mantém a música do menu tocando continuamente.
@@ -24,7 +28,7 @@ const ALIASES := {"chooseplayer": "menu"}
 # Seção do Settings onde ficam os overrides do Gerenciador de Música (scene_key -> arquivo, "" = silêncio
 # explícito, ou BYNAME = resolve pelo nome da cena). SEM chave = "Selecione..." = SILÊNCIO (default).
 const OVERRIDE_SECTION := "music"
-# Valor de override da opção "Padrão (pelo nome da cena)": toca Audios/<nome-da-cena>. Distinto de
+# Valor de override da opção "Padrão (pelo nome da cena)": toca audios/<nome-da-cena>. Distinto de
 # "sem atribuição" (que agora é SILÊNCIO, não mais o nome da cena — 2026-06-25).
 const BYNAME := "byname"
 # Cenas/levels gerenciáveis pelo Gerenciador de Música (rótulo amigável + chave = nome do arquivo da cena).
@@ -95,7 +99,7 @@ func play_key(key: String, force: bool = false) -> void:
 
 
 # Caminho da trilha de `key`: SEM atribuição = "Selecione..." = SILÊNCIO (2026-06-25, antes resolvia
-# pelo nome). Override = arquivo, "" (silêncio explícito) ou BYNAME ("Padrão" → Audios/<key>.<ext>).
+# pelo nome). Override = arquivo, "" (silêncio explícito) ou BYNAME ("Padrão" → audios/<key>.<ext>).
 func _resolve(key: String) -> String:
 	if key.is_empty():
 		return ""
@@ -110,7 +114,7 @@ func _resolve(key: String) -> String:
 	return po if ResourceLoader.exists(po) else ""
 
 
-# Trilha de `key` pelo NOME da cena (Audios/<key>.<ext>, 1ª extensão que existir) + alias. Opção "Padrão".
+# Trilha de `key` pelo NOME da cena (audios/<key>.<ext>, 1ª extensão que existir) + alias. Opção "Padrão".
 func _resolve_by_name(key: String) -> String:
 	for ext in EXTENSIONS:
 		var p: String = AUDIOS_DIR + key + ext
@@ -123,7 +127,7 @@ func _resolve_by_name(key: String) -> String:
 
 # Garante loop infinito qualquer que seja o formato. O import do .ogg já costuma vir com loop=true,
 # mas .mp3/.wav podem não — forçamos aqui para a regra "loop infinito em cada cena" valer sempre,
-# inclusive para arquivos que o usuário solte em Audios/ sem ajustar o import.
+# inclusive para arquivos que o usuário solte em audios/ sem ajustar o import.
 func _ensure_loop(stream: AudioStream) -> void:
 	if stream is AudioStreamOggVorbis:
 		(stream as AudioStreamOggVorbis).loop = true
@@ -144,7 +148,7 @@ func scene_list() -> Array:
 	return SCENES
 
 
-# Faixas disponíveis (nomes de arquivo) em Audios/. Funciona no editor E no .exe exportado: como o
+# Faixas disponíveis (nomes de arquivo) em audios/. Funciona no editor E no .exe exportado: como o
 # .ogg fonte não vai no PCK (só o import), varremos também os `.import` e confirmamos via ResourceLoader.
 func list_tracks() -> Array:
 	var out: Array = []

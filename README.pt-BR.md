@@ -112,9 +112,10 @@ em terceira pessoa. Em alto nível, oferece:
   reposicionar.
 - **HUD do inimigo** — a *boss bar* compartilhada no topo da tela mostra nome, vida e distância do
   inimigo e, quando ele possui um mecanismo de ataque/tiro, também o **alcance da arma em metros**.
-  Aparece ao **mirar no inimigo** e some assim que a mira sai dele; a mira reconhece tanto o corpo
-  quanto os **colliders de membro/sub-membro** — então apontar para um **sub-membro saliente**
-  (ex.: as placas das pernas) também exibe a vida do inimigo.
+  Só aparece com a **mira ativada** e com a mira sobre um **membro ou sub-membro** do inimigo, e
+  some assim que a mira sai dele ou a mira é desativada — passar perto do inimigo sem mirar não
+  abre mais o overlay. Qualquer **sub-membro saliente** (ex.: as placas das pernas) vale como alvo
+  e exibe a vida do inimigo.
 - **Corpo físico proporcional ao modelo** — a cápsula de locomoção (bloqueio físico entre
   personagens) é **auto-ajustada a cada modelo** a partir dos colliders de membro (raio pelo footprint
   em pé, altura pela extensão total), em vez de uma default autorada igual para todos. Continua sendo
@@ -443,10 +444,10 @@ qualidade), com o botão verde sendo a opção segura/leve. O botão **ativo** (
 - **Audio** — controles independentes para **Música** de fundo (o bus `Music`) e **Efeitos de Som**
   (o bus `SFX`, para onde os buses de gameplay `Outside`/`Reactor` são roteados), cada um salvo e
   aplicado globalmente. A **música de fundo é por cena/level**, conduzida pelo autoload **MusicManager**
-  em **loop infinito**, trocando a cada tela (ver `Audios/README.md`). Por padrão, uma cena fica em
+  em **loop infinito**, trocando a cada tela (ver `audios/README.md`). Por padrão, uma cena fica em
   **"Selecione…" = silêncio** (sem música) até você atribuir uma faixa. Ao clicar em **Música → Enabled**
   abre o **Gerenciador de Música**: ouça qualquer faixa e **atribua** a cada cena/level uma faixa
-  específica, **"Padrão"** (resolve pelo nome da cena, `Audios/<nome>.<ext>`) ou **"Selecione…"** (silêncio);
+  específica, **"Padrão"** (resolve pelo nome da cena, `audios/<nome>.<ext>`) ou **"Selecione…"** (silêncio);
   as atribuições são persistidas. Cada botão **▶ Tocar** tem ao lado um **⏸ Pausar** e um
   **⏹ Parar** (tanto na linha "Ouvir faixa" quanto na lista por cena); um botão **🎲 Sortear faixas** sorteia uma faixa
   aleatória para cada cena/level e salva para a próxima abertura. À direita de cada linha (**Música** e **Efeitos de
@@ -591,7 +592,7 @@ ZIMARO/
 │  ├─ weapons/           # armas (pistola_infantil, bomb)
 │  ├─ geometry/          # malhas/materiais compartilhados (.tres)
 │  └─ textures/          # texturas compartilhadas
-├─ Audios/               # trilhas de fundo por cena/level (loop infinito; ver Audios/README.md)
+├─ audios/               # trilhas de fundo por cena/level (loop infinito; ver audios/README.md)
 ├─ effects_shared/       # helpers entre personagens: limb_colliders.gd, body_parts.gd, …
 ├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud, music_manager
 │                        #   (Settings fica em scenes2D/settings/config.gd)

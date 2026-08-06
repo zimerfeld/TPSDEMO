@@ -99,9 +99,10 @@ disparos en tercera persona. A grandes rasgos ofrece:
   que solo se defenderían al ser amenazados.
 - **HUD de enemigos** — la *barra de jefe* compartida en la parte superior de la pantalla muestra el nombre, la salud y la distancia del enemigo y,
   cuando el enemigo tiene un mecanismo de ataque/disparo, también su **alcance de arma en metros**.
-  Aparece cuando **apuntas al enemigo** y se oculta en el momento en que tu puntería lo abandona; el rayo de puntería
-  reconoce tanto el cuerpo como los **colisionadores de miembro/submiembro** — de modo que apuntar a un **submiembro
-  sobresaliente** (p. ej. las protecciones de las piernas) también revela la salud del enemigo.
+  Solo aparece con la **puntería activada** y con la mira sobre un **miembro o submiembro** del enemigo, y se
+  oculta en el momento en que la mira lo abandona o se desactiva la puntería — pasar cerca del enemigo sin
+  apuntar ya no abre el overlay. Cualquier **submiembro sobresaliente** (p. ej. las protecciones de las
+  piernas) vale como objetivo y revela la salud del enemigo.
 - **Cuerpo físico por modelo** — la cápsula de locomoción (bloqueo físico entre personajes) se
   **ajusta automáticamente a cada modelo** a partir de sus colisionadores de miembro (radio a partir de la huella en pie, altura
   a partir de la extensión total), en lugar de un único valor por defecto creado a mano para todos. Sigue siendo una única forma barata e
@@ -430,10 +431,10 @@ haciendo que la elección actual destaque aún más.
 - **Audio** — controles independientes para la **Música** de fondo (el bus `Music`) y los **Efeitos
   de Som** (el bus `SFX`, hacia el que enrutan los buses de juego `Outside`/`Reactor`), cada uno
   guardado y aplicado globalmente. La **música de fondo es por escena/nivel**, impulsada por el autoload **MusicManager**
-  en un **bucle infinito**, cambiando en cada pantalla (ver `Audios/README.md`). Por defecto una
+  en un **bucle infinito**, cambiando en cada pantalla (ver `audios/README.md`). Por defecto una
   escena es **"Selecione…" = silenciosa** (sin música) hasta que le asignes una pista. Al hacer clic en **Música → Enabled**
   se abre el **Music Manager**: escucha cualquier pista y **asigna** a cada escena/nivel una pista específica,
-  **"Padrão"** (resolver por el nombre de la escena, `Audios/<scene-name>.<ext>`) o **"Selecione…"** (silencio);
+  **"Padrão"** (resolver por el nombre de la escena, `audios/<scene-name>.<ext>`) o **"Selecione…"** (silencio);
   las asignaciones se persisten. Cada botón **▶ Play** tiene una
   **⏸ Pause** y un **⏹ Stop** al lado (ambos en la fila "Listen" y en la lista por escena); un botón **🎲 Shuffle** asigna una
   pista aleatoria a cada escena/nivel y la guarda para la próxima vez. A la derecha de cada fila
@@ -578,7 +579,7 @@ ZIMARO/
 │  ├─ weapons/           # weapons (pistola_infantil, bomb)
 │  ├─ geometry/          # shared meshes/materials (.tres)
 │  └─ textures/          # shared textures
-├─ Audios/               # per-scene/level background tracks (infinite loop; see Audios/README.md)
+├─ audios/               # per-scene/level background tracks (infinite loop; see audios/README.md)
 ├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd, …
 ├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud, music_manager
 │                        #   (Settings lives in scenes2D/settings/config.gd)

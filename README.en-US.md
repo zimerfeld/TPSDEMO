@@ -108,9 +108,10 @@ third-person shooter sandbox. At a high level it offers:
   **smoothed** so enemies **change direction gracefully** instead of jittering while they reposition.
 - **Enemy HUD** — the shared top-screen *boss bar* shows the enemy's name, health and distance and,
   when the enemy has an attack/shooting mechanism, also its **weapon range in meters**.
-  It appears when you **aim at the enemy** and hides the moment your aim leaves it; the aim ray
-  recognizes both the body and the **limb/sub-member colliders** — so aiming at a **protruding
-  sub-member** (e.g. the leg guards) also reveals the enemy's health.
+  It only appears with **aiming active** and with the crosshair on one of the enemy's **limbs or
+  sub-members**, and hides the moment your aim leaves it or you stop aiming — so simply walking
+  past an enemy no longer pops the overlay. Any **protruding sub-member** (e.g. the leg guards)
+  counts as a valid target and reveals the enemy's health.
 - **Per-model physical body** — the locomotion capsule (physical blocking between characters) is
   **auto-fitted to each model** from its limb colliders (radius from the standing footprint, height
   from the full extent), instead of one hand-authored default for everyone. It stays a single cheap,
@@ -438,10 +439,10 @@ making the current choice stand out even more.
 - **Audio** — independent controls for background **Música** (the `Music` bus) and **Efeitos
   de Som** (the `SFX` bus, into which the `Outside`/`Reactor` gameplay buses route), each
   saved and applied globally. The **background music is per scene/level**, driven by the **MusicManager**
-  autoload in an **infinite loop**, switching on every screen (see `Audios/README.md`). By default a
+  autoload in an **infinite loop**, switching on every screen (see `audios/README.md`). By default a
   scene is **"Selecione…" = silent** (no music) until you assign it a track. Clicking **Música → Enabled**
   opens the **Music Manager**: listen to any track and **assign** each scene/level a specific track,
-  **"Padrão"** (resolve by the scene name, `Audios/<scene-name>.<ext>`) or **"Selecione…"** (silence);
+  **"Padrão"** (resolve by the scene name, `audios/<scene-name>.<ext>`) or **"Selecione…"** (silence);
   assignments are persisted. Each **▶ Play** button has a
   **⏸ Pause** and a **⏹ Stop** beside it (both on the "Listen" row and in the per-scene list); a **🎲 Shuffle** button assigns a
   random track to every scene/level and saves it for next time. To the right of each row
@@ -586,7 +587,7 @@ ZIMARO/
 │  ├─ weapons/           # weapons (pistola_infantil, bomb)
 │  ├─ geometry/          # shared meshes/materials (.tres)
 │  └─ textures/          # shared textures
-├─ Audios/               # per-scene/level background tracks (infinite loop; see Audios/README.md)
+├─ audios/               # per-scene/level background tracks (infinite loop; see audios/README.md)
 ├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd, …
 ├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud, music_manager
 │                        #   (Settings lives in scenes2D/settings/config.gd)

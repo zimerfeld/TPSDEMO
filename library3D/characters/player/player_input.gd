@@ -169,11 +169,18 @@ func _input(input_event: InputEvent) -> void:
 
 
 # Lança um raio a partir da mira: mostra o HUD do inimigo sob a mira e o
-# esconde assim que a mira sai dele. A máscara inclui a layer dos colliders de
+# esconde assim que a mira sai dele. Só funciona com a MIRA ATIVADA (aiming) e
+# quando o raio acerta um MEMBRO/SUB-MEMBRO do inimigo — andar de olho no inimigo
+# sem mirar não abre mais o overlay. A máscara inclui a layer dos colliders de
 # membro do inimigo (bit6=32) além do corpo (0b11), para que mirar num SUB-MEMBRO
 # saliente (ex.: as placas das pernas, que escapam da silhueta do corpo) também
 # acuse o inimigo. O dono é resolvido pela meta "character" do collider de membro.
 func _update_enemy_focus() -> void:
+	# Mira desativada: nenhum overlay: solta o foco atual e sai.
+	if not aiming:
+		_clear_enemy_focus()
+		return
+
 	var ch_pos: Vector2 = crosshair.position + crosshair.size * 0.5
 	var ray_from: Vector3 = camera_camera.project_ray_origin(ch_pos)
 	var ray_dir: Vector3 = camera_camera.project_ray_normal(ch_pos)
@@ -189,26 +196,44 @@ func _update_enemy_focus() -> void:
 		var dist: float = get_parent().global_position.distance_to(enemy.global_position)
 		enemy.show_health_hud(dist)
 		_focused_enemy = enemy
-	elif _focused_enemy != null:
+	else:
 		# A mira saiu do inimigo → esconde o HUD imediatamente.
-		if is_instance_valid(_focused_enemy) and _focused_enemy.has_method(&"hide_health_hud"):
-			_focused_enemy.hide_health_hud()
-		_focused_enemy = null
+		_clear_enemy_focus()
 
 
-# Resolve o inimigo sob a mira a partir do collider atingido. Dois casos: (1) o raio
-# acertou o CORPO do inimigo, que já tem show_health_hud; (2) o raio acertou um collider
-# de MEMBRO/SUB-MEMBRO (StaticBody3D passivo), que guarda o dono em meta "character".
+# Esconde o HUD do inimigo em foco (mira saiu dele ou mira foi desativada).
+func _clear_enemy_focus() -> void:
+	if _focused_enemy == null:
+		return
+	if is_instance_valid(_focused_enemy) and _focused_enemy.has_method(&"hide_health_hud"):
+		_focused_enemy.hide_health_hud()
+	_focused_enemy = null
+
+
+# Resolve o inimigo sob a mira a partir do collider atingido. O alvo válido é um collider
+# de MEMBRO/SUB-MEMBRO (StaticBody3D passivo), que guarda o dono na meta "character" —
+# acertar só a cápsula de locomoção do inimigo não conta. Exceção: inimigo que ainda não
+# construiu colliders de membro cai no corpo, senão nunca mostraria a vida.
 func _resolve_focus_enemy(collider) -> Node:
 	if collider == null:
 		return null
-	if collider.has_method(&"show_health_hud"):
-		return collider
 	if collider.has_meta(&"character"):
 		var ch = collider.get_meta(&"character")
 		if is_instance_valid(ch) and ch.has_method(&"show_health_hud"):
 			return ch
+		return null
+	if collider.has_method(&"show_health_hud") and not _has_limb_colliders(collider):
+		return collider
 	return null
+
+
+# `true` se o personagem já tem colliders de membro construídos (então o corpo não vale
+# como alvo do overlay — o acerto precisa ser num membro/sub-membro).
+func _has_limb_colliders(character: Node) -> bool:
+	var lc := character.get_node_or_null(^"LimbColliders")
+	if lc == null or not lc.has_method(&"get_limb_bodies"):
+		return false
+	return not lc.get_limb_bodies().is_empty()
 
 
 # RIDs a excluir das raycasts de mira/foco: o CORPO do próprio atirador e seus colliders de

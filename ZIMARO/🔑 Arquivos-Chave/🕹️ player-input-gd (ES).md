@@ -25,32 +25,37 @@ atualizado: 2026-07-04
 
 ## `_update_enemy_focus()`
 
-Se ejecuta cada frame en `_process` (solo en el jugador local). Lanza un rayo desde la mira y
-**rastrea** el enemigo enfocado (`var _focused_enemy: Node`):
+Se ejecuta cada frame en `_process` (solo en el jugador local). **Dos condiciones** para que el
+HUD aparezca: (1) la **puntería debe estar activada** (`aiming`) y (2) el rayo debe impactar un
+**miembro / submiembro** del enemigo. Mientras tanto **rastrea** el enemigo enfocado
+(`var _focused_enemy: Node`):
 
 ```gdscript
+if not aiming:
+    _clear_enemy_focus()   # sin puntería → ningún overlay
+    return
 # Mask 0b100011 = body (bits 1-2) + the enemy's limb colliders (bit6=32).
-var col = ...intersect_ray(ray_from, ray_from + ray_dir*1000, 0b100011, [self])
+var col = ...intersect_ray(ray_from, ray_from + ray_dir*1000, 0b100011, _aim_ray_exclude())
 var enemy = _resolve_focus_enemy(col.collider)
 if enemy:
-    enemy.show_health_hud()       # shows/updates the boss bar
+    enemy.show_health_hud(dist)   # shows/updates the boss bar
     _focused_enemy = enemy
-elif _focused_enemy != null:
-    if is_instance_valid(_focused_enemy):
-        _focused_enemy.hide_health_hud()   # aim left → hide immediately
-    _focused_enemy = null
+else:
+    _clear_enemy_focus()          # aim left the limb → hide immediately
 ```
 
-`_resolve_focus_enemy(collider)` acepta **dos** tipos de impacto:
-1. **El cuerpo del enemigo** (`CharacterBody3D`) — ya tiene `show_health_hud`.
-2. **Un colisionador de MIEMBRO / SUBMIEMBRO** (un `StaticBody3D` pasivo de los `LimbColliders`,
-   layer 32) — guarda al propietario en `meta("character")`; el HUD se resuelve a partir de él.
+`_resolve_focus_enemy(collider)` solo acepta un **colisionador de MIEMBRO / SUBMIEMBRO** (un
+`StaticBody3D` pasivo de los `LimbColliders`, layer 32), que guarda al propietario en
+`meta("character")` — impactar solo la **cápsula de locomoción** del enemigo **no** abre el HUD.
+Excepción (fallback): un enemigo que aún **no ha construido** colisionadores de miembro
+(`_has_limb_colliders()` = `false`) vale por su cuerpo, si no nunca mostraría salud.
 
 > La máscara incluye la **layer 32** (la hitbox de miembro del enemigo) además del cuerpo, de modo que apuntar
 > a un **submiembro sobresaliente** (p. ej.: las placas de las piernas del red_robot, que escapan de la
 > silueta del cuerpo y antes no registraban nada) también muestre la salud del enemigo. El jugador no se ve afectado
 > (sus miembros están en la layer 16, fuera de la máscara). El HUD desaparece en el instante en que la mira abandona
-> al enemigo. Ver [[🩹 enemy-health-bar-gd (ES)|enemy_health_bar.gd]] y [[🦿 limb-colliders-gd (ES)|limb_colliders.gd]]
+> el miembro **o en que se desactiva la puntería** (`_clear_enemy_focus()`).
+> Ver [[🩹 enemy-health-bar-gd (ES)|enemy_health_bar.gd]] y [[🦿 limb-colliders-gd (ES)|limb_colliders.gd]]
 
 ---
 

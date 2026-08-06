@@ -82,11 +82,12 @@ passa `effective_range`). Texto **"Alcance: N m"** (PT) ou **"Range: N m"** (EN)
 ## Acionado por
 
 1. **Acerto:** `red_robot.gd.hit()` → `show_health_hud()` → `get_shared(...).show_enemy(...)`
-2. **Mira do player (entra):** `player_input.gd._update_enemy_focus()` → `collider.show_health_hud()`.
-   O raio acusa tanto o **corpo** quanto os **colliders de membro/SUB-MEMBRO** (layer 32); um
-   sub-membro saliente (ex.: placa de perna) resolve o dono por `meta("character")`. Ver
-   [[🕹️ player-input-gd (PT)|🕹️ player-input-gd]].
-3. **Mira do player (sai):** `_update_enemy_focus()` chama `_focused_enemy.hide_health_hud()` → `hide_now()`
+2. **Mira do player (entra):** `player_input.gd._update_enemy_focus()` → `collider.show_health_hud()`,
+   **só com a mira ATIVADA** (`aiming`) e **só ao acertar um MEMBRO/SUB-MEMBRO** (layer 32) — a
+   cápsula de locomoção sozinha não abre o HUD. O sub-membro saliente (ex.: placa de perna) resolve
+   o dono por `meta("character")`. Ver [[🕹️ player-input-gd (PT)|🕹️ player-input-gd]].
+3. **Mira do player (sai ou desativa):** `_update_enemy_focus()` chama `_clear_enemy_focus()` →
+   `_focused_enemy.hide_health_hud()` → `hide_now()`
 4. **Morte:** `red_robot.gd` → `hide_health_hud()` → `hide_now()`
 
 Guardas:
@@ -95,8 +96,9 @@ Guardas:
 
 ## Visibilidade
 
-- **Mira:** aparece ao colocar a mira no inimigo, **some imediatamente** ao tirar a mira
-  (via rastreamento `_focused_enemy` em `player_input.gd`).
+- **Mira:** aparece ao mirar (**mira ativada**) num **membro/sub-membro** do inimigo e **some
+  imediatamente** ao sair dele **ou ao desativar a mira** (rastreamento `_focused_enemy` em
+  `player_input.gd`).
 - **Acerto sem mirar:** o auto-hide de 6 s (`AUTO_HIDE_TIME`) serve de fallback.
 
 ---
