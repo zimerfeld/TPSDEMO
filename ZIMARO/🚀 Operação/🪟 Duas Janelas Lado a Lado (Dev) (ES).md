@@ -45,7 +45,7 @@ Dos piezas:
 | `address=<host>` | IP/dominio del servidor, solo en `autojoin` (por defecto `127.0.0.1`) |
 | `level=<1\|2\|res://…>` | level de la sala creada por `autohost` (por defecto `1`) |
 | `template=<id\|nombre>` | plantilla de personajes activada en la sala; casa por el **id exacto** o por un trozo del **nombre** (sin acentos/mayúsculas — `aerea` encuentra "Caça aérea"). `none` la limpia; vacío mantiene la activa |
-| `delay=<seg>` | espera antes del 1er intento de conexión (por defecto `6`) |
+| `delay=<seg>` | **cliente:** espera antes del 1er intento de conexión (por defecto `6`). **host:** pausa entre rellenar los campos y alojar (por defecto `5`), **solo en builds de depuración** — ver abajo |
 | `retries=<n>` | intentos extra, cada 2 s (por defecto `15`) |
 | `player=<nombre>` | nombre del jugador de esta instancia (**no** persiste en Settings) |
 | `win=<x,y,w,h>` | posiciona/dimensiona la ventana en píxeles de pantalla |
@@ -75,6 +75,20 @@ aliado**). Con `-Template`, el autopiloto activa la plantilla **antes** del `sta
 aplica los personajes) — puedes ver la [[🎮 player (ES)|postura de seguridad]] del aliado desde la
 rejilla del host (**Observar**) o entrando en la sala. Solo el **host** recibe `template=`: es quien
 crea la sala.
+
+### Pausa del host (solo en depuración)
+
+Antes de alojar, la pantalla **Jugar Online** del host se queda **5 s** con los parámetros ya
+rellenados — tiempo para comprobar el nombre, el puerto y las opciones de optimización antes de que
+cambie a la sesión de salas (`Autopilot.host_preview_delay` → `HOST_PREVIEW_DELAY_SEC`). Pasar
+`delay=` sobrescribe el valor.
+
+**No existe en release**: `OS.is_debug_build()` es falso en el `.exe` exportado y la pausa pasa a `0`,
+así que un servidor de producción arranca al instante. Es apoyo a la revisión visual, no
+comportamiento del juego.
+
+El campo **IP/Dominio** del host va **vacío** a propósito: `create_server` usa solo el puerto, y dejar
+ahí la última IP sugeriría que se usa para alojar (no es así — solo el cliente la consume).
 
 ### Pausa de comprobación
 

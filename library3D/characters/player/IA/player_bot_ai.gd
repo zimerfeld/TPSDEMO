@@ -76,6 +76,11 @@ var _prev_anchor: Node3D = null
 # Outros aliados por perto (exceto a âncora) — recalculado no scan; usado na separação anti-empilhamento.
 var _allies: Array[Node3D] = []
 var _orbit_sign := 1.0
+# Posto de origem: onde o bot foi spawnado. É o que ele guarda quando NÃO há ninguém para escoltar
+# (host observando, sala antes de o jogador entrar, jogador que saiu). Sem isto ele caía no combate
+# livre e avançava no inimigo — "correndo em direção à morte".
+var _home := Vector3.ZERO
+var _home_set := false
 # True enquanto o aliado está ASSENTADO no posto (ver settle_release): a histerese que separa o
 # limiar de chegar do de sair, evitando o tremor de quem corrige a posição a cada quadro.
 var _settled := false
@@ -106,6 +111,9 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 	if bot == null or input == null or not bot.is_inside_tree():
 		return
 	_bot = bot
+	if not _home_set:
+		_home = bot.global_position
+		_home_set = true
 	_scan_cd -= delta
 	_flank_time = maxf(0.0, _flank_time - delta)
 	if _scan_cd <= 0.0:
@@ -142,6 +150,13 @@ func update_input(bot: CharacterBody3D, input: PlayerInputSynchronizer, delta: f
 		should_aim = true
 		should_shoot = bot_pos.distance_to(_target.global_position) <= weapon_range \
 			and _has_line_of_fire(bot, aim_point)
+	elif not has_anchor and behavior_enabled(BEHAVIOR_GUARD_STANCE):
+		# Sem ninguém para escoltar: guarda o posto de origem (volta se derivou) em vez de vagar.
+		move_dir = _hold_move(bot_pos)
+		if _is_valid_enemy(_target):
+			aim_point = _target.global_position + Vector3.UP
+		else:
+			aim_point = bot_pos + _flat_or_forward(move_dir, -bot.global_transform.basis.z) * 20.0 + Vector3.UP
 	elif has_anchor:
 		# Sem ameaça engajável: dá cobertura ao player (segue e mantém-se por perto).
 		move_dir = _follow_move(bot_pos, anchor_pos)
@@ -199,11 +214,12 @@ func _combat_move(origin: Vector3, target_position: Vector3, anchor_position: Ve
 		return Vector3.ZERO
 	var forward := to_target.normalized()
 	var move := Vector3.ZERO
-	# Postura de segurança: o aliado NÃO avança para cima do inimigo — segura o posto ao lado do
-	# protegido e atira dali. Só recua se o inimigo colar (`combat_spacing`). Sem investida e sem
-	# flanco, é o que separa uma escolta de um caçador.
-	if behavior_enabled(BEHAVIOR_GUARD_STANCE) and has_anchor and _is_valid_anchor(_anchor):
-		move = _guard_move(origin, _anchor)
+	# Postura de segurança: o aliado NÃO avança para cima do inimigo — segura o posto e atira dali.
+	# Só recua se o inimigo colar (`combat_spacing`). Sem investida e sem flanco, é o que separa uma
+	# escolta de um caçador. O posto é ao lado do protegido; SEM protegido (host observando, sala
+	# vazia, jogador que saiu), é o lugar onde ele nasceu — e não uma corrida atrás do inimigo.
+	if behavior_enabled(BEHAVIOR_GUARD_STANCE):
+		move = _guard_move(origin, _anchor) if (has_anchor and _is_valid_anchor(_anchor)) else _hold_move(origin)
 		if behavior_enabled(BEHAVIOR_COMBAT_SPACING) and distance < preferred_combat_distance - combat_band:
 			move -= forward
 		return move.normalized() if move.length() > 0.01 else Vector3.ZERO
@@ -274,6 +290,19 @@ func _guard_move(origin: Vector3, anchor: Node3D) -> Vector3:
 		_settled = true
 		return Vector3.ZERO
 	return to_station.normalized()
+
+
+# Sem protegido: guarda o LUGAR onde nasceu. Volta ao posto se derivou (o empurrão de separação e o
+# recuo de combate deslocam um pouco) e para ao chegar, com a mesma histerese do posto de escolta.
+# É esta função que impede o aliado de sair caçando quando não há quem escoltar.
+func _hold_move(origin: Vector3) -> Vector3:
+	if not _home_set:
+		return Vector3.ZERO
+	var to_home := _home - origin
+	to_home.y = 0.0
+	if to_home.length() <= station_tolerance * settle_release:
+		return Vector3.ZERO
+	return to_home.normalized()
 
 
 # O posto, sempre a `follow_distance` do protegido — o que muda é o LADO:
