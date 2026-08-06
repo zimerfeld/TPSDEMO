@@ -20,6 +20,9 @@ const BOMB_GRAVITY := 18.0   # deve casar com bomb.gd (fall_gravity)
 @export var bob_amplitude := 0.6       ## m de subida/descida suave em cruzeiro
 @export var bob_freq := 0.6
 @export var bank_max := 0.45
+## Suavização (1/s) do RUMO horizontal: a direção decidida pela IA entra gradualmente, em vez de
+## virar de golpe a cada varredura. Menor = voo mais pesado/suave. Ver _physics_process.
+@export var move_dir_response := 3.5
 
 @export_group("Bombas")
 @export var bomb_damage := 50          ## HP tirado do player por bomba
@@ -36,6 +39,8 @@ enum Phase { CLIMB, PATROL }
 var _t := 0.0
 var _bob_phase := 0.0  # fase inicial individual do bob (criaturas não oscilam em sincronia)
 var _yaw := 0.0
+# Rumo horizontal suavizado entre quadros (ver move_dir_response).
+var _horiz_smooth := Vector3.ZERO
 var _phase := Phase.CLIMB
 var _bomb_cd := 0.0
 var _scan_cd := 0.0
@@ -149,6 +154,17 @@ func _physics_process(delta: float) -> void:
 		vy = bob_amplitude * bob_freq * cos(_t * bob_freq) + (desired_altitude - global_position.y) * 0.6
 		# Teto de taxa vertical → a troca de camada (descer p/ mirar / subir p/ escapar) fica suave.
 		vy = clampf(vy, -climb_speed * 1.6, climb_speed * 1.6)
+
+	# ---- rumo horizontal SUAVIZADO (mesmo remédio do `move_dir_response` do red_robot)
+	# A IA troca de plano a qualquer momento (raio/sentido da órbita, evasão, corrida de pressão).
+	# Aplicado cru, isso vira de GOLPE a cada varredura e o voo fica tremido e repetitivo. Aqui a
+	# direção entra gradualmente; a VELOCIDADE decidida pela IA é preservada.
+	var speed := horiz.length()
+	if speed > 0.05:
+		var w: float = 1.0 - exp(-maxf(move_dir_response, 0.01) * delta)
+		_horiz_smooth = _horiz_smooth.lerp(horiz.normalized(), w)
+		if _horiz_smooth.length() > 0.01:
+			horiz = _horiz_smooth.normalized() * speed
 
 	# ---- orientação (frente -Z aponta para onde voa) + banking ao curvar
 	if horiz.length() > 0.05:

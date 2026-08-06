@@ -14,6 +14,9 @@ extends Node
 ## (o nó do nível é renomeado para "Level" nos dois lados para o caminho casar).
 
 signal rooms_changed
+# Sala terminou de se povoar: todas as entidades do template já estão na árvore, nas suas
+# coordenadas. É o marco que libera o spawn do jogador (ver _ensure_template_spawned).
+signal room_populated(room_id: int)
 # Servidor → cliente: a sala em que o cliente jogava foi PARADA (botão Parar). A ClientSession
 # escuta isto para voltar ao navegador com o aviso "O nível foi parado pelo host".
 signal room_closed(room_id: int)
@@ -44,6 +47,9 @@ const PEER_TIMEOUT_MAX_MS: int = 40000
 # Câmera livre p/ o host OBSERVAR cada sala (não replicada — filha do nível, fora do SpawnedNodes).
 const SpectatorCamera: PackedScene = preload("res://scenes3D/spectator_camera/spectator_camera.tscn")
 const DEFAULT_VARIANT: int = 0
+# Teto (s) da espera pelo povoamento da sala. Uma sala parada no meio do spawn não pode deixar o
+# jogador preso na tela de Carregando — passado o teto, ele entra assim mesmo.
+const TEMPLATE_READY_TIMEOUT_SEC: float = 15.0
 
 # Cada sala: { id, level_path, viewport, level, spawned_nodes, spawn_points, spawn_queue, pending,
 #             template_applied }
@@ -126,7 +132,10 @@ func _instantiate_room(id: int, level_path: String, as_subviewport: bool) -> voi
 	_rooms.append({
 		"id": id, "level_path": level_path, "viewport": container, "level": level,
 		"spawned_nodes": null, "spawn_points": null, "spawn_queue": [], "pending": {},
-		"template_applied": false,  # template aplicado lazy no 1º peer (ver _ensure_template_spawned)
+		# template_applied = materialização DISPARADA; template_ready = TERMINADA (todas as entidades
+		# na árvore). Quem entra na sala espera o `ready`, não o `applied`. Ver _ensure_template_spawned.
+		"template_applied": false,
+		"template_ready": false,
 	})
 	container.add_child(level)
 
@@ -242,18 +251,62 @@ func _on_room_child_entered(node: Node, room_id: int) -> void:
 # mesmo com vários peers entrando aos poucos. Sem template ativo, é um no-op (a sala segue vazia).
 func _ensure_template_spawned(room_id: int) -> void:
 	var room := get_room(room_id)
-	if room.is_empty() or bool(room.get("template_applied", false)):
+	if room.is_empty() or bool(room.get("template_ready", false)):
+		return
+	# Outro peer já está materializando esta sala: ESPERA a mesma conclusão em vez de seguir em frente
+	# (senão o 2º a entrar nasceria no meio do povoamento, que é justamente o que queremos evitar).
+	if bool(room.get("template_applied", false)):
+		await _await_template_ready(room_id)
 		return
 	room["template_applied"] = true
 	var spawned: Node3D = room.get("spawned_nodes")
 	if not is_instance_valid(spawned):
+		room["template_ready"] = true
 		return
 	var level_path := String(room.get("level_path", ""))
 	# Spawn GRADUAL (1 entidade por frame de física): materializar 16+ entidades no mesmo frame dava um
 	# pico de stall no cliente (shader + LimbColliders) que congelava os inimigos e podia derrubar a
 	# conexão em hardware fraco. Espalhado, o cliente recebe as entidades sem pico. Ver apply_active_gradual.
-	CharacterTemplateManager.apply_active_gradual(level_path, spawned, 1)
-	SceneryTemplateManager.apply_active_gradual(level_path, spawned, 1)
+	#
+	# O `await` é o que garante a regra "a sala carrega INTEIRA antes de liberar o player": quem chama
+	# (join_room / host_spawn_in_room) só spawna o jogador depois que todas as entidades do template
+	# estão na árvore, nas suas coordenadas. O custo é de alguns frames, cobertos pela tela de
+	# Carregando. Ver [[LoadingScreen]] / [[sistemas/salas]].
+	await CharacterTemplateManager.apply_active_gradual(level_path, spawned, 1)
+	await SceneryTemplateManager.apply_active_gradual(level_path, spawned, 1)
+	var current := get_room(room_id)
+	if not current.is_empty():
+		current["template_ready"] = true
+	room_populated.emit(room_id)
+
+
+# Espera a sala terminar de se povoar (quando OUTRO peer disparou a materialização). Timeout de
+# segurança: sem ele, uma sala parada no meio do spawn deixaria o jogador presto no Carregando.
+func _await_template_ready(room_id: int) -> void:
+	var waited := 0.0
+	while waited < TEMPLATE_READY_TIMEOUT_SEC:
+		var room := get_room(room_id)
+		if room.is_empty() or bool(room.get("template_ready", false)):
+			return
+		await get_tree().physics_frame
+		waited += get_physics_process_delta_time()
+
+
+# True quando o player de `peer_id` já existe na sala (no espelho local). É o sinal de "pode revelar"
+# das telas de Carregando: como o servidor só spawna o jogador DEPOIS de povoar a sala, e o spawn das
+# entidades vai no mesmo canal confiável e ordenado, ver o próprio player implica que o cenário já
+# chegou inteiro.
+func room_is_populated(room_id: int) -> bool:
+	var room := get_room(room_id)
+	return not room.is_empty() and bool(room.get("template_ready", false))
+
+
+func player_ready_in_room(room_id: int, peer_id: int) -> bool:
+	var room := get_room(room_id)
+	if room.is_empty():
+		return false
+	var spawned: Node3D = room.get("spawned_nodes")
+	return is_instance_valid(spawned) and spawned.has_node(str(peer_id))
 
 
 # Interest management: o nó (e seus sub-nós) só é replicado (spawn + sync) para peers QUE ESTÃO
@@ -385,10 +438,22 @@ func join_room(room_id: int, variant_id: int, player_name: String = "") -> void:
 	if get_room(room_id).is_empty():
 		return
 	_peer_room[sender] = room_id
+	# Registra a visibilidade deste peer ANTES de povoar: assim cada entidade do template já nasce
+	# replicando para ele, na ordem em que é criada. Sem isto, o peer entrava no meio do povoamento e
+	# chegava a receber sync de sub-nós (ex.: as peças de morte do red_robot) cujo spawn ele ainda não
+	# tinha processado — "Node not found ... MultiplayerSynchronizer" no cliente.
+	_refresh_room_visibility(room_id)
 	# Há gente na sala agora → materializa o template (1ª vez) pelo caminho protegido, ANTES de
 	# reavaliar a visibilidade: os nós herdam o filtro da sala (child_entered_tree) e passam a
 	# replicar só para os peers desta sala — que já têm o espelho pronto.
-	_ensure_template_spawned(room_id)
+	#
+	# O `await` segura o spawn do jogador até a sala estar INTEIRA (todas as entidades do template nas
+	# suas coordenadas). Depois dele o mundo pode ter mudado, então revalidamos tudo abaixo.
+	await _ensure_template_spawned(room_id)
+	if get_room(room_id).is_empty():
+		return  # sala parada durante o povoamento
+	if int(_peer_room.get(sender, -1)) != room_id or not (sender in multiplayer.get_peers()):
+		return  # peer saiu (ou trocou de sala) enquanto esperava
 	# Reavalia a visibilidade: o que JÁ existe na sala (template/inimigos) passa a replicar p/ este peer.
 	_refresh_room_visibility(room_id)
 	_reserve_and_spawn(sender, room_id, variant_id, player_name)
@@ -520,6 +585,15 @@ func host_spawn_in_room(room_id: int, variant_id: int) -> void:
 		cam.set_process_input(false)
 	if spawned.has_node("1"):
 		return
+	# Mesma regra do cliente: o host só nasce depois de a sala estar INTEIRA montada. Revalida tudo
+	# depois da espera — a sala pode ter sido parada e o host pode ter desistido nesse meio-tempo.
+	await _ensure_template_spawned(room_id)
+	room = get_room(room_id)
+	if room.is_empty():
+		return
+	spawned = room.get("spawned_nodes")
+	if not is_instance_valid(spawned) or spawned.has_node("1"):
+		return
 	var marker: Node3D = _take_point(room)
 	var scene: PackedScene = load(PlayerSelection.variant_scene_path(variant_id)) as PackedScene
 	if scene == null:
@@ -532,7 +606,6 @@ func host_spawn_in_room(room_id: int, variant_id: int) -> void:
 		player.transform = marker.transform
 		player.spawn_position = marker.transform.origin
 	_peer_room[1] = room_id
-	_ensure_template_spawned(room_id)  # host jogando = gente na sala → materializa o template (1ª vez)
 	spawned.add_child(player)  # child_entered_tree → aplica a visibilidade da sala
 	# Reforça a câmera do player como current no SubViewport (apply_authority já faz no _ready;
 	# isto garante contra qualquer outra câmera que tenha ficado current no World3D da sala).

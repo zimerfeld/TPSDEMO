@@ -120,6 +120,26 @@ catch** this: it runs in `_process` (not even called during the stalled frame) a
   `TemplateManagerBase.apply_active_gradual()` (refactored `_apply_template` into `_plan_template`
   [skips the dead path via `ResourceLoader.exists`] + `_spawn_job`), used by
   `RoomManager._ensure_template_spawned`.
+
+  > **The room loads FULLY before releasing the player (2026-08-06).** The gradual spawn was fired and
+  > **abandoned** (`_ensure_template_spawned` without `await`): the player spawned mid-population and
+  > watched the entities pop in one by one. Now `_ensure_template_spawned` is a coroutine that waits
+  > for the gradual spawn to finish and flags `template_ready` on the room (signal `room_populated`);
+  > **`join_room` (client) and `host_spawn_in_room` (host) `await` it before spawning the player** —
+  > and re-validate everything afterwards, since the room may have been stopped meanwhile. Anyone
+  > arriving while another peer is already populating waits for the same completion
+  > (`_await_template_ready`), capped by `TEMPLATE_READY_TIMEOUT_SEC` (15 s) so nobody ever gets stuck.
+  >
+  > The peer's **visibility is registered BEFORE the population**: that way every entity is born
+  > replicating to them, in creation order. Without it the client received sync for sub-nodes (the
+  > red_robot's death parts) whose spawn it hadn't processed yet — `Node not found …
+  > MultiplayerSynchronizer` (observed and fixed on 2026-08-06).
+  >
+  > On the UI side, `LoadingScreen.cover()` gained an optional **`ready_check`**: the loading screen
+  > only reveals once it returns true. The client waits for its **own player** to show up in the
+  > mirror (`RoomManager.player_ready_in_room`) — since the server only spawns it after populating,
+  > seeing it implies a complete scene; a host who **plays** waits for peer 1, and a host who
+  > **observes** waits for `room_is_populated`.
 - **TOLERANT ENet timeout** (limit 32, min 20 s, max 40 s) applied to each peer that connects —
   `RoomManager._apply_peer_timeout` in `_on_peer_connected` — a render stall no longer drops the
   connection. *(Validated in the harness: a 3.7 s stall did NOT drop and the sync recovered.)*
