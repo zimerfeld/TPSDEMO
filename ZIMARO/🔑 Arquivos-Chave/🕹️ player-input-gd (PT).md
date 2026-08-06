@@ -25,32 +25,37 @@ atualizado: 2026-07-04
 
 ## `_update_enemy_focus()`
 
-Roda a cada frame no `_process` (apenas no player local). Lança um raio da mira e
-**rastreia** o inimigo focado (`var _focused_enemy: Node`):
+Roda a cada frame no `_process` (apenas no player local). **Duas condições** para o HUD
+aparecer: (1) a **mira precisa estar ativada** (`aiming`) e (2) o raio precisa acertar um
+**membro / sub-membro** do inimigo. Enquanto isso, **rastreia** o inimigo focado
+(`var _focused_enemy: Node`):
 
 ```gdscript
+if not aiming:
+    _clear_enemy_focus()   # mira desligada → nenhum overlay
+    return
 # Máscara 0b100011 = corpo (bits 1-2) + colliders de membro do inimigo (bit6=32).
-var col = ...intersect_ray(ray_from, ray_from + ray_dir*1000, 0b100011, [self])
+var col = ...intersect_ray(ray_from, ray_from + ray_dir*1000, 0b100011, _aim_ray_exclude())
 var enemy = _resolve_focus_enemy(col.collider)
 if enemy:
-    enemy.show_health_hud()       # mostra/atualiza a boss bar
+    enemy.show_health_hud(dist)   # mostra/atualiza a boss bar
     _focused_enemy = enemy
-elif _focused_enemy != null:
-    if is_instance_valid(_focused_enemy):
-        _focused_enemy.hide_health_hud()   # mira saiu → esconde imediatamente
-    _focused_enemy = null
+else:
+    _clear_enemy_focus()          # mira saiu do membro → esconde imediatamente
 ```
 
-`_resolve_focus_enemy(collider)` aceita **dois** tipos de acerto:
-1. **Corpo do inimigo** (`CharacterBody3D`) — já tem `show_health_hud`.
-2. **Collider de MEMBRO / SUB-MEMBRO** (`StaticBody3D` passivo dos `LimbColliders`,
-   layer 32) — guarda o dono em `meta("character")`; o HUD é resolvido por ela.
+`_resolve_focus_enemy(collider)` só aceita **collider de MEMBRO / SUB-MEMBRO**
+(`StaticBody3D` passivo dos `LimbColliders`, layer 32), que guarda o dono em
+`meta("character")` — acertar apenas a **cápsula de locomoção** do inimigo **não** abre o HUD.
+Exceção (fallback): inimigo que ainda **não construiu** colliders de membro
+(`_has_limb_colliders()` = `false`) vale pelo corpo, senão nunca mostraria vida.
 
 > A máscara inclui a **layer 32** (hitbox de membro do inimigo) além do corpo, para que mirar
 > num **sub-membro saliente** (ex.: as placas das pernas do red_robot, que escapam da silhueta
 > do corpo e antes não acusavam nada) também exiba a vida do inimigo. O player não é afetado
 > (seus membros ficam na layer 16, fora da máscara). O HUD some no instante em que a mira deixa
-> o inimigo. Ver [[🩹 enemy-health-bar-gd (PT)|🩹 enemy-health-bar-gd]] e [[🦿 limb-colliders-gd (PT)|🦿 limb-colliders-gd]]
+> o membro **ou em que a mira é desativada** (`_clear_enemy_focus()`).
+> Ver [[🩹 enemy-health-bar-gd (PT)|🩹 enemy-health-bar-gd]] e [[🦿 limb-colliders-gd (PT)|🦿 limb-colliders-gd]]
 
 ---
 

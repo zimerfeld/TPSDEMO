@@ -99,9 +99,10 @@ disparos en tercera persona. A grandes rasgos ofrece:
   que solo se defenderían al ser amenazados.
 - **HUD de enemigos** — la *barra de jefe* compartida en la parte superior de la pantalla muestra el nombre, la salud y la distancia del enemigo y,
   cuando el enemigo tiene un mecanismo de ataque/disparo, también su **alcance de arma en metros**.
-  Aparece cuando **apuntas al enemigo** y se oculta en el momento en que tu puntería lo abandona; el rayo de puntería
-  reconoce tanto el cuerpo como los **colisionadores de miembro/submiembro** — de modo que apuntar a un **submiembro
-  sobresaliente** (p. ej. las protecciones de las piernas) también revela la salud del enemigo.
+  Solo aparece con la **puntería activada** y con la mira sobre un **miembro o submiembro** del enemigo, y se
+  oculta en el momento en que la mira lo abandona o se desactiva la puntería — pasar cerca del enemigo sin
+  apuntar ya no abre el overlay. Cualquier **submiembro sobresaliente** (p. ej. las protecciones de las
+  piernas) vale como objetivo y revela la salud del enemigo.
 - **Cuerpo físico por modelo** — la cápsula de locomoción (bloqueo físico entre personajes) se
   **ajusta automáticamente a cada modelo** a partir de sus colisionadores de miembro (radio a partir de la huella en pie, altura
   a partir de la extensión total), en lugar de un único valor por defecto creado a mano para todos. Sigue siendo una única forma barata e
