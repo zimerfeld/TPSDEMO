@@ -21,10 +21,11 @@ const AIM_TIME: float = 1.0
 const AIM_PREPARE_TIME: float = 0.5
 const BLEND_AIM_SPEED: float = 0.05
 
-# Aparência da bala de canhão do red_robot (CannonShooter): bola PRETA grande (calibre) com
-# rastro/flash VERMELHO — o mesmo bullet do player, recolorido.
+# Aparência da bala de canhão do red_robot (CannonShooter): bola VERMELHA grande (calibre)
+# com rastro/flash VERMELHO — o mesmo bullet do player, recolorido.
+# A bola usa material unshaded: valores > 1 dão o brilho HDR (mesmo truque do azul do player).
 const BULLET_TINT := Color(1.0, 0.12, 0.12)            # cor do efeito (luz + rastro)
-const BULLET_BALL_COLOR := Color(0.03, 0.03, 0.03, 1)  # bola preta
+const BULLET_BALL_COLOR := Color(1.50196, 0.14902, 0.14902, 1)  # bola vermelha (glow)
 const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 
 @export var test_shoot: bool = false
