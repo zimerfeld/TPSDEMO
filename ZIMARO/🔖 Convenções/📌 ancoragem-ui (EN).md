@@ -26,7 +26,8 @@ Convention (2026-06-16): elements glued to the screen edges use **`*_WIDE`** anc
     `%UniqueName` keep working; controls/developer/playonline/models use the path
     `$UI/Actions/LangBar/...`. The **Back** button also went from `BackButton` to `Back`.
 - **Title label** (`Title` — before `TitleLabel` — of chooseplayer/controls/developer/levels/menu/
-  playonline/models + the levels' `TitleCanvas/Title`) → **`TOP_WIDE` (preset 10)**:
+  playonline/models; the 3D levels **no longer have** the `TitleCanvas/Title`, removed on 2026-08-06
+  to keep the gameplay screen clean) → **`TOP_WIDE` (preset 10)**:
   `anchor_left=0`, `anchor_right=1`, `anchor_top/bottom=0`, `offset_left/right=0`, with
   `horizontal_alignment=1`. Full width, stuck to the top, text centered. (The settings
   title sits in a `VBox` anchored to the top, so it already flows correctly — it's not absolute.)
