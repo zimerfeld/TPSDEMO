@@ -150,6 +150,7 @@ correr sem direção.
 | **Para ao chegar, com histerese** | Chega ao posto com `station_tolerance` (0,6 m) e só volta a andar quando ele se afasta `× settle_release` (2.2 → ≈1,3 m). A zona morta pequena dá reação; a histerese evita o tremor de corrigir a cada quadro. `scan_interval` 0.35 → **0.2 s** para perceber a ameaça mudar de lado mais rápido. |
 | **Nunca encosta** | Abaixo de `min_standoff` (1,8 m) o único movimento possível é **recuar** — mesmo com a exceção de colisão física ativa. |
 | **Não avança no inimigo** | Em combate, `_combat_move` devolve o mesmo movimento de posto; só recua se o inimigo passar de `preferred_combat_distance - combat_band`. Sem investida e **sem flanco** (`pressure_flank` fica suprimido nesta postura). |
+| **Sem protegido, guarda o posto de origem** (2026-08-06) | `_hold_move` mantém o lugar onde o bot nasceu (`_home`, capturado no 1º `update_input`): volta se derivou, para ao chegar, mesma histerese. **Bug corrigido:** toda a postura dependia de `has_anchor`, e a âncora exige um **humano** (`_find_nearest_human_ally` ignora bots) — logo, com o host observando como espectador, na sala antes de o jogador entrar, ou depois de ele sair, o código caía no ramo antigo (avançar + flanquear) e o aliado **corria para cima do inimigo até morrer**. Agora, sem quem escoltar, ele guarda o posto e atira dali. |
 
 **Números recalibrados junto** (defaults dos `@export`): `follow_distance` 5.5 → **2,5** m ·
 `orbit_strength` 0.7 → **0.15** · `preferred_combat_distance` 18 → **12** m · `engage_range` 32 →
