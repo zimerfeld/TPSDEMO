@@ -45,7 +45,7 @@ Two pieces:
 | `address=<host>` | server IP/domain, `autojoin` only (default `127.0.0.1`) |
 | `level=<1\|2\|res://…>` | level of the room created by `autohost` (default `1`) |
 | `template=<id\|name>` | character template activated in the room; matches the **exact id** or a chunk of the **name** (accent/case-insensitive — `aerea` finds "Caça aérea"). `none` clears it; empty keeps whatever is active |
-| `delay=<sec>` | wait before the 1st connection attempt (default `6`) |
+| `delay=<sec>` | **client:** wait before the 1st connection attempt (default `6`). **host:** pause between filling the fields and hosting (default `5`), **debug builds only** — see below |
 | `retries=<n>` | extra attempts, every 2 s (default `15`) |
 | `player=<name>` | player name for this instance (**not** persisted to Settings) |
 | `win=<x,y,w,h>` | positions/sizes the window in screen pixels |
@@ -75,6 +75,19 @@ With `-Template`, the autopilot activates the template **before** `start_room` (
 the characters) — you can watch the ally's [[🎮 player (EN)|guard stance]] straight from the host
 grid (**Observe**) or by joining the room. Only the **host** gets `template=`: it's the one creating
 the room.
+
+### Host pause (debug only)
+
+Before hosting, the host's **Play Online** screen sits for **5 s** with the parameters already filled
+in — time to check the name, port and optimization options before it swaps to the rooms session
+(`Autopilot.host_preview_delay` → `HOST_PREVIEW_DELAY_SEC`). Passing `delay=` overrides the value.
+
+It **doesn't exist in release**: `OS.is_debug_build()` is false in the exported `.exe` and the pause
+becomes `0`, so a production server comes up immediately. It supports visual review, it isn't game
+behavior.
+
+The host's **IP/Domain** field is left **empty** on purpose: `create_server` uses the port only, and
+leaving the last IP there would suggest it's used for hosting (it isn't — only the client consumes it).
 
 ### Review pause
 

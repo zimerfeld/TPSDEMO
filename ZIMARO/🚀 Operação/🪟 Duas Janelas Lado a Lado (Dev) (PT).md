@@ -45,7 +45,7 @@ Duas peças:
 | `address=<host>` | IP/domínio do servidor, só no `autojoin` (padrão `127.0.0.1`) |
 | `level=<1\|2\|res://…>` | level da sala criada pelo `autohost` (padrão `1`) |
 | `template=<id\|nome>` | template de personagens ativado na sala; casa pelo **id exato** ou por um trecho do **nome** (sem acento/maiúsculas — `aerea` acha "Caça aérea"). `none` limpa; vazio mantém o ativo |
-| `delay=<seg>` | espera antes da 1ª tentativa de conexão (padrão `6`) |
+| `delay=<seg>` | **cliente:** espera antes da 1ª tentativa de conexão (padrão `6`). **host:** pausa entre preencher os campos e hospedar (padrão `5`), **só em build de depuração** — ver abaixo |
 | `retries=<n>` | tentativas extras, de 2 em 2 s (padrão `15`) |
 | `player=<nome>` | nome do jogador desta instância (**não** persiste em Settings) |
 | `win=<x,y,w,h>` | posiciona/dimensiona a janela em pixels de tela |
@@ -74,6 +74,18 @@ O Level 2 tem o template padrão **"Level 2 - Caça aérea"** (2 criaturas hosti
 Com o `-Template`, o autopilot ativa o template **antes** do `start_room` (é ele quem aplica os
 personagens) — dá para observar a [[🎮 player (PT)|postura de segurança]] do aliado direto da grade
 do host (**Observar**) ou entrando na sala. Só o **host** recebe `template=`: é ele quem cria a sala.
+
+### Pausa do host (só em depuração)
+
+Antes de hospedar, a tela **Jogar Online** do host fica **5 s** com os parâmetros já preenchidos —
+tempo de conferir nome, porta e as opções de otimização antes de ela trocar pela sessão de salas
+(`Autopilot.host_preview_delay` → `HOST_PREVIEW_DELAY_SEC`). Passar `delay=` sobrepõe o valor.
+
+Ela **não existe em release**: `OS.is_debug_build()` é falso no `.exe` exportado e a pausa vira `0`,
+então o servidor de produção sobe na hora. É apoio a acompanhamento visual, não comportamento do jogo.
+
+O campo **IP/Domínio** do host vai **vazio** de propósito: o `create_server` usa só a porta, e deixar
+o último IP ali sugeriria que ele é usado para hospedar (não é — só o cliente o consome).
 
 ### Pausa de conferência
 

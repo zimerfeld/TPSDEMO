@@ -26,6 +26,10 @@ extends Node
 const DEFAULT_PORT: int = 4383
 const DEFAULT_ADDRESS: String = "127.0.0.1"
 const DEFAULT_DELAY_SEC: float = 6.0
+# Pausa (s) do HOST entre preencher os campos e hospedar de fato, para dar tempo de LER os parâmetros
+# na tela antes de ela trocar pela sessão de salas. Só vale em build de DEPURAÇÃO (editor / export
+# debug): é apoio a acompanhamento visual, não pode atrasar o servidor no .exe de release.
+const HOST_PREVIEW_DELAY_SEC: float = 5.0
 const DEFAULT_RETRIES: int = 15
 const RETRY_INTERVAL_SEC: float = 2.0
 # Por quantos frames reafirmar a geometria da janela depois de sair da tela cheia (ver apply_window).
@@ -45,6 +49,8 @@ var level_path: String = LEVEL_PATHS["1"]
 # que já estiver ativo; "none" = limpa (sala só com os jogadores).
 var template: String = ""
 var delay_sec: float = DEFAULT_DELAY_SEC
+# True se `delay=` veio na linha de comando (o host respeita o valor pedido em vez do padrão).
+var _delay_explicit: bool = false
 var retries_left: int = DEFAULT_RETRIES
 var player_name: String = ""
 
@@ -86,6 +92,7 @@ func _parse_args(args: PackedStringArray) -> void:
 				template = value
 			"delay":
 				delay_sec = maxf(float(value), 0.0)
+				_delay_explicit = true
 			"retries":
 				retries_left = maxi(int(value), 0)
 			"player":
@@ -113,6 +120,14 @@ func is_host() -> bool:
 
 func is_join() -> bool:
 	return mode == Mode.JOIN
+
+
+# Pausa do host antes de hospedar. Em RELEASE é sempre 0 (o servidor sobe na hora); em depuração,
+# o `delay=` pedido na linha de comando ou HOST_PREVIEW_DELAY_SEC. Ver [[dual-window]].
+func host_preview_delay() -> float:
+	if not OS.is_debug_build():
+		return 0.0
+	return delay_sec if _delay_explicit else HOST_PREVIEW_DELAY_SEC
 
 
 # Posiciona/dimensiona a janela conforme win=x,y,w,h. Força o modo JANELA (o Settings nasce em tela

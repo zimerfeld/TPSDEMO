@@ -360,14 +360,23 @@ func _run_autopilot() -> void:
 		player_name_field.text = Autopilot.player_name
 	port.value = float(Autopilot.port)
 	if Autopilot.is_host():
-		_on_manage_rooms_pressed()
-		return
-	address.text = Autopilot.address
-	if Autopilot.delay_sec > 0.0:
-		await get_tree().create_timer(Autopilot.delay_sec).timeout
+		# O servidor hospeda SÓ pela porta (o create_server ignora o endereço) — o campo vai limpo
+		# para a tela não sugerir que o IP é usado aqui.
+		address.text = ""
+	else:
+		address.text = Autopilot.address
+	# Host: pausa só em DEPURAÇÃO, para dar tempo de ler os parâmetros preenchidos antes de a tela
+	# trocar pela sessão de salas (no .exe de release é 0 — o servidor sobe na hora).
+	# Cliente: a espera até o servidor da outra janela estar no ar.
+	var wait: float = Autopilot.host_preview_delay() if Autopilot.is_host() else Autopilot.delay_sec
+	if wait > 0.0:
+		await get_tree().create_timer(wait).timeout
 		if not is_inside_tree():
 			return
-	_on_join_rooms_pressed()
+	if Autopilot.is_host():
+		_on_manage_rooms_pressed()
+	else:
+		_on_join_rooms_pressed()
 
 
 # "Gerenciar Salas" (Host): hospeda um servidor PERSISTENTE e abre o painel de salas (host_session),
@@ -447,7 +456,9 @@ func _start_client(ip: String, shown: String) -> void:
 	peer.host.compress(ENetConnection.COMPRESS_RANGE_CODER)
 	multiplayer.multiplayer_peer = peer
 	RoomManager.client_mode = true
-	loading.show()
+	# O "Carregando" + barra de progresso NÃO aparecem aqui: enquanto o status diz "Conectando...",
+	# ainda não há nada carregando. Eles entram em _on_client_connected_await_version, quando a
+	# conexão fecha. Ver [[playonline]].
 	# Reconexão idempotente: uma tentativa anterior (que falhou e voltou pelo retry do CrashHandler,
 	# ou que conectou e deixou sinais ONE_SHOT pendentes) pode ter deixado sinais presos nesta mesma
 	# tela. Sem limpar, o connect() repetido estoura "Signal already connected".
@@ -527,6 +538,11 @@ func _exit_tree() -> void:
 func _on_client_connected_await_version() -> void:
 	if not _join_pending:
 		return
+	# "Conectando..." TERMINOU (o ENet fechou a conexão): só agora o "Carregando" e a barra de
+	# progresso entram em cena, cobrindo o handshake de versão + a abertura do navegador de salas.
+	# Os dois nunca aparecem juntos — o status sai e o loading entra.
+	_clear_status()
+	loading.show()
 	get_tree().create_timer(VERSION_TIMEOUT_SEC).timeout.connect(_on_version_timeout, CONNECT_ONE_SHOT)
 
 
