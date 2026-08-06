@@ -121,14 +121,23 @@ func register_loadout(variant_id: int, player_name: String = "") -> void:
 	var id: int = multiplayer.get_remote_sender_id()
 	if not _pending.has(id):
 		return  # já spawnou (ou peer desconhecido) — ignora
-	var spawn_point: Marker3D = _pending[id]
+	# O ponto reservado pode ter morrido junto com o nível enquanto esperávamos o loadout — nesse
+	# caso pega um novo (e, se não houver nenhum, o _spawn nasce na origem em vez de estourar).
+	var spawn_point := _valid_point(_pending[id])
 	_pending.erase(id)
+	if spawn_point == null:
+		spawn_point = _take_point()
 	_spawn(id, spawn_point, variant_id, player_name)
 
 
 # Servidor: reserva um spawn point para o peer e aguarda o loadout (com fallback por timeout).
 func _await_loadout(id: int) -> void:
 	if not multiplayer.is_server():
+		return
+	# O nível que registrou este autoload já morreu (preload de startup, modo-sala, troca de cena) →
+	# não há onde spawnar. Sem esta guarda, reservaríamos um ponto morto e armaríamos um timer para
+	# um nível inexistente. O sinal peer_connected sobrevive à cena, por isso a checagem é aqui.
+	if not is_instance_valid(_spawned_nodes):
 		return
 	_pending[id] = _take_point()
 	var timer: SceneTreeTimer = get_tree().create_timer(LOADOUT_TIMEOUT)
@@ -139,8 +148,10 @@ func _loadout_timeout(id: int) -> void:
 	if not _pending.has(id):
 		return  # já respondeu a tempo
 	# Peer ainda conectado mas sem loadout → usa a variante padrão para não ficar sem corpo.
-	var spawn_point: Marker3D = _pending[id]
+	var spawn_point := _valid_point(_pending[id])
 	_pending.erase(id)
+	if spawn_point == null:
+		spawn_point = _take_point()
 	if id in multiplayer.get_peers():
 		_spawn(id, spawn_point, DEFAULT_VARIANT)
 
@@ -157,7 +168,7 @@ func _spawn(id: int, spawn_point: Marker3D, variant_id: int, player_name: String
 	player.name = str(id)
 	player.player_id = id
 	player.player_name = player_name  # spawn property → Label3D acima da cabeça em todos os peers
-	if spawn_point != null:
+	if is_instance_valid(spawn_point):
 		player.transform = spawn_point.transform
 		# Posição de spawn replicada (spawn property): o cliente nasce aqui em vez de (0,0,0).
 		player.spawn_position = spawn_point.transform.origin
@@ -171,9 +182,26 @@ func _remove(id: int) -> void:
 
 
 # Próximo spawn point (da fila embaralhada); se esgotar, pega um aleatório do pai.
+#
+# A fila pode conter marcadores de um nível JÁ DESTRUÍDO — este autoload sobrevive à troca de cena e
+# guarda os Marker3D do último `setup()`. O caso clássico é o preload de startup (LoadingScreen
+# instancia um level de verdade por alguns quadros; com OfflineMultiplayerPeer o `is_server()` é
+# true, então ele registra os spawn points e depois é liberado). Devolver um desses num retorno
+# tipado estoura "Trying to return a previously freed instance" — daí o descarte abaixo.
 func _take_point() -> Marker3D:
-	if not _spawn_queue.is_empty():
-		return _spawn_queue.pop_front()
+	while not _spawn_queue.is_empty():
+		var point: Variant = _spawn_queue.pop_front()
+		var valid := _valid_point(point)
+		if valid != null:
+			return valid
 	if is_instance_valid(_spawn_points_parent) and _spawn_points_parent.get_child_count() > 0:
-		return _spawn_points_parent.get_child(randi() % _spawn_points_parent.get_child_count())
+		return _valid_point(_spawn_points_parent.get_child(randi() % _spawn_points_parent.get_child_count()))
 	return null
+
+
+# O marcador se ainda existir; null se foi liberado junto com o nível dele (ou não é um Marker3D).
+# Passar um nó liberado adiante estoura no primeiro parâmetro/retorno tipado que o receba.
+func _valid_point(point: Variant) -> Marker3D:
+	if not is_instance_valid(point) or not (point is Marker3D):
+		return null
+	return point
