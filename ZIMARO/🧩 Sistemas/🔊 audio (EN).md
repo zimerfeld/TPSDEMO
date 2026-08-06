@@ -37,19 +37,20 @@ Background track per **scene name**, in **infinite loop**. The `MusicManager` au
 screen change the `main.gd` router calls `MusicManager.play_for_scene(node)`:
 
 - **Default = SILENCE (2026-06-25):** a scene WITHOUT a saved assignment stays at **"Select..." = no
-  music** (does not play). Before, the default automatically resolved by `Audios/<scene-name>.<ext>` — that
+  music** (does not play). Before, the default automatically resolved by `audios/<scene-name>.<ext>` — that
   is now the **"Default" option** (`BYNAME` override), chosen per scene in the Manager.
-- **Resolution by name ("Default" option):** `res://Audios/<scene-name>.<ext>` (1st of `.ogg`/`.mp3`/`.wav`
-  that exists), in `_resolve_by_name`. E.g.: `menu` → `Audios/menu.ogg`. `ALIASES` makes `chooseplayer`
+- **Resolution by name ("Default" option):** `res://audios/<scene-name>.<ext>` (1st of `.ogg`/`.mp3`/`.wav`
+  that exists), in `_resolve_by_name`. E.g.: `menu` → `audios/menu.ogg`. `ALIASES` makes `chooseplayer`
   inherit the `menu` track. Same track as the previous scene → continues without restarting (smooth transition).
-- **Loop forced at runtime** (`_ensure_loop`): applies to any loose file in `Audios/`,
+- **Loop forced at runtime** (`_ensure_loop`): applies to any loose file in `audios/`,
   even if the import comes with `loop=false`.
 - **Online:** in the rooms the root scene is `host_session`/`client_session`, so their music comes from
-  `Audios/host_session.ogg`/`client_session.ogg`. Switching the track by the level observed inside a
+  `audios/host_session.ogg`/`client_session.ogg`. Switching the track by the level observed inside a
   room (its own SubViewport) is outside the scope of this autoload.
 
-To set the music of a scene/level, just place the file in `res://Audios/` with the scene name.
-Included tracks: `Audios/menu.ogg`. See `Audios/README.md` and
+To set the music of a scene/level, just place the file in `res://audios/` with the scene name.
+Included tracks: `audios/menu.ogg` + the 41-track NCS (Copyright Free Music) library — removed by
+mistake in the "limpeza" commit (2026-07-03) and restored on 2026-08-06. See `audios/README.md` and
 [[🎬 fluxo-de-cenas (EN)|fluxo-de-cenas]].
 
 ### 🎛️ Music Manager (Settings → Music → Enabled)
@@ -61,7 +62,7 @@ same pattern as the **Template Manager** window (level templates). This way it i
 and the **2D Debug works over it** (the `FloatingWindow` joins the `DebugOverlay` group),
 just like the other floating windows. It allows:
 
-- **Listening to** any track in `Audios/` (separate pre-listen player; pauses the background while playing).
+- **Listening to** any track in `audios/` (separate pre-listen player; pauses the background while playing).
   Each **▶ Play** button has a **⏸ Pause** and a **⏹ Stop** next to it (2026-06-25) — both on the
   "Listen to track" row and in the per-scene list. ▶ resumes a pause of the SAME track (`preview_or_resume`).
 - **Assigning** the track of each scene/level. **Every dropdown has "Select..." as the 1st option = no
@@ -81,7 +82,7 @@ auto-frees on close.
 
 **Randomize + state persistence (2026-06-25):** the footer has a **"🎲 Randomize tracks"** button
 (in place of the 2nd "Stop" — there is already one in "Listen to track") that assigns a **random** track from
-`Audios/` to EACH scene/level (`set_assignment`, which persists) and updates the screen → the choices
+`audios/` to EACH scene/level (`set_assignment`, which persists) and updates the screen → the choices
 reload on the next opening. Every window control **persists on change**: the per-scene assignments
 already save via `set_assignment`; the track chosen in "Listen to track" now saves in
 `[music_ui] listen` and is restored in `_refresh` (`_restore_listen_choice`).

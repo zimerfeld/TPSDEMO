@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://on5jp0xfvnom"
+path="res://.godot/imported/Uplink - To Myself (feat. NK)  Trap  NCS - Copyright Free Music.mp3-2bbf450fb5f423e804c4092f738f96da.mp3str"
+
+[deps]
+
+source_file="res://audios/Uplink - To Myself (feat. NK)  Trap  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Uplink - To Myself (feat. NK)  Trap  NCS - Copyright Free Music.mp3-2bbf450fb5f423e804c4092f738f96da.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

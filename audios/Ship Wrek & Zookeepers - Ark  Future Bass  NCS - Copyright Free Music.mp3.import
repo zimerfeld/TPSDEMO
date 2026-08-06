@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dqkfqmefnflf4"
+path="res://.godot/imported/Ship Wrek & Zookeepers - Ark  Future Bass  NCS - Copyright Free Music.mp3-f4432aa4981959524b754292ddb609f8.mp3str"
+
+[deps]
+
+source_file="res://audios/Ship Wrek & Zookeepers - Ark  Future Bass  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Ship Wrek & Zookeepers - Ark  Future Bass  NCS - Copyright Free Music.mp3-f4432aa4981959524b754292ddb609f8.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

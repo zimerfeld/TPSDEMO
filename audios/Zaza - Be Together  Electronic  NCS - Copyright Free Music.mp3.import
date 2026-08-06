@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://3a3uonlwp7fa"
+path="res://.godot/imported/Zaza - Be Together  Electronic  NCS - Copyright Free Music.mp3-a56af936ff84246a79ba5264791ad4f0.mp3str"
+
+[deps]
+
+source_file="res://audios/Zaza - Be Together  Electronic  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/Zaza - Be Together  Electronic  NCS - Copyright Free Music.mp3-a56af936ff84246a79ba5264791ad4f0.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

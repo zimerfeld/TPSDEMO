@@ -1,13 +1,13 @@
 class_name MusicManagerWindow
 extends Node
 
-## Gerenciador de Música: ouvir qualquer faixa de Audios/ e ATRIBUIR / REMOVER a trilha de cada
+## Gerenciador de Música: ouvir qualquer faixa de audios/ e ATRIBUIR / REMOVER a trilha de cada
 ## cena ou level. Aberto pela tela Settings ao habilitar "Música". As atribuições viram overrides
 ## persistidos pelo autoload MusicManager (seção "music" do Settings) e valem na hora.
 ##
 ## Controlador: monta o formulário DENTRO da janela flutuante reutilizável (FloatingWindow), num
 ## CanvasLayer no topo — herda o tema 2D do projeto e o Debug 2D funciona sobre a janela, igual às
-## demais janelas flutuantes. Faixas vêm de res://Audios/.
+## demais janelas flutuantes. Faixas vêm de res://audios/.
 
 const FLOATING_SCENE := preload("res://controls2D/floating_window/floating_window.tscn")
 
@@ -96,7 +96,7 @@ func _build_ui(content: VBoxContainer) -> void:
 	root.add_child(_section_title("Trilha por cena / level"))
 	var hint := Label.new()
 	hint.name = "Hint"
-	hint.text = "\"%s\" = sem música (silêncio, padrão). \"%s\" toca Audios/<nome-da-cena>. Ou escolha uma faixa." % [SELECT_LABEL, DEFAULT_LABEL]
+	hint.text = "\"%s\" = sem música (silêncio, padrão). \"%s\" toca audios/<nome-da-cena>. Ou escolha uma faixa." % [SELECT_LABEL, DEFAULT_LABEL]
 	hint.modulate = Color(1, 1, 1, 0.7)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(hint)
@@ -150,7 +150,7 @@ func _build_ui(content: VBoxContainer) -> void:
 func _refresh() -> void:
 	_listen_picker.clear()
 	if _tracks.is_empty():
-		_listen_picker.add_item("(nenhuma faixa em Audios/)")
+		_listen_picker.add_item("(nenhuma faixa em audios/)")
 		_listen_picker.disabled = true
 	else:
 		_listen_picker.disabled = false
@@ -164,7 +164,7 @@ func _refresh() -> void:
 		_select_value(_scene_pickers[key], MusicManager.assignment_of(key))
 
 
-# Sorteia uma faixa aleatória de Audios/ para CADA cena/level, persiste (override do MusicManager) e
+# Sorteia uma faixa aleatória de audios/ para CADA cena/level, persiste (override do MusicManager) e
 # atualiza a tela → as escolhas ficam salvas e recarregam na próxima abertura da janela.
 func _on_shuffle() -> void:
 	if _tracks.is_empty():

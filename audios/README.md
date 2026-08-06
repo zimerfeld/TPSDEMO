@@ -9,13 +9,13 @@
 ## Como funciona / How it works
 
 🇬🇧 On every screen change the router (`main.gd`) calls `MusicManager.play_for_scene()`, which
-plays `res://Audios/<scene-name>.<ext>` in a loop. The name is the scene's file name without
+plays `res://audios/<scene-name>.<ext>` in a loop. The name is the scene's file name without
 extension (e.g. `menu.tscn` → `menu`). Supported extensions, in priority order: `.ogg`, `.mp3`,
 `.wav` (first one found wins). No file for a scene → silence. If the next screen resolves to the
 **same** track, it keeps playing without restarting.
 >
 🇧🇷 A cada troca de tela o roteador (`main.gd`) chama `MusicManager.play_for_scene()`, que toca
-`res://Audios/<nome-da-cena>.<ext>` em loop. O nome é o do arquivo da cena sem extensão (ex.:
+`res://audios/<nome-da-cena>.<ext>` em loop. O nome é o do arquivo da cena sem extensão (ex.:
 `menu.tscn` → `menu`). Extensões aceitas, por prioridade: `.ogg`, `.mp3`, `.wav` (a 1ª encontrada
 vence). Sem arquivo para a cena → silêncio. Se a próxima tela cair na **mesma** trilha, ela
 continua tocando sem reiniciar.

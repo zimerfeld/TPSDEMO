@@ -430,10 +430,10 @@ haciendo que la elección actual destaque aún más.
 - **Audio** — controles independientes para la **Música** de fondo (el bus `Music`) y los **Efeitos
   de Som** (el bus `SFX`, hacia el que enrutan los buses de juego `Outside`/`Reactor`), cada uno
   guardado y aplicado globalmente. La **música de fondo es por escena/nivel**, impulsada por el autoload **MusicManager**
-  en un **bucle infinito**, cambiando en cada pantalla (ver `Audios/README.md`). Por defecto una
+  en un **bucle infinito**, cambiando en cada pantalla (ver `audios/README.md`). Por defecto una
   escena es **"Selecione…" = silenciosa** (sin música) hasta que le asignes una pista. Al hacer clic en **Música → Enabled**
   se abre el **Music Manager**: escucha cualquier pista y **asigna** a cada escena/nivel una pista específica,
-  **"Padrão"** (resolver por el nombre de la escena, `Audios/<scene-name>.<ext>`) o **"Selecione…"** (silencio);
+  **"Padrão"** (resolver por el nombre de la escena, `audios/<scene-name>.<ext>`) o **"Selecione…"** (silencio);
   las asignaciones se persisten. Cada botón **▶ Play** tiene una
   **⏸ Pause** y un **⏹ Stop** al lado (ambos en la fila "Listen" y en la lista por escena); un botón **🎲 Shuffle** asigna una
   pista aleatoria a cada escena/nivel y la guarda para la próxima vez. A la derecha de cada fila
@@ -578,7 +578,7 @@ ZIMARO/
 │  ├─ weapons/           # weapons (pistola_infantil, bomb)
 │  ├─ geometry/          # shared meshes/materials (.tres)
 │  └─ textures/          # shared textures
-├─ Audios/               # per-scene/level background tracks (infinite loop; see Audios/README.md)
+├─ audios/               # per-scene/level background tracks (infinite loop; see audios/README.md)
 ├─ effects_shared/       # cross-character helpers: limb_colliders.gd, body_parts.gd, …
 ├─ autoload/             # singletons: crash_handler, player_selection, debug_overlay, locale, stability_guard, performance_hud, music_manager
 │                        #   (Settings lives in scenes2D/settings/config.gd)

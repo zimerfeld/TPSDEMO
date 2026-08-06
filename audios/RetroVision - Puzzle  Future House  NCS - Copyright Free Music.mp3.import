@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bawkkw367p420"
+path="res://.godot/imported/RetroVision - Puzzle  Future House  NCS - Copyright Free Music.mp3-1438db3c3874b3b32cc9e90e71667f40.mp3str"
+
+[deps]
+
+source_file="res://audios/RetroVision - Puzzle  Future House  NCS - Copyright Free Music.mp3"
+dest_files=["res://.godot/imported/RetroVision - Puzzle  Future House  NCS - Copyright Free Music.mp3-1438db3c3874b3b32cc9e90e71667f40.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
