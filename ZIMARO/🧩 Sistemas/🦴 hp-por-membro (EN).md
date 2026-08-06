@@ -113,10 +113,37 @@ health and merely accepts the new argument. See [[⚔️ facções (EN)|⚔️ f
 
 ---
 
-## Known limitations
+## 💥 Take-apart visual effect (2026-08-06)
 
-- Destroying a limb **does not hide its mesh** nor carry a visual effect of its own — the effect is
-  purely in the HP bookkeeping and the defeat condition.
+`LimbHealth` emits **`limb_destroyed(group)`** for every limb that falls — including the ones dragged
+down by propagation. The character wires that signal to **`LimbColliders.collapse_limb(group)`**, which:
+
+1. **switches the limb's collider off** (a fallen piece takes no more hits);
+2. **collapses the bone** via [[limb-debris]] → the piece **disappears from the mesh**, and whatever
+   comes after it in the chain goes with it (the arm takes forearm, hand and the shield attached to it);
+3. releases a **burst of sparks** (one-shot `CPUParticles3D`, unshaded material, self-freeing) at the
+   bone's position — cheap, within the project's 60 FPS budget.
+
+The **TORSO does not collapse**: it is the rig's root, and hiding it would take the whole character
+along, standing limbs included. It only gets the sparks. On the player's **respawn**, `restore_limbs()`
+brings the pieces back and re-enables the colliders.
+
+> ⚠️ **VIRTUAL-METHOD TRAP (measured on 2026-08-06).** `LimbDebris` is a `SkeletonModifier3D` because
+> the AnimationTree rewrites every bone's pose each frame — zeroing the scale anywhere else would be
+> undone on the next one. **Godot 4.6 calls `_process_modification_with_delta(delta)`**; the
+> argument-less `_process_modification()` still shows up in `ClassDB` but is **legacy**. Implementing
+> only the delta-less version makes the modifier **never run, with no error at all** — colliders switch
+> off, sparks fire, and the piece stays put (measured: 0 calls versus 22). We implement both.
+>
+> 🔍 **How to VERIFY:** reading `get_bone_pose_scale()` **from outside** returns `1.0` even with the limb
+> gone — the read picks up the INPUT pose the animation just rewrote. The scale is only observable
+> **inside** the pose pipeline: use a **second `SkeletonModifier3D` as a probe**, added AFTER
+> `LimbDebris`, and read `get_bone_global_pose()` there. Measured that way: destroyed limb
+> `(0.001, 0.001, 0.001)`, intact limb `(1.0, 1.0, 1.0)`.
+
+---
+
+## Known limitations
 - Damage with **no identified limb** (splash, falling) still comes off the global health, otherwise
   those hits would do nothing at all.
 
@@ -127,6 +154,7 @@ health and merely accepts the new argument. See [[⚔️ facções (EN)|⚔️ f
 | File | Role |
 |---|---|
 | `effects_shared/limb_health.gd` | **NEW** — `LimbHealth`: split, damage, propagation, defeat |
+| `effects_shared/limb_debris.gd` | **NEW** — `LimbDebris`: collapses the bone (piece vanishes) + sparks |
 | `effects_shared/limb_colliders.gd` | Stamps the `owner_group` meta (sub-limb's owner limb) |
 | `library3D/characters/red_robot/red_robot.gd` | `limbs`, `hit(amount, group)`, per-limb overlay |
 | `library3D/characters/player/player.gd` | `limbs`, `hit(amount, group)`, `reset()` on respawn |

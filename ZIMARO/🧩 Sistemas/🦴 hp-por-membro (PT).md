@@ -114,10 +114,38 @@ aceita o argumento novo. Ver [[⚔️ facções (PT)|⚔️ facções]].
 
 ---
 
-## Limitações conhecidas
+## 💥 Efeito visual do desmonte (2026-08-06)
 
-- Destruir um membro **não some com a malha** dele nem tem efeito visual próprio — o efeito é só na
-  contabilidade de HP e no abate.
+`LimbHealth` emite **`limb_destroyed(group)`** a cada membro que cai — inclusive os arrastados pela
+propagação. O personagem liga esse sinal a **`LimbColliders.collapse_limb(group)`**, que:
+
+1. **desliga o collider** daquele membro (peça caída não recebe mais tiros);
+2. **colapsa o osso** via [[limb-debris]] → a peça **some da malha**, e o que vem depois dela na cadeia
+   some junto (o braço leva antebraço, mão e o escudo preso nele);
+3. solta uma **nuvem de faíscas** (`CPUParticles3D` one-shot, material *unshaded*, auto-liberada) no
+   ponto do osso — barata, dentro do teto de 60 FPS do projeto.
+
+O **TRONCO não colapsa**: é a raiz do rig, e sumir com ele levaria o personagem inteiro, membros de pé
+inclusive. Ele recebe só as faíscas. No **respawn** do player, `restore_limbs()` devolve as peças e
+religa os colliders.
+
+> ⚠️ **ARMADILHA da virtual (medida em 2026-08-06).** `LimbDebris` é um `SkeletonModifier3D`, porque a
+> AnimationTree reescreve a pose de todos os ossos a cada quadro — zerar a escala em qualquer outro
+> ponto seria desfeito no quadro seguinte. **No Godot 4.6 a engine chama
+> `_process_modification_with_delta(delta)`**; a `_process_modification()` sem argumentos ainda aparece
+> na `ClassDB` mas ficou **legada**. Implementar só a versão sem delta faz o modificador **nunca rodar,
+> sem erro nenhum** — colliders desligam, faíscas saem, e a peça continua lá (medido: 0 chamadas contra
+> 22). Implementamos as duas.
+>
+> 🔍 **Como VERIFICAR:** ler `get_bone_pose_scale()` **de fora** devolve `1.0` mesmo com o membro
+> sumido — a leitura pega a pose de ENTRADA que a animação acabou de reescrever. A escala só é
+> observável **dentro** do pipeline de poses: use um **segundo `SkeletonModifier3D` como sonda**,
+> adicionado DEPOIS do `LimbDebris`, e leia `get_bone_global_pose()` lá. Medido assim: membro destruído
+> `(0.001, 0.001, 0.001)`, membro intacto `(1.0, 1.0, 1.0)`.
+
+---
+
+## Limitações conhecidas
 - Dano **sem membro identificado** (explosão de área, queda) continua descontando da vida global,
   senão esses golpes ficariam inertes.
 
@@ -128,6 +156,7 @@ aceita o argumento novo. Ver [[⚔️ facções (PT)|⚔️ facções]].
 | Arquivo | Papel |
 |---|---|
 | `effects_shared/limb_health.gd` | **NOVO** — `LimbHealth`: reparto, dano, propagação, abate |
+| `effects_shared/limb_debris.gd` | **NOVO** — `LimbDebris`: colapsa o osso (a peça some) + faíscas |
 | `effects_shared/limb_colliders.gd` | Carimba a meta `owner_group` (membro-dono do sub-membro) |
 | `library3D/characters/red_robot/red_robot.gd` | `limbs`, `hit(amount, group)`, overlay por membro |
 | `library3D/characters/player/player.gd` | `limbs`, `hit(amount, group)`, `reset()` no respawn |

@@ -115,6 +115,9 @@ disparos en tercera persona. A grandes rasgos ofrece:
   Models siguen siendo **multiplicador de daño**. Destruir un miembro **se lleva sus submiembros**;
   acertar en el **rostro** (ojos/boca) **derriba la cabeza entera** — el premio de la puntería
   precisa. Vale para enemigos, aliados y neutrales.
+- **Desmontaje a la vista** — el miembro destruido **desaparece del modelo** (junto con las piezas
+  sujetas a él) y suelta una nube de chispas, así que ves al enemigo deshacerse pieza a pieza mientras
+  sigue luchando. El torso no desaparece (es la raíz del cuerpo), solo chispea.
 - **Cuerpo físico por modelo** — la cápsula de locomoción (bloqueo físico entre personajes) se
   **ajusta automáticamente a cada modelo** a partir de sus colisionadores de miembro (radio a partir de la huella en pie, altura
   a partir de la extensión total), en lugar de un único valor por defecto creado a mano para todos. Sigue siendo una única forma barata e

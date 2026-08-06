@@ -205,6 +205,9 @@ func _setup_limb_colliders() -> void:
 	# um com sua fatia da vida total. Precisa vir DEPOIS de build_for (é dos colliders que sai a lista).
 	limbs = LimbHealth.new()
 	limbs.setup(self, lc.model_key, max_health)
+	# Efeito visual: cada membro que cai some da malha e solta faíscas (ver [[limb-debris]]). O sinal
+	# vale em todos os pares — `hit` é call_local, então o desmonte é o mesmo em host e clientes.
+	limbs.limb_destroyed.connect(lc.collapse_limb)
 	# Ajusta a cápsula de LOCOMOÇÃO (bloqueio físico) ao red_robot a partir dos boxes de membro —
 	# corpo proporcional ao modelo em vez da cápsula default. Ver [[sistemas/inimigos]].
 	if collision_shape != null:

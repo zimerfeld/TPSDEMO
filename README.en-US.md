@@ -123,6 +123,9 @@ third-person shooter sandbox. At a high level it offers:
   **damage multiplier**. Destroying a limb **takes its sub-limbs down with it**; hitting the **face**
   (eyes/mouth) **takes the whole head down** — the reward for precise aim. It applies to enemies,
   friendlies and neutrals alike.
+- **Visible take-apart** — a destroyed limb **vanishes from the model** (along with the pieces attached
+  to it) and bursts into sparks, so you watch the enemy come apart piece by piece while it still
+  fights. The torso does not vanish (it is the body's root), it only sparks.
 - **Per-model physical body** — the locomotion capsule (physical blocking between characters) is
   **auto-fitted to each model** from its limb colliders (radius from the standing footprint, height
   from the full extent), instead of one hand-authored default for everyone. It stays a single cheap,

@@ -80,17 +80,25 @@ var _bodies: Array[StaticBody3D] = []
 var _classifier: BodyParts = null
 ## Sub-membros efetivos = export ∪ LimbConfig(model_key) ∪ default do plano (em minúsculas).
 var _sub_member_set: Dictionary = {}
+## group → índice do osso-raiz do membro. Alimenta o EFEITO VISUAL de destruição (`collapse_limb`).
+var _group_bone: Dictionary = {}
+## Modificador que mantém os membros destruídos colapsados (criado sob demanda). Ver [[limb-debris]].
+var _debris: LimbDebris = null
+## Esqueleto para o qual os colliders foram construídos (dono do modificador de destroços).
+var _skeleton: Skeleton3D = null
 
 
 func build_for(skel: Skeleton3D) -> void:
 	if not enabled or skel == null:
 		return
 	_character = get_parent()
+	_skeleton = skel
 	_classifier = BodyPlans.for_type(body_type)
 	_resolve_sub_members()
 	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
 	var members := _collect_member_boxes(skel)
 	for group in members:
+		_group_bone[group] = int(members[group]["bone"])   # p/ o efeito de destruição achar o osso
 		# "Selecione..." no dropdown de geometria (tela Models) marca o grupo como SEM collider
 		# (SHAPE_NONE) — pula a construção, então ele não é atingível. Lido aqui no spawn. EXCEÇÃO: no
 		# PREVIEW da tela Models (include_suppressed), um SUB-MEMBRO suprimido ainda é construído (forma
@@ -842,3 +850,37 @@ static func _transform_aabb(xf: Transform3D, box: AABB) -> AABB:
 		mn = mn.min(w)
 		mx = mx.max(w)
 	return AABB(mn, mx - mn)
+
+
+# ───────────────────────── Efeito visual de membro destruído ─────────────────────────
+
+# Some com o membro `group`: a peça (e o que vem depois dela na cadeia de ossos) colapsa e faíscas
+# marcam o lugar. O collider dele também é desligado — um membro que já caiu não recebe mais tiros.
+# Chamado pelo personagem no sinal `limb_destroyed` do [[limb-health]]; roda em todos os pares.
+func collapse_limb(group: String) -> void:
+	if not _group_bone.has(group) or _skeleton == null:
+		return
+	for body in _bodies:
+		if body != null and String(body.get_meta("group", "")) == group:
+			body.collision_layer = 0
+	_ensure_debris()
+	if _debris != null:
+		# O TRONCO é a raiz do rig: colapsá-lo sumiria com o personagem inteiro (ver [[limb-debris]]).
+		_debris.collapse_bone(int(_group_bone[group]), group == BodyParts.TORSO)
+
+
+# Devolve todos os membros colapsados e religa os colliders (respawn do player).
+func restore_limbs() -> void:
+	if _debris != null:
+		_debris.restore_all()
+	for body in _bodies:
+		if body != null and not body.has_meta("suppressed"):
+			body.collision_layer = hitbox_layer
+
+
+func _ensure_debris() -> void:
+	if _debris != null or _skeleton == null:
+		return
+	_debris = LimbDebris.new()
+	_debris.name = "LimbDebris"
+	_skeleton.add_child(_debris)

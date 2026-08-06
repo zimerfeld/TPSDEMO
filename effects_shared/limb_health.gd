@@ -1,6 +1,11 @@
 class_name LimbHealth
 extends RefCounted
 
+## Emitido a cada membro que cai — inclusive os arrastados pela propagação (sub-membros do pai, cabeça
+## derrubada pelo rosto). É o gancho do EFEITO VISUAL: quem escuta some com a peça e solta as faíscas
+## (ver [[limb-colliders]] → `collapse_limb`). Emitido em TODOS os pares, porque `hit` é `call_local`.
+signal limb_destroyed(group: String)
+
 ## HP por MEMBRO / SUB-MEMBRO de um personagem. Substitui a barra única de vida como CONDIÇÃO DE
 ## ABATE: o personagem só cai quando TODOS os membros contáveis estiverem destruídos.
 ##
@@ -114,6 +119,7 @@ func apply_damage(group: String, amount: int) -> bool:
 # sub-membro CRÍTICO, o dono cai também (filho → pai) — o que por sua vez derruba os irmãos.
 func _destroy(group: String) -> void:
 	_hp[group] = 0
+	limb_destroyed.emit(group)
 	for sub in _owner_of:
 		if String(_owner_of[sub]) == group and int(_hp.get(sub, 0)) > 0:
 			_destroy(sub)

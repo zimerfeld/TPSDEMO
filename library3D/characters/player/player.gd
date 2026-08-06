@@ -124,6 +124,8 @@ var hp: int = MAX_HP
 # HP por membro/sub-membro (ver [[limb-health]]). Enquanto houver membros definidos, é ele que decide
 # o abate; `hp` passa a espelhar a soma dos membros (a barra de vida continua mostrando o corpo todo).
 var limbs: LimbHealth = null
+# Colliders de membro deste player — guardados para devolver os membros colapsados no respawn.
+var _limb_colliders: LimbColliders = null
 
 ## Dano da arma que o player porta (atribuído a cada bullet disparado).
 @export var weapon_damage: int = 50
@@ -275,6 +277,9 @@ func _setup_limb_colliders() -> void:
 	# friendly/neutro — só é abatido quando TODOS os membros definidos caem. Ver [[limb-health]].
 	limbs = LimbHealth.new()
 	limbs.setup(self, lc.model_key, MAX_HP)
+	# Efeito visual do desmonte (ver [[limb-debris]]); no respawn os membros voltam inteiros.
+	limbs.limb_destroyed.connect(lc.collapse_limb)
+	_limb_colliders = lc
 	# Ajusta a cápsula de LOCOMOÇÃO (bloqueio físico) ao modelo, derivando raio/altura dos boxes
 	# de membro recém-construídos — corpo proporcional ao player em vez da cápsula default. Mantém
 	# 1 shape/personagem (barato, estável, netcode-friendly). Ver [[sistemas/player]].
@@ -579,6 +584,8 @@ func respawn() -> void:
 	hp = MAX_HP
 	if limbs != null:
 		limbs.reset()   # membros destruídos voltam inteiros junto com a vida
+	if _limb_colliders != null:
+		_limb_colliders.restore_limbs()   # e reaparecem na malha, com os colliders religados
 	if _health_bar:
 		_health_bar.update_health(hp, MAX_HP)
 	transform.origin = initial_position

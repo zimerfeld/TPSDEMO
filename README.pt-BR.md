@@ -126,6 +126,9 @@ em terceira pessoa. Em alto nível, oferece:
   **multiplicador de dano**. Destruir um membro **leva junto os sub-membros dele**; acertar o
   **rosto** (olhos/boca) **derruba a cabeça inteira** — é o prêmio da mira precisa. Vale para
   inimigos, aliados e neutros.
+- **Desmonte à vista** — o membro destruído **some do modelo** (junto com as peças presas nele) e
+  solta uma nuvem de faíscas no lugar, então dá para ver o inimigo se desfazendo peça por peça
+  enquanto ele ainda luta. O tronco não some (é a raiz do corpo), só faisca.
 - **Corpo físico proporcional ao modelo** — a cápsula de locomoção (bloqueio físico entre
   personagens) é **auto-ajustada a cada modelo** a partir dos colliders de membro (raio pelo footprint
   em pé, altura pela extensão total), em vez de uma default autorada igual para todos. Continua sendo
