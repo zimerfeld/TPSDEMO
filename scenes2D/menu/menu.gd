@@ -42,9 +42,11 @@ func _ready() -> void:
 	Settings.apply_graphics_settings(get_window(), world_environment.environment, self)
 	Settings.apply_window_resolution(get_window())
 	Settings.apply_audio_settings()
-	# O menu reaplica a resolução salva (centralizando a janela) — reafirma a geometria do piloto
-	# automático por cima, senão as duas janelas voltariam a se sobrepor ao chegar aqui.
+	# O menu reaplica a resolução e o ÁUDIO salvos (centralizando a janela, religando a trilha) —
+	# reafirma as escolhas do piloto automático por cima, senão as duas janelas voltariam a se
+	# sobrepor e a do servidor voltaria a tocar música ao chegar aqui.
 	Autopilot.apply_window(get_window())
+	Autopilot.apply_audio()
 
 	if DisplayServer.get_name() == "headless" or Autopilot.is_active():
 		# Servidor dedicado OU piloto automático (`-- autohost`/`autojoin`): pula chooseplayer/levels

@@ -18,6 +18,7 @@ extends Node
 ##   delay=<seg>           → espera antes da 1ª tentativa de conexão (padrão 6)
 ##   retries=<n>           → tentativas extras de conexão, de 2 em 2 s (padrão 15)
 ##   player=<nome>         → nome do jogador desta instância (não persiste em Settings)
+##   music=<on|off>        → trilha desta instância; sem o argumento, o HOST nasce sem música
 ##   win=<x,y,w,h>         → posiciona/dimensiona a janela (em pixels de tela)
 ##
 ## Sem nenhum desses argumentos o autoload fica inerte — o jogo roda exatamente como antes.
@@ -40,6 +41,9 @@ const LEVEL_PATHS: Dictionary = {
 }
 
 enum Mode { OFF, HOST, JOIN }
+# Trilha desta instância. DEFAULT = decide pelo papel: o HOST nasce mudo (é a janela de gerência —
+# duas trilhas tocando ao mesmo tempo nas duas janelas atrapalha o acompanhamento), o cliente toca.
+enum Music { DEFAULT, ON, OFF }
 
 var mode: Mode = Mode.OFF
 var port: int = DEFAULT_PORT
@@ -53,6 +57,7 @@ var delay_sec: float = DEFAULT_DELAY_SEC
 var _delay_explicit: bool = false
 var retries_left: int = DEFAULT_RETRIES
 var player_name: String = ""
+var music: Music = Music.DEFAULT
 
 # Geometria pedida pelo launcher (win=x,y,w,h). Vazio = não mexe na janela.
 var _window_rect: Rect2i = Rect2i()
@@ -65,6 +70,21 @@ var _room_started: bool = false
 
 func _ready() -> void:
 	_parse_args(OS.get_cmdline_user_args())
+	# O Settings (autoload anterior na ordem) já aplicou o áudio salvo no seu _ready — silenciamos por
+	# cima. Ver apply_audio.
+	apply_audio()
+
+
+# Silencia (ou não) a trilha DESTA instância. Mexe só no bus vivo, NUNCA no Settings: as duas janelas
+# gravam no MESMO arquivo de configuração do usuário, e persistir aqui apagaria a preferência dele.
+# Reaplicado pelo menu, que recarrega o áudio salvo ao entrar. Inerte sem os argumentos do piloto.
+func apply_audio() -> void:
+	if not is_active():
+		return
+	var mute: bool = is_host() if music == Music.DEFAULT else (music == Music.OFF)
+	var bus: int = AudioServer.get_bus_index("Music")
+	if bus != -1:
+		AudioServer.set_bus_mute(bus, mute)
 
 
 func _parse_args(args: PackedStringArray) -> void:
@@ -97,6 +117,8 @@ func _parse_args(args: PackedStringArray) -> void:
 				retries_left = maxi(int(value), 0)
 			"player":
 				player_name = value
+			"music":
+				music = Music.ON if value in ["on", "1", "true"] else Music.OFF
 			"win":
 				_parse_window_rect(value)
 

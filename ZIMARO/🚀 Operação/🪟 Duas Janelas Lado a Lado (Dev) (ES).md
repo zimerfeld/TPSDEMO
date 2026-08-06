@@ -48,6 +48,7 @@ Dos piezas:
 | `delay=<seg>` | **cliente:** espera antes del 1er intento de conexión (por defecto `6`). **host:** pausa entre rellenar los campos y alojar (por defecto `5`), **solo en builds de depuración** — ver abajo |
 | `retries=<n>` | intentos extra, cada 2 s (por defecto `15`) |
 | `player=<nombre>` | nombre del jugador de esta instancia (**no** persiste en Settings) |
+| `music=<on\|off>` | banda sonora de esta instancia. Sin el argumento, el **host nace mudo** y el cliente suena — dos bandas sonoras a la vez en las dos ventanas estorban el seguimiento. Solo toca el bus vivo, **nunca** Settings (ambas ventanas escriben en el mismo archivo de configuración) |
 | `win=<x,y,w,h>` | posiciona/dimensiona la ventana en píxeles de pantalla |
 
 Lo que ejecuta el script:
