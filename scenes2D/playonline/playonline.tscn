@@ -167,6 +167,14 @@ custom_minimum_size = Vector2(260, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
+[node name="AddressHint" type="Label" parent="UI/Inset/Main/Form/Fields"]
+modulate = Color(1, 1, 1, 0.7)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "(preencher só para Entrar em Salas)"
+horizontal_alignment = 1
+autowrap_mode = 2
+
 [node name="OptimizationSeparator" type="HSeparator" parent="UI/Inset/Main/Form/Fields"]
 layout_mode = 2
 

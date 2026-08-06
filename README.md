@@ -81,6 +81,9 @@ and other players/enemies are smoothed with a timestamped interpolation buffer f
 high-FPS client view. A pre-session **Optimization** selector picks interpolation (Smooth/Balanced/
 Responsive), sync rate (30/60 Hz) and host render (Window/Pure-server); every option (plus the last
 Port/IP) is persisted and restored, and the Host/Client screens are full-screen like the rest of the UI.
+Room-based online play is **validated across 2 PCs** (including a public tunnel like **playit.gg**): room
+entities spawn **gradually** so modest machines don't stall, the connection tolerates loading spikes, and
+a dropped connection returns the client to the room browser with a notice.
 The Levels screen also carries, per level, a **Template Manager** (characters) and a **Scenery
 Manager** (glowing stage props from `library3D/sceneries`) — **scrollable** floating windows where
 each entry's model is picked by **cascading folder navigation** (one dropdown per library folder level), with
@@ -140,6 +143,9 @@ com snapshots datados para uma visão do cliente sem flicker e com FPS alto. Um 
 pré-sessão escolhe interpolação (Suave/Equilibrado/Responsivo), taxa de sync (30/60 Hz) e render do host
 (Janela/Servidor puro); todas as opções (mais a última Porta/IP) são persistidas e recarregadas, e as
 telas Host/Client são em tela cheia, no padrão do resto da UI.
+O jogo online por salas foi **validado entre 2 PCs** (inclusive via túnel público como o **playit.gg**):
+as entidades da sala nascem de forma **gradual** para não travar máquinas modestas, a conexão tolera
+picos de carregamento, e uma queda de conexão devolve o cliente ao navegador de salas com um aviso.
 A tela de Níveis também traz, por level, um **Gerenciador de Templates** (personagens) e um
 **Gerenciador de Cenários** (objetos de palco luminosos de `library3D/sceneries`) — janelas
 flutuantes em que o modelo de cada entrada é escolhido por **navegação em cascata de pastas** (um

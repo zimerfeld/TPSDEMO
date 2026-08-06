@@ -2,7 +2,7 @@
 tipo: sistema
 projeto: ZIMARO
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-08-05
 ---
 
 # 🚪 Salas simultáneas (servidor multinivel)
@@ -14,7 +14,7 @@ atualizado: 2026-07-04
 > [[🎬 fluxo-de-cenas (ES)\|fluxo-de-cenas]].
 >
 > 🧪 **Para validar en campo:** ver [[🧪 teste-salas-multiplayer (ES)\|teste-salas-multiplayer]] (script loopback → LAN → internet).
-> Revisión de código del flujo hecha el 2026-07-01 — **consistente, sin bugs conocidos**; ejecución aún pendiente.
+> ✅ **VALIDADO en 2 PC reales (2026-08-05)** vía **playit.gg** (túnel UDP `zimaro.playit.game:44000` → host `192.168.0.211:44000`), tras corregir la **congelación del enemigo en el cliente** — ver la sección *Congelación del enemigo en el cliente* abajo (release `202608051826`).
 
 ---
 
@@ -99,7 +99,50 @@ jugadores): solo replica a peers cuyo `_peer_room[peer] == room_id`. Cuando un p
 > enemigo no sincronizaran. Las *partes* de muerte del `red_robot` nacen `public_visibility=false` a
 > propósito (solo sincronizan al explotar, vía `part.gd`) — preservado: solo reciben el filtro.
 
+## Congelación del enemigo en el cliente = stall de render (corregido, VALIDADO 2 PCs 2026-08-05)
+
+Síntoma: el cliente entra en la sala del host y los enemigos aparecen **parados**; el disparo acierta pero **no
+detecta colisión**. Reproducido en un **harness headless de 2 procesos** con el `RoomManager` REAL: el
+**núcleo del netcode de sala es correcto** — replicación, filtro de visibilidad, interpolación
+(`net_transform`) e incluso la **colisión server-side dentro del SubViewport** funcionan (la bala mató a los
+enemigos en la prueba). El fallo solo aparece con el **cliente RENDERIZANDO**: al materializar las ~16
+entidades del template **de una vez**, el bucle principal **se traba varios segundos** (compilación de
+shader/pipeline en la GPU + construcción de los `LimbColliders` de los `red_robot` en la CPU, en el mismo
+frame). En **hardware gráfico débil** ese stall (a) hace que el enemigo "se congele" en pantalla y (b)
+**agota el timeout POR DEFECTO de ENet (mín 5 s) → la conexión CAE**; y como **ningún handler trataba
+`server_disconnected`** (solo existía `connection_failed` en la conexión inicial), el cliente quedaba
+**atrapado en la sala congelada** y, desconectado, el disparo no llegaba al servidor → "no detecta
+colisión". El `StabilityGuard` **no lo detecta**: corre en `_process` (ni siquiera se llama durante el frame
+trabado) y el gatillo de FPS exige 10 muestras seguidas, no 1 pico gigante.
+
+**Correcciones (release `202608051826`, validada en 2 PCs vía playit.gg el 2026-08-05):**
+- **Spawn GRADUAL** de las entidades del template (1/frame de física) en vez de todo de una vez —
+  `TemplateManagerBase.apply_active_gradual()` (refactorizado `_apply_template` en `_plan_template`
+  [salta el camino muerto vía `ResourceLoader.exists`] + `_spawn_job`), usada por
+  `RoomManager._ensure_template_spawned`.
+- **Timeout de ENet TOLERANTE** (limit 32, mín 20 s, máx 40 s) aplicado a cada peer que conecta —
+  `RoomManager._apply_peer_timeout` en `_on_peer_connected` — un stall de render ya no derriba la
+  conexión. *(Validado en el harness: un stall de 3,7 s NO cayó y el sync se recuperó.)*
+- **`client_session` trata `server_disconnected`** (`_on_server_lost`): avisa "La conexión con el host se
+  perdió" y vuelve a `playonline`, en vez de una sala congelada.
+- **Whitelist DINÁMICA del `MultiplayerSpawner`** — nuevo `SpawnableLibrary.configure(spawner)`
+  (`effects_shared/spawnable_library.gd`), llamado en el `_ready` de `level_1`/`level_2`: recorre `library3D`
+  en **orden lexicográfico determinista** (los índices coinciden entre peers) → cualquier modelo de template,
+  **incluidos los nuevos** (`humanoide/jogador/monstro/mulher`), se replica al cliente. Antes la whitelist era
+  fija en el `.tscn` y solo tenía los modelos antiguos.
+- **`StabilityGuard` aflojado** (2026-08-05): `col_pairs` **16000/40000**, `node` **20000/45000**,
+  `vram_warn` **3072** (crit 5120), `fps_crit_frames` **20** (10 s), `physics_throttle_tps` **45** —
+  holgura para el host multisala y tolera el hitch de carga sin estrangular la física. Ver la sección abajo.
+
+⏳ **Queda** un *hitch de carga en la 1.ª entrada a la sala* (compilación de shader), **no fatal** y
+menor con el shader cache caliente; el siguiente paso opcional es **precalentar shaders** (branch
+`feature/salas-prewarm-shaders`). Ver [[salas-freeze-render-stall]] en la memoria.
+
 ## Pantalla negra en el cliente (level_base/level_2) — StabilityGuard (2026-06-24, `feature/spawnplayer2`)
+
+> ⤴ **Valores actualizados el 2026-08-05** (ver la sección *Congelación del enemigo en el cliente*): `col_pairs`
+> 16000/40000, `node` 20000/45000, `vram_warn` 3072, `fps_crit_frames` 20, `physics_throttle_tps` 45.
+> Los límites de abajo (8000/25000 etc.) son el **histórico** de la calibración original del 2026-06-24.
 
 > 🗑️ **Nota histórica (2026-07-01):** el nivel `level_base` fue **ELIMINADO** del proyecto en la
 > reestructuración `feature/restrutu` (escena, `.ogg` y todas las referencias en `levels`/`host_session`/`playonline`/
@@ -266,8 +309,12 @@ equivocado si la escena nace en EN (el idioma se persiste) y la label no volver�
   sigue recibiendo `receive_room_list` durante la selección de personaje). Si el host DETUVO/reinició la sala
   entretanto, NO hace spawn en una sala muerta: vuelve al explorador con el aviso "The room is no longer
   available" (helper `_server_has_room`). Evita la escena vacía de entrar en una sala que ya no corre.
-- ⏳ **Pendientes:** validar en una red REAL entre 2 PCs (join/leave del cliente, kick de Stop, spawn por
-  sala, interest management) y el **host jugando** en una sala (cámara/puntería/disparo en el SubViewport).
+- ✅ **Red REAL entre 2 PC VALIDADA (2026-08-05):** probado vía **playit.gg** (túnel UDP), tras
+  corregir la **congelación del enemigo en el cliente** (stall de render + timeout de ENet + falta de
+  handler `server_disconnected`) — ver la sección *Congelación del enemigo en el cliente* (release
+  `202608051826`).
+- ⏳ **Pendientes:** *hitch de carga en la 1.ª entrada a la sala* en hardware débil (compilación de
+  shader — siguiente paso: precalentar shaders, branch `feature/salas-prewarm-shaders`).
   `enemy_health_bar.get_shared(get_tree().current_scene)` (HUD del enemigo) sigue siendo global —
   en el cliente con 1 sala a pantalla completa funciona; en el host observando/jugando puede aparecer en el lugar equivocado.
   Ver [[🌐 multiplayer (ES)\|multiplayer]].
