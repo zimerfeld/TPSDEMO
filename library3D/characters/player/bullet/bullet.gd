@@ -8,8 +8,13 @@ var hit: bool = false
 
 # Dano da arma que disparou (atribuído pelo atirador ao instanciar).
 var weapon_damage: int = 50
-# Quem disparou — evita dano ao próprio atirador (o bullet nasce dentro dele).
+# Quem disparou — evita dano ao próprio atirador (o bullet nasce dentro dele). NÃO é replicado: só o
+# servidor precisa dele (é lá que a colisão e o dano acontecem).
 var shooter: Node = null
+## Bala DE VERDADE (disparada), e não a do BulletCache pré-instanciado para aquecer shaders.
+## Replicada como spawn property (ver bullet.tscn) porque é a única forma de o CLIENTE distinguir as
+## duas: `shooter` não viaja pela rede, então lá toda bala teria parecido inerte.
+@export var is_live: bool = false
 # Garante que o dano seja aplicado uma única vez (área ou fallback).
 var _registered: bool = false
 var _feedback_reported: bool = false
@@ -44,8 +49,9 @@ func _ready() -> void:
 		# um quadro e saltava 0,67 m no seguinte, parecendo engasgar. Aqui ela AVANÇA sozinha entre as
 		# amostras, na mesma velocidade e direção do disparo — puramente visual: sem colisão, sem
 		# dano, sem RPC (tudo isso continua no servidor, que segue mandando a posição de verdade).
-		# O BulletCache (shooter == null) fica parado: é só warm-up de shaders.
-		set_process(shooter != null)
+		# `is_live` (e não `shooter`, que não é replicado) é o que distingue a bala disparada da do
+		# BulletCache — este último fica parado, é só warm-up de shaders.
+		set_process(is_live)
 
 
 # Avanço visual da bala replicada (cliente). Não usa NetInterp de propósito: a interpolação
