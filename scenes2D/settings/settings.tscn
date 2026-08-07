@@ -861,6 +861,18 @@ layout_mode = 2
 toggle_mode = true
 text = "Enabled"
 
+[node name="Controls" type="ScrollContainer" parent="UI/Margin/Main/Tabs"]
+visible = false
+layout_mode = 2
+horizontal_scroll_mode = 0
+metadata/_tab_index = 6
+
+[node name="ControlsBody" type="VBoxContainer" parent="UI/Margin/Main/Tabs/Controls"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
 [node name="Actions" type="HBoxContainer" parent="UI" unique_id=1938356380]
 layout_mode = 1
 anchors_preset = 12

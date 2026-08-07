@@ -158,6 +158,32 @@ custom_minimum_size = Vector2(320, 50)
 layout_mode = 2
 metadata/tab_order = 5
 
+[node name="WeaponDamageRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Caption" type="Label" parent="UI/Margin/Main/Body/Selectors/WeaponDamageRow"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Dano da arma:"
+
+[node name="WeaponDamage" type="SpinBox" parent="UI/Margin/Main/Body/Selectors/WeaponDamageRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 50)
+layout_mode = 2
+min_value = 0.0
+max_value = 999.0
+step = 1.0
+metadata/tab_order = 5
+
+[node name="WeaponDamageHint" type="Label" parent="UI/Margin/Main/Body/Selectors/WeaponDamageRow"]
+unique_name_in_owner = true
+layout_mode = 2
+vertical_alignment = 1
+text = "0 = padrão (1 de vida por acerto)"
+
 [node name="MemberRow" type="HBoxContainer" parent="UI/Margin/Main/Body/Selectors" unique_id=699485770]
 unique_name_in_owner = true
 visible = false

@@ -240,6 +240,31 @@ what the spawn properties guarantee. General rule: **anything dynamic must propa
 connected listener** — state that changes at runtime needs continuous replication in the
 `replication_config`; creating/removing pieces already travels on its own through the spawner.
 
+## The entry's WEAPON now counts (2026-08-07)
+
+The character manager's **"Weapon"** dropdown existed and **saved** (`weapon_key`/`weapon_path` on the
+entry), but the spawn **never read it**: every character used the fixed `weapon_damage` of its own
+scene (50 on the player, 10 on the red_robot). Now `_configure_spawned_node` applies the chosen weapon.
+
+| situation | damage per hit |
+| --- | --- |
+| weapon with damage set in the Models screen | that value |
+| weapon with no damage set | **1** (`LimbConfig.WEAPON_DAMAGE_FALLBACK`) |
+| **no weapon on the entry** | **0 → the character doesn't shoot** |
+
+With no weapon the character **doesn't fire** (`Player.can_shoot()`), instead of releasing a bullet
+that passes through everyone harmlessly — and the client-side shot-effect prediction is blocked too,
+otherwise there would be a flash and a sound with no bullet.
+
+Weapon damage lives in the **same `limb_config.json`** of the model that already holds per-limb damage
+(`library3D/weapons/<weapon>/`, override in `user://`), editable in the Models screen: the **"Weapon
+damage"** row appears when the category is `weapons`. **`0` = use the default** — writing 0 ERASES the
+setting instead of storing zero. Filling the field when the screen opens uses `set_value_no_signal`;
+without it, merely opening the screen on a weapon would stamp an own value onto it.
+
+Whoever spawns **outside** a template (the player joining through the character screen) keeps the
+scene's `weapon_damage`.
+
 ## Architecture
 
 - **`TemplateManagerBase`** (`autoload/template_manager_base.gd`): common base of the two autoloads.

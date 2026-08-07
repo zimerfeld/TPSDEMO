@@ -3,9 +3,12 @@ extends Node
 # Registro das variantes de player, na MESMA ordem do seletor (chooseplayer.CHARACTERS).
 # O índice (variant_id) é o que trafega pela rede no register_loadout — um int, não um caminho
 # arbitrário (mais seguro). NetSpawn resolve o índice → cena via variant_scene_path().
+# Acrescentar sempre no FIM: o índice é o que viaja pela rede, então inserir no meio faria os
+# jogadores nascerem com o corpo errado — e o clamp de variant_scene_path esconderia o problema.
 const VARIANTS: Array[String] = [
 	"res://library3D/characters/player/player.tscn",
 	"res://library3D/characters/playera/playera.tscn",
+	"res://library3D/characters/humanoide_jogavel/humanoide_jogavel.tscn",
 ]
 
 var scene_path: String = VARIANTS[0]

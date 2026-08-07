@@ -202,6 +202,26 @@ disparos en tercera persona. A grandes rasgos ofrece:
   Una **pantalla de "Cargando"** cubre la entrada a cualquier level (offline) o sala (online) y, en el
   arranque, prepara los gráficos por adelantado — así la primera partida empieza fluida en vez de
   congelarse unos segundos esperando los shaders en plena acción.
+- **Tercer personaje jugable: el HUMANOIDE** — además del robot y la variante rosa, ahora se puede
+  elegir un humanoide con **rig y animaciones propios** (36 clips). Camina, corre y salta; las demás
+  animaciones quedan disponibles como **gestos** (ver Controles abajo). El motor de movimiento del
+  juego sacaba la velocidad de la propia animación — y las del humanoide no desplazan el cuerpo, así
+  que recibió locomoción calculada, con la **cadencia del paso escalada** para que los pies no
+  patinen. La pantalla de selección pasa a mostrar el modelo y la pose de descanso **de cada
+  personaje**, en vez del robot para todos.
+- **Configuración durante la partida (ESC)** — ESC en el juego abre ahora la **configuración sobre la
+  partida, pausada**: el personaje queda ocioso, sin responder a los mandos ni recibir daño mientras
+  ajustas las opciones. **Volver** reanuda justo donde lo dejaste; **Abandonar partida** abre la
+  confirmación de siempre.
+- **Pestaña Controles: remapear todo** — cada función del jugador (andar, saltar, apuntar, disparar,
+  mirar, salir, pantalla completa, depuración) puede asignarse a una **tecla o botón del ratón**, con
+  un botón de volver al valor por defecto en cada fila. Las teclas se guardan por **posición física**,
+  así que los teclados AZERTY y ABNT2 mantienen el mismo sitio. Y hay una sección de **Animaciones**:
+  las 36 del humanoide, leídas del propio modelo, asignables a teclas — pulsar la tecla reproduce la
+  animación **por encima del movimiento**, sin estorbar al WASD, y los demás jugadores ven el gesto.
+- **El arma de la plantilla ya cuenta** — el campo "Arma" del gestor de personajes se guardaba pero se
+  ignoraba; ahora define el **daño** de quien la lleva. Cada arma tiene su daño configurable en la
+  pantalla Models (por defecto: 1 de vida por acierto), y un **personaje sin arma no dispara**.
 - **Vida y respuesta en red (versión 202608071124)** — la vida dejó de propagarse solo por eventos y
   pasó a ser **estado replicado**, incluido el mapa **por miembro**: quien entra en una sala ya en
   combate ve al enemigo con la vida y los miembros exactos del servidor, en vez de barras llenas que

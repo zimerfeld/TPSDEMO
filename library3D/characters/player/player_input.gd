@@ -174,6 +174,28 @@ func _input(input_event: InputEvent) -> void:
 		if aiming:
 			camera_speed_this_frame *= 0.75
 		rotate_camera(input_event.screen_relative * camera_speed_this_frame)
+		return
+	_try_gesture(input_event)
+
+
+# Atalhos de ANIMAÇÃO (aba Controles): a tecla pressionada vira um gesto no personagem. Só a BORDA de
+# subida conta — segurar a tecla não fica redisparando —, e o evento NÃO é consumido: a mesma tecla
+# continua andando/atirando normalmente. É por isso que o WSAD segue intacto mesmo quando uma animação
+# de locomoção herda a tecla dele.
+func _try_gesture(input_event: InputEvent) -> void:
+	if not input_event.is_pressed() or input_event.is_echo():
+		return
+	if not InputBindings.is_supported(input_event):
+		return
+	var character := get_parent()
+	if character == null or not character.has_method(&"request_gesture"):
+		return
+	if not character.call(&"supports_gestures"):
+		return
+	var animation := AnimationBindings.animation_for_event(input_event)
+	if animation == "" or AnimationBindings.is_locomotion(animation):
+		return   # locomoção é da máquina de estados; tocá-la como gesto brigaria com ela
+	character.call(&"request_gesture", animation)
 
 
 # Lança um raio a partir da mira: mostra o HUD do inimigo sob a mira e o

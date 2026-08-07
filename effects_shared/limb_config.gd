@@ -410,3 +410,38 @@ static func remove_sub_member(model_key: String, bone: String) -> void:
 	_save_entry(model_key, entry)
 	# Idem add_sub_member: o particionamento dos ossos mudou → as caixas memorizadas não valem mais.
 	LimbColliders.invalidate_box_cache()
+
+
+# ───────────────────────────── dano da ARMA ─────────────────────────────
+# Quanto uma arma tira de vida por acerto. Fica no MESMO arquivo por modelo que guarda o dano por
+# membro (`library3D/weapons/<arma>/limb_config.json`, com override em `user://`), então a tela
+# Models edita os dois pelo mesmo caminho. Um personagem SEM arma não causa dano nenhum; uma arma
+# sem valor gravado usa WEAPON_DAMAGE_FALLBACK.
+
+## Dano de uma arma que ainda não teve o valor definido na tela Models.
+const WEAPON_DAMAGE_FALLBACK: int = 1
+
+
+## Dano por acerto da arma (chave = nome da pasta em library3D/weapons). Sem valor gravado devolve
+## WEAPON_DAMAGE_FALLBACK; chave vazia devolve 0 — "sem arma" não é "arma fraca", é sem dano.
+static func weapon_damage(weapon_key: String) -> int:
+	if weapon_key == "":
+		return 0
+	return int(_load_entry(weapon_key).get("weapon_damage", WEAPON_DAMAGE_FALLBACK))
+
+
+## True se a arma já teve o dano definido (para a tela mostrar valor próprio × padrão).
+static func has_weapon_damage(weapon_key: String) -> bool:
+	return weapon_key != "" and _load_entry(weapon_key).has("weapon_damage")
+
+
+## Define o dano da arma e persiste. Valor <= 0 apaga o ajuste (volta ao padrão).
+static func set_weapon_damage(weapon_key: String, damage: int) -> void:
+	if weapon_key == "":
+		return
+	var entry := _load_entry(weapon_key)
+	if damage <= 0:
+		entry.erase("weapon_damage")
+	else:
+		entry["weapon_damage"] = damage
+	_save_entry(weapon_key, entry)

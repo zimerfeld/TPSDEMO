@@ -476,6 +476,14 @@ func _configure_spawned_node(node: Node3D, entry: Dictionary) -> void:
 	if not is_equal_approx(factor, 1.0):
 		node.scale = Vector3.ONE * factor
 	node.set_meta("template_scale_factor", factor)
+	# ARMA da entrada → dano do personagem. O dropdown "Arma" já era salvo no template, mas ninguém
+	# lia: todo personagem usava o `weapon_damage` fixo da própria cena. Agora quem manda é a arma
+	# escolhida, com o dano definido na tela Models (LimbConfig). Sem arma o personagem não causa
+	# dano — 0 aqui significa "não dispara", não "tiro fraco".
+	var weapon_key := String(entry.get("weapon_key", ""))
+	node.set_meta("template_weapon", weapon_key)
+	if node.get("weapon_damage") != null:
+		node.set("weapon_damage", LimbConfig.weapon_damage(weapon_key))
 	var faction := String(entry.get("faction", "neutral"))
 	node.set_meta("template_faction", faction)
 	if faction == "friendly" and node.get("bot_controlled") != null:

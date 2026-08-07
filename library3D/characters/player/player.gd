@@ -112,7 +112,10 @@ var initial_position: Vector3 = Vector3.ZERO
 @onready var player_input: PlayerInputSynchronizer = $InputSynchronizer
 @onready var animation_tree: AnimationTree = $AnimationTree
 @onready var player_model: Node3D = $PlayerModel
-@onready var shoot_from: Marker3D = player_model.get_node(^"Robot_Skeleton/Skeleton3D/GunBone/ShootFrom")
+## De onde a bala sai. `Robot_Skeleton` é o nó-raiz do glTF DENTRO de player.glb — não é autorado, e
+## outro modelo tem outra raiz. Por isso a busca por NOME é o caminho principal: qualquer personagem
+## que tenha um `ShootFrom` em qualquer profundidade funciona, sem depender do formato do rig.
+@onready var shoot_from: Marker3D = _find_shoot_from()
 @onready var crosshair: TextureRect = $Crosshair
 @onready var fire_cooldown: Timer = $FireCooldown
 
@@ -195,6 +198,20 @@ var limb_hp: PackedInt32Array = PackedInt32Array():
 
 ## Dano da arma que o player porta (atribuído a cada bullet disparado).
 @export var weapon_damage: int = 50
+
+@export_group("Perfil do modelo")
+## Chave em LimbConfig (pasta do modelo) de onde saem os multiplicadores de dano e os sub-membros.
+## Existe como export para um personagem com OUTRO rig poder reusar toda a mecânica do player sem
+## reescrever `_setup_limb_colliders` — os valores abaixo mantêm player/playera idênticos ao que eram.
+@export var limb_model_key: String = "player"
+## Forma do collider da cabeça: "capsule" (player) ou "sphere".
+@export var limb_head_shape: String = "capsule"
+## Subdividir antebraço/mão e canela/pé em sub-membros próprios. O player faz opt-out (o hitbox de
+## braço/perna inteiro já está ajustado); modelos novos costumam querer ligado.
+@export var limb_auto_distal: bool = false
+## Camada de colisão dos hitboxes de membro (bit5 = player).
+@export var limb_hitbox_layer: int = 16
+@export_group("")
 
 var _health_bar = null
 
@@ -327,16 +344,18 @@ func _setup_health_bar() -> void:
 func _setup_limb_colliders() -> void:
 	if has_node(^"LimbColliders"):
 		return
-	var skel := player_model.get_node_or_null(^"Robot_Skeleton/Skeleton3D") as Skeleton3D
+	var skel := skeleton()
 	if skel == null:
+		CrashHandler.show_error(
+			"Personagem %s sem Skeleton3D: o dano por membro não pode ser montado." % name)
 		return
 	var lc = preload("res://effects_shared/limb_colliders.gd").new()
 	lc.name = "LimbColliders"
 	lc.body_type = "biped"      # plano corporal → classificador de membros
-	lc.model_key = "player"     # busca os multiplicadores de dano por membro em LimbConfig
-	lc.head_shape = "capsule"   # cabeça do player = cápsula (mesma orientação), não esfera
-	lc.hitbox_layer = 16        # bit5 = colliders de membro do player
-	lc.auto_distal_sub_members = false  # opt-out: mantém BRAÇO/PERNA inteiros (hitbox já ajustado), sem subdividir mão/pé
+	lc.model_key = limb_model_key
+	lc.head_shape = limb_head_shape
+	lc.hitbox_layer = limb_hitbox_layer
+	lc.auto_distal_sub_members = limb_auto_distal
 	add_child(lc)
 	lc.build_for(skel)
 	# HP por membro/sub-membro: a mesma regra dos inimigos vale para o player e para qualquer modelo
@@ -355,11 +374,52 @@ func _setup_limb_colliders() -> void:
 		lc.fit_locomotion_capsule(body_shape, self)
 
 
+## O personagem pode disparar? Precisa de um ponto de saída da bala E de dano — sem arma atribuída no
+## template o dano é 0, e aí ele não atira: uma bala que não machuca ninguém só confundiria quem joga.
+## O `weapon_damage` da própria cena (50 no player) continua valendo para quem nasce fora de template.
+func can_shoot() -> bool:
+	return shoot_from != null and weapon_damage > 0
+
+
+## De onde sai a velocidade horizontal. No player ela vem do ROOT MOTION: o deslocamento que a própria
+## animação carrega no osso `root` vira velocidade — é o que faz os pés não patinarem, porque o corpo
+## anda exatamente o que a passada andou.
+##
+## É `virtual` porque nem todo modelo traz esse deslocamento. As animações do humanoide, por exemplo,
+## são IN-PLACE (o `root` fica parado): plugadas aqui, o personagem animaria as pernas sem sair do
+## lugar. Quem estiver nessa situação sobrescreve e calcula a velocidade por código — ver
+## HumanoideJogavel. A predição de rede não se importa com a fonte: `_reconcile` é posicional, e
+## servidor e cliente-dono passam os dois por aqui.
+func _apply_horizontal_velocity(delta: float, _camera_x: Vector3, _camera_z: Vector3) -> void:
+	var h_velocity: Vector3 = orientation.origin / delta
+	velocity.x = h_velocity.x
+	velocity.z = h_velocity.z
+
+
+## Esqueleto do modelo, achado por TIPO e não por caminho. O caminho literal (`Robot_Skeleton/
+## Skeleton3D`) vale só para o player.glb: em outro modelo a raiz do glTF tem outro nome, e o
+## `get_node_or_null` devolvia null em silêncio — o personagem nascia sem dano por membro e sem mira
+## procedural, sem nenhum aviso. Mesmo idioma que a tela Models já usa para varrer modelos.
+func skeleton() -> Skeleton3D:
+	if player_model == null:
+		return null
+	var found := player_model.find_children("*", "Skeleton3D", true, false)
+	return found[0] as Skeleton3D if not found.is_empty() else null
+
+
+# Marker3D de onde a bala sai. Busca por nome em qualquer profundidade — modelos diferentes penduram
+# o `ShootFrom` em ossos diferentes (o robô tem GunBone; um humanoide, a mão).
+func _find_shoot_from() -> Marker3D:
+	if player_model == null:
+		return null
+	return player_model.find_child("ShootFrom", true, false) as Marker3D
+
+
 # Cria o SkeletonModifier3D da mira vertical procedural sob o Skeleton3D do player.
 func _setup_aim_modifier() -> void:
 	if _aim_modifier != null:
 		return
-	var skel := player_model.get_node_or_null(^"Robot_Skeleton/Skeleton3D") as Skeleton3D
+	var skel := skeleton()
 	if skel == null:
 		return
 	_aim_modifier = preload("res://library3D/characters/player/procedural_aim.gd").new()
@@ -595,7 +655,7 @@ func apply_input(delta: float) -> void:
 		# de mira assentar e o cano estar alinhado — corrige o glitch do cliente (bala antes
 		# da mira / fora do cano). Vale p/ host, cliente e bots (todos passam por aqui).
 		if authoritative and player_input.shooting and fire_cooldown.time_left == 0 \
-				and _aim_held_time >= AIM_WARMUP_TIME:
+				and _aim_held_time >= AIM_WARMUP_TIME and can_shoot():
 			var shoot_origin: Vector3 = shoot_from.global_transform.origin
 			var to_target: Vector3 = player_input.shoot_target - shoot_origin
 			# Guarda contra alvo degenerado (perto/atrás do cano, ex.: shoot_target ainda em
@@ -640,9 +700,7 @@ func apply_input(delta: float) -> void:
 	# Apply root motion to orientation.
 	orientation *= root_motion
 
-	var h_velocity: Vector3 = orientation.origin / delta
-	velocity.x = h_velocity.x
-	velocity.z = h_velocity.z
+	_apply_horizontal_velocity(delta, camera_x, camera_z)
 	velocity += get_gravity() * delta
 	set_velocity(velocity)
 	set_up_direction(Vector3.UP)
@@ -694,12 +752,14 @@ func shoot() -> void:
 # `shoot()` vindo do servidor apenas completar o que faltou.
 func _play_shot_fx() -> void:
 	_local_fx_at = float(Time.get_ticks_msec())
-	var shoot_particle = $PlayerModel/Robot_Skeleton/Skeleton3D/GunBone/ShootFrom/ShootParticle
-	shoot_particle.restart()
-	shoot_particle.emitting = true
-	var muzzle_particle = $PlayerModel/Robot_Skeleton/Skeleton3D/GunBone/ShootFrom/MuzzleFlash
-	muzzle_particle.restart()
-	muzzle_particle.emitting = true
+	# As partículas são FILHAS do próprio ShootFrom (ver player.tscn): derivá-las dele elimina mais um
+	# caminho literal preso ao rig do robô e faz o efeito valer para qualquer personagem.
+	if shoot_from != null:
+		for fx_name in [^"ShootParticle", ^"MuzzleFlash"]:
+			var fx := shoot_from.get_node_or_null(fx_name) as GPUParticles3D
+			if fx != null:
+				fx.restart()
+				fx.emitting = true
 	sound_effect_shoot.play()
 	if not bot_controlled:
 		add_camera_shake_trauma(0.35)
@@ -736,6 +796,10 @@ func _fx_recently_played() -> bool:
 # Antes esta função exigia um tiro JÁ confirmado na sessão de mira, e por isso o atraso voltava a cada
 # vez que o jogador guardava e sacava a arma (relatado em playtest).
 func _can_predict_shot_fx() -> bool:
+	# Sem arma o servidor não vai autorizar tiro nenhum — prever o efeito aqui daria clarão e som
+	# fantasmas, sem bala.
+	if not can_shoot():
+		return false
 	var warmed: bool = _server_shot_since_aim or _aim_held_time >= AIM_WARMUP_TIME + SHOT_PREDICT_MARGIN
 	if not warmed:
 		return false
@@ -775,6 +839,66 @@ func hit(amount: int = 25, group: String = "") -> void:
 		respawn.rpc()
 	if not bot_controlled:
 		add_camera_shake_trauma(0.75)
+
+
+# ───────────────────────────── gestos (atalhos de animação) ─────────────────────────────
+# Animações avulsas do modelo (rolar, defender, bater…) que o jogador mapeou a uma tecla na aba
+# Controles. Entram como CAMADA por cima da locomoção — um estado seria reescrito por `animate()` no
+# frame seguinte. Só existem em personagens cuja árvore tem o nó `gesture`; nos demais é no-op.
+
+## Parâmetros do OneShot de gesto na árvore de animação.
+const GESTURE_REQUEST := "parameters/gesture/request"
+const GESTURE_CLIP := "gesture_clip"
+## Janela (ms) em que o eco do servidor é entendido como confirmação do gesto que o dono já tocou.
+const GESTURE_DEDUPE_MS: float = 400.0
+var _gesture_played_at: float = -1.0e9
+
+
+## True se este personagem sabe tocar gestos (a árvore tem a camada). O robô, por ora, não tem.
+func supports_gestures() -> bool:
+	return animation_tree != null and animation_tree.tree_root != null \
+			and animation_tree.tree_root.has_node(StringName(GESTURE_CLIP))
+
+
+## Pedido do DONO: toca já (responsividade) e manda o servidor confirmar para os outros peers.
+func request_gesture(animation: String) -> void:
+	if animation == "" or not supports_gestures():
+		return
+	_play_gesture_local(animation)
+	if not _safe_is_server_call(false):
+		_server_gesture.rpc_id(1, animation)
+	else:
+		play_gesture.rpc(animation)
+
+
+# Servidor recebe o pedido e o retransmite. Valida o remetente: só o DONO do personagem manda gesto
+# nele — senão qualquer peer poderia animar o corpo alheio.
+@rpc("any_peer", "reliable")
+func _server_gesture(animation: String) -> void:
+	if not multiplayer.is_server():
+		return
+	if multiplayer.get_remote_sender_id() != player_id:
+		return
+	play_gesture.rpc(animation)
+
+
+@rpc("authority", "call_local", "reliable")
+func play_gesture(animation: String) -> void:
+	# O dono já tocou ao apertar a tecla; o eco que volta do servidor não repete.
+	if _is_local_player and float(Time.get_ticks_msec()) - _gesture_played_at < GESTURE_DEDUPE_MS:
+		return
+	_play_gesture_local(animation)
+
+
+func _play_gesture_local(animation: String) -> void:
+	if not supports_gestures():
+		return
+	var clip := animation_tree.tree_root.get_node(StringName(GESTURE_CLIP)) as AnimationNodeAnimation
+	if clip == null:
+		return
+	clip.animation = StringName(animation)
+	_gesture_played_at = float(Time.get_ticks_msec())
+	animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
 
 
 @rpc("call_local")

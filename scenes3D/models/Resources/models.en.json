@@ -89,5 +89,7 @@
 	"Membro-dono (agrupa o dano; não mexe na malha)": "Owner member (groups the damage; doesn't touch the mesh)",
 	"Esfera": "Sphere",
 	"Caixa": "Box",
-	"Cápsula": "Capsule"
+	"Cápsula": "Capsule",
+	"Dano da arma:": "Weapon damage:",
+	"0 = padrão (1 de vida por acerto)": "0 = default (1 health per hit)"
 }
