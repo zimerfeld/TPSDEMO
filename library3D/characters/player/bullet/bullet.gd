@@ -8,8 +8,13 @@ var hit: bool = false
 
 # Dano da arma que disparou (atribuído pelo atirador ao instanciar).
 var weapon_damage: int = 50
-# Quem disparou — evita dano ao próprio atirador (o bullet nasce dentro dele).
+# Quem disparou — evita dano ao próprio atirador (o bullet nasce dentro dele). NÃO é replicado: só o
+# servidor precisa dele (é lá que a colisão e o dano acontecem).
 var shooter: Node = null
+## Bala DE VERDADE (disparada), e não a do BulletCache pré-instanciado para aquecer shaders.
+## Replicada como spawn property (ver bullet.tscn) porque é a única forma de o CLIENTE distinguir as
+## duas: `shooter` não viaja pela rede, então lá toda bala teria parecido inerte.
+@export var is_live: bool = false
 # Garante que o dano seja aplicado uma única vez (área ou fallback).
 var _registered: bool = false
 var _feedback_reported: bool = false
@@ -34,9 +39,26 @@ func _ready() -> void:
 	_apply_visuals()
 	# Sem atirador = bullet inerte: o "BulletCache" pré-instanciado na cena do
 	# player (warm-up) e os bullets replicados em clientes (shooter não replica).
+	# O avanço visual (_process) é EXCLUSIVO do cliente: no servidor quem move a bala é o
+	# _physics_process, e deixar os dois ligados a faria andar ao dobro da velocidade lá.
+	set_process(false)
 	if shooter == null or not multiplayer.is_server():
 		set_physics_process(false)
 		collision_shape.disabled = true
+		# No CLIENTE a bala só recebia o transform replicado a 30 Hz: com 60+ FPS ela ficava parada em
+		# um quadro e saltava 0,67 m no seguinte, parecendo engasgar. Aqui ela AVANÇA sozinha entre as
+		# amostras, na mesma velocidade e direção do disparo — puramente visual: sem colisão, sem
+		# dano, sem RPC (tudo isso continua no servidor, que segue mandando a posição de verdade).
+		# `is_live` (e não `shooter`, que não é replicado) é o que distingue a bala disparada da do
+		# BulletCache — este último fica parado, é só warm-up de shaders.
+		set_process(is_live)
+
+
+# Avanço visual da bala replicada (cliente). Não usa NetInterp de propósito: a interpolação
+# renderiza `render_delay_ms` no passado, e a bala do próprio jogador ficaria mais de um metro atrás
+# do cano — o oposto do que queremos.
+func _process(delta: float) -> void:
+	global_position += -delta * BULLET_VELOCITY * global_transform.basis.z
 
 
 # Aplica tint/cor/escala configurados. Sentinela (alpha 0) mantém o visual autorado.

@@ -136,6 +136,110 @@ The host grid's "Templates" "didn't work" when the level selector was at
 level first…"); with a level selected it opens the manager normally (validated live
 hosting on 127.0.0.1:4383 — room #1 created, observed, scenery applied).
 
+## SCENERY picker in host_session (2026-08-06)
+
+The host grid only had `Levels` + `Templates` (characters) — an online room always spawned with the
+level's **default scenery**, while offline mode (the `levels` screen) already picked both. `StartRow`
+gained `Sceneries` (OptionButton) + `ManageSceneries` (a "Cenários" button that opens
+`scenery_manager` in the same `FloatingWindow`), mirroring the character pair. `_on_start_pressed`
+activates BOTH managers **before** `RoomManager.start_room` — the room manager applies both while
+building the room (`apply_active_gradual`), so a joining client gets the full level, identical to the
+host's. Generic code: `_refresh_picker`/`_apply_picker`/`_open_manager_dialog` take the category's
+`TemplateManagerBase` (one path for both). Tab: Levels 1 → Templates 2 → ManageTemplates 3 →
+Sceneries 4 → ManageSceneries 5 → Start Room 6 → room rows → Back → Debug 2D.
+
+## Scenery arrived at (0,0,0) on the client — piece spawn properties (2026-08-06)
+
+The host's scenery picker exposed the bug: **on the client all 9 "Palco Neon" pieces spawned at the
+origin, stacked**, while on the server they were spread out. Measured with a simultaneous dump from
+both sides (host on 44000, client joining through the `zimaro.playit.game` tunnel): `Scenery_box_000`
+= `-11.33, 1.00, -3.55` on the server and `0,0,0` on the client — all nine like that.
+
+**Cause.** `MultiplayerSpawner` only transmits WHICH scene to instantiate and the node name; the
+`position`/`rotation`/`scale` that `_spawn_job` applies after `instantiate()` never travels in the
+packet. **Every model is born at (0,0,0) on the client** — what differs is who FIXES it afterwards:
+
+| scene | synchronizers | result on the client |
+| --- | --- | --- |
+| `player.tscn` (including the bot ally) | 3, with `net_transform` **and** `spawn_position` (`spawn=true`) | correct on the same frame |
+| `red_robot.tscn` / `criatura_alada.tscn` | 4 / 1, with `net_transform` (`spawn=true`) | correct on the same frame |
+| `box`/`sphere`/`pill` | **none** | stayed at (0,0,0) forever |
+
+Being static, nothing replicated the pieces' transform after spawn — the error was permanent.
+
+**Fix.** `library3D/sceneries/scenery_piece.gd` (`class_name SceneryPiece`): `spawn_position`,
+`spawn_rotation_y` and `spawn_scale` as `@export`s whose setters apply to the node itself, replicated
+by a `ServerSynchronizer` with `replication_mode = 0` (**spawn only** — zero traffic afterwards,
+which is right for a body that never moves). `_spawn_job` copies the transform into those properties
+BEFORE `add_child` (the only way they make it into the creation packet). Same pattern as the player's
+`spawn_position`.
+
+**Validated** with the same comparative test: the nine pieces now match decimal for decimal between
+server and client (`7.48,1.00,10.37`, `-13.08,1.00,13.89`, …).
+
+### Importer + contract generator (`scripts/scenery_contract.gd`)
+
+A DEVELOPMENT tool (the exported `.exe`'s `res://` is read-only, so scene preparation happens in the
+project, never at runtime):
+
+```bash
+godot --headless --path . --script scripts/scenery_contract.gd             # validate and report
+godot --headless --path . --script scripts/scenery_contract.gd -- --apply  # fix and save
+```
+
+- **Validates** each `library3D/sceneries/<name>/<name>.tscn` against the contract and exits with
+  code 1 when something is missing (usable as an automated check).
+- **Fixes** (`--apply`) by attaching the script + `ServerSynchronizer` to scenes that lack them.
+- **Imports** a new model: a folder holding a `.glb`/`.gltf` but no `<name>.tscn` yet gets a
+  generated scene — `StaticBody3D` root carrying the contract, the mesh instanced, and a box
+  `CollisionShape3D` from the aggregate AABB (an editable starting point; tighten it by hand later).
+
+The contract rule lives in **one place only** — `SceneryPiece.contract_issues()` / `meets_contract()`
+/ `make_spawn_config()` — queried by both the tool and the runtime, so the tool can't approve under
+one criterion while the game breaks under another. Hence `SceneryPiece` extends `Node3D` rather than
+`StaticBody3D`: the contract applies to any 3D root.
+
+**On-screen validation (BOTH managers).** The warning shows the moment a model is PICKED in the
+cascade — an amber label under the dropdowns: *"Warning: this model spawns at (0,0,0) for anyone
+joining over the network — …"*, listing what's missing. There is also the save-time alert (listing
+the template's problematic models) and one `push_warning` per scene in `_spawn_job`, carrying the fix
+command.
+
+Each category answers for ITS OWN requirement, via `TemplateManagerBase._node_contract_issues`:
+
+- **sceneries** → the full `SceneryPiece` contract (they are static: if the transform doesn't arrive
+  in the spawn packet, nothing fixes it afterwards);
+- **characters** → replicating the transform on spawn (`net_transform`/`spawn_position`) is enough,
+  since whoever replicates it also keeps correcting it. Checked by `replicates_transform()`.
+
+Results are memoised per `scene_path` (`_contract_cache`) — the cascade re-queries on every click and
+the check instantiates the scene.
+
+**`characters/jogador/jogador.tscn` fixed (2026-08-07).** It was a `Node3D` + GLB mesh, no script, no
+AI and no synchronizer — a character only by folder, in practice a static piece — so it got the same
+contract, applied by the tool itself:
+
+```bash
+godot --headless --path . --script scripts/scenery_contract.gd -- --root=res://library3D/characters --only=jogador --apply
+```
+
+Hence the two new parameters: **`--root=`** (point at another library) and **`--only=`** (limit to ONE
+folder — without it, an `--apply` over `characters` would also GENERATE scenes for `humanoide`,
+`monstro` and `mulher`, which only have `.glb` and aren't ready for the manager yet). Two guards
+protect scenes that have behaviour: the tool **never overwrites an existing script**, and it reports
+`ok (replicates the transform through its own script)` for those already meeting the requirement via
+`net_transform` (player, playera, red_robot, criatura_alada). Validated over the network: the three
+`Character_jogador_*` match exactly between server and client.
+
+It cannot be fixed at runtime: the spawn properties must exist in the SCENE, which both sides
+instantiate — hence the tool does the fixing and the screen only warns.
+
+**The client never builds sceneries** — it never applies a template: the server materialises the room
+and the `MultiplayerSpawner` replicates it. "Loading the exact same initial information" is precisely
+what the spawn properties guarantee. General rule: **anything dynamic must propagate to every
+connected listener** — state that changes at runtime needs continuous replication in the
+`replication_config`; creating/removing pieces already travels on its own through the spawner.
+
 ## Architecture
 
 - **`TemplateManagerBase`** (`autoload/template_manager_base.gd`): common base of the two autoloads.
@@ -150,7 +254,7 @@ hosting on 127.0.0.1:4383 — room #1 created, observed, scenery applied).
   (root `ScrollContainer`) inserted into a `FloatingWindow` (CanvasLayer 128) — 2D theme + Debug 2D
   work. Subclasses: `template_manager.gd` (characters) and `scenery_manager.gd` (sceneries),
   each the root of its `.tscn`. Opened by `open_over(host, level)` from the button of each row of the
-  `levels` screen and (only the character one) by `host_session`.
+  `levels` screen and by `host_session` (since 2026-08-06, BOTH — characters and sceneries).
 - Template **entry**: `kind` (character/scenery), `model_key`/`scene_path`, `faction`
   (friendly/enemy/neutral — characters only), `count`, `placement` (coordinates/random/formation) +
   fields for each mode, `name` (custom label in the `Entries` dropdown), `rotation_y`, `spacing`.

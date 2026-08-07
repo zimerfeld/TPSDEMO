@@ -9,7 +9,13 @@ enum Animations {
 	WALK,
 }
 
-const MOTION_INTERPOLATE_SPEED: float = 10.0
+## Rapidez (1/s) com que o vetor de andar persegue o input. É o quanto o personagem demora a chegar à
+## velocidade plena ao pisar no acelerador e a parar quando se solta — o deslocamento vem do root
+## motion da animação, então este número é a "inércia" sentida no controle.
+## 20 (era 10): a 10 sobravam ~100 ms de deriva depois de soltar a tecla, lidos como o personagem
+## escorregando por conta própria. Aqui a parada fica seca e a arrancada, mais imediata; subir muito
+## além disso começa a estalar a transição das animações de caminhada/estrafe.
+const MOTION_INTERPOLATE_SPEED: float = 20.0
 const ROTATION_INTERPOLATE_SPEED: float = 10.0
 const PlayerBotAILib := preload("res://library3D/characters/player/IA/player_bot_ai.gd")
 
@@ -22,7 +28,18 @@ const JUMP_CUT_DAMPING: float = 14.0
 # Tempo (s) mirando antes do PRIMEIRO tiro — espera a animação de mira assentar. Sem isto, num
 # aim→tiro instantâneo a bala saía antes de o corpo entrar na pose de mira; no cliente (corpo
 # renderizado ~100 ms no passado) isso parecia a bala saindo fora da extremidade do cano.
+#
+# VOLTOU a 0,45 (2026-08-07). A tentativa de 0,25 s — em tese acima do piso de 0,20 do xfade_time do
+# AnimationNodeTransition — trouxe de volta o glitch da bala saindo fora do cano ao SACAR a arma de
+# novo (relatado em playtest: "depois de guardar a arma volta a dar glitch"). O xfade é o piso do
+# BLEND, não do tempo real até o osso GunBone assentar na pose de mira; quem define a origem do tiro é
+# `shoot_from` no esqueleto DO SERVIDOR, ainda em transição. A responsividade do primeiro tiro vem da
+# predição do efeito local (ver _can_predict_shot_fx), que não depende desta constante.
 const AIM_WARMUP_TIME: float = 0.45
+# Margem (s) sobre o aquecimento antes de o cliente CONFIAR que o servidor já autorizaria o tiro.
+# Cobre a grade de envio do input mais uma volta de rede folgada — sem ela, prever o primeiro tiro de
+# cada saque tocaria o efeito antes da autorização.
+const SHOT_PREDICT_MARGIN: float = 0.15
 
 var airborne_time: float = 100.0
 # True do início do pulo até o ápice (ou o pouso). Restringe o corte de pulo (JUMP_CUT_DAMPING)
@@ -30,16 +47,48 @@ var airborne_time: float = 100.0
 var _jump_active: bool = false
 # Tempo acumulado mirando (zera ao sair da mira); o tiro só é liberado após AIM_WARMUP_TIME.
 var _aim_held_time: float = 0.0
+# Predição do FEEDBACK do tiro no cliente dono (ver _play_shot_fx / _predict_shot_fx). Guarda o
+# instante (ms) em que o efeito foi tocado localmente, para o `shoot()` que chega do servidor logo
+# depois não repetir flash/som/tremida. Só cosmético — bala e dano seguem 100% no servidor.
+var _local_fx_at: float = -1.0e9
+# O servidor já confirmou um tiro NESTA sessão de mira? Só depois disso o cliente prevê o efeito: o
+# relógio de aquecimento local corre à frente do servidor (o `aiming` ainda vai subir pela rede), e
+# prever o PRIMEIRO tiro faria o efeito sair sistematicamente antes da autorização.
+var _server_shot_since_aim: bool = false
 
 var orientation := Transform3D()
 var root_motion := Transform3D()
+## Vetor de andar/estrafear (x = lateral, y = frente/trás), suavizado. LOCAL: cada peer calcula o seu
+## — o dono a partir do próprio teclado, o servidor a partir do input recebido. NÃO é replicado; ver
+## `net_motion`.
 var motion := Vector2()
+## Espelho de `motion` publicado pelo servidor, para os peers que só ASSISTEM este player animarem as
+## pernas certo. Existe separado de `motion` porque replicar `motion` direto o devolvia ao PRÓPRIO
+## dono ~30x/s: a cada amostra o teclado local era atropelado por um valor de um RTT atrás, e a
+## arrancada/parada ficava serrilhada (o "flickering" ao mover). Agora o dono manda no seu `motion` e
+## só quem assiste lê daqui.
+var net_motion := Vector2()
 
 var _is_local_player: bool = false
 var _has_prediction: bool = false
 var _predicted_origin: Vector3
 var _predicted_velocity: Vector3
-const SERVER_SNAP_THRESHOLD: float = 2.0
+## Distância (m) de discordância a partir da qual a predição local é DESCARTADA e o corpo salta para a
+## posição do servidor. Piso do limiar — ele cresce com a velocidade e o ping (ver _snap_threshold),
+## porque quanto mais rápido se anda e mais alto o ping, maior é a discordância NORMAL entre os dois.
+## Baixou de 2,0 para 0,4: com a reconciliação suave drenando o erro, um limiar alto só servia para
+## deixar o desvio crescer até o teleporte.
+const SERVER_SNAP_THRESHOLD: float = 0.4
+## Teto do limiar de snap (m). Sem ele, ping alto viraria "nunca corrige".
+const SERVER_SNAP_THRESHOLD_MAX: float = 4.0
+## Fração do erro drenada por tick de física quando servidor e predição concordam "o suficiente".
+## 0,12 a 60 Hz mata ~99% de um desvio em meio segundo — invisível para o jogador.
+const RECONCILE_RATE: float = 0.12
+# RTT medido do peer (s), reamostrado a cada RTT_SAMPLE_INTERVAL — get_statistic por tick de física
+# seria desperdício para um número que muda devagar.
+const RTT_SAMPLE_INTERVAL: float = 1.0
+var _rtt_seconds: float = 0.0
+var _rtt_sampled_at: float = -1.0e9
 
 # --- Interpolação de rede (suavização das entidades remotas) ---
 ## Proxies replicados pelo ServerSynchronizer NO LUGAR de transform/PlayerModel:transform.
@@ -119,11 +168,30 @@ var initial_position: Vector3 = Vector3.ZERO
 ## Com os 100 anteriores eram só 6 acertos — um tiro por membro —, ou seja, a mudança para HP por
 ## membro tinha deixado o player MAIS frágil do que antes, não mais resistente.
 const MAX_HP: int = 150
-var hp: int = MAX_HP
+## Vida atual. REPLICADA (spawn + on-change, ver player.tscn): sem isto, quem entrava na sala depois
+## via todo mundo com vida cheia, porque `hp` só se propagava pelo EVENTO `hit()` — quem não estava
+## presente nunca recebeu o evento, e o valor errado nunca se corrigia sozinho. O setter repinta a
+## barra; é null-safe porque `_health_bar` é null PARA SEMPRE em peer não-dono e em bot.
+var hp: int = MAX_HP:
+	set(value):
+		hp = value
+		if _health_bar != null:
+			_health_bar.update_health(hp, MAX_HP)
 
 # HP por membro/sub-membro (ver [[limb-health]]). Enquanto houver membros definidos, é ele que decide
 # o abate; `hp` passa a espelhar a soma dos membros (a barra de vida continua mostrando o corpo todo).
 var limbs: LimbHealth = null
+## Snapshot do mapa de membros, replicado (ver LimbHealth.groups_snapshot / apply_snapshot). O
+## `limbs` é um RefCounted e não passa pela rede; sem estes dois, quem entra na sala reconstrói o
+## mapa CHEIO e vê membros intactos num corpo já castigado.
+var limb_groups: PackedStringArray = PackedStringArray():
+	set(value):
+		limb_groups = value
+		_apply_limb_snapshot()
+var limb_hp: PackedInt32Array = PackedInt32Array():
+	set(value):
+		limb_hp = value
+		_apply_limb_snapshot()
 
 ## Dano da arma que o player porta (atribuído a cada bullet disparado).
 @export var weapon_damage: int = 50
@@ -275,6 +343,10 @@ func _setup_limb_colliders() -> void:
 	# friendly/neutro — só é abatido quando TODOS os membros definidos caem. Ver [[limb-health]].
 	limbs = LimbHealth.new()
 	limbs.setup(self, lc.model_key, MAX_HP)
+	# O snapshot do servidor costuma chegar ANTES daqui (o pacote de spawn é processado antes deste
+	# setup, que é deferido) — então ele fica guardado nas properties e é aplicado agora que o mapa
+	# existe. Sem isto, quem entra na sala nasceria com todos os membros cheios.
+	_apply_limb_snapshot()
 	# Ajusta a cápsula de LOCOMOÇÃO (bloqueio físico) ao modelo, derivando raio/altura dos boxes
 	# de membro recém-construídos — corpo proporcional ao player em vez da cápsula default. Mantém
 	# 1 shape/personagem (barato, estável, netcode-friendly). Ver [[sistemas/player]].
@@ -314,6 +386,7 @@ func _physics_process(delta: float) -> void:
 		# Espelha o estado real nos proxies replicados (os clientes interpolam estes valores).
 		net_transform = transform
 		net_model_transform = player_model.transform
+		net_motion = motion
 	elif _is_local_player:
 		_reconcile()
 		apply_input(delta)
@@ -322,6 +395,7 @@ func _physics_process(delta: float) -> void:
 		_has_prediction = true
 	else:
 		# Player remoto: renderiza ~100 ms no passado interpolando os snapshots recebidos.
+		motion = net_motion   # só quem ASSISTE adota o vetor do servidor (alimenta o blend das pernas)
 		_interpolate_remote()
 		animate(current_animation, delta)
 
@@ -343,6 +417,39 @@ func _interpolate_remote() -> void:
 		reset_physics_interpolation()
 
 
+# Limiar de snap deste instante: quanto mais rápido o jogador anda e maior o ping, MAIOR a
+# discordância normal entre a predição local e um estado do servidor de meia-volta atrás. Um limiar
+# fixo obrigava a escolher entre teleportar em corrida (baixo) ou deixar o erro crescer (alto).
+#
+# SEM INPUT o limiar vai direto ao teto. É o que impede o "vai até um ponto à frente" ao parar: o
+# jogador para no mesmo tick, mas o servidor ainda executa o input de um RTT atrás e sua posição fica
+# adiantada — um desvio NORMAL, que não é erro de predição e não deve ser corrigido. Corrigi-lo é que
+# produzia o salto (limiar baixo) ou o deslize (drenagem). Parado, só uma discordância realmente
+# grande — teleporte, queda, dessincronia de verdade — justifica mexer na posição.
+func _snap_threshold() -> float:
+	if player_input == null or player_input.motion.length_squared() <= 0.0001:
+		return SERVER_SNAP_THRESHOLD_MAX
+	var speed: float = Vector2(velocity.x, velocity.z).length()
+	return clampf(SERVER_SNAP_THRESHOLD + speed * _peer_rtt() * 2.0,
+			SERVER_SNAP_THRESHOLD, SERVER_SNAP_THRESHOLD_MAX)
+
+
+# RTT com o servidor (s), amostrado do próprio ENet. 0 quando indisponível (offline/host) — aí o
+# limiar cai no piso, que é o comportamento certo sem rede no meio.
+func _peer_rtt() -> float:
+	var now: float = float(Time.get_ticks_msec()) / 1000.0
+	if now - _rtt_sampled_at < RTT_SAMPLE_INTERVAL:
+		return _rtt_seconds
+	_rtt_sampled_at = now
+	_rtt_seconds = 0.0
+	var mp := multiplayer.multiplayer_peer
+	if mp is ENetMultiplayerPeer:
+		var enet_peer: ENetPacketPeer = (mp as ENetMultiplayerPeer).get_peer(1)
+		if enet_peer != null:
+			_rtt_seconds = float(enet_peer.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME)) / 1000.0
+	return _rtt_seconds
+
+
 func _reconcile() -> void:
 	if not _has_prediction:
 		return
@@ -352,13 +459,26 @@ func _reconcile() -> void:
 		velocity = _predicted_velocity
 		return
 	var drift: float = net_transform.origin.distance_to(_predicted_origin)
-	if drift < SERVER_SNAP_THRESHOLD:
-		# Servidor concorda o suficiente: mantém a predição local (sem solavanco).
+	if drift < _snap_threshold():
+		# Servidor concorda o suficiente: segue a predição local (sem solavanco), drenando o erro um
+		# pouco a cada tick — é isto que permite o dono não receber mais o eco de `motion`.
+		#
+		# Mas SÓ ENQUANTO HÁ INPUT. Ao soltar as teclas o jogador para na hora aqui, enquanto o
+		# servidor ainda executa o input de um RTT atrás e sua posição está ADIANTE; drenar nesse
+		# instante arrastava o personagem para essa posição futura — ele "escorregava" depois de
+		# solto. Parado, a predição fica firme: o resto do desvio é pequeno (velocidade × RTT), não se
+		# acumula com o jogador imóvel, e é drenado no próximo movimento.
+		if player_input.motion.length_squared() > 0.0001:
+			_predicted_origin = _predicted_origin.lerp(net_transform.origin, RECONCILE_RATE)
 		global_position = _predicted_origin
 		velocity = _predicted_velocity
 	else:
 		# Divergiu demais: ressincroniza com a posição autoritativa do servidor.
 		global_position = net_transform.origin
+		# physics_interpolation está LIGADA no projeto: sem zerar o histórico, o corpo é desenhado
+		# "rasgando" da posição antiga até a nova, transformando a correção num risco visível. Os
+		# outros teleportes do arquivo (spawn/respawn/level_exit) já fazem isto.
+		reset_physics_interpolation()
 		_has_prediction = false
 
 
@@ -432,7 +552,11 @@ func apply_input(delta: float) -> void:
 	player_input.jumping = false
 
 	if on_air:
-		_aim_held_time = 0.0  # no ar não há mira: zera o aquecimento de mira
+		# No ar não há mira. DECAI em vez de zerar: um pulinho (ou um degrau que passe de
+		# MIN_AIRBORNE_TIME) devolvia o aquecimento inteiro ao jogador que já estava mirando há
+		# tempo — meio segundo de tiro engolido, sem explicação na tela. Decaindo, o pé de volta ao
+		# chão retoma o aquecimento de onde parou.
+		_aim_held_time = maxf(_aim_held_time - delta, 0.0)
 		if velocity.y > 0:
 			# Pulo variável: espaço SEGURO até o fim = arco completo (animação e distância
 			# máximas). Espaço SOLTO na subida = corta o pulo suavemente, amortecendo a
@@ -452,6 +576,7 @@ func apply_input(delta: float) -> void:
 			# bala sai torta. Atualiza já o player_model para o shoot_from refletir a mira agora.
 			orientation.basis = Basis(q_to)
 			player_model.global_transform.basis = orientation.basis
+			_server_shot_since_aim = false   # nova sessão de mira: o 1º tiro volta a ser do servidor
 		else:
 			# Convert orientation to quaternions for interpolating rotation.
 			var q_from: Quaternion = orientation.basis.get_rotation_quaternion()
@@ -490,6 +615,13 @@ func apply_input(delta: float) -> void:
 				ai.note_shot_fired(shoot_origin.distance_to(player_input.shoot_target),
 					target_speed)
 			shoot.rpc()
+		elif _is_local_player and player_input.shooting and _can_predict_shot_fx():
+			# CLIENTE DONO: toca o feedback do tiro AGORA, sem esperar a volta do servidor. Sem isto o
+			# jogador clicava e só via flash/som/tremida depois de um RTT inteiro (pelo túnel, perto de
+			# 200 ms) — é a maior parcela de "input lag" que só o cliente paga. Nada de gameplay é
+			# antecipado: a bala e o dano continuam nascendo no servidor, e o `shoot()` que chega logo
+			# depois reconhece o efeito já tocado e não o repete.
+			_play_shot_fx()
 
 	else: # Not in air or aiming, idle.
 		_aim_held_time = 0.0  # saiu da mira: zera o aquecimento
@@ -544,16 +676,88 @@ func land() -> void:
 
 @rpc("call_local")
 func shoot() -> void:
+	# O cooldown é do SERVIDOR e nunca pode ser pulado pelo dedupe: é ele que governa a cadência real
+	# de tiro (o efeito local é só sensorial). Por isso fica FORA do guard abaixo.
+	fire_cooldown.start()
+	# Chegou um tiro autorizado nesta sessão de mira → a partir daqui o dono pode antecipar o efeito
+	# dos PRÓXIMOS (o primeiro fica com o servidor, cujo relógio de aquecimento é o que vale).
+	_server_shot_since_aim = true
+	# O cliente dono já tocou o efeito ao clicar (ver _play_shot_fx)? então não repete — senão o
+	# jogador ouviria o mesmo disparo duas vezes, separado por um RTT.
+	if _fx_recently_played():
+		return
+	_play_shot_fx()
+
+
+# Parte puramente SENSORIAL do disparo: partícula, clarão do cano, som e tremida de câmera. Separada
+# do `shoot()` para o cliente dono poder tocá-la no instante do clique (predição de feedback), e o
+# `shoot()` vindo do servidor apenas completar o que faltou.
+func _play_shot_fx() -> void:
+	_local_fx_at = float(Time.get_ticks_msec())
 	var shoot_particle = $PlayerModel/Robot_Skeleton/Skeleton3D/GunBone/ShootFrom/ShootParticle
 	shoot_particle.restart()
 	shoot_particle.emitting = true
 	var muzzle_particle = $PlayerModel/Robot_Skeleton/Skeleton3D/GunBone/ShootFrom/MuzzleFlash
 	muzzle_particle.restart()
 	muzzle_particle.emitting = true
-	fire_cooldown.start()
 	sound_effect_shoot.play()
 	if not bot_controlled:
 		add_camera_shake_trauma(0.35)
+
+
+# Janela MÍNIMA (ms) em que um `shoot()` do servidor é entendido como a confirmação do efeito que o
+# cliente já tocou.
+const SHOT_FX_DEDUPE_MS: float = 250.0
+# Folga (ms) somada ao RTT medido ao dimensionar essa janela.
+const SHOT_FX_DEDUPE_SLACK_MS: float = 150.0
+
+
+# A janela ACOMPANHA O PING. Fixa em 250 ms ela ficava menor que o próprio RTT que a predição existe
+# para compensar: acima de ~220 ms — plausível no túnel, e garantido quando um pacote se perde e é
+# retransmitido — o `shoot()` do servidor chegava fora da janela e o efeito tocava DE NOVO, dois
+# clarões e dois sons por disparo. O teto é o cooldown de tiro, para dois disparos distintos nunca
+# se confundirem num só.
+func _fx_dedupe_window_ms() -> float:
+	var wanted: float = maxf(SHOT_FX_DEDUPE_MS, _peer_rtt() * 1000.0 + SHOT_FX_DEDUPE_SLACK_MS)
+	return minf(wanted, fire_cooldown.wait_time * 1000.0 - 50.0)
+
+
+func _fx_recently_played() -> bool:
+	return float(Time.get_ticks_msec()) - _local_fx_at < _fx_dedupe_window_ms()
+
+
+# O cliente dono pode antecipar o efeito agora? Duas condições, e a primeira é o que faz o PRIMEIRO
+# tiro de cada saque também sair na hora:
+#   • o aquecimento local já passou do exigido pelo servidor COM MARGEM (ou o servidor já autorizou um
+#     tiro nesta sessão de mira, o que é prova direta) — assim o efeito nunca sai antes da autorização;
+#   • respeitou a cadência, medida por relógio PRÓPRIO. Não usa o FireCooldown: ele só é iniciado pelo
+#     `shoot()` que vem do servidor, e amarrar a predição a ele faria a cadência local depender da
+#     volta da rede — exatamente o que estamos eliminando.
+# Antes esta função exigia um tiro JÁ confirmado na sessão de mira, e por isso o atraso voltava a cada
+# vez que o jogador guardava e sacava a arma (relatado em playtest).
+func _can_predict_shot_fx() -> bool:
+	var warmed: bool = _server_shot_since_aim or _aim_held_time >= AIM_WARMUP_TIME + SHOT_PREDICT_MARGIN
+	if not warmed:
+		return false
+	return float(Time.get_ticks_msec()) - _local_fx_at >= fire_cooldown.wait_time * 1000.0
+
+
+# Aplica o snapshot de membros recebido, se o mapa local já existir. Chamado pelos setters das duas
+# properties (a ordem de chegada não importa: quem chegar por último completa o par) e ao final da
+# construção dos membros. No SERVIDOR é inerte — lá o mapa é a fonte da verdade, não o destino.
+func _apply_limb_snapshot() -> void:
+	if limbs == null or limb_groups.is_empty() or _safe_is_server_call(false):
+		return
+	limbs.apply_snapshot(limb_groups, limb_hp)
+
+
+# Publica o estado dos membros para os clientes. Só o servidor escreve; roda ao montar os membros e a
+# cada acerto, e o MultiplayerSynchronizer envia por mudança (não a cada frame).
+func _publish_limb_snapshot() -> void:
+	if limbs == null or not _safe_is_server_call(false):
+		return
+	limb_groups = limbs.groups_snapshot()
+	limb_hp = limbs.hp_snapshot()
 
 
 @rpc("call_local")
@@ -566,8 +770,7 @@ func hit(amount: int = 25, group: String = "") -> void:
 		hp = limbs.total_hp()
 	else:
 		hp = maxi(hp - amount, 0)
-	if _health_bar:
-		_health_bar.update_health(hp, MAX_HP)
+	_publish_limb_snapshot()   # servidor: leva o estado por membro a quem entrar depois
 	if (limbs.is_defeated() if by_limb else hp <= 0) and _safe_is_server_call(false):
 		respawn.rpc()
 	if not bot_controlled:
@@ -576,11 +779,10 @@ func hit(amount: int = 25, group: String = "") -> void:
 
 @rpc("call_local")
 func respawn() -> void:
-	hp = MAX_HP
+	hp = MAX_HP          # o setter repinta a barra de vida
 	if limbs != null:
 		limbs.reset()   # membros destruídos voltam inteiros junto com a vida
-	if _health_bar:
-		_health_bar.update_health(hp, MAX_HP)
+	_publish_limb_snapshot()   # servidor: o mapa cheio vale também para quem entrar depois
 	transform.origin = initial_position
 	reset_physics_interpolation()  # teleporte de respawn: evita o rasgo de interpolação
 

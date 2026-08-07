@@ -27,6 +27,9 @@ static func fire(parent: Node, origin: Vector3, dir: Vector3, damage: int, shoot
 	var bullet: CharacterBody3D = BULLET_SCENE.instantiate()
 	bullet.weapon_damage = damage
 	bullet.shooter = shooter
+	# Spawn property (como o transform abaixo): tem de estar setada ANTES do add_child para entrar no
+	# pacote de spawn — é assim que o cliente sabe que esta bala está em voo (ver bullet.gd).
+	bullet.is_live = true
 	bullet.tint = tint
 	bullet.ball_color = ball_color
 	bullet.ball_scale = ball_scale

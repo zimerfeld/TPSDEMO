@@ -47,7 +47,15 @@ var _scan_cd := 0.0
 # Janela (s) em que a criatura se considera AMEAÇADA após levar um tiro → sobe p/ escapar (IA aérea).
 var _recent_hit_t := 0.0
 var _player: Node3D = null
-var _dead := false
+## Abatida. REPLICADA (spawn + on-change, ver criatura_alada.tscn): quem entra na sala depois
+## precisa nascer sabendo quem já morreu, e a decisão do abate é só do servidor. O setter esconde o
+## HUD de vida no cliente — o `hit()` não serve para isso, porque um `hit` que chega depois de `dead`
+## já ter sido replicado cai no guard e vira no-op.
+@export var dead: bool = false:
+	set(value):
+		dead = value
+		if dead and is_node_ready():
+			hide_health_hud()
 var ai: Node = null
 
 ## Proxy replicado NO LUGAR de global_transform: o servidor o espelha a cada frame; o cliente
@@ -102,7 +110,7 @@ func _physics_process(delta: float) -> void:
 		_interpolate_remote()
 		return
 
-	if _dead:
+	if dead:
 		velocity.y -= BOMB_GRAVITY * delta
 		move_and_slide()
 		net_transform = global_transform  # espelha p/ replicação (clientes interpolam)
@@ -236,23 +244,25 @@ func notify_projectile_feedback(hit_target: Node) -> void:
 # `_group` (membro atingido) chega de quem dispara — ver [[limb-health]]. A criatura alada não monta
 # colliders de membro, então segue com vida ÚNICA e apenas aceita o argumento.
 func hit(amount: int = 50, _group: String = "") -> void:
-	if _dead:
+	if dead:
 		return
 	health = maxi(health - amount, 0)
 	_recent_hit_t = 3.0  # levou tiro → ameaçada: sobe p/ escapar (janela decai no _physics_process)
 	show_health_hud()
-	if health <= 0:
-		_dead = true
+	# ABATE é decisão do SERVIDOR (mesma regra do player.gd). Antes cada peer decidia sozinho a partir
+	# do seu `health` local: bastava um cliente com vida dessincronizada para ele ver a criatura morta
+	# — ou viva — em desacordo com a sala. Agora o servidor decide e replica `dead`.
+	if health <= 0 and _is_server():
+		dead = true
 		hide_health_hud()
-		if _is_server():
-			await get_tree().create_timer(4.0).timeout
-			queue_free()
+		await get_tree().create_timer(4.0).timeout
+		queue_free()
 
 
 # `_group` (membro sob a mira) é aceito por compatibilidade com quem tem HP por membro; sem colliders
 # de membro, a criatura mostra sempre a vida do corpo.
 func show_health_hud(distance: float = -1.0, _group: String = "") -> void:
-	if _dead or DisplayServer.get_name() == "headless":
+	if dead or DisplayServer.get_name() == "headless":
 		return
 	# `self` (e não a cena atual): o HUD nasce no viewport DESTA sala — ver enemy_health_bar.gd.
 	var hud = preload("res://controls2D/enemy_health_bar.gd").get_shared(self)

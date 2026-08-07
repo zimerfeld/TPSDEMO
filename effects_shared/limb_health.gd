@@ -181,3 +181,53 @@ func total_max_hp() -> int:
 	for g in _max_hp:
 		sum += int(_max_hp[g])
 	return sum
+
+
+# ───────────────────────── snapshot para a rede ─────────────────────────
+# O mapa de membros é um RefCounted com Dictionaries — não passa pelo MultiplayerSynchronizer. Como
+# CADA peer monta o seu do zero, sempre CHEIO, quem entra numa sala em combate via todos os membros
+# inteiros num inimigo já quase abatido, e isso nunca se corrigia. Estes dois métodos projetam o mapa
+# em arrays replicáveis (ver player.tscn / red_robot.tscn) e o reconstroem do outro lado.
+#
+# Chaveado por NOME, nunca por índice: o conjunto de membros pode diferir entre as máquinas (a tela
+# Models grava overrides em `user://limb_config`). Com nome, um membro desconhecido é ignorado; com
+# índice, o HP seria pintado no membro ERRADO — pior que o problema original.
+
+## Grupos na ordem em que o snapshot os enumera (chave do `hp_snapshot`).
+func groups_snapshot() -> PackedStringArray:
+	var out := PackedStringArray()
+	for g in _hp:
+		out.append(String(g))
+	return out
+
+
+## HP restante de cada grupo, na mesma ordem de `groups_snapshot`.
+func hp_snapshot() -> PackedInt32Array:
+	var out := PackedInt32Array()
+	for g in _hp:
+		out.append(int(_hp[g]))
+	return out
+
+
+## Aplica um snapshot ABSOLUTO vindo do servidor. Absoluto (e não delta) para ser idempotente: pode
+## chegar depois de o `hit()` local já ter descontado o mesmo dano, sem descontar duas vezes.
+## Grupos que não existem aqui são ignorados — a divergência é contada para diagnóstico.
+## Devolve quantos grupos foram aplicados.
+func apply_snapshot(groups: PackedStringArray, values: PackedInt32Array) -> int:
+	var applied := 0
+	var unknown := 0
+	for i in mini(groups.size(), values.size()):
+		var g := String(groups[i])
+		if _hp.has(g):
+			_hp[g] = int(values[i])
+			applied += 1
+		else:
+			unknown += 1
+	if unknown > 0 and not _warned_unknown:
+		_warned_unknown = true
+		push_warning("LimbHealth: %d membro(s) do servidor não existem neste peer — a configuração de membros (tela Models) diverge entre as máquinas." % unknown)
+	return applied
+
+
+# Avisa uma única vez por personagem (o snapshot chega a cada acerto; sem o guard viraria ruído).
+var _warned_unknown: bool = false

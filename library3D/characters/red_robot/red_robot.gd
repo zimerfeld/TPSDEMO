@@ -72,8 +72,30 @@ const BULLET_BALL_SCALE := 2.5                         # tamanho do calibre
 # HP por membro/sub-membro (ver [[limb-health]]). Criado junto com os colliders de membro; enquanto
 # houver membros definidos, é ELE que decide o abate — `health` vira o espelho da soma dos membros.
 var limbs: LimbHealth = null
+## Snapshot do mapa de membros, replicado (ver LimbHealth.groups_snapshot / apply_snapshot). O mapa
+## e um RefCounted e nao passa pela rede; sem isto quem entra na sala reconstroi todos os membros
+## CHEIOS e ve a barra por membro intacta num robo ja castigado.
+var limb_groups: PackedStringArray = PackedStringArray():
+	set(value):
+		limb_groups = value
+		_apply_limb_snapshot()
+var limb_hp: PackedInt32Array = PackedInt32Array():
+	set(value):
+		limb_hp = value
+		_apply_limb_snapshot()
 @export var state: State = State.APPROACH
-@export var dead: bool = false
+## Abatido. REPLICADO (spawn + on-change): quem entra na sala depois nasce sabendo quem já morreu, e
+## a decisão do abate é só do servidor. O setter dispara a explosão quando a morte acontece com este
+## peer presente; quem chega depois cai no `_ready` (ver linha ~166), que aplica só o estado estático
+## — refazer explosão e som de um evento passado seria pior que não mostrar nada.
+@export var dead: bool = false:
+	set(value):
+		var was_dead := dead
+		dead = value
+		if dead and not was_dead and is_node_ready():
+			_play_death()
+# Guarda de idempotência da explosão (o setter de `dead` e o `_ready` podem chamar o mesmo caminho).
+var _death_played: bool = false
 @export var aim_preparing: float = AIM_PREPARE_TIME
 
 ## Proxy replicado NO LUGAR de global_transform: o servidor o espelha; o cliente o bufferiza
@@ -164,9 +186,11 @@ func _ready() -> void:
 		(laser_ember as CPUParticles3D).emitting = false
 
 	if dead:
-		model.visible = false
-		collision_shape.disabled = true
-		animation_tree.active = false
+		# Entrou numa sala onde este robô JÁ estava abatido (o pacote de spawn traz `dead` verdadeiro):
+		# aplica o estado estático e marca a explosão como "já ocorrida", sem refazer efeitos de um
+		# evento que aconteceu antes de eu chegar. As peças da explosão já sumiram no servidor.
+		_death_played = true
+		_apply_dead_state()
 
 	animate(0.0)
 
@@ -205,6 +229,9 @@ func _setup_limb_colliders() -> void:
 	# um com sua fatia da vida total. Precisa vir DEPOIS de build_for (é dos colliders que sai a lista).
 	limbs = LimbHealth.new()
 	limbs.setup(self, lc.model_key, max_health)
+	# O snapshot do servidor costuma chegar ANTES daqui (o pacote de spawn e processado antes deste
+	# setup, que e deferido): fica guardado nas properties e e aplicado agora que o mapa existe.
+	_apply_limb_snapshot()
 	# Ajusta a cápsula de LOCOMOÇÃO (bloqueio físico) ao red_robot a partir dos boxes de membro —
 	# corpo proporcional ao modelo em vez da cápsula default. Ver [[sistemas/inimigos]].
 	if collision_shape != null:
@@ -215,6 +242,23 @@ func resume_approach(reset_reload: bool = true) -> void:
 	state = State.APPROACH
 	aim_preparing = AIM_PREPARE_TIME
 	shoot_countdown = shoot_reload if reset_reload else ai.retry_delay()
+
+
+# Aplica o snapshot de membros recebido, se o mapa local ja existir (os setters podem chegar antes
+# do build). No SERVIDOR e inerte: la o mapa e a fonte da verdade, nao o destino.
+func _apply_limb_snapshot() -> void:
+	if limbs == null or limb_groups.is_empty() or multiplayer.is_server():
+		return
+	limbs.apply_snapshot(limb_groups, limb_hp)
+
+
+# Publica o estado dos membros para os clientes. So o servidor escreve; o MultiplayerSynchronizer
+# envia por mudanca (replication_mode 2), nao a cada frame.
+func _publish_limb_snapshot() -> void:
+	if limbs == null or not multiplayer.is_server():
+		return
+	limb_groups = limbs.groups_snapshot()
+	limb_hp = limbs.hp_snapshot()
 
 
 @rpc("call_local")
@@ -234,27 +278,48 @@ func hit(amount: int = 50, group: String = "") -> void:
 	else:
 		health = maxi(health - amount, 0)
 	show_health_hud(-1.0, group)
-	if (limbs.is_defeated() if by_limb else health <= 0):
+	_publish_limb_snapshot()   # servidor: leva o estado por membro a quem entrar depois
+	# ABATE é decisão do SERVIDOR (mesma regra do player.gd). Antes cada peer decidia a partir do seu
+	# estado local: um cliente com vida dessincronizada via o robô morrer cedo — ou seguir vivo,
+	# animado e com collider, até sumir do nada. Agora o servidor decide e `dead` replica; o setter de
+	# `dead` roda a explosão em cada peer.
+	if (limbs.is_defeated() if by_limb else health <= 0) and multiplayer.is_server():
 		dead = true
-		animation_tree.active = false
-		model.visible = false
-		death.visible = true
-		collision_shape.disabled = true
+		await get_tree().create_timer(10.0).timeout
+		queue_free()
 
-		death_detach_spark1.emitting = true
-		death_detach_spark2.emitting = true
 
-		death_shield1.explode()
-		death_shield2.explode()
-		death_head.explode()
+# Explosão/desmonte do robô. Idempotente (`_death_played`) porque chega por dois caminhos: o setter de
+# `dead` quando a morte acontece com o peer presente, e o `_ready` de quem entra depois — este último
+# só aplica o estado estático (ver _apply_dead_state), sem refazer efeitos de um evento passado.
+func _play_death() -> void:
+	if _death_played:
+		return
+	_death_played = true
+	_apply_dead_state()
+	death.visible = true
 
-		explosion_sound.play()
+	death_detach_spark1.emitting = true
+	death_detach_spark2.emitting = true
+
+	death_shield1.explode()
+	death_shield2.explode()
+	death_head.explode()
+
+	explosion_sound.play()
+	if multiplayer.is_server():
+		# Sinal de "abateu" é evento de GAMEPLAY: emitir só no servidor, senão o dia em que alguém o
+		# escutar (pontuação, missão) contaria o mesmo abate uma vez por peer.
 		exploded.emit()
-		hide_health_hud()
+	hide_health_hud()
 
-		if multiplayer.is_server():
-			await get_tree().create_timer(10.0).timeout
-			queue_free()
+
+# Estado ESTÁTICO do robô morto: sem animação, sem malha viva, sem collider. Aplicado tanto na
+# explosão quanto por quem entra na sala com ele já abatido.
+func _apply_dead_state() -> void:
+	animation_tree.active = false
+	model.visible = false
+	collision_shape.disabled = true
 
 
 # Atualiza o HUD compartilhado de vida do inimigo (apenas em clientes com tela).

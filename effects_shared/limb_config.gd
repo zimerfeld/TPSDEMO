@@ -249,6 +249,10 @@ static func add_sub_member(model_key: String, bone: String, owner: String = "") 
 		owners[bone] = owner
 		entry["sub_member_owners"] = owners
 	_save_entry(model_key, entry)
+	# O conjunto de sub-membros define o PARTICIONAMENTO dos ossos, logo muda as caixas de membro
+	# memorizadas pelo LimbColliders — descarta o cache para a próxima construção medir de novo.
+	LimbColliders.invalidate_box_cache()
+
 
 
 ## Afastamento (Vector3, espaço local do collider) salvo para (modelo, grupo), ou Vector3.ZERO. O grupo
@@ -404,3 +408,5 @@ static func remove_sub_member(model_key: String, bone: String) -> void:
 	shapes.erase("PART_" + bone)
 	entry["collider_shapes"] = shapes
 	_save_entry(model_key, entry)
+	# Idem add_sub_member: o particionamento dos ossos mudou → as caixas memorizadas não valem mais.
+	LimbColliders.invalidate_box_cache()
