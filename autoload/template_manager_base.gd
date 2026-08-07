@@ -482,7 +482,15 @@ func _configure_spawned_node(node: Node3D, entry: Dictionary) -> void:
 	# dano — 0 aqui significa "não dispara", não "tiro fraco".
 	var weapon_key := String(entry.get("weapon_key", ""))
 	node.set_meta("template_weapon", weapon_key)
-	if node.get("weapon_damage") != null:
+	# Só com arma ESCOLHIDA o template manda no dano. Sem ela, vale o `weapon_damage` autorado na cena
+	# (50 no player, 10 no red_robot).
+	#
+	# Zerar quando não há arma parecia coerente com "sem arma não dá dano", mas quebrava o jogo que já
+	# existe: `weapon_key` nasce vazio e TODO template salvo antes desta versão — inclusive o de
+	# fábrica — cairia em dano 0, deixando os inimigos inofensivos e os aliados mudos, sem aviso
+	# nenhum. Quem de fato não tem arma própria (o humanoide) nasce com `weapon_damage = 0` na
+	# PRÓPRIA cena, e aí sim não atira até receber uma.
+	if weapon_key != "" and node.get("weapon_damage") != null:
 		node.set("weapon_damage", LimbConfig.weapon_damage(weapon_key))
 	var faction := String(entry.get("faction", "neutral"))
 	node.set_meta("template_faction", faction)

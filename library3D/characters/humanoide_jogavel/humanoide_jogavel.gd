@@ -36,6 +36,10 @@ func _ready() -> void:
 	limb_model_key = "humanoide"
 	limb_head_shape = "sphere"
 	limb_auto_distal = true
+	# Ele NÃO tem arma própria — a cena veio do player, que traz 50 de dano autorado. Zerar aqui é o
+	# que faz valer a regra "sem arma não dá dano": ele só atira depois que um template lhe atribuir
+	# uma arma. Os personagens que já nascem armados (player, red_robot) seguem com o dano deles.
+	weapon_damage = 0
 	super._ready()
 
 

@@ -756,10 +756,13 @@ func _play_shot_fx() -> void:
 	# caminho literal preso ao rig do robô e faz o efeito valer para qualquer personagem.
 	if shoot_from != null:
 		for fx_name in [^"ShootParticle", ^"MuzzleFlash"]:
-			var fx := shoot_from.get_node_or_null(fx_name) as GPUParticles3D
-			if fx != null:
-				fx.restart()
-				fx.emitting = true
+			# SEM tipar como GPUParticles3D: no player.tscn estes nós são CPUParticles3D, e o cast
+			# devolvia `null` — o clarão e a partícula do cano sumiam em silêncio para todo mundo. Os
+			# dois tipos compartilham `restart()`/`emitting`, então basta checar o método.
+			var fx := shoot_from.get_node_or_null(fx_name) as Node3D
+			if fx != null and fx.has_method(&"restart"):
+				fx.call(&"restart")
+				fx.set(&"emitting", true)
 	sound_effect_shoot.play()
 	if not bot_controlled:
 		add_camera_shake_trauma(0.35)
