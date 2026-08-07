@@ -705,14 +705,25 @@ func _play_shot_fx() -> void:
 		add_camera_shake_trauma(0.35)
 
 
-# Janela (ms) em que um `shoot()` do servidor é entendido como a confirmação do efeito que o cliente
-# já tocou. Generosa o bastante para cobrir o RTT do túnel, e menor que o cooldown de tiro — assim
-# dois disparos distintos nunca se confundem.
+# Janela MÍNIMA (ms) em que um `shoot()` do servidor é entendido como a confirmação do efeito que o
+# cliente já tocou.
 const SHOT_FX_DEDUPE_MS: float = 250.0
+# Folga (ms) somada ao RTT medido ao dimensionar essa janela.
+const SHOT_FX_DEDUPE_SLACK_MS: float = 150.0
+
+
+# A janela ACOMPANHA O PING. Fixa em 250 ms ela ficava menor que o próprio RTT que a predição existe
+# para compensar: acima de ~220 ms — plausível no túnel, e garantido quando um pacote se perde e é
+# retransmitido — o `shoot()` do servidor chegava fora da janela e o efeito tocava DE NOVO, dois
+# clarões e dois sons por disparo. O teto é o cooldown de tiro, para dois disparos distintos nunca
+# se confundirem num só.
+func _fx_dedupe_window_ms() -> float:
+	var wanted: float = maxf(SHOT_FX_DEDUPE_MS, _peer_rtt() * 1000.0 + SHOT_FX_DEDUPE_SLACK_MS)
+	return minf(wanted, fire_cooldown.wait_time * 1000.0 - 50.0)
 
 
 func _fx_recently_played() -> bool:
-	return float(Time.get_ticks_msec()) - _local_fx_at < SHOT_FX_DEDUPE_MS
+	return float(Time.get_ticks_msec()) - _local_fx_at < _fx_dedupe_window_ms()
 
 
 # O cliente dono pode antecipar o efeito agora? Duas condições, e a primeira é o que faz o PRIMEIRO
