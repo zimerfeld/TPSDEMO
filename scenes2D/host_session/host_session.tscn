@@ -85,30 +85,42 @@ theme_override_font_sizes/font_size = 28
 text = "Servidor — Salas ativas"
 horizontal_alignment = 1
 
-[node name="StartRow" type="HBoxContainer" parent="ManagePanel/Margin/Content"]
+[node name="StartRow" type="HFlowContainer" parent="ManagePanel/Margin/Content"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
 alignment = 1
 
 [node name="Levels" type="OptionButton" parent="ManagePanel/Margin/Content/StartRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(220, 44)
+custom_minimum_size = Vector2(170, 44)
 layout_mode = 2
 
 [node name="Templates" type="OptionButton" parent="ManagePanel/Margin/Content/StartRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 44)
+custom_minimum_size = Vector2(200, 44)
 layout_mode = 2
 
 [node name="ManageTemplates" type="Button" parent="ManagePanel/Margin/Content/StartRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(130, 44)
+custom_minimum_size = Vector2(110, 44)
 layout_mode = 2
 text = "Templates"
 
+[node name="Sceneries" type="OptionButton" parent="ManagePanel/Margin/Content/StartRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 44)
+layout_mode = 2
+
+[node name="ManageSceneries" type="Button" parent="ManagePanel/Margin/Content/StartRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 44)
+layout_mode = 2
+text = "Cenários"
+
 [node name="Start" type="Button" parent="ManagePanel/Margin/Content/StartRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 44)
+custom_minimum_size = Vector2(140, 44)
 layout_mode = 2
 text = "Iniciar Sala"
 

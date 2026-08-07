@@ -81,6 +81,22 @@ var _classifier: BodyParts = null
 ## Sub-membros efetivos = export ∪ LimbConfig(model_key) ∪ default do plano (em minúsculas).
 var _sub_member_set: Dictionary = {}
 
+# ───────────────────────── cache das caixas de membro ─────────────────────────
+# As caixas de membro são calculadas a partir da MALHA e do REST do esqueleto — nunca da pose — então
+# duas instâncias do mesmo modelo produzem o resultado IDÊNTICO. Sem cache, cada entidade que nasce
+# refaz a varredura inteira dos vértices skinados: uma sala com 16 inimigos gastava mais de um segundo
+# de CPU calculando a mesma resposta 16 vezes (é parte do que o spawn gradual do RoomManager cobre).
+# Guarda só tipos por valor ({grupo: {bone: int, aabb: AABB}}, ~1 KB por entrada) — nenhum nó, nenhum
+# recurso: não segura esqueleto nem personagem vivo na memória.
+static var _box_cache: Dictionary = {}
+
+
+## Descarta as caixas memorizadas. A tela Models chama ao mexer no que MUDA o conjunto de membros
+## (promover/remover sub-membro); o resto do que ela edita (forma, offset, escala, dano) é aplicado
+## depois das caixas e não passa por aqui.
+static func invalidate_box_cache() -> void:
+	_box_cache.clear()
+
 
 func build_for(skel: Skeleton3D) -> void:
 	if not enabled or skel == null:
@@ -89,7 +105,7 @@ func build_for(skel: Skeleton3D) -> void:
 	_classifier = BodyPlans.for_type(body_type)
 	_resolve_sub_members()
 	# group → {"bone": int (osso-raiz), "aabb": AABB (no espaço local do osso-raiz)}
-	var members := _collect_member_boxes(skel)
+	var members := _cached_member_boxes(skel)
 	for group in members:
 		# "Selecione..." no dropdown de geometria (tela Models) marca o grupo como SEM collider
 		# (SHAPE_NONE) — pula a construção, então ele não é atingível. Lido aqui no spawn. EXCEÇÃO: no
@@ -164,11 +180,63 @@ func _part_label(_skel: Skeleton3D, bone_name: String) -> String:
 	return bone_name
 
 
+# Caixas de membro do modelo, calculadas uma vez por configuração e reusadas pelas demais entidades.
+# O dicionário devolvido é COMPARTILHADO (Dictionary é por referência): quem chama apenas LÊ.
+func _cached_member_boxes(skel: Skeleton3D) -> Dictionary:
+	var key := _box_cache_key(skel)
+	if key == "":
+		return _collect_member_boxes(skel)   # identidade indefinida: não arrisca colidir chaves
+	if _box_cache.has(key):
+		return _box_cache[key]
+	var boxes := _collect_member_boxes(skel)
+	_box_cache[key] = boxes
+	return boxes
+
+
+# Tudo que MUDA as caixas entra na chave; o que só afeta a forma/dano do collider fica de fora (é
+# aplicado depois, por entidade). A identidade vem da MALHA, não do `model_key`: este tem default
+# vazio e a tela Models o devolve vazio sem modelo carregado — duas entidades diferentes colidiriam
+# na mesma chave. Por malha, `playera` compartilha a entrada do `player` de graça (é a mesma cena).
+func _box_cache_key(skel: Skeleton3D) -> String:
+	var mesh_ids := PackedStringArray()
+	for mi in _skinned_meshes(skel):
+		if mi.mesh == null or mi.mesh.resource_path == "":
+			return ""   # malha sem caminho (gerada em runtime): sem identidade estável, sem cache
+		mesh_ids.append(mi.mesh.resource_path)
+	if mesh_ids.is_empty():
+		return ""
+	mesh_ids.sort()
+	# `padding` entra na chave e as caixas são guardadas JÁ com a folga aplicada: as caixas-fallback
+	# dos sub-membros sem vértices próprios não recebem padding, então somá-lo na leitura engordaria
+	# esses hitboxes em silêncio. São só dois valores no projeto (0,03 no jogo, 0,04 no preview).
+	var subs := PackedStringArray()
+	for s in _sub_member_set:
+		subs.append(String(s))
+	subs.sort()   # o Dictionary preserva a ordem de inserção; sem ordenar, a mesma config daria chaves diferentes
+	return "|".join(PackedStringArray([
+		"|".join(mesh_ids),
+		str(skel.get_bone_count()),
+		body_type,
+		str(auto_distal_sub_members),
+		str(padding),
+		"|".join(subs),
+		# Mapeamentos forçados de osso: mudam a CLASSIFICAÇÃO, logo mudam as caixas.
+		",".join(head_bone_names), ",".join(torso_bone_names), ",".join(leg_bone_names),
+	]))
+
+
 func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 	# 1) Agrupa ossos por membro e escolhe o osso-raiz (mais raso na hierarquia).
+	# A classificação de cada osso é GUARDADA numa tabela indexada por índice de osso: o laço de
+	# vértices (passo 2) precisa dela dezenas de milhares de vezes, e reclassificar a string do osso a
+	# cada vértice respondia por ~85% de todo o custo de construir os colliders. São 145 ossos contra
+	# 38.858 vértices no player — a mesma resposta, recalculada 268 vezes cada.
 	var group_bones := {}
+	var bone_group: Array[String] = []
+	bone_group.resize(skel.get_bone_count())
 	for b in skel.get_bone_count():
 		var g := _classify(skel.get_bone_name(b))
+		bone_group[b] = g
 		if g == "":
 			continue
 		if not group_bones.has(g):
@@ -236,9 +304,13 @@ func _collect_member_boxes(skel: Skeleton3D) -> Dictionary:
 				if best_b < 0 or best_b >= idx_to_bone.size():
 					continue
 				var skb := idx_to_bone[best_b]
-				if skb < 0:
+				# O limite SUPERIOR é obrigatório, não cosmético: com um índice fora da faixa, o
+				# `get_bone_name` de antes só imprimia erro e pulava o vértice; um acesso à tabela
+				# abortaria a função inteira e o personagem nasceria SEM NENHUM hitbox. Os modelos do
+				# projeto ligam tudo por nome, mas a tela Models ingere GLB arbitrário.
+				if skb < 0 or skb >= bone_group.size():
 					continue
-				var g := _classify(skel.get_bone_name(skb))
+				var g: String = bone_group[skb]
 				if g == "":
 					continue
 				var p: Vector3 = root_rest_inv[g] * (skin_xform[best_b] * verts[vi])
@@ -451,9 +523,14 @@ func _build_refit_cache(skel: Skeleton3D) -> void:
 	_rc_gstart = PackedInt32Array(); _rc_gcount = PackedInt32Array()
 	_rc_dyn = PackedInt32Array()
 	_refit_cursor = 0
+	# Mesma tabela osso→grupo do _collect_member_boxes: sem ela, a montagem deste cache reclassifica a
+	# string do osso uma vez por VÉRTICE (era o outro lado do mesmo gargalo, aqui na tela Models).
 	var group_bones := {}
+	var bone_group: Array[String] = []
+	bone_group.resize(skel.get_bone_count())
 	for b in skel.get_bone_count():
 		var g := _classify(skel.get_bone_name(b))
+		bone_group[b] = g
 		if g == "":
 			continue
 		if not group_bones.has(g):
@@ -507,9 +584,9 @@ func _build_refit_cache(skel: Skeleton3D) -> void:
 				if best_i < 0 or best_i >= idx_to_bone.size():
 					continue
 				var skb := idx_to_bone[best_i]
-				if skb < 0:
+				if skb < 0 or skb >= bone_group.size():
 					continue
-				var g := _classify(skel.get_bone_name(skb))
+				var g: String = bone_group[skb]
 				if g == "":
 					continue
 				tmp_group.append(gidx[g])

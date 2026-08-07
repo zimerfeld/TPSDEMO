@@ -136,6 +136,112 @@ El botón "Templates" de la cuadrícula del host "no funcionaba" cuando el selec
 level first…"); con un nivel seleccionado abre el gestor con normalidad (validado hosteando en vivo
 en 127.0.0.1:4383 — sala #1 creada, observada, escenario aplicado).
 
+## Selector de ESCENARIO en host_session (2026-08-06)
+
+La grilla del host solo tenía `Levels` + `Templates` (personajes) — la sala online nacía siempre con
+el escenario **por defecto del level**, mientras el modo offline (pantalla `levels`) ya elegía los
+dos. La `StartRow` ganó `Sceneries` (OptionButton) + `ManageSceneries` (botón "Cenários", abre el
+`scenery_manager` en el mismo `FloatingWindow`), reflejando el par de personajes. `_on_start_pressed`
+activa LOS DOS managers **antes** del `RoomManager.start_room` — es él quien aplica ambos al montar
+la sala (`apply_active_gradual`), así el cliente que entra recibe el nivel completo, idéntico al del
+host. Código genérico: `_refresh_picker`/`_apply_picker`/`_open_manager_dialog` reciben el
+`TemplateManagerBase` de la categoría (un solo camino para las dos). Tab: Levels 1 → Templates 2 →
+ManageTemplates 3 → Sceneries 4 → ManageSceneries 5 → Iniciar Sala 6 → filas de sala → Volver →
+Debug 2D.
+
+## El escenario llegaba en (0,0,0) al cliente — spawn properties de las piezas (2026-08-06)
+
+Con el selector de escenario en el host apareció el bug: **en el cliente las 9 piezas del "Palco
+Neon" nacían todas en el origen, apiladas**, mientras en el servidor estaban repartidas. Medido con
+un volcado simultáneo de los dos lados (host en 44000, cliente entrando por el túnel
+`zimaro.playit.game`): `Scenery_box_000` = `-11.33, 1.00, -3.55` en el servidor y `0,0,0` en el
+cliente — así las nueve.
+
+**Causa.** El `MultiplayerSpawner` transmite solo QUÉ escena instanciar y el nombre del nodo; el
+`position`/`rotation`/`scale` que `_spawn_job` aplica tras el `instantiate()` no viaja en el paquete.
+**Todos los modelos nacen en (0,0,0) en el cliente** — lo que cambia es quién lo CORRIGE después:
+
+| escena | sincronizadores | resultado en el cliente |
+| --- | --- | --- |
+| `player.tscn` (incluido el aliado bot) | 3, con `net_transform` **y** `spawn_position` (`spawn=true`) | correcto en el mismo frame |
+| `red_robot.tscn` / `criatura_alada.tscn` | 4 / 1, con `net_transform` (`spawn=true`) | correcto en el mismo frame |
+| `box`/`sphere`/`pill` | **ninguno** | se quedaba en (0,0,0) para siempre |
+
+Al ser estáticas, nada replicaba su transform tras el spawn — el error era permanente.
+
+**Corrección.** `library3D/sceneries/scenery_piece.gd` (`class_name SceneryPiece`): `spawn_position`,
+`spawn_rotation_y` y `spawn_scale` como `@export` con setter que aplica en el propio nodo, replicadas
+por un `ServerSynchronizer` con `replication_mode = 0` (**solo en el spawn** — cero tráfico después,
+lo correcto para un cuerpo que nunca se mueve). El `_spawn_job` copia el transform a esas properties
+ANTES del `add_child` (única forma de que entren en el paquete de creación). Mismo patrón que el
+`spawn_position` del player.
+
+**Validado** con el mismo test comparativo: las nueve piezas ahora coinciden decimal a decimal entre
+servidor y cliente (`7.48,1.00,10.37`, `-13.08,1.00,13.89`, …).
+
+### Importador + generador del contrato (`scripts/scenery_contract.gd`)
+
+Herramienta de DESARROLLO (el `res://` del `.exe` es de solo lectura, así que la preparación de las
+escenas ocurre en el proyecto, nunca en runtime):
+
+```bash
+godot --headless --path . --script scripts/scenery_contract.gd             # valida e informa
+godot --headless --path . --script scripts/scenery_contract.gd -- --apply  # corrige y guarda
+```
+
+- **Valida** cada `library3D/sceneries/<nombre>/<nombre>.tscn` contra el contrato y sale con código 1
+  si falta algo (sirve como verificación automática).
+- **Corrige** (`--apply`) añadiendo el script + `ServerSynchronizer` a las escenas que no los tengan.
+- **Importa** un modelo nuevo: una carpeta con `.glb`/`.gltf` pero sin `<nombre>.tscn` recibe una
+  escena generada — raíz `StaticBody3D` con el contrato, la malla instanciada y un
+  `CollisionShape3D` de caja según el AABB agregado (punto de partida editable).
+
+La regla del contrato vive en **un solo lugar** — `SceneryPiece.contract_issues()` /
+`meets_contract()` / `make_spawn_config()` —, consultada por la herramienta y por el runtime, para
+que la herramienta no apruebe con un criterio mientras el juego falla con otro. Por eso
+`SceneryPiece` extiende `Node3D` y no `StaticBody3D`: el contrato vale para cualquier raíz 3D.
+
+**Validación en pantalla (los DOS gestores).** El aviso aparece en el instante en que se ELIGE el
+modelo en la cascada — una etiqueta ámbar bajo los desplegables: *"Atención: este modelo nace en
+(0,0,0) para quien entra por la red — …"*, con lo que falta. También está la alerta al guardar (lista
+los modelos problemáticos de la plantilla) y un `push_warning` por escena en `_spawn_job`, con el
+comando de corrección.
+
+Cada categoría responde por SU requisito, vía `TemplateManagerBase._node_contract_issues`:
+
+- **escenarios** → el contrato completo de `SceneryPiece` (son estáticos: si el transform no llega en
+  el paquete de spawn, nada lo corrige después);
+- **personajes** → basta con replicar el transform en el spawn (`net_transform`/`spawn_position`),
+  porque quien lo replica también lo corrige continuamente. Verificado por `replicates_transform()`.
+
+El resultado se memoriza por `scene_path` (`_contract_cache`) — la cascada reconsulta en cada clic y
+la comprobación instancia la escena.
+
+**`characters/jogador/jogador.tscn` corregido (2026-08-07).** Era `Node3D` + malla GLB, sin script,
+sin IA y sin sincronizador — un personaje solo por la carpeta, en la práctica una pieza estática —,
+así que recibió el mismo contrato, aplicado por la propia herramienta:
+
+```bash
+godot --headless --path . --script scripts/scenery_contract.gd -- --root=res://library3D/characters --only=jogador --apply
+```
+
+De ahí los dos parámetros nuevos: **`--root=`** (apunta a otra biblioteca) y **`--only=`** (limita a
+UNA carpeta — sin él, un `--apply` sobre `characters` también GENERARÍA escenas para `humanoide`,
+`monstro` y `mulher`, que solo tienen `.glb` y aún no están listos para el gestor). Dos guardas
+protegen las escenas con comportamiento: la herramienta **nunca sobrescribe un script existente**, e
+informa `ok (replica el transform por su propio script)` para las que ya cumplen vía `net_transform`
+(player, playera, red_robot, criatura_alada). Validado en red: los tres `Character_jogador_*`
+coinciden exactamente entre servidor y cliente.
+
+No se puede arreglar en runtime: las spawn properties deben existir en la ESCENA, que ambos lados
+instancian — por eso la herramienta corrige y la pantalla solo avisa.
+
+**El cliente no monta escenarios** — nunca aplica una plantilla: el servidor materializa la sala y el
+`MultiplayerSpawner` la replica. "Cargar exactamente la misma información inicial" es justo lo que
+garantizan las spawn properties. Regla general: **lo que sea dinámico debe repercutir en todos los
+oyentes conectados** — el estado que cambia en runtime necesita replicación continua en el
+`replication_config`; crear/eliminar piezas ya viaja solo por el spawner.
+
 ## Arquitectura
 
 - **`TemplateManagerBase`** (`autoload/template_manager_base.gd`): base común de los dos autoloads.
@@ -150,7 +256,7 @@ en 127.0.0.1:4383 — sala #1 creada, observada, escenario aplicado).
   (raíz `ScrollContainer`) insertado en un `FloatingWindow` (CanvasLayer 128) — tema 2D + Debug 2D
   funcionan. Subclases: `template_manager.gd` (personajes) y `scenery_manager.gd` (escenarios),
   cada uno la raíz de su `.tscn`. Abiertas por `open_over(host, level)` desde el botón de cada fila de la
-  pantalla `levels` y (solo la de personaje) por `host_session`.
+  pantalla `levels` y por `host_session` (desde 2026-08-06, LOS DOS — personajes y escenarios).
 - **Entrada** de plantilla: `kind` (character/scenery), `model_key`/`scene_path`, `faction`
   (friendly/enemy/neutral — solo personajes), `count`, `placement` (coordinates/random/formation) +
   campos por cada modo, `name` (etiqueta personalizada en el desplegable `Entries`), `rotation_y`, `spacing`.

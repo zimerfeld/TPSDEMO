@@ -17,6 +17,9 @@ const LEGACY_FILE := "user://level_templates.json"
 
 var templates: Array[Dictionary] = []
 var _active_by_level: Dictionary = {}
+# scene_path → problemas de replicação (ver contract_issues_of). A cascata dos gerenciadores
+# reconsulta a cada clique e a checagem instancia a cena; sem o cache seria I/O a cada seleção.
+var _contract_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -376,7 +379,82 @@ func _spawn_job(job: Dictionary, spawned_nodes: Node3D) -> void:
 	n3d.position = job["position"]
 	n3d.rotation.y = deg_to_rad(float(entry.get("rotation_y", 0.0)))
 	_configure_spawned_node(n3d, entry)
+	# O MultiplayerSpawner replica QUAL cena instanciar — o transform aplicado acima NÃO viaja com ela.
+	# Peças de cenário são estáticas (nada sincroniza sua posição depois), então elas chegavam ao
+	# cliente em (0,0,0), empilhadas na origem. Copiar o transform para as PROPERTIES DE SPAWN antes do
+	# add_child o coloca dentro do pacote de criação do nó, e o cliente nasce nas coordenadas do
+	# servidor. Ver [[SceneryPiece]].
+	if n3d is SceneryPiece:
+		var piece := n3d as SceneryPiece
+		piece.spawn_position = n3d.position
+		piece.spawn_rotation_y = n3d.rotation.y
+		piece.spawn_scale = n3d.scale.x
+	elif String(entry.get("kind", "")) == "scenery":
+		_warn_off_contract(scene_path, n3d)
 	spawned_nodes.add_child(n3d, true)
+
+
+# Modelos de cenário JÁ EM TELA que não cumprem o contrato de replicação: avisa uma única vez por
+# cena (o spawn acontece em rajada; sem o guard o log viraria ruído). Não dá para consertar aqui —
+# as spawn properties precisam existir na CENA, que os dois lados instanciam. Corrigir com:
+#   godot --headless --path . --script scripts/scenery_contract.gd -- --apply
+static var _warned_scenes: Dictionary = {}
+
+
+static func _warn_off_contract(scene_path: String, node: Node) -> void:
+	if _warned_scenes.has(scene_path):
+		return
+	_warned_scenes[scene_path] = true
+	push_warning("Cenário fora do contrato de replicação (%s): %s. No cliente esta peça nasce em (0,0,0). Rode: godot --headless --path . --script scripts/scenery_contract.gd -- --apply" % [
+		scene_path, ", ".join(SceneryPiece.contract_issues(node))])
+
+
+## Problemas de replicação do modelo em `scene_path` (vazio = ok: nasce nas coordenadas do servidor
+## também no cliente). Usado pelos gerenciadores para avisar na hora em que o modelo é ESCOLHIDO na
+## tela — antes de o template ir para uma sala online. Instancia a cena só para inspecionar e a
+## libera em seguida; o resultado é memorizado (a cascata reconsulta a cada clique).
+func contract_issues_of(scene_path: String) -> PackedStringArray:
+	if scene_path == "" or not ResourceLoader.exists(scene_path):
+		return PackedStringArray()
+	if _contract_cache.has(scene_path):
+		return _contract_cache[scene_path]
+	var packed: PackedScene = load(scene_path)
+	if packed == null:
+		return PackedStringArray()
+	var probe := packed.instantiate()
+	var issues := _node_contract_issues(probe)
+	probe.free()
+	_contract_cache[scene_path] = issues
+	return issues
+
+
+## Requisito de replicação DESTA categoria (cada subclasse responde pelo seu). Vazio = cumpre.
+func _node_contract_issues(_root: Node) -> PackedStringArray:
+	return PackedStringArray()
+
+
+## Um modelo replica a posição se ALGUM MultiplayerSynchronizer da cena envia, no pacote de spawn,
+## uma property de transform. É o que impede a entidade de nascer em (0,0,0) no cliente — ver
+## SceneryPiece. Serve de base para o requisito das duas categorias.
+static func replicates_transform(root: Node) -> bool:
+	for sync in _synchronizers_of(root):
+		var cfg := sync.replication_config
+		if cfg == null:
+			continue
+		for p in cfg.get_properties():
+			var prop := String(p).get_slice(":", 1)
+			if prop in ["net_transform", "spawn_position", "position", "transform", "global_position"]:
+				return true
+	return false
+
+
+static func _synchronizers_of(node: Node) -> Array[MultiplayerSynchronizer]:
+	var out: Array[MultiplayerSynchronizer] = []
+	if node is MultiplayerSynchronizer:
+		out.append(node as MultiplayerSynchronizer)
+	for c in node.get_children():
+		out.append_array(_synchronizers_of(c))
+	return out
 
 
 # Escala mínima aceita (5% do tamanho original): abaixo disso o modelo vira um ponto e seus colliders

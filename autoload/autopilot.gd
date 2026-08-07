@@ -82,9 +82,14 @@ func apply_audio() -> void:
 	if not is_active():
 		return
 	var mute: bool = is_host() if music == Music.DEFAULT else (music == Music.OFF)
+	# Só SILENCIA por cima do Settings — nunca RELIGA. Quem desligou a música nas configurações do jogo
+	# (audio/music=false) não quer ouvi-la em nenhuma das duas janelas; antes, o cliente (Music.DEFAULT
+	# → mute=false) desmutava o bus e a trilha voltava a tocar contra a preferência salva.
+	if not mute:
+		return
 	var bus: int = AudioServer.get_bus_index("Music")
 	if bus != -1:
-		AudioServer.set_bus_mute(bus, mute)
+		AudioServer.set_bus_mute(bus, true)
 
 
 func _parse_args(args: PackedStringArray) -> void:

@@ -83,12 +83,17 @@ func apply_authority() -> void:
 			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 		set_process(true)
 		set_process_input(true)
-		# Taxa de envio do INPUT deste peer (o dono) = a "Taxa de sincronização" que ELE escolheu no
-		# NetConfig. O servidor já controla a taxa do ESTADO das entidades (ServerSynchronizer) pelo
-		# RoomManager; aqui o dono controla a taxa do PRÓPRIO input → o controle vale dos dois lados
-		# (host = broadcast das entidades; cliente = upload do seu input). Sem isto a escolha do
-		# cliente ficaria inerte (só a do host valia).
-		replication_interval = NetConfig.sync_interval()
+		# Taxa de envio do INPUT deste peer. NÃO é a "Taxa de sincronização" do NetConfig: aquela
+		# dimensiona o BROADCAST DE ESTADO (dezenas de entidades × todos os peers), enquanto isto aqui
+		# é um único pacote de ~40 B com as teclas de UM jogador. Amarrar os dois punha até 33 ms de
+		# espera na frente de TODA ação do cliente — inclusive a borda de subida do tiro — para
+		# economizar uns 2 KB/s de upload, troca claramente ruim.
+		#
+		# Só do lado do CLIENTE: no host este mesmo InputSynchronizer é autoritativo e transmite para
+		# todos os peers, e `apply_authority` é deferido — sem o guard, ele sobrescreveria o intervalo
+		# que o RoomManager aplicou ao broadcast da sala.
+		if not multiplayer.is_server():
+			replication_interval = NetConfig.input_interval()
 	else:
 		set_process(false)
 		set_process_input(false)

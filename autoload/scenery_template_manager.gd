@@ -27,3 +27,10 @@ func _matches_legacy(raw: Dictionary) -> bool:
 	return String(raw.get("category", "spawn")) == "scenery"
 
 # Sem defaults de fábrica: um projeto novo começa sem cenários (só personagens têm exemplo).
+
+
+# Requisito desta categoria: a peça precisa do contrato completo do SceneryPiece (script + sincronizador
+# de spawn com as três properties). Peças são estáticas — se o transform não vier no pacote de spawn,
+# nada o corrige depois e a peça fica em (0,0,0) no cliente para sempre.
+func _node_contract_issues(root: Node) -> PackedStringArray:
+	return SceneryPiece.contract_issues(root)
