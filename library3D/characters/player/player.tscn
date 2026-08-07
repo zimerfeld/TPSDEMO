@@ -72,6 +72,12 @@ properties/5/replication_mode = 1
 properties/6/path = NodePath("InputSynchronizer:jump_held")
 properties/6/spawn = true
 properties/6/replication_mode = 1
+properties/7/path = NodePath("InputSynchronizer:running")
+properties/7/spawn = true
+properties/7/replication_mode = 1
+properties/8/path = NodePath("InputSynchronizer:crouching")
+properties/8/spawn = true
+properties/8/replication_mode = 1
 
 [sub_resource type="SphereMesh" id="2"]
 radius = 0.003

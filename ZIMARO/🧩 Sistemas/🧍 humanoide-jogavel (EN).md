@@ -78,6 +78,42 @@ Two `AnimationTree` traps on record: `walk`/`strafe` **must** be `BlendSpace2D` 
 `Vector2`; a 1D rejects it every frame and the output freezes), and **collinear** points degenerate
 the triangulation — hence the four cardinal points.
 
+## Orientation, speed and cadence (2026-08-07, post-playtest)
+
+**180° turn.** The humanoid's glTF was authored facing the OPPOSITE way from the player's: with the
+same node transform, its mesh walked backwards. The fix is `rotation.y = PI` on the MODEL node (in the
+generator), not in the logic — so movement direction, aim and muzzle keep speaking the same language
+as the player and the red_robot.
+
+> Measuring the NODE's angle doesn't expose this: humanoid and player transforms were identical. What
+> differs is where the MESH points inside the `.glb`. It's a case only the eye catches — a playtest
+> found it, not the automated tests.
+
+**The animation looked rushed** because the cadence was `speed / 1.45` capped at **2.6×**: at 5.2 m/s
+it hit the cap and played a WALK clip at nearly three times speed. Two changes fixed it:
+
+1. The `walk` state became a progression **idle (0) → `andar` (0.45) → `correr` (1.0)**.
+2. The cadence divides by the speed the clip REALLY represents, measured from its cycle length:
+   `andar` 1.10 s ≈ **1.4 m/s**; `correr` 0.85 s ≈ **4.0 m/s**.
+
+Measured afterwards: walking 1.70 m/s at **1.21×**; running 4.50 m/s at **1.12×**. The allowed range
+is deliberately narrow (0.75–1.3) — needing 2× means the wrong clip is playing.
+
+## Run, crouch and the aim shoulder
+
+| key | effect |
+| --- | --- |
+| **SHIFT** (hold) | run: 4.5 m/s and the `correr` clip. Released, walks at 1.7 m/s with `andar` |
+| **CTRL** (hold) | crouch: `ajoelhar_dir` or `ajoelhar_esq` **following the aim side**; releasing aborts the gesture |
+| **C** | flips the aim shoulder and REMEMBERS it (`Settings → reticle_side`) |
+
+All three are remappable actions in the Controls tab. **`running` and `crouching` are REPLICATED**:
+without that the server would simulate walking while the client runs, and reconciliation would start
+correcting a divergence that is purely input — the same mechanism that produces "flickering".
+
+The aim side is applied **after** the camera animation, mirroring the `SpringArm3D` X: the aim clip
+stays single, it just switches shoulders.
+
 ## Numbers to eyeball
 
 `MAX_SPEED = 5.2 m/s` and the camera height `1.72 m` are **estimates**. One constant each.

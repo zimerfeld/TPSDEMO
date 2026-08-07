@@ -76,6 +76,12 @@ properties/5/replication_mode = 1
 properties/6/path = NodePath("InputSynchronizer:jump_held")
 properties/6/spawn = true
 properties/6/replication_mode = 1
+properties/7/path = NodePath("InputSynchronizer:running")
+properties/7/spawn = true
+properties/7/replication_mode = 1
+properties/8/path = NodePath("InputSynchronizer:crouching")
+properties/8/spawn = true
+properties/8/replication_mode = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6jni0"]
 resource_name = "mat"
@@ -4266,32 +4272,28 @@ animation = &"andar"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_tbrqr"]
 resource_local_to_scene = true
-animation = &"andar"
+animation = &"correr"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_mmmiv"]
 resource_local_to_scene = true
-animation = &"andar"
+animation = &"ocioso"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2myvb"]
-resource_local_to_scene = true
-animation = &"andar"
-
-[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_ivx3k"]
+[sub_resource type="AnimationNodeBlendSpace2D" id="AnimationNodeBlendSpace2D_2myvb"]
 resource_local_to_scene = true
 blend_point_0/node = SubResource("AnimationNodeAnimation_hyfkp")
 blend_point_0/pos = Vector2(0, 0)
 blend_point_1/node = SubResource("AnimationNodeAnimation_akkyi")
-blend_point_1/pos = Vector2(0, 1)
+blend_point_1/pos = Vector2(0.45, 0)
 blend_point_2/node = SubResource("AnimationNodeAnimation_tbrqr")
-blend_point_2/pos = Vector2(0, -1)
+blend_point_2/pos = Vector2(1, 0)
 blend_point_3/node = SubResource("AnimationNodeAnimation_mmmiv")
-blend_point_3/pos = Vector2(1, 0)
-blend_point_4/node = SubResource("AnimationNodeAnimation_2myvb")
-blend_point_4/pos = Vector2(-1, 0)
+blend_point_3/pos = Vector2(0, 1)
+min_space = Vector2(0, 0)
+x_label = "velocidade"
 
-[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_kbtj8"]
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_ivx3k"]
 resource_local_to_scene = true
-nodes/walk/node = SubResource("AnimationNodeBlendSpace2D_ivx3k")
+nodes/walk/node = SubResource("AnimationNodeBlendSpace2D_2myvb")
 nodes/walk/position = Vector2(0, 0)
 nodes/strafe/node = SubResource("AnimationNodeBlendSpace2D_soekc")
 nodes/strafe/position = Vector2(0, 0)
@@ -4884,17 +4886,17 @@ rings = 6
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.417722, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
 point_count = 3
 
-[node name="HumanoideJogavel" type="CharacterBody3D" unique_id=562521107]
+[node name="HumanoideJogavel" type="CharacterBody3D" unique_id=1209300273]
 collision_layer = 6
 collision_mask = 7
 floor_snap_length = 1.0
 script = ExtResource("1_pqp00")
 
-[node name="ServerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1773042875]
+[node name="ServerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1911076176]
 replication_interval = 0.033
 replication_config = SubResource("SceneReplicationConfig_o4rt5")
 
-[node name="InputSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1920120557 node_paths=PackedStringArray("camera_animation", "crosshair", "camera_base", "camera_rot", "camera_camera", "color_rect")]
+[node name="InputSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=1884971923 node_paths=PackedStringArray("camera_animation", "crosshair", "camera_base", "camera_rot", "camera_camera", "color_rect")]
 replication_interval = 0.033
 replication_config = SubResource("SceneReplicationConfig_8yuxf")
 script = ExtResource("2_wck5i")
@@ -4905,9 +4907,10 @@ camera_rot = NodePath("../CameraBase/CameraRot")
 camera_camera = NodePath("../CameraBase/CameraRot/SpringArm3D/Camera3D")
 color_rect = NodePath("../ColorRect")
 
-[node name="PlayerModel" type="Node3D" parent="." unique_id=1171572202]
+[node name="PlayerModel" type="Node3D" parent="." unique_id=1536944958]
 
 [node name="Humanoide" parent="PlayerModel" unique_id=2130766472 instance=ExtResource("3_26702")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
 
 [node name="Skeleton3D" parent="PlayerModel/Humanoide/humanoide" parent_id_path=PackedInt32Array(2130766472, 1069133792) index="0" unique_id=1326542573]
 bones/0/name = "root"
@@ -5035,22 +5038,22 @@ skin = SubResource("Skin_tx0wf")
 mesh = SubResource("ArrayMesh_ig654")
 skin = SubResource("Skin_tx0wf")
 
-[node name="GunBone" type="BoneAttachment3D" parent="PlayerModel/Humanoide/humanoide/Skeleton3D" index="3" unique_id=1940854205]
+[node name="GunBone" type="BoneAttachment3D" parent="PlayerModel/Humanoide/humanoide/Skeleton3D" index="3" unique_id=1774926609]
 bone_name = "hand.R"
 
-[node name="ShootFrom" type="Marker3D" parent="PlayerModel/Humanoide/humanoide/Skeleton3D/GunBone" unique_id=1764155632]
+[node name="ShootFrom" type="Marker3D" parent="PlayerModel/Humanoide/humanoide/Skeleton3D/GunBone" unique_id=546526963]
 
 [node name="AnimationPlayer" parent="PlayerModel/Humanoide" index="1" unique_id=2043587704]
 libraries/ = SubResource("AnimationLibrary_q4dr8")
 
-[node name="RootMotionView" type="RootMotionView" parent="." unique_id=2090771821]
+[node name="RootMotionView" type="RootMotionView" parent="." unique_id=1881055171]
 animation_path = NodePath("../AnimationTree")
 
-[node name="AnimationTree" type="AnimationTree" parent="." unique_id=559590743]
+[node name="AnimationTree" type="AnimationTree" parent="." unique_id=1671431025]
 root_node = NodePath("../PlayerModel")
 root_motion_track = NodePath("Humanoide/Skeleton3D:root")
 callback_mode_process = 0
-tree_root = SubResource("AnimationNodeBlendTree_kbtj8")
+tree_root = SubResource("AnimationNodeBlendTree_ivx3k")
 anim_player = NodePath("../PlayerModel/Humanoide/AnimationPlayer")
 parameters/walk/blend_position = Vector2(0.387, 0.043)
 parameters/strafe/blend_position = Vector2(0, 0)
@@ -5063,28 +5066,28 @@ parameters/gesture/active = false
 parameters/gesture/internal_active = false
 parameters/gesture/request = 0
 
-[node name="CapsuleShape3D" type="CollisionShape3D" parent="." unique_id=1835912366]
+[node name="CapsuleShape3D" type="CollisionShape3D" parent="." unique_id=1912416323]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("31")
 
-[node name="CameraBase" type="Node3D" parent="." unique_id=255077297]
+[node name="CameraBase" type="Node3D" parent="." unique_id=172600596]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.72, 0)
 
-[node name="CameraRot" type="Node3D" parent="CameraBase" unique_id=1726095302]
+[node name="CameraRot" type="Node3D" parent="CameraBase" unique_id=19179331]
 
-[node name="SpringArm3D" type="SpringArm3D" parent="CameraBase/CameraRot" unique_id=1407328664]
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraBase/CameraRot" unique_id=1234825586]
 transform = Transform3D(-1, -1.11444e-07, 3.06191e-07, 0, 0.939693, 0.34202, -3.25841e-07, 0.34202, -0.939693, 0, 0, 0)
 spring_length = 2.4
 
-[node name="Camera3D" type="Camera3D" parent="CameraBase/CameraRot/SpringArm3D" unique_id=1102659171]
+[node name="Camera3D" type="Camera3D" parent="CameraBase/CameraRot/SpringArm3D" unique_id=2066975611]
 transform = Transform3D(1, 1.42109e-14, -2.84217e-14, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 far = 300.0
 script = ExtResource("5_t5xxj")
 
-[node name="Animation" type="AnimationPlayer" parent="CameraBase" unique_id=1588204164]
+[node name="Animation" type="AnimationPlayer" parent="CameraBase" unique_id=539909185]
 libraries/ = SubResource("AnimationLibrary_keqb5")
 
-[node name="Crosshair" type="TextureRect" parent="." unique_id=1738840072]
+[node name="Crosshair" type="TextureRect" parent="." unique_id=62982411]
 self_modulate = Color(1, 1, 1, 0)
 anchors_preset = 8
 anchor_left = 0.5
@@ -5101,7 +5104,7 @@ texture = ExtResource("6_gl7xy")
 expand_mode = 1
 stretch_mode = 4
 
-[node name="ColorRect" type="ColorRect" parent="." unique_id=1883087337]
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1266179877]
 modulate = Color(1, 1, 1, 0)
 anchors_preset = 15
 anchor_right = 1.0
@@ -5110,33 +5113,33 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
-[node name="SoundEffects" type="Node3D" parent="." unique_id=2118184689]
+[node name="SoundEffects" type="Node3D" parent="." unique_id=1791807625]
 
-[node name="Step" type="AudioStreamPlayer3D" parent="SoundEffects" unique_id=840758647]
+[node name="Step" type="AudioStreamPlayer3D" parent="SoundEffects" unique_id=1552153826]
 stream = ExtResource("7_m5tsi")
 unit_size = 8.0
 max_distance = 30.0
 bus = &"SFX"
 
-[node name="Jump" type="AudioStreamPlayer3D" parent="SoundEffects" unique_id=850014414]
+[node name="Jump" type="AudioStreamPlayer3D" parent="SoundEffects" unique_id=1406682195]
 stream = ExtResource("8_drj7f")
 unit_size = 8.0
 max_distance = 35.0
 bus = &"SFX"
 
-[node name="Land" type="AudioStreamPlayer3D" parent="SoundEffects" unique_id=876498069]
+[node name="Land" type="AudioStreamPlayer3D" parent="SoundEffects" unique_id=591418630]
 stream = ExtResource("9_1q6le")
 unit_size = 8.0
 max_distance = 35.0
 bus = &"SFX"
 
-[node name="Shoot" type="AudioStreamPlayer3D" parent="SoundEffects" unique_id=1919439992]
+[node name="Shoot" type="AudioStreamPlayer3D" parent="SoundEffects" unique_id=1526223958]
 stream = SubResource("35")
 unit_size = 12.0
 max_distance = 60.0
 bus = &"SFX"
 
-[node name="NameLabel" type="Label3D" parent="." unique_id=1457750672]
+[node name="NameLabel" type="Label3D" parent="." unique_id=1066761620]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0)
 pixel_size = 0.008
 billboard = 1
@@ -5146,12 +5149,12 @@ outline_render_priority = 0
 font_size = 48
 outline_size = 14
 
-[node name="FireCooldown" type="Timer" parent="." unique_id=1014154616]
+[node name="FireCooldown" type="Timer" parent="." unique_id=1786041574]
 wait_time = 0.6
 one_shot = true
 autostart = true
 
-[node name="BulletCache" parent="." unique_id=1917658094 instance=ExtResource("11_meerv")]
+[node name="BulletCache" parent="." unique_id=309813925 instance=ExtResource("11_meerv")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.00535512)
 visible = false
 collision_layer = 8

@@ -222,6 +222,11 @@ em terceira pessoa. Em alto nível, oferece:
   então ele ganhou locomoção calculada, com a **cadência do passo escalada** para os pés não
   patinarem. A tela de seleção passou a mostrar o modelo e a pose de descanso **de cada personagem**,
   em vez do robô para todos.
+- **Correr, abaixar e trocar o ombro da mira** — **SHIFT** segurado faz o personagem correr (com a
+  animação de corrida, não a caminhada acelerada); soltar volta a caminhar. **CTRL** abaixa, e a perna
+  que ajoelha acompanha o lado da mira. **C** troca a mira de ombro e lembra a escolha. As três teclas
+  são remapeáveis, e a cadência do passo acompanha a velocidade real — a animação nunca vira câmera
+  rápida.
 - **Configurações durante a partida (ESC)** — ESC no jogo agora abre as **configurações sobre a
   partida, pausada**: o personagem fica ocioso, sem responder aos comandos nem levar dano enquanto
   você ajusta as opções. **Voltar** retoma exatamente de onde parou; **Abandonar Partida** abre a

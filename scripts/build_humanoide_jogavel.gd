@@ -61,6 +61,12 @@ func _build() -> void:
 	var model_scene: PackedScene = load(MODEL_GLB)
 	var model := model_scene.instantiate()
 	model.name = "Humanoide"
+	# GIRO DE 180°: o glTF do humanoide foi autorado encarando +Z, e todo o resto do jogo assume que a
+	# frente de um personagem e o -Z (e o que `orientation`/`looking_at` e o root motion do player
+	# usam). Sem isto ele anda de costas — o corpo aponta para o lado oposto ao do deslocamento.
+	# Corrigido aqui, no no do MODELO, e nao na logica: assim a direcao de movimento, a mira e o ponto
+	# de tiro continuam falando a mesma lingua do player e do red_robot.
+	model.rotation.y = PI
 	holder.add_child(model)
 	model.owner = root
 
@@ -137,7 +143,7 @@ func _build_tree() -> AnimationNodeBlendTree:
 	# `walk` e `strafe` sao BlendSpace2D porque o codigo escreve Vector2 neles; um BlendSpace1D
 	# rejeitaria o valor a cada frame e a saida congelaria no primeiro clipe.
 	# Escopo atual: MESMA animacao de andar para qualquer direcao (W/S/A/D), parado = ocioso.
-	tree.add_node(&"walk", _locomotion_space())
+	tree.add_node(&"walk", _walk_space())
 	tree.add_node(&"strafe", _locomotion_space())
 	var state := AnimationNodeTransition.new()
 	state.resource_local_to_scene = true
@@ -187,8 +193,26 @@ func _build_tree() -> AnimationNodeBlendTree:
 	return tree
 
 
-# Espaco de locomocao: parado no centro, `andar` em todas as direcoes. Os quatro pontos cardeais
-# evitam a armadilha da triangulacao degenerada (pontos colineares dao 0 triangulos e a saida trava).
+# Espaco do estado WALK (movimento livre). O `Player.animate()` escreve aqui
+# `Vector2(motion.length(), 0)` — ou seja, o eixo X e a INTENSIDADE do movimento, de 0 a 1. Entao a
+# progressao natural e parado -> andar -> correr, e nao "andar acelerado ate virar borrao": o clipe de
+# CAMINHADA tocado a 2,6x era o que fazia a animacao parecer rapida demais.
+func _walk_space() -> AnimationNodeBlendSpace2D:
+	var space := AnimationNodeBlendSpace2D.new()
+	space.resource_local_to_scene = true
+	space.add_blend_point(_clip("ocioso"), Vector2(0, 0))
+	space.add_blend_point(_clip("andar"), Vector2(0.45, 0))
+	space.add_blend_point(_clip("correr"), Vector2(1, 0))
+	# Ponto fora da linha: tres pontos colineares degeneram a triangulacao (0 triangulos = saida
+	# congelada). O codigo nunca escreve y != 0, entao ele so existe para a malha fechar.
+	space.add_blend_point(_clip("ocioso"), Vector2(0, 1))
+	space.min_space = Vector2(0, 0)
+	space.x_label = "velocidade"
+	return space
+
+
+# Espaco do estado STRAFE (movimento com a mira ativa): `andar` em todas as direcoes, porque mirando
+# o personagem se desloca devagar. Os quatro pontos cardeais evitam a triangulacao degenerada.
 func _locomotion_space() -> AnimationNodeBlendSpace2D:
 	var space := AnimationNodeBlendSpace2D.new()
 	space.resource_local_to_scene = true

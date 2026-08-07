@@ -37,6 +37,17 @@ var _focused_enemy: Node = null
 # Espaço ainda pressionado (sincronizado a cada tick, como shooting/aiming). Segurar até o
 # fim = arco completo do pulo; soltar no meio da subida corta o pulo suavemente (player.gd).
 @export var jump_held: bool = false
+## SHIFT segurado: corre (mais rápido, animação de corrida). Solto: caminha. Replicado como os
+## demais — o servidor precisa saber, senão ele simula uma velocidade e o cliente outra, e a
+## reconciliação passaria a corrigir uma divergência que é só de input.
+@export var running: bool = false
+## CTRL segurado: abaixa. A perna que se ajoelha segue o LADO DA MIRA (ver aim_side).
+@export var crouching: bool = false
+## Lado da mira sobre o ombro: +1 direita (padrão), -1 esquerda. Alterna com C e é lembrado entre
+## sessões (Settings → `reticle_side`). Espelha a posição da câmera de mira.
+var aim_side: int = 1
+# Estado anterior do agachar, para disparar/abortar a animação só na mudança.
+var _was_crouching: bool = false
 
 # Camera and effects
 @export var camera_animation: AnimationPlayer
@@ -111,6 +122,10 @@ func _process(delta: float) -> void:
 	if aiming:
 		camera_speed_this_frame *= 0.5
 	rotate_camera(camera_move * camera_speed_this_frame)
+	running = Input.is_action_pressed(&"run")
+	if Input.is_action_just_pressed(&"toggle_aim_side"):
+		_flip_aim_side()
+	_update_crouch()
 	var current_aim: bool = false
 
 	# Keep aiming if the mouse wasn't held for long enough.
@@ -315,3 +330,39 @@ func jump() -> void:
 	# Semeia o hold junto do pulo: a property sincronizada pode chegar ao servidor um tick
 	# depois do RPC — sem isto o primeiro frame do pulo poderia ser cortado por engano.
 	jump_held = true
+
+
+# ───────────────────────── lado da mira e agachar ─────────────────────────
+
+## Alterna o ombro sobre o qual a câmera de mira se apoia (C) e lembra a escolha.
+func _flip_aim_side() -> void:
+	aim_side = -aim_side
+	Settings.config_file.set_value("runtime", "reticle_side", "right" if aim_side > 0 else "left")
+	Settings.save_settings()
+	_apply_aim_side()
+
+
+# A posição de mira é escrita por uma ANIMAÇÃO da câmera (o clipe de "aim" desloca o SpringArm para o
+# ombro). Por isso o lado é aplicado DEPOIS dela, espelhando o X: preservamos a distância autorada e
+# só trocamos de lado — em vez de duplicar o clipe inteiro para a esquerda.
+func _apply_aim_side() -> void:
+	var arm := camera_rot.get_node_or_null(^"SpringArm3D") as Node3D if camera_rot != null else null
+	if arm == null:
+		return
+	arm.position.x = absf(arm.position.x) * float(aim_side)
+
+
+## CTRL abaixa. A animação é a do lado da mira — mira à direita ajoelha com a perna direita, à
+## esquerda com a esquerda —, tocada na camada de gesto: entra ao apertar e sai ao soltar.
+func _update_crouch() -> void:
+	crouching = Input.is_action_pressed(&"crouch")
+	if crouching == _was_crouching:
+		return
+	_was_crouching = crouching
+	var character := get_parent()
+	if character == null or not character.has_method(&"request_gesture"):
+		return
+	if crouching:
+		character.call(&"request_gesture", "ajoelhar_dir" if aim_side > 0 else "ajoelhar_esq")
+	else:
+		character.call(&"abort_gesture")

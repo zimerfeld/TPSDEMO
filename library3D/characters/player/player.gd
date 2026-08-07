@@ -893,6 +893,31 @@ func play_gesture(animation: String) -> void:
 	_play_gesture_local(animation)
 
 
+## Encerra o gesto em andamento (ex.: soltar o CTRL sai do agachado). Como o disparo, é o servidor
+## que confirma para os demais peers.
+func abort_gesture() -> void:
+	if not supports_gestures():
+		return
+	animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT
+	if not _safe_is_server_call(false):
+		_server_gesture_abort.rpc_id(1)
+	else:
+		play_gesture_abort.rpc()
+
+
+@rpc("any_peer", "reliable")
+func _server_gesture_abort() -> void:
+	if not multiplayer.is_server() or multiplayer.get_remote_sender_id() != player_id:
+		return
+	play_gesture_abort.rpc()
+
+
+@rpc("authority", "call_local", "reliable")
+func play_gesture_abort() -> void:
+	if supports_gestures():
+		animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT
+
+
 func _play_gesture_local(animation: String) -> void:
 	if not supports_gestures():
 		return

@@ -82,6 +82,43 @@ Dos trampas de `AnimationTree` registradas: `walk`/`strafe` **tienen** que ser `
 código escribe `Vector2`; uno 1D lo rechaza cada frame y la salida se congela), y los puntos
 **colineales** degeneran la triangulación — de ahí los cuatro puntos cardinales.
 
+## Orientación, velocidad y cadencia (2026-08-07, tras la prueba)
+
+**Giro de 180°.** El glTF del humanoide fue autorado mirando al lado OPUESTO al del player: con el
+mismo transform de nodo, su malla caminaba de espaldas. La corrección es `rotation.y = PI` en el nodo
+del MODELO (en el generador), no en la lógica — así la dirección de movimiento, la puntería y el punto
+de disparo siguen hablando el mismo idioma que el player y el red_robot.
+
+> Medir el ángulo del NODO no delata esto: los transforms de humanoide y player eran iguales. Lo que
+> difiere es hacia dónde apunta la MALLA dentro del `.glb`. Es un caso que solo el ojo detecta — lo
+> encontró una prueba de juego, no las pruebas automatizadas.
+
+**La animación parecía apresurada** porque la cadencia valía `velocidad / 1,45` con techo **2,6×**: a
+5,2 m/s tocaba el techo y reproducía un clip de CAMINATA a casi el triple de velocidad. Dos cambios lo
+resolvieron:
+
+1. El estado `walk` pasó a ser una progresión **parado (0) → `andar` (0,45) → `correr` (1,0)**.
+2. La cadencia divide por la velocidad que el clip REALMENTE representa, medida por la duración del
+   ciclo: `andar` 1,10 s ≈ **1,4 m/s**; `correr` 0,85 s ≈ **4,0 m/s**.
+
+Medido después: caminando 1,70 m/s con cadencia **1,21×**; corriendo 4,50 m/s con **1,12×**. El rango
+permitido quedó estrecho (0,75–1,3) a propósito — necesitar 2× indica que suena el clip equivocado.
+
+## Correr, agacharse y el lado de la mira
+
+| tecla | efecto |
+| --- | --- |
+| **SHIFT** (mantener) | corre: 4,5 m/s y clip `correr`. Al soltar, camina a 1,7 m/s con `andar` |
+| **CTRL** (mantener) | se agacha: `ajoelhar_dir` o `ajoelhar_esq` **según el lado de la mira**; al soltar aborta el gesto |
+| **C** | alterna el hombro de la mira y RECUERDA la elección (`Settings → reticle_side`) |
+
+Las tres son acciones remapeables en la pestaña Controles. **`running` y `crouching` se REPLICAN**:
+sin eso el servidor simularía caminata mientras el cliente corre, y la reconciliación corregiría una
+divergencia que es solo de input — el mismo mecanismo que produce el "flickering".
+
+El lado de la mira se aplica **después** de la animación de cámara, espejando la X del `SpringArm3D`:
+el clip de mira sigue siendo único, solo cambia de hombro.
+
 ## Números a ajustar a ojo
 
 `MAX_SPEED = 5,2 m/s` y la altura de cámara `1,72 m` son **estimaciones**. Una constante cada uno.
