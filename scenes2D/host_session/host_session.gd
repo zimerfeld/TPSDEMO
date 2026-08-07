@@ -17,6 +17,7 @@ const PLAYONLINE_PATH: String = "res://scenes2D/playonline/playonline.tscn"
 const CHOOSEPLAYER_PATH: String = "res://scenes2D/chooseplayer/chooseplayer.tscn"
 const HOST_SESSION_PATH: String = "res://scenes2D/host_session/host_session.tscn"
 const TemplateManagerScene := preload("res://scenes2D/template_manager/template_manager.tscn")
+const SceneryManagerScene := preload("res://scenes2D/scenery_manager/scenery_manager.tscn")
 
 var _observing_id: int = -1        # sala observada (-1 = grade)
 var _playing_id: int = -1          # sala em que o host JOGA (-1 = não joga)
@@ -30,11 +31,13 @@ var _confirm_dialog: FloatingWindow = null
 @onready var _panel: Control = %ManagePanel
 @onready var _level_picker: OptionButton = %Levels
 @onready var _template_picker: OptionButton = %Templates
+@onready var _scenery_picker: OptionButton = %Sceneries
 @onready var _rooms_list: VBoxContainer = %RoomsList
 @onready var _hint: Label = %Hint
 @onready var _actions_bar: HBoxContainer = %Actions
 @onready var _back_button: Button = %Back
 @onready var _manage_templates_button: Button = %ManageTemplates
+@onready var _manage_sceneries_button: Button = %ManageSceneries
 @onready var _start_button: Button = %Start
 @onready var _signal_layer: ColorRect = %SignalLayer
 
@@ -47,11 +50,12 @@ func _ready() -> void:
 		var sz: Vector2 = get_viewport().get_visible_rect().size
 		mat.set_shader_parameter("aspect", sz.x / maxf(sz.y, 1.0))
 	_populate_level_picker()
-	_level_picker.item_selected.connect(func(_idx: int) -> void: _refresh_template_picker())
+	_level_picker.item_selected.connect(func(_idx: int) -> void: _refresh_pickers())
 	_manage_templates_button.pressed.connect(_open_template_dialog_for_selected_level)
+	_manage_sceneries_button.pressed.connect(_open_scenery_dialog_for_selected_level)
 	_start_button.pressed.connect(_on_start_pressed)
 	_back_button.pressed.connect(_go_back)
-	_refresh_template_picker()
+	_refresh_pickers()
 	RoomManager.rooms_changed.connect(_refresh_rooms)
 	_refresh_rooms()
 	# Voltou do ChoosePlayer para JOGAR numa sala? spawna o player do host e entra em modo de jogo.
@@ -69,7 +73,7 @@ func _ready() -> void:
 		# O template tem de estar ativo ANTES do start_room (é ele quem aplica os personagens).
 		Autopilot.apply_template(Autopilot.level_path)
 		RoomManager.start_room(Autopilot.level_path)
-		_refresh_template_picker()
+		_refresh_pickers()
 	# Toggle "Debug 2D" na barra Actions (injetado pelo DebugOverlay como nas demais telas) + sequência
 	# de Tab. Re-liga ao injetar o toggle e ao remontar as salas; foco inicial no controle de Tab = 1.
 	_actions_bar.child_entered_tree.connect(func(_n: Node) -> void: _rewire_tab.call_deferred())
@@ -93,7 +97,8 @@ func _populate_level_picker() -> void:
 # o nº de salas varia em runtime. Idempotente: re-chamada quando as salas/visibilidade mudam.
 func _rewire_tab() -> void:
 	var i := 1
-	for c in [_level_picker, _template_picker, _manage_templates_button, _start_button]:
+	for c in [_level_picker, _template_picker, _manage_templates_button,
+			_scenery_picker, _manage_sceneries_button, _start_button]:
 		(c as Control).set_meta(UINav.TAB_ORDER_META, i)
 		i += 1
 	for row in _rooms_list.get_children():
@@ -114,41 +119,68 @@ func _on_start_pressed() -> void:
 	if idx <= 0:  # item 0 = "Selecione..."
 		return
 	var level_path := String(_level_picker.get_item_metadata(idx))
-	if _template_picker.selected > 0:
-		CharacterTemplateManager.set_active(level_path, String(_template_picker.get_item_metadata(_template_picker.selected)))
-	else:
-		CharacterTemplateManager.set_active(level_path, "")
+	# O template de PERSONAGENS e o de CENÁRIO têm de estar ativos ANTES do start_room: é o
+	# RoomManager quem os aplica ao montar a sala (apply_active_gradual), então a sala nasce com o
+	# nível completo — e os clientes que entrarem nela recebem exatamente o mesmo cenário.
+	_apply_picker(_template_picker, CharacterTemplateManager, level_path)
+	_apply_picker(_scenery_picker, SceneryTemplateManager, level_path)
 	RoomManager.start_room(level_path)
 	_apply_mouse_mode()
 
 
-func _refresh_template_picker() -> void:
-	if not is_instance_valid(_template_picker):
+# Os dois seletores (personagens e cenário) seguem o level selecionado — remontados juntos sempre
+# que o level muda ou um dos gerenciadores salva.
+func _refresh_pickers() -> void:
+	_refresh_picker(_template_picker, CharacterTemplateManager, "Template: padrão do level")
+	_refresh_picker(_scenery_picker, SceneryTemplateManager, "Cenário: padrão do level")
+
+
+# Repopula um seletor: sentinela (item 0 = padrão do level, sem metadata) + os templates do level
+# selecionado, pré-selecionando o que já está ativo.
+func _refresh_picker(picker: OptionButton, manager: TemplateManagerBase, default_label: String) -> void:
+	if not is_instance_valid(picker):
 		return
-	_template_picker.clear()
-	_template_picker.add_item("Template: padrão do level")
+	picker.clear()
+	picker.add_item(default_label)
 	var idx: int = _level_picker.selected
 	if idx <= 0:
 		return
 	var level_path := String(_level_picker.get_item_metadata(idx))
-	var active_id := CharacterTemplateManager.active_id(level_path)
-	for t in CharacterTemplateManager.templates_for_level(level_path):
-		_template_picker.add_item(String(t.get("name", "Template")))
-		_template_picker.set_item_metadata(_template_picker.item_count - 1, String(t.get("id", "")))
+	var active_id := manager.active_id(level_path)
+	for t in manager.templates_for_level(level_path):
+		picker.add_item(String(t.get("name", "Template")))
+		picker.set_item_metadata(picker.item_count - 1, String(t.get("id", "")))
 		if String(t.get("id", "")) == active_id:
-			_template_picker.select(_template_picker.item_count - 1)
+			picker.select(picker.item_count - 1)
+
+
+# Ativa no manager o item escolhido no seletor (sentinela → "" = padrão do level).
+func _apply_picker(picker: OptionButton, manager: TemplateManagerBase, level_path: String) -> void:
+	if picker.selected > 0:
+		manager.set_active(level_path, String(picker.get_item_metadata(picker.selected)))
+	else:
+		manager.set_active(level_path, "")
 
 
 func _open_template_dialog_for_selected_level() -> void:
+	_open_manager_dialog(TemplateManagerScene, "Gerenciador de Templates",
+			"Selecione um level primeiro para gerenciar seus templates.")
+
+
+func _open_scenery_dialog_for_selected_level() -> void:
+	_open_manager_dialog(SceneryManagerScene, "Gerenciador de Cenários",
+			"Selecione um level primeiro para gerenciar seus cenários.")
+
+
+func _open_manager_dialog(scene: PackedScene, title: String, missing_level_message: String) -> void:
 	var idx: int = _level_picker.selected
 	if idx <= 0:
 		# Antes retornava em SILÊNCIO com o picker no "Selecione..." — parecia botão quebrado.
 		# Agora avisa o que falta para abrir o gerenciador.
-		FloatingDialog.alert(self, "Gerenciador de Templates",
-				"Selecione um level primeiro para gerenciar seus templates.")
+		FloatingDialog.alert(self, title, missing_level_message)
 		return
-	var form := TemplateManagerScene.instantiate() as TemplateFormBase
-	form.templates_changed.connect(_refresh_template_picker)
+	var form := scene.instantiate() as TemplateFormBase
+	form.templates_changed.connect(_refresh_pickers)
 	form.open_over(self, String(_level_picker.get_item_metadata(idx)))
 
 

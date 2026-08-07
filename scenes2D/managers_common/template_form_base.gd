@@ -294,6 +294,27 @@ func _save_template() -> void:
 	_template["id"] = _manager().upsert_template(_template)
 	templates_changed.emit()
 	_refresh_template_picker()
+	_warn_models_off_contract()
+
+
+# Avisa se algum modelo do template salvo não replica seu transform no spawn — nele a peça nasceria
+# em (0,0,0) para quem entra na sala pela rede, ainda que apareça certa aqui (e no jogo offline). É o
+# momento certo do aviso: o usuário acabou de montar o cenário e ainda não o levou para uma sala.
+func _warn_models_off_contract() -> void:
+	var broken := PackedStringArray()
+	for e in _template.get("entries", []):
+		var entry: Dictionary = e
+		var scene_path := String(entry.get("scene_path", ""))
+		if not _manager().contract_issues_of(scene_path).is_empty():
+			var key := String(entry.get("model_key", scene_path.get_file().get_basename()))
+			if not broken.has(key):
+				broken.append(key)
+	if broken.is_empty():
+		return
+	FloatingDialog.alert(self, Locale.tr_key("Modelo sem replicação de posição"),
+			"%s\n\n%s" % [
+				Locale.tr_key("Estes modelos nascem na posição (0,0,0) para quem entra na sala pela rede:"),
+				", ".join(broken)])
 
 
 func _save_and_use() -> void:
@@ -435,9 +456,38 @@ func _rebuild_cascade(scene_path: String) -> void:
 				break
 			picker.select(idx)  # select() por código não emite item_selected → desce manualmente
 			_descend(depth, String(folder))
+	_refresh_contract_warning()
 	_refresh_weapon_enabled()
 	if is_instance_valid(_win):
 		_win.wire_focus_ring.call_deferred()
+
+
+# ---- Aviso de replicação do modelo escolhido -------------------------------------------------
+# Modelo que não replica seu transform no spawn aparece certo AQUI (e no jogo offline) mas nasce em
+# (0,0,0) para quem entra na sala pela rede — foi o que aconteceu com as peças de cenário. O aviso
+# fica embaixo da cascata, no instante da escolha, para o problema não viajar até uma sala online.
+# O rótulo é criado por código (não é focável, então fica fora do anel de Tab) e serve aos DOIS
+# gerenciadores sem duplicar o .tscn — cada categoria responde pelo seu requisito em
+# TemplateManagerBase._node_contract_issues.
+func _refresh_contract_warning() -> void:
+	if not is_instance_valid(_cascade_row):
+		return
+	var label := _cascade_row.get_node_or_null("ContractWarning") as Label
+	var issues := _manager().contract_issues_of(_sel_scene_path)
+	if issues.is_empty():
+		if label != null:
+			label.visible = false
+		return
+	if label == null:
+		label = Label.new()
+		label.name = "ContractWarning"
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.25))
+		_cascade_row.add_child(label)
+	label.text = "%s %s" % [
+		Locale.tr_key("Atenção: este modelo nasce em (0,0,0) para quem entra pela rede —"),
+		", ".join(issues)]
+	label.visible = true
 
 
 # Acrescenta o dropdown do PRÓXIMO nível listando as subpastas navegáveis de `dir_path`
@@ -469,6 +519,7 @@ func _on_cascade_selected(depth: int, idx: int) -> void:
 		_sel_scene_path = ""
 	else:
 		_descend(depth, _cascade_pickers[depth].get_item_text(idx))
+	_refresh_contract_warning()
 	_refresh_weapon_enabled()
 	if is_instance_valid(_win):
 		_win.wire_focus_ring.call_deferred()

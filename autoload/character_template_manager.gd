@@ -40,3 +40,12 @@ func _install_defaults() -> void:
 		}
 	]
 	save()
+
+
+# Requisito desta categoria: o personagem precisa replicar seu transform no spawn (`net_transform` /
+# `spawn_position`). Personagens se movem, então basta o transform viajar — quem o replica também o
+# corrige continuamente. Sem isso o modelo nasce (e fica) em (0,0,0) no cliente.
+func _node_contract_issues(root: Node) -> PackedStringArray:
+	if replicates_transform(root):
+		return PackedStringArray()
+	return PackedStringArray(["o modelo não replica a posição (sem MultiplayerSynchronizer de transform)"])

@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" path="res://library3D/sceneries/scenery_piece.gd" id="script"]
+
 [sub_resource type="StandardMaterial3D" id="1"]
 albedo_color = Color(0.55, 0.3, 0.05, 1)
 metallic = 0.5
@@ -16,7 +18,19 @@ height = 3.0
 radius = 0.8
 height = 3.0
 
+[sub_resource type="SceneReplicationConfig" id="spawn_cfg"]
+properties/0/path = NodePath(".:spawn_position")
+properties/0/spawn = true
+properties/0/replication_mode = 0
+properties/1/path = NodePath(".:spawn_rotation_y")
+properties/1/spawn = true
+properties/1/replication_mode = 0
+properties/2/path = NodePath(".:spawn_scale")
+properties/2/spawn = true
+properties/2/replication_mode = 0
+
 [node name="Pill" type="StaticBody3D"]
+script = ExtResource("script")
 collision_layer = 1
 collision_mask = 0
 
@@ -32,3 +46,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
 light_color = Color(1, 0.6, 0.15, 1)
 light_energy = 1.4
 omni_range = 6.0
+
+[node name="ServerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("spawn_cfg")

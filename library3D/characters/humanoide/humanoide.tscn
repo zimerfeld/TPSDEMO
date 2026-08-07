@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://library3D/sceneries/scenery_piece.gd" id="1_owlrr"]
+[ext_resource type="PackedScene" path="res://library3D/characters/humanoide/humanoide3.glb" id="2_g740b"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_352jn"]
+size = Vector3(0.88497424, 1.905, 0.44799998)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_4yruj"]
+properties/0/path = NodePath(".:spawn_position")
+properties/0/spawn = true
+properties/0/replication_mode = 0
+properties/1/path = NodePath(".:spawn_rotation_y")
+properties/1/spawn = true
+properties/1/replication_mode = 0
+properties/2/path = NodePath(".:spawn_scale")
+properties/2/spawn = true
+properties/2/replication_mode = 0
+
+[node name="Humanoide" type="StaticBody3D" unique_id=500702172]
+collision_mask = 0
+script = ExtResource("1_owlrr")
+
+[node name="Mesh" type="Node3D" parent="." unique_id=428436094 instance=ExtResource("2_g740b")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1942498640]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0010151565, 0.9475, 0.025999993)
+shape = SubResource("BoxShape3D_352jn")
+
+[node name="ServerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=152469842]
+replication_config = SubResource("SceneReplicationConfig_4yruj")
