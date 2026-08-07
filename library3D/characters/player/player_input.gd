@@ -42,12 +42,16 @@ var _focused_enemy: Node = null
 ## reconciliação passaria a corrigir uma divergência que é só de input.
 @export var running: bool = false
 ## CTRL segurado: abaixa. A perna que se ajoelha segue o LADO DA MIRA (ver aim_side).
+## Replicado também no pacote de SPAWN — é o que permite a quem entra atrasado reconstruir a pose
+## de alguém que já estava agachado (ver `_ready`).
 @export var crouching: bool = false
 ## Lado da mira sobre o ombro: +1 direita (padrão), -1 esquerda. Alterna com C e é lembrado entre
 ## sessões (Settings → `reticle_side`). Espelha a posição da câmera de mira.
 var aim_side: int = 1
 # Estado anterior do agachar, para disparar/abortar a animação só na mudança.
 var _was_crouching: bool = false
+## Lado em que o corpo agachou. O levantar tem de usar ESTE, não o lado da mira no momento de soltar.
+var _crouch_side: int = 1
 
 # Camera and effects
 @export var camera_animation: AnimationPlayer
@@ -64,7 +68,18 @@ var _was_crouching: bool = false
 
 
 func _ready() -> void:
+	_load_aim_side()
+	# Roda DEPOIS do AnimationPlayer da câmera (prioridade 0): é o que permite ao `_apply_aim_side`
+	# do fim do `_process` corrigir o ombro sem ser sobrescrito no mesmo frame.
+	process_priority = 10
 	apply_authority()
+	# LATE JOIN: a postura mora em estado local da árvore de animação, instalado por um RPC que quem
+	# chega depois nunca recebeu — o recém-chegado via de pé alguém que estava agachado. `crouching`
+	# vem no pacote de spawn, então basta reconstruir a pose aqui. Só localmente: o gesto já foi
+	# anunciado à rede por quem agachou, e reanunciá-lo daqui ecoaria de volta ao servidor.
+	if crouching:
+		_was_crouching = true
+		_play_posture.call_deferred(true, true)
 
 
 # (Re)aplica o setup que depende da autoridade (câmera local + leitura de input).
@@ -171,6 +186,9 @@ func _process(delta: float) -> void:
 
 	# Exibe o HUD do inimigo quando a mira está sobre ele.
 	_update_enemy_focus()
+
+	# POR ÚLTIMO: reimpõe o ombro escolhido sobre o que a animação de câmera acabou de escrever.
+	_apply_aim_side()
 
 	# Fade out to black if falling out of the map. -17 is lower than
 	# the lowest valid position checked the map (which is a bit under -16).
@@ -339,12 +357,23 @@ func _flip_aim_side() -> void:
 	aim_side = -aim_side
 	Settings.config_file.set_value("runtime", "reticle_side", "right" if aim_side > 0 else "left")
 	Settings.save_settings()
-	_apply_aim_side()
 
 
-# A posição de mira é escrita por uma ANIMAÇÃO da câmera (o clipe de "aim" desloca o SpringArm para o
-# ombro). Por isso o lado é aplicado DEPOIS dela, espelhando o X: preservamos a distância autorada e
-# só trocamos de lado — em vez de duplicar o clipe inteiro para a esquerda.
+## Lê o ombro escolhido na sessão anterior. Sem isto a chave era gravada e nunca lida — a preferência
+## voltava para a direita a cada partida, embora a documentação prometesse o contrário.
+func _load_aim_side() -> void:
+	var salvo := String(Settings.config_file.get_value("runtime", "reticle_side", "right"))
+	aim_side = -1 if salvo == "left" else 1
+
+
+# A posição de mira é escrita por uma ANIMAÇÃO da câmera (o clipe de mira desloca o SpringArm para o
+# ombro). Espelhar o X preserva a distância autorada e só troca de lado, em vez de duplicar o clipe
+# inteiro para a esquerda.
+#
+# Precisa rodar TODO FRAME, e não só no clique: a animação regrava o X a cada toggle de mira, o que
+# apagava a escolha. E no clique isolado não adiantava nada — fora da mira o X vale 0, e 0 espelhado
+# continua 0. Por isso este nó também roda com prioridade tardia (ver _ready): o AnimationPlayer da
+# câmera escreve primeiro, nós corrigimos o lado depois.
 func _apply_aim_side() -> void:
 	var arm := camera_rot.get_node_or_null(^"SpringArm3D") as Node3D if camera_rot != null else null
 	if arm == null:
@@ -354,7 +383,8 @@ func _apply_aim_side() -> void:
 
 ## CTRL abaixa. A animação é a do lado da mira — mira à direita ajoelha com a perna direita, à
 ## esquerda com a esquerda. São dois movimentos distintos e cada um toca UMA vez: ao apertar, abaixa e
-## FICA abaixado (a pose congela — ver Player.hold_gestures); ao soltar, roda o levantar. Abortar o
+## FICA abaixado (a pose congela — ver o parâmetro `hold` de Player.request_gesture); ao soltar, roda
+## o levantar. Abortar o
 ## gesto, como se fazia antes, fazia o corpo saltar de volta à locomoção sem levantar.
 ## Quais clipes usar é o personagem quem diz: este nó não conhece o vocabulário de nenhum modelo.
 func _update_crouch() -> void:
@@ -362,12 +392,30 @@ func _update_crouch() -> void:
 	if crouching == _was_crouching:
 		return
 	_was_crouching = crouching
+	_play_posture(crouching)
+
+
+## Toca o abaixar (ou o levantar) no personagem. Separado de `_update_crouch` porque o late join
+## chega aqui sem passar pelo teclado (ver `_ready`).
+##
+## `local_only` toca sem anunciar à rede — é o modo do late join, onde a postura já é conhecida de
+## todos e o que falta é só reconstruí-la nesta tela.
+func _play_posture(down: bool, local_only: bool = false) -> void:
 	var character := get_parent()
-	var asker: StringName = &"crouch_gesture" if crouching else &"stand_gesture"
+	var asker: StringName = &"crouch_gesture" if down else &"stand_gesture"
 	# Nem todo corpo que aceita este nó é um `Player` — o red_robot é um CharacterBody3D próprio.
 	if character == null or not character.has_method(asker) \
 			or not character.has_method(&"request_gesture"):
 		return
-	var clip: String = character.call(asker, aim_side)
-	if clip != "":
-		character.call(&"request_gesture", clip)
+	# O levantar usa o lado em que o corpo AGACHOU, não o lado da mira agora: trocar de ombro com C
+	# no meio do agachamento fazia o modelo estalar, trocando de joelho antes de ficar de pé.
+	if down:
+		_crouch_side = aim_side
+	var clip: String = character.call(asker, _crouch_side)
+	if clip == "":
+		return
+	# `hold` só no abaixar: o levantar precisa terminar e devolver o corpo à locomoção.
+	if local_only:
+		character.call(&"play_gesture_here", clip, down)
+	else:
+		character.call(&"request_gesture", clip, down)

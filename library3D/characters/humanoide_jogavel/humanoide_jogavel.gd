@@ -43,18 +43,10 @@ const WALK_BLEND_PARAM := "parameters/walk/blend_position"
 ## Clipes que precisam REPETIR enquanto a tecla estiver pressionada. O importador do Godot só liga o
 ## loop sozinho em animações com sufixo `-cycle` (convenção do `player.glb`); as do humanoide chegam
 ## todas como LOOP_NONE, então `andar` tocava 1,10 s e PARAVA com a tecla ainda pressionada.
-## `ocioso`/`andar`/`correr` são cíclicos por natureza: uma passada emenda na seguinte.
-## `ajoelhar_*` entra por um motivo TÉCNICO, não estético: a camada de gesto (OneShot) se encerra
-## quando o clipe acaba, e um gesto que acaba não segura pose nenhuma. Com o clipe em loop a camada
-## fica viva, e quem impede a repetição é o congelamento do tempo — ver CROUCH_HOLD. O jogador nunca
-## vê o segundo ciclo.
-const LOOPING_CLIPS: PackedStringArray = [
-	"ocioso", "andar", "correr", "ajoelhar_dir", "ajoelhar_esq",
-]
-
-## Agachar é POSTURA: o corpo desce uma vez e FICA lá até soltar o CTRL (ver Player.hold_gestures).
-## Levantar fica de fora — esse tem que terminar e devolver o corpo à locomoção.
-const CROUCH_HOLD: PackedStringArray = ["ajoelhar_dir", "ajoelhar_esq"]
+## Só entram os clipes cíclicos por NATUREZA: uma passada emenda na seguinte. Os de postura
+## (`ajoelhar_*`) ficam de fora — lá o modo de repetição depende de como o clipe está sendo usado no
+## momento, e quem resolve isso é `Player._play_gesture_local`.
+const LOOPING_CLIPS: PackedStringArray = ["ocioso", "andar", "correr"]
 
 ## Abaixo disto o corpo conta como PARADO ao saltar (salto no lugar, nao a versao em movimento).
 const MOVING_THRESHOLD: float = 0.15
@@ -62,7 +54,6 @@ const MOVING_THRESHOLD: float = 0.15
 
 func _ready() -> void:
 	_ensure_locomotion_loops()
-	hold_gestures = CROUCH_HOLD
 	# Perfil de rig: reaproveita o `limb_config` da pasta `humanoide/` (a mesma que a tela Models já
 	# edita), em vez de exigir uma configuração nova só porque a cena jogável mora noutra pasta.
 	limb_model_key = "humanoide"
@@ -91,17 +82,6 @@ func _apply_horizontal_velocity(_delta: float, camera_x: Vector3, camera_z: Vect
 		wish = Vector3.ZERO
 	velocity.x = wish.x * speed
 	velocity.z = wish.z * speed
-	if animation_tree != null:
-		# O blend do estado WALK vai de parado (0) a `andar` (0,45) a `correr` (1,0). Escrevemos aqui,
-		# DEPOIS do `animate()` da base — que usa a intensidade do movimento —, porque quem decide
-		# andar ou correr é o SHIFT: sem isso, andar devagar com SHIFT tocaria a caminhada.
-		var target: float = (1.0 if running else WALK_BLEND) * intensity
-		animation_tree[WALK_BLEND_PARAM] = Vector2(target, 0.0)
-		# A velocidade "natural" é a do clipe que está tocando: a animação só é acelerada ou
-		# desacelerada para cobrir a diferença entre ela e a velocidade real.
-		var natural: float = RUN_NATURAL_SPEED if running else WALK_NATURAL_SPEED
-		animation_tree[CADENCE_PARAM] = clampf(
-				speed / maxf(natural, 0.1), CADENCE_MIN, CADENCE_MAX)
 
 
 # Marca como cíclicos os clipes de locomoção. Feito em CÓDIGO e não no `.import` porque assim vale
@@ -138,6 +118,31 @@ func animate(anim: int, delta: float) -> void:
 	if anim == Animations.JUMP_UP and current_animation != Animations.JUMP_UP:
 		_pick_jump_clip()
 	super.animate(anim, delta)
+	_apply_locomotion_blend()
+
+
+## Escreve o blend andar/correr e a cadência do passo.
+##
+## Mora em `animate()`, e não junto do cálculo de velocidade, porque `animate()` é o único ponto por
+## onde TODOS os peers passam: servidor, cliente-dono e quem só ASSISTE. Quem assiste não roda
+## `apply_input`; ficava com o valor cru que a base escreve — a intensidade do movimento —, e neste
+## espaço de blend a intensidade cheia significa `correr`. Resultado medido: o personagem caminhava
+## na tela do dono e corria, com os pés patinando, em todas as outras. `running` é replicado justamente
+## para que o observador possa decidir igual.
+func _apply_locomotion_blend() -> void:
+	if animation_tree == null:
+		return
+	var intensity: float = clampf(motion.length(), 0.0, 1.0)
+	var running: bool = player_input != null and player_input.running
+	# O blend do estado WALK vai de parado (0) a `andar` (0,45) a `correr` (1,0). Escrito DEPOIS do
+	# `super.animate()`, que grava a intensidade crua: quem decide andar ou correr é o SHIFT.
+	animation_tree[WALK_BLEND_PARAM] = Vector2((1.0 if running else WALK_BLEND) * intensity, 0.0)
+	# A velocidade "natural" é a do clipe que está tocando: a animação só é acelerada ou desacelerada
+	# para cobrir a diferença entre ela e a velocidade real. Derivada do input em vez de lida de
+	# `velocity` — no observador o corpo é interpolado pela rede e não tem velocidade própria.
+	var speed: float = (MAX_SPEED if running else WALK_SPEED) * intensity
+	var natural: float = RUN_NATURAL_SPEED if running else WALK_NATURAL_SPEED
+	animation_tree[CADENCE_PARAM] = clampf(speed / maxf(natural, 0.1), CADENCE_MIN, CADENCE_MAX)
 
 
 func _pick_jump_clip() -> void:

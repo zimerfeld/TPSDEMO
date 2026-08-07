@@ -148,23 +148,68 @@ stops the second cycle from starting. The player sees the body go down and stay 
 repeat. The margin (`GESTURE_HOLD_MARGIN`) matters: without it, one frame of delay would rewind the
 pose to the start of the movement and the body would stand back up.
 
+**Whether to hold is decided by THE CALLER, not by the clip's name.** The first version used a list
+of "clips that hold" (`hold_gestures`), and review found the hole: the Controls tab lists all 36
+clips and invites the player to map any of them to a key -- `ajoelhar_dir` included. Fired from
+there, the freeze had nothing to undo it and **locked the character forever**, on every screen.
+Today `hold` is a parameter of `request_gesture()`: CTRL asks for a posture, a shortcut asks for a
+gesture. The same clip serves both, and even `loop_mode` is set at fire time to match the use.
+
+**The freeze clock has to stop along with the animation.** `SceneTree.create_timer()` defaults to
+`process_always = true`: opening settings (which pauses the tree) mid-crouch left the clip stopped
+on the way down while the timer kept running -- coming back, the body was stuck half-crouched. Fixed
+by passing `process_always = false`.
+
 Releasing CTRL no longer **aborts** the gesture -- it plays `levantar_*`. Aborting made the body snap
-back to locomotion without standing up.
+back to locomotion without standing up. And `levantar` uses the side the body CROUCHED on, not the
+aim side at release time: switching shoulders mid-crouch made the model pop, swapping knees before
+standing. Dying crouched stands you up too -- `respawn()` undoes the posture, or the character was
+reborn frozen in the pose.
 
-### Contextual jump
+### The lesson that carries to the next character: `apply_input` does NOT run for observers
 
-`saltar` (standing), `andar_saltar_*` and `correr_saltar_*` were already in the `.glb`. The choice is
-made **the instant the rise begins** and holds for the whole jump; swapping clips mid-air would cut
-the animation in half. The **side is fixed** (`dir`), not the aim side: `aim_side` is local to the
-owner and isn't replicated, so each peer would pick its own and the same jump would come out with the
-wrong leg on every screen. Crouching can use the aim side because there it's the **clip name** that
-travels over the network.
+`Player._physics_process` has three branches. Server and owning client call `apply_input`; **the peer
+that only WATCHES falls into the `else`** and runs just `motion = net_motion`, the interpolation and
+`animate(current_animation, delta)`. Anything written inside `apply_input` simply **does not exist**
+on the other players' screens.
 
-### Where the vocabulary lives
+That is exactly what happened to the locomotion blend. The new space replaced `{0 = idle, 1 = walk}`
+with `{0 = idle, 0.45 = walk, 1.0 = run}`, and the choice between 0.45 and 1.0 lived in the velocity
+calculation -- inside `apply_input`. On the observer the blend was written by the base class, with
+the raw movement INTENSITY; and full intensity, in the new space, means `correr`. Measured result:
+**the character walked on its owner's screen and ran, feet sliding, on every other one** -- the
+opposite of what the release promised, and invisible in a single-window test, because on the host the
+server runs `apply_input` for everyone.
 
-`crouch_gesture()`/`stand_gesture()` are `Player` hooks returning empty by default -- `player_input`
-stopped knowing about `"ajoelhar_dir"` and now **asks the character**. A character without those
-clips (the robot) simply ignores CTRL, with no error.
+The fix was moving the write into `animate()`, the one point all three branches pass through. The
+rule that stays: **whatever decides which clip shows must be written in `animate()`**; `apply_input`
+is only for what moves the body. That is why `running` and `crouching` are replicated -- without them
+the observer would have no way to decide the same.
+
+The same reasoning covers the **contextual jump**: `saltar` (standing), `andar_saltar_*` and
+`correr_saltar_*` were already in the `.glb`, and the choice happens on the rising EDGE, which
+reaches the observer through the `jump()` RPC -- hence it became `reliable`. The **side is fixed**
+(`dir`): `aim_side` is local to the owner and isn't replicated, so each peer would pick its own and
+the same jump would come out with the wrong leg on every screen. Crouching can use the aim side
+because there it's the **clip name** that travels over the network.
+
+### The aim shoulder: a property the animation owns
+
+`_apply_aim_side()` mirrors the `SpringArm3D` X -- but that X is written by a **camera animation** on
+every aim toggle. Applying the mirror only on the keypress failed for two reasons at once: outside
+aim the X is 0 (and `0` mirrored is still `0`, so the first C never did anything), and the next aim
+toggle rewrote the X, erasing the choice. Today the mirror is reapplied **every frame**, at the end
+of `_process`, with `process_priority = 10` so it runs after the camera's `AnimationPlayer`.
+
+The preference is now also **read back**: `reticle_side` was written to the config file and never
+read, even though the READMEs in all three languages promised the choice was remembered.
+
+### Posture and whoever arrives later
+
+The pose lives in local AnimationTree state, installed by an RPC. Whoever joins the match LATER never
+received that RPC and saw a crouched player standing. Since `crouching` is replicated **in the spawn
+packet**, `player_input._ready` rebuilds the pose -- locally only (`play_gesture_here`), because
+re-announcing it would echo back to the server and fire the gesture twice.
 
 ## Numbers to eyeball
 

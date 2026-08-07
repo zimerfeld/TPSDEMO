@@ -151,22 +151,69 @@ impede que o segundo ciclo comece. O jogador ve o corpo descer e ficar la; nunca
 A sobra (`GESTURE_HOLD_MARGIN`) importa: sem ela, um frame de atraso rebobinaria a pose para o inicio
 do movimento e o corpo voltaria a ficar de pe.
 
+**Quem decide segurar e QUEM DISPARA, nao o nome do clipe.** A primeira versao usava uma lista de
+"clipes que seguram" (`hold_gestures`), e a revisao mostrou o buraco: a aba Controles lista os 36
+clipes e convida o jogador a mapear qualquer um a uma tecla -- inclusive `ajoelhar_dir`. Disparado
+por ali, o congelamento nao tinha quem o desfizesse e **travava o personagem para sempre**, em todas
+as telas. Hoje o `hold` e um parametro de `request_gesture()`: o CTRL pede postura, o atalho pede
+gesto. O mesmo clipe serve aos dois, e ate o `loop_mode` e ajustado no disparo conforme o uso.
+
+**O relogio do congelamento precisa parar junto com a animacao.** `SceneTree.create_timer()` nasce
+com `process_always = true`: abrir as configuracoes (que pausam a arvore) no meio do agachamento
+deixava o clipe parado na descida enquanto o timer seguia correndo -- ao voltar, o corpo ficava preso
+meio-agachado. Corrigido passando `process_always = false`.
+
 Soltar o CTRL deixou de **abortar** o gesto e passa a tocar `levantar_*` -- abortar fazia o corpo
-saltar de volta a locomocao sem levantar.
+saltar de volta a locomocao sem levantar. E o `levantar` usa o lado em que o corpo AGACHOU, nao o
+lado da mira no momento de soltar: trocar de ombro no meio do agachamento fazia o modelo estalar,
+trocando de joelho antes de ficar de pe. Quem morre agachado tambem levanta -- `respawn()` desfaz a
+postura, senao o personagem renascia congelado na pose.
 
-### Salto contextual
+### A licao que vale para o proximo personagem: `apply_input` NAO roda em quem assiste
 
-`saltar` (parado), `andar_saltar_*` e `correr_saltar_*` ja existiam no `.glb`. A escolha e feita **no
-instante em que a subida comeca** e vale para o salto inteiro; trocar de clipe no ar partiria a
-animacao ao meio. O **lado e fixo** (`dir`), nao o da mira: `aim_side` e local ao dono e nao e
-replicado, entao cada peer escolheria um lado e o mesmo salto sairia com a perna trocada em cada
-tela. O agachado pode usar a mira porque la quem viaja pela rede e o **nome do clipe**.
+`Player._physics_process` tem tres ramos. Servidor e cliente-dono chamam `apply_input`; **o peer que
+so ASSISTE cai no `else`** e executa apenas `motion = net_motion`, a interpolacao e
+`animate(current_animation, delta)`. Tudo que for escrito dentro de `apply_input` simplesmente **nao
+existe** na tela dos outros jogadores.
 
-### Onde o vocabulario mora
+Foi exatamente o que aconteceu com o blend de locomocao. O espaco novo trocou `{0 = ocioso, 1 =
+andar}` por `{0 = ocioso, 0,45 = andar, 1,0 = correr}`, e a escolha entre 0,45 e 1,0 morava no
+calculo de velocidade -- dentro de `apply_input`. No observador quem escrevia o blend era a classe
+base, com a INTENSIDADE crua do movimento; e intensidade cheia, no espaco novo, significa `correr`.
+Resultado medido: **o personagem caminhava na tela do dono e corria, com os pes patinando, em todas
+as outras** -- o oposto do que a entrega prometia, e invisivel num teste de uma janela so, porque no
+host o servidor roda `apply_input` para todos.
 
-`crouch_gesture()`/`stand_gesture()` sao hooks do `Player` que devolvem vazio por padrao -- o
-`player_input` deixou de conhecer `"ajoelhar_dir"` e passou a **perguntar ao personagem**. Um
-personagem sem esses clipes (o robo) simplesmente ignora o CTRL, sem erro.
+A correcao foi mover a escrita para `animate()`, o unico ponto por onde os tres ramos passam. A regra
+que fica: **o que decide qual clipe aparece tem de ser escrito em `animate()`**; `apply_input` e so
+para o que move o corpo. Por isso `running` e `crouching` sao replicados -- sem eles o observador nao
+teria como decidir igual.
+
+O mesmo raciocinio vale para o **salto contextual**: `saltar` (parado), `andar_saltar_*` e
+`correr_saltar_*` ja existiam no `.glb`, e a escolha e feita na BORDA da subida, que no observador
+chega pelo RPC `jump()` -- por isso ele passou a ser `reliable`. O **lado e fixo** (`dir`): `aim_side`
+e local ao dono e nao e replicado, entao cada peer escolheria um lado e o mesmo salto sairia com a
+perna trocada em cada tela. O agachado pode usar a mira porque la quem viaja pela rede e o **nome do
+clipe**.
+
+### O lado da mira: uma propriedade que a animacao controla
+
+`_apply_aim_side()` espelha o X do `SpringArm3D` -- mas esse X e escrito por uma **animacao de
+camera** a cada toggle de mira. Aplicar o espelho so no clique nao funcionava por dois motivos ao
+mesmo tempo: fora da mira o X vale 0 (e `0` espelhado continua `0`, entao o primeiro C nunca fazia
+nada), e o clique seguinte na mira regravava o X, apagando a escolha. Hoje o espelho e reaplicado
+**todo frame**, no fim do `_process`, com `process_priority = 10` para rodar depois do
+`AnimationPlayer` da camera.
+
+A preferencia tambem passou a ser **lida**: `reticle_side` era gravado no arquivo de configuracao e
+nunca lido de volta, embora os READMEs dos tres idiomas prometessem que a escolha era lembrada.
+
+### Postura e quem chega depois
+
+A pose vive em estado local da arvore de animacao, instalada por um RPC. Quem entra na partida
+DEPOIS nunca recebeu esse RPC e via de pe um jogador agachado. Como `crouching` e replicado **no
+pacote de spawn**, o `_ready` do `player_input` reconstroi a pose -- e so localmente
+(`play_gesture_here`), porque reanuncia-la ecoaria de volta ao servidor e o disparo sairia dobrado.
 
 ## Números a calibrar no olho
 

@@ -181,7 +181,7 @@ func _build_tree() -> AnimationNodeBlendTree:
 	# Escala de tempo do gesto. Existe para os gestos de POSTURA (agachar): zerando a escala quando o
 	# clipe chega ao fim, o tempo do ramo para e a pose CONGELA no ultimo frame — o personagem fica
 	# abaixado sem repetir a animacao de abaixar. Repetir em loop resolveria "ficar la", mas o corpo
-	# ficaria se ajoelhando de novo e de novo. Ver Player.hold_gestures.
+	# ficaria se ajoelhando de novo e de novo. Ver o parametro `hold` de Player.request_gesture.
 	tree.add_node(&"gesture_scale", AnimationNodeTimeScale.new())
 	tree.add_node(&"gesture_clip", _clip("ocioso"))
 
