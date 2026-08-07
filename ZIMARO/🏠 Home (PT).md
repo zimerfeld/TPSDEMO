@@ -26,7 +26,7 @@ atualizado: 2026-07-06
 - **Stack:** Godot 4.6.2 · GDScript · build Windows via `build_windows.ps1` (.exe com PCK embutido).
 - **Diferenciais:** salas multi-level no mesmo servidor (SubViewport+World3D), dano por hitbox de membro (headshot), gerenciadores de Templates/Cenários por level, i18n EN/PT/ES em todas as telas.
 - **Meta de performance:** mínimo **60 FPS** em hardware gráfico mínimo, só com técnicas baratas (céu procedural, shaders emissivos, fog) — validada no `.exe`.
-- **Estado atual:** vários P0 prontos aguardando commit/review do usuário; netcode de salas provado em loopback; falta validação em rede real (2 PCs). Ver [[📌 Backlog (PT)|📌 Backlog]].
+- **Estado atual:** release **202608071124** publicada (cenário escolhível no host, vida replicada, resposta do controle e spawn ~1000× mais barato). Netcode validado pelo túnel playit.gg com medição dos dois lados — inclusive *late join* numa sala em combate. Ver [[📌 Backlog (PT)|📌 Backlog]].
 - **Ângulo de negócio:** produto open source do portfólio zimerfeld (prova social por stars/downloads no GitHub); financiamento via GitHub Sponsors e Ko-fi → [[💜 Financiamento e Patrocínio (PT)|💜 Financiamento e Patrocínio]].
 
 ## 🧭 Navegação por prioridade
@@ -51,6 +51,7 @@ atualizado: 2026-07-06
 - [[🔫 combate-tiro (PT)|🔫 combate-tiro]] — bullet, RPC hit, cooldown
 - [[⚔️ facções (PT)|⚔️ facções]] — lados em runtime (hostil/aliado/neutro): sem fogo amigo, targeting por facção, neutros dinâmicos
 - [[🌐 multiplayer (PT)|🌐 multiplayer]] — arquitetura server-authoritative
+- [[🕹️ input-lag-cliente (PT)|🕹️ input-lag-cliente]] — o que só o cliente paga em latência (e o que é simétrico), o que foi corrigido e como medir
 - [[🚪 salas (PT)|🚪 salas]] — servidor multi-level: salas simultâneas (SubViewport+World3D) + grade de gerência
 - [[🛰️ hospedagem-online (PT)|🛰️ hospedagem-online]] — jogar pela internet: playit.gg (UDP) · Tailscale/ZeroTier · port forwarding (ngrok NÃO serve)
 - [[❤️ sistema-de-vida (PT)|❤️ sistema-de-vida]] — HP, barra de vida, respawn

@@ -72,7 +72,13 @@ third-person shooter sandbox. At a high level it offers:
   props: **magenta box, emerald sphere and amber pill** — basic volumetric geometries with
   emissive materials, their own light and colliders following the LimbColliders/BODY-member
   concept, configurable in the Models screen). A level can have a character template **and** a
-  scenery active at the same time, applied in solo play and in online rooms.
+  scenery active at the same time, applied in solo play and in online rooms. Since version
+  **202608071124**, the **host's room management also picks the scenery** (previously only the
+  character template): the online room is born with the complete level, and the pieces reach whoever
+  joins **at the server's exact coordinates** — before, they all spawned stacked at the origin for
+  clients, because the transform never travelled in the creation packet. A command-line tool
+  (`scripts/scenery_contract.gd`) validates, fixes and imports models against that contract, and the
+  managers warn on screen when the chosen model doesn't meet it.
 - **Arena environments (striking, cheap by design)** — each level ships its own cyberpunk
   atmosphere: a **procedural gradient sky**, exponential **distance fog** and an emissive **neon
   grid floor** (one shared shader, `themes/level_grid_floor.gdshader` — pure per-pixel math, no
@@ -202,6 +208,20 @@ third-person shooter sandbox. At a high level it offers:
   A **"Loading" screen** covers every entry into a level (offline) or room (online) and, at startup,
   prepares the graphics ahead of time — so the first match starts smooth instead of freezing for a few
   seconds waiting on shaders mid-action.
+- **Health and response over the network (version 202608071124)** — health stopped propagating only
+  through events and became **replicated state**, including the **per-limb** map: whoever joins a room
+  already in combat sees the enemy with the server's exact health and limbs, instead of full bars that
+  never corrected themselves — and a downed enemy no longer keeps walking around until it vanishes
+  without exploding. On the control side, the **muzzle flash, the sound and the camera shake fire at
+  the instant of the click** (bullet and damage are still decided by the server), your command no
+  longer waits for the sync grid before going out, and **movement stopped stuttering**: the server no
+  longer echoes back to the owner the movement vector they just produced. Stopping is crisp now,
+  without sliding or jumping forward.
+- **Much cheaper room spawn (version 202608071124)** — building a character's per-limb hitboxes cost
+  **282 ms**; a room with 16 enemies burned about 4 seconds of CPU on that alone. With bone
+  classification done once (instead of once per vertex) and reused across entities of the same model,
+  it dropped to **0.25 ms** from the second character on — with the hitboxes verified identical, not a
+  millimetre of collision changed.
 - **3D model library + viewer** — reusable 3D assets organized by type under `library3D/`,
   browsable in-game through the Models screen (category → model → part) with toggles, in
   order, for rotation, **Animação**, **Efeitos especiais** (everything linked to the model
