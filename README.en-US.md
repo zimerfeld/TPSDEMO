@@ -214,6 +214,15 @@ third-person shooter sandbox. At a high level it offers:
   took speed from the animation itself — and the humanoid's don't displace the body, so it got
   computed locomotion with the **stride cadence scaled** so the feet don't slide. The selection screen
   now shows **each character's** model and resting pose, instead of the robot for everyone.
+- **Run, crouch and switch the aim shoulder** — holding **SHIFT** makes the character run (with the
+  running animation, not a sped-up walk); releasing goes back to walking. **CTRL** crouches, and the
+  kneeling leg follows the aim side. **C** flips the aim to the other shoulder and remembers it. All
+  three keys are remappable, and the stride cadence follows the real speed — the animation never turns
+  into fast-forward. Each movement now behaves the way the body expects: hold a direction and the
+  character **keeps walking** (or running) instead of taking one step and stopping; crouch and he
+  **stays down** instead of kneeling over and over, then **stands back up** when you release CTRL.
+  The jump knows where it came from too — one animation for jumping in place, another walking,
+  another running.
 - **Settings during a match (ESC)** — ESC in game now opens **settings over the paused match**: the
   character goes idle, unresponsive to input and taking no damage while you adjust options. **Back**
   resumes exactly where you stopped; **Leave Match** raises the usual confirmation.

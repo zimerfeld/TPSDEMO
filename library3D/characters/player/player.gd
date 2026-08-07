@@ -720,7 +720,10 @@ func apply_input(delta: float) -> void:
 	_was_aiming = player_input.aiming
 
 
-@rpc("call_local")
+# `reliable`: além do som e do arco, este RPC é o que dá a BORDA do salto — é nele que um personagem
+# escolhe qual clipe de salto tocar (ver HumanoideJogavel._pick_jump_clip). No modo não-confiável,
+# perder o pacote deixava os observadores vendo o salto parado enquanto o corpo corria.
+@rpc("call_local", "reliable")
 func jump() -> void:
 	animate(Animations.JUMP_UP, 0.0)
 	sound_effect_jump.play()
@@ -856,6 +859,16 @@ const GESTURE_CLIP := "gesture_clip"
 const GESTURE_DEDUPE_MS: float = 400.0
 var _gesture_played_at: float = -1.0e9
 
+## Escala de tempo da camada de gesto. Zerá-la CONGELA a pose no frame em que estiver.
+const GESTURE_SCALE := "parameters/gesture_scale/scale"
+## Sobra deixada antes do fim do clipe ao congelar. O clipe de postura é CÍCLICO (é o que mantém a
+## camada de gesto viva — ela se encerraria num clipe que acaba); parar o tempo um triz antes do fim
+## garante que o segundo ciclo nunca comece. Sem a sobra, um frame de atraso rebobinaria a pose para o
+## início do movimento — o corpo voltaria a ficar de pé.
+const GESTURE_HOLD_MARGIN: float = 0.06
+## Invalida um congelamento agendado quando outro gesto o substitui antes da hora.
+var _gesture_hold_generation: int = 0
+
 
 ## True se este personagem sabe tocar gestos (a árvore tem a camada). O robô, por ora, não tem.
 func supports_gestures() -> bool:
@@ -864,44 +877,137 @@ func supports_gestures() -> bool:
 
 
 ## Pedido do DONO: toca já (responsividade) e manda o servidor confirmar para os outros peers.
-func request_gesture(animation: String) -> void:
+##
+## `hold` = gesto de POSTURA: em vez de voltar à locomoção quando o clipe acaba, congela no último
+## frame e fica lá até o próximo gesto (é o que faz o agachado ser um ESTADO). Quem decide é QUEM
+## DISPARA, não o nome do clipe: o mesmo `ajoelhar_dir` vale como postura pelo CTRL e como gesto
+## avulso se o jogador o mapear a uma tecla na aba Controles. Decidir pelo nome travava o personagem
+## sem saída nesse segundo caso.
+func request_gesture(animation: String, hold: bool = false) -> void:
 	if animation == "" or not supports_gestures():
 		return
-	_play_gesture_local(animation)
+	_play_gesture_local(animation, hold)
 	if not _safe_is_server_call(false):
-		_server_gesture.rpc_id(1, animation)
+		_server_gesture.rpc_id(1, animation, hold)
 	else:
-		play_gesture.rpc(animation)
+		play_gesture.rpc(animation, hold)
 
 
 # Servidor recebe o pedido e o retransmite. Valida o remetente: só o DONO do personagem manda gesto
 # nele — senão qualquer peer poderia animar o corpo alheio.
 @rpc("any_peer", "reliable")
-func _server_gesture(animation: String) -> void:
+func _server_gesture(animation: String, hold: bool) -> void:
 	if not multiplayer.is_server():
 		return
 	if multiplayer.get_remote_sender_id() != player_id:
 		return
-	play_gesture.rpc(animation)
+	play_gesture.rpc(animation, hold)
 
 
 @rpc("authority", "call_local", "reliable")
-func play_gesture(animation: String) -> void:
+func play_gesture(animation: String, hold: bool = false) -> void:
 	# O dono já tocou ao apertar a tecla; o eco que volta do servidor não repete.
 	if _is_local_player and float(Time.get_ticks_msec()) - _gesture_played_at < GESTURE_DEDUPE_MS:
 		return
-	_play_gesture_local(animation)
+	_play_gesture_local(animation, hold)
 
 
-func _play_gesture_local(animation: String) -> void:
+## Encerra o gesto em andamento (ex.: soltar o CTRL sai do agachado). Como o disparo, é o servidor
+## que confirma para os demais peers.
+func abort_gesture() -> void:
+	if not supports_gestures():
+		return
+	_resume_gesture_time()
+	animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT
+	if not _safe_is_server_call(false):
+		_server_gesture_abort.rpc_id(1)
+	else:
+		play_gesture_abort.rpc()
+
+
+@rpc("any_peer", "reliable")
+func _server_gesture_abort() -> void:
+	if not multiplayer.is_server() or multiplayer.get_remote_sender_id() != player_id:
+		return
+	play_gesture_abort.rpc()
+
+
+@rpc("authority", "call_local", "reliable")
+func play_gesture_abort() -> void:
+	if supports_gestures():
+		_resume_gesture_time()
+		animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT
+
+
+func _play_gesture_local(animation: String, hold: bool = false) -> void:
 	if not supports_gestures():
 		return
 	var clip := animation_tree.tree_root.get_node(StringName(GESTURE_CLIP)) as AnimationNodeAnimation
 	if clip == null:
 		return
 	clip.animation = StringName(animation)
+	# O modo de repetição do clipe depende de COMO ele está sendo usado agora. Como postura, precisa
+	# ser cíclico — a camada de gesto se encerra num clipe que acaba, e sem camada não há pose para
+	# segurar; quem impede a repetição é o congelamento. Como gesto avulso, precisa do contrário:
+	# terminar e devolver o corpo à locomoção.
+	var clip_res := animation_tree.get_animation(StringName(animation))
+	if clip_res != null:
+		clip_res.loop_mode = Animation.LOOP_LINEAR if hold else Animation.LOOP_NONE
 	_gesture_played_at = float(Time.get_ticks_msec())
+	_resume_gesture_time()
 	animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+	if hold:
+		_freeze_gesture_at_end(animation)
+
+
+## Toca o gesto SÓ nesta tela, sem anunciá-lo à rede. Para reconstruir uma postura que os demais
+## peers já conhecem — o caso do jogador que entra na partida depois de alguém ter agachado.
+func play_gesture_here(animation: String, hold: bool = false) -> void:
+	_play_gesture_local(animation, hold)
+
+
+## Nome do clipe de AGACHAR para o lado dado (1 = direita, -1 = esquerda), e o de LEVANTAR que o
+## desfaz. Vazio quer dizer "este personagem não sabe agachar" — o CTRL simplesmente não o anima. Só o
+## humanoide tem esse vocabulário hoje; o robô não tem os clipes.
+func crouch_gesture(_side: int) -> String:
+	return ""
+
+
+func stand_gesture(_side: int) -> String:
+	return ""
+
+
+func _has_gesture_scale() -> bool:
+	return animation_tree != null and animation_tree.tree_root != null \
+			and animation_tree.tree_root.has_node(&"gesture_scale")
+
+
+## Volta o tempo do gesto a correr e cancela qualquer congelamento pendente. Chamado a cada disparo e
+## no aborto: sem isto, o gesto seguinte a um agachado nasceria com escala 0, ou seja, parado.
+func _resume_gesture_time() -> void:
+	_gesture_hold_generation += 1
+	if _has_gesture_scale():
+		animation_tree[GESTURE_SCALE] = 1.0
+
+
+## Deixa o clipe rodar inteiro UMA vez e então para o tempo, segurando a pose final.
+func _freeze_gesture_at_end(animation: String) -> void:
+	if not _has_gesture_scale():
+		return
+	var clip := animation_tree.get_animation(StringName(animation))
+	if clip == null:
+		return
+	_gesture_hold_generation += 1
+	var generation := _gesture_hold_generation
+	# `process_always = false`: o relógio precisa PARAR junto com a árvore de animação. Com o padrão
+	# (true), abrir as configurações no meio do agachar deixava o clipe parado na descida enquanto o
+	# timer seguia correndo — ao voltar, o corpo ficava travado meio-agachado.
+	await get_tree().create_timer(
+			maxf(clip.length - GESTURE_HOLD_MARGIN, 0.05), false).timeout
+	# Outro gesto entrou no meio do caminho (ou o personagem morreu): este congelamento não vale mais.
+	if generation != _gesture_hold_generation or not is_inside_tree():
+		return
+	animation_tree[GESTURE_SCALE] = 0.0
 
 
 @rpc("call_local")
@@ -912,6 +1018,10 @@ func respawn() -> void:
 	_publish_limb_snapshot()   # servidor: o mapa cheio vale também para quem entrar depois
 	transform.origin = initial_position
 	reset_physics_interpolation()  # teleporte de respawn: evita o rasgo de interpolação
+	# Quem morre AGACHADO não pode renascer congelado na pose: o gesto de postura segura o corpo até
+	# o próximo gesto, e o respawn não é um deles. Como `respawn` é call_local, cada peer desfaz a
+	# postura no seu lado — o corpo levanta em todas as telas.
+	play_gesture_abort()
 
 
 @rpc("call_local")

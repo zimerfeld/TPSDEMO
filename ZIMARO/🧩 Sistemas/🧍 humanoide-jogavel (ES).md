@@ -82,6 +82,142 @@ Dos trampas de `AnimationTree` registradas: `walk`/`strafe` **tienen** que ser `
 código escribe `Vector2`; uno 1D lo rechaza cada frame y la salida se congela), y los puntos
 **colineales** degeneran la triangulación — de ahí los cuatro puntos cardinales.
 
+## Orientación, velocidad y cadencia (2026-08-07, tras la prueba)
+
+**Giro de 180°.** El glTF del humanoide fue autorado mirando al lado OPUESTO al del player: con el
+mismo transform de nodo, su malla caminaba de espaldas. La corrección es `rotation.y = PI` en el nodo
+del MODELO (en el generador), no en la lógica — así la dirección de movimiento, la puntería y el punto
+de disparo siguen hablando el mismo idioma que el player y el red_robot.
+
+> Medir el ángulo del NODO no delata esto: los transforms de humanoide y player eran iguales. Lo que
+> difiere es hacia dónde apunta la MALLA dentro del `.glb`. Es un caso que solo el ojo detecta — lo
+> encontró una prueba de juego, no las pruebas automatizadas.
+
+**La animación parecía apresurada** porque la cadencia valía `velocidad / 1,45` con techo **2,6×**: a
+5,2 m/s tocaba el techo y reproducía un clip de CAMINATA a casi el triple de velocidad. Dos cambios lo
+resolvieron:
+
+1. El estado `walk` pasó a ser una progresión **parado (0) → `andar` (0,45) → `correr` (1,0)**.
+2. La cadencia divide por la velocidad que el clip REALMENTE representa, medida por la duración del
+   ciclo: `andar` 1,10 s ≈ **1,4 m/s**; `correr` 0,85 s ≈ **4,0 m/s**.
+
+Medido después: caminando 1,70 m/s con cadencia **1,21×**; corriendo 4,50 m/s con **1,12×**. El rango
+permitido quedó estrecho (0,75–1,3) a propósito — necesitar 2× indica que suena el clip equivocado.
+
+## Correr, agacharse y el lado de la mira
+
+| tecla | efecto |
+| --- | --- |
+| **SHIFT** (mantener) | corre: 4,5 m/s y clip `correr`. Al soltar, camina a 1,7 m/s con `andar` |
+| **CTRL** (mantener) | se agacha: `ajoelhar_dir` o `ajoelhar_esq` **según el lado de la mira**; al soltar aborta el gesto |
+| **C** | alterna el hombro de la mira y RECUERDA la elección (`Settings → reticle_side`) |
+
+Las tres son acciones remapeables en la pestaña Controles. **`running` y `crouching` se REPLICAN**:
+sin eso el servidor simularía caminata mientras el cliente corre, y la reconciliación corregiría una
+divergencia que es solo de input — el mismo mecanismo que produce el "flickering".
+
+El lado de la mira se aplica **después** de la animación de cámara, espejando la X del `SpringArm3D`:
+el clip de mira sigue siendo único, solo cambia de hombro.
+
+## Estado vs. evento: que repite, que mantiene, que ocurre una vez (2026-08-07)
+
+La prueba de juego encontro tres defectos que son, en el fondo, **la misma confusion**: tratar como
+evento lo que el cuerpo entiende como estado. Mantener W daba UN paso y paraba; CTRL se arrodillaba
+en bucle; y saltar corriendo reproducia el salto parado.
+
+**Causa raiz del primero:** el importador de Godot solo activa el bucle por su cuenta en clips con
+sufijo `-cycle` -- convencion del `player.glb`. Los 36 clips del humanoide llegan **todos** como
+`LOOP_NONE`, asi que `andar` (1,10 s) sonaba una vez y se congelaba con la tecla aun pulsada.
+`_ensure_locomotion_loops()` marca los ciclicos en codigo y no en el `.import`, para que valga en
+cualquier maquina sin depender de que alguien recuerde reimportar el `.glb`.
+
+El vocabulario pasa a dividirse en tres naturalezas:
+
+| naturaleza | clips | comportamiento |
+| --- | --- | --- |
+| **ciclico** | `ocioso`, `andar`, `correr` | repite mientras la tecla este pulsada |
+| **postura** | `ajoelhar_dir`/`_esq` | baja una vez y **congela** hasta soltar CTRL |
+| **evento** | `levantar_*`, `saltar*`, gestos | suena una vez, termina y devuelve el cuerpo a la locomocion |
+
+### La trampa del OneShot (medida, no deducida)
+
+El primer intento de mantener la pose fue un `AnimationNodeTimeScale` en la rama del gesto, puesto a
+cero al final del clip. **No funciono:** `AnimationNodeOneShot` mide su propio progreso por el tiempo
+transcurrido desde el disparo, no por el tiempo de la subrama -- congelar el subtiempo no le impide
+terminar. Medido: `escala=0.0` pero `capa_activa=false`, es decir, la pose congelada ni siquiera se
+estaba mezclando en la salida.
+
+La salida combina ambas piezas: el clip de postura entra en **bucle** (es lo que mantiene viva la capa
+de gesto, ya que un clip que termina cierra el OneShot) y el **TimeScale a cero** justo antes del
+final impide que empiece el segundo ciclo. El jugador ve el cuerpo bajar y quedarse ahi; nunca ve la
+repeticion. El margen (`GESTURE_HOLD_MARGIN`) importa: sin el, un fotograma de retraso rebobinaria la
+pose al inicio del movimiento y el cuerpo volveria a ponerse de pie.
+
+**Quien decide mantener es QUIEN DISPARA, no el nombre del clip.** La primera version usaba una lista
+de "clips que mantienen" (`hold_gestures`), y la revision encontro el agujero: la pestana Controles
+lista los 36 clips e invita al jugador a asignar cualquiera a una tecla -- `ajoelhar_dir` incluido.
+Disparado desde ahi, la congelacion no tenia quien la deshiciera y **bloqueaba al personaje para
+siempre**, en todas las pantallas. Hoy `hold` es un parametro de `request_gesture()`: CTRL pide
+postura, el atajo pide gesto. El mismo clip sirve a ambos, y hasta el `loop_mode` se ajusta en el
+disparo segun el uso.
+
+**El reloj de la congelacion tiene que parar junto con la animacion.** `SceneTree.create_timer()`
+nace con `process_always = true`: abrir la configuracion (que pausa el arbol) a media agachada dejaba
+el clip detenido en la bajada mientras el temporizador seguia corriendo -- al volver, el cuerpo
+quedaba atrapado a medio agachar. Corregido pasando `process_always = false`.
+
+Soltar CTRL dejo de **abortar** el gesto y pasa a reproducir `levantar_*` -- abortar hacia que el
+cuerpo saltara de vuelta a la locomocion sin levantarse. Y el `levantar` usa el lado en que el cuerpo
+SE AGACHO, no el lado de la mira al soltar: cambiar de hombro a media agachada hacia que el modelo
+diera un tiron, cambiando de rodilla antes de ponerse de pie. Quien muere agachado tambien se levanta
+-- `respawn()` deshace la postura, o el personaje renacia congelado en ella.
+
+### La leccion que sirve para el proximo personaje: `apply_input` NO corre en quien observa
+
+`Player._physics_process` tiene tres ramas. Servidor y cliente-dueno llaman a `apply_input`; **el peer
+que solo MIRA cae en el `else`** y ejecuta solo `motion = net_motion`, la interpolacion y
+`animate(current_animation, delta)`. Todo lo que se escriba dentro de `apply_input` sencillamente **no
+existe** en la pantalla de los demas jugadores.
+
+Fue exactamente lo que le paso al blend de locomocion. El espacio nuevo cambio `{0 = ocioso, 1 =
+andar}` por `{0 = ocioso, 0,45 = andar, 1,0 = correr}`, y la eleccion entre 0,45 y 1,0 vivia en el
+calculo de velocidad -- dentro de `apply_input`. En el observador quien escribia el blend era la clase
+base, con la INTENSIDAD cruda del movimiento; e intensidad plena, en el espacio nuevo, significa
+`correr`. Resultado medido: **el personaje caminaba en la pantalla del dueno y corria, con los pies
+patinando, en todas las demas** -- lo contrario de lo que prometia la entrega, e invisible en una
+prueba de una sola ventana, porque en el host el servidor corre `apply_input` para todos.
+
+La correccion fue mover la escritura a `animate()`, el unico punto por el que pasan las tres ramas. La
+regla que queda: **lo que decide que clip se ve tiene que escribirse en `animate()`**; `apply_input`
+es solo para lo que mueve el cuerpo. Por eso `running` y `crouching` se replican -- sin ellos el
+observador no tendria como decidir igual.
+
+El mismo razonamiento vale para el **salto contextual**: `saltar` (parado), `andar_saltar_*` y
+`correr_saltar_*` ya existian en el `.glb`, y la eleccion se hace en el FLANCO de la subida, que llega
+al observador por el RPC `jump()` -- por eso paso a ser `reliable`. El **lado es fijo** (`dir`):
+`aim_side` es local al dueno y no se replica, asi que cada peer elegiria uno y el mismo salto saldria
+con la pierna cambiada en cada pantalla. El agachado si puede usar la mira porque alli lo que viaja
+por la red es el **nombre del clip**.
+
+### El lado de la mira: una propiedad que controla la animacion
+
+`_apply_aim_side()` refleja la X del `SpringArm3D` -- pero esa X la escribe una **animacion de
+camara** en cada toggle de mira. Aplicar el espejo solo al pulsar fallaba por dos motivos a la vez:
+fuera de la mira la X vale 0 (y `0` reflejado sigue siendo `0`, asi que la primera C nunca hacia
+nada), y el siguiente toggle regrababa la X, borrando la eleccion. Hoy el espejo se reaplica **cada
+fotograma**, al final del `_process`, con `process_priority = 10` para correr despues del
+`AnimationPlayer` de la camara.
+
+La preferencia tambien pasa a **leerse**: `reticle_side` se grababa en el archivo de configuracion y
+nunca se leia, aunque los READMEs de los tres idiomas prometian que la eleccion se recordaba.
+
+### La postura y quien llega despues
+
+La pose vive en estado local del arbol de animacion, instalada por un RPC. Quien entra en la partida
+DESPUES nunca recibio ese RPC y veia de pie a un jugador agachado. Como `crouching` se replica **en el
+paquete de spawn**, el `_ready` de `player_input` reconstruye la pose -- y solo localmente
+(`play_gesture_here`), porque reanunciarla rebotaria al servidor y el disparo saldria doble.
+
 ## Números a ajustar a ojo
 
 `MAX_SPEED = 5,2 m/s` y la altura de cámara `1,72 m` son **estimaciones**. Una constante cada uno.

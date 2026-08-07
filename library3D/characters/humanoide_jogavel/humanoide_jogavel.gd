@@ -18,19 +18,42 @@ extends Player
 ## Retarget (usar os clipes do player neste rig, ou o contrário) fica fora daqui de propósito — é
 ## trabalho de asset, do FIGArtStudio.
 
-## Velocidade máxima de deslocamento (m/s). Calibrada para ficar perto do que o player alcança com
-## root motion, para os dois personagens jogarem parecido na mesma sala.
-const MAX_SPEED: float = 5.2
-## Velocidade que a animação `andar` percorreria se o clipe tivesse deslocamento (m/s). É o divisor da
-## cadência: acima disso o passo acelera, abaixo desacelera — é o que evita o pé deslizando.
-const WALK_NATURAL_SPEED: float = 1.45
-## Limites da escala de cadência. Fora dessa faixa a animação começa a parecer câmera rápida/lenta.
-const CADENCE_MIN: float = 0.6
-const CADENCE_MAX: float = 2.6
+## Velocidade de CAMINHADA (m/s) — o padrão, sem SHIFT.
+const WALK_SPEED: float = 1.7
+## Velocidade de CORRIDA (m/s), com SHIFT segurado. 4,5 é uma corrida humana plausível; antes o
+## personagem andava sempre a 5,2 e a animação precisava ser acelerada até virar borrão.
+const MAX_SPEED: float = 4.5
+## Velocidade que cada clipe REPRESENTA (m/s), medida pela cadência do ciclo: `andar` tem 1,10 s por
+## ciclo (~0,55 s por passo, caminhada normal) e `correr` 0,85 s (~0,43 s por passo, corrida). São os
+## divisores da cadência — a animação só é acelerada/desacelerada para cobrir a diferença entre a
+## velocidade real e a que o clipe naturalmente teria.
+const WALK_NATURAL_SPEED: float = 1.4
+const RUN_NATURAL_SPEED: float = 4.0
+## Limites da escala de cadência. Faixa ESTREITA de propósito: com o clipe certo tocando para cada
+## velocidade (ver o blend em build_humanoide_jogavel.gd), a correção necessária é pequena — se
+## precisasse de 2× é sinal de que a animação errada está tocando.
+const CADENCE_MIN: float = 0.75
+const CADENCE_MAX: float = 1.3
 const CADENCE_PARAM := "parameters/locomotion_scale/scale"
+## Posição do clipe `andar` no espaço de locomoção (ver build_humanoide_jogavel.gd).
+const WALK_BLEND: float = 0.45
+const WALK_BLEND_PARAM := "parameters/walk/blend_position"
+
+
+## Clipes que precisam REPETIR enquanto a tecla estiver pressionada. O importador do Godot só liga o
+## loop sozinho em animações com sufixo `-cycle` (convenção do `player.glb`); as do humanoide chegam
+## todas como LOOP_NONE, então `andar` tocava 1,10 s e PARAVA com a tecla ainda pressionada.
+## Só entram os clipes cíclicos por NATUREZA: uma passada emenda na seguinte. Os de postura
+## (`ajoelhar_*`) ficam de fora — lá o modo de repetição depende de como o clipe está sendo usado no
+## momento, e quem resolve isso é `Player._play_gesture_local`.
+const LOOPING_CLIPS: PackedStringArray = ["ocioso", "andar", "correr"]
+
+## Abaixo disto o corpo conta como PARADO ao saltar (salto no lugar, nao a versao em movimento).
+const MOVING_THRESHOLD: float = 0.15
 
 
 func _ready() -> void:
+	_ensure_locomotion_loops()
 	# Perfil de rig: reaproveita o `limb_config` da pasta `humanoide/` (a mesma que a tela Models já
 	# edita), em vez de exigir uma configuração nova só porque a cena jogável mora noutra pasta.
 	limb_model_key = "humanoide"
@@ -49,13 +72,90 @@ func _apply_horizontal_velocity(_delta: float, camera_x: Vector3, camera_z: Vect
 	var wish: Vector3 = camera_x * motion.x + camera_z * motion.y
 	wish.y = 0.0
 	var intensity: float = clampf(motion.length(), 0.0, 1.0)
-	var speed: float = MAX_SPEED * intensity
+	# CORRER é escolha do jogador (SHIFT), não intensidade do analógico: solto, caminha.
+	var running: bool = player_input != null and player_input.running
+	var top_speed: float = MAX_SPEED if running else WALK_SPEED
+	var speed: float = top_speed * intensity
 	if wish.length() > 0.001:
 		wish = wish.normalized()
 	else:
 		wish = Vector3.ZERO
 	velocity.x = wish.x * speed
 	velocity.z = wish.z * speed
-	if animation_tree != null:
-		animation_tree[CADENCE_PARAM] = clampf(
-				speed / WALK_NATURAL_SPEED, CADENCE_MIN, CADENCE_MAX)
+
+
+# Marca como cíclicos os clipes de locomoção. Feito em CÓDIGO e não no `.import` porque assim vale
+# para qualquer máquina, sem depender de alguém lembrar de reimportar o `.glb` — e fica visível a
+# quem lê o personagem, junto da lista do que é estado e do que é evento.
+func _ensure_locomotion_loops() -> void:
+	var players := find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	var anim_player := players[0] as AnimationPlayer
+	for clip_name in LOOPING_CLIPS:
+		if not anim_player.has_animation(clip_name):
+			continue
+		var clip := anim_player.get_animation(clip_name)
+		if clip != null and clip.loop_mode == Animation.LOOP_NONE:
+			clip.loop_mode = Animation.LOOP_LINEAR
+
+
+## Vocabulário de postura deste modelo — a perna que se ajoelha (e a que levanta) segue o lado da
+## mira. Ver Player.crouch_gesture.
+func crouch_gesture(side: int) -> String:
+	return "ajoelhar_dir" if side > 0 else "ajoelhar_esq"
+
+
+func stand_gesture(side: int) -> String:
+	return "levantar_dir" if side > 0 else "levantar_esq"
+
+
+## O salto do humanoide tem TRÊS versões, conforme o que o corpo estava fazendo quando saiu do chão:
+## parado (`saltar`), em caminhada (`andar_saltar_*`) e em corrida (`correr_saltar_*`). A escolha é
+## feita no instante em que a subida começa e vale para o salto inteiro — trocar de clipe no ar
+## partiria a animação ao meio.
+func animate(anim: int, delta: float) -> void:
+	if anim == Animations.JUMP_UP and current_animation != Animations.JUMP_UP:
+		_pick_jump_clip()
+	super.animate(anim, delta)
+	_apply_locomotion_blend()
+
+
+## Escreve o blend andar/correr e a cadência do passo.
+##
+## Mora em `animate()`, e não junto do cálculo de velocidade, porque `animate()` é o único ponto por
+## onde TODOS os peers passam: servidor, cliente-dono e quem só ASSISTE. Quem assiste não roda
+## `apply_input`; ficava com o valor cru que a base escreve — a intensidade do movimento —, e neste
+## espaço de blend a intensidade cheia significa `correr`. Resultado medido: o personagem caminhava
+## na tela do dono e corria, com os pés patinando, em todas as outras. `running` é replicado justamente
+## para que o observador possa decidir igual.
+func _apply_locomotion_blend() -> void:
+	if animation_tree == null:
+		return
+	var intensity: float = clampf(motion.length(), 0.0, 1.0)
+	var running: bool = player_input != null and player_input.running
+	# O blend do estado WALK vai de parado (0) a `andar` (0,45) a `correr` (1,0). Escrito DEPOIS do
+	# `super.animate()`, que grava a intensidade crua: quem decide andar ou correr é o SHIFT.
+	animation_tree[WALK_BLEND_PARAM] = Vector2((1.0 if running else WALK_BLEND) * intensity, 0.0)
+	# A velocidade "natural" é a do clipe que está tocando: a animação só é acelerada ou desacelerada
+	# para cobrir a diferença entre ela e a velocidade real. Derivada do input em vez de lida de
+	# `velocity` — no observador o corpo é interpolado pela rede e não tem velocidade própria.
+	var speed: float = (MAX_SPEED if running else WALK_SPEED) * intensity
+	var natural: float = RUN_NATURAL_SPEED if running else WALK_NATURAL_SPEED
+	animation_tree[CADENCE_PARAM] = clampf(speed / maxf(natural, 0.1), CADENCE_MIN, CADENCE_MAX)
+
+
+func _pick_jump_clip() -> void:
+	if animation_tree == null or animation_tree.tree_root == null:
+		return
+	var clip_name := "saltar"
+	if motion.length() > MOVING_THRESHOLD:
+		var running: bool = player_input != null and player_input.running
+		# Lado FIXO, não o da mira: `aim_side` é local ao dono e não é replicado, então cada peer
+		# escolheria um lado diferente e o mesmo salto sairia com a perna trocada em cada tela. O
+		# agachado pode usar a mira porque lá quem viaja pela rede é o NOME do clipe.
+		clip_name = "correr_saltar_dir" if running else "andar_saltar_dir"
+	for node_name in [&"jump_up", &"jump_down"]:
+		var clip := animation_tree.tree_root.get_node(node_name) as AnimationNodeAnimation
+		if clip != null:
+			clip.animation = StringName(clip_name)
