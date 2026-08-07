@@ -208,6 +208,24 @@ third-person shooter sandbox. At a high level it offers:
   A **"Loading" screen** covers every entry into a level (offline) or room (online) and, at startup,
   prepares the graphics ahead of time — so the first match starts smooth instead of freezing for a few
   seconds waiting on shaders mid-action.
+- **A third playable character: the HUMANOID** — besides the robot and the pink variant, you can now
+  pick a humanoid with its **own rig and animations** (36 clips). It walks, runs and jumps; the
+  remaining animations are available as **gestures** (see Controls below). The game's movement engine
+  took speed from the animation itself — and the humanoid's don't displace the body, so it got
+  computed locomotion with the **stride cadence scaled** so the feet don't slide. The selection screen
+  now shows **each character's** model and resting pose, instead of the robot for everyone.
+- **Settings during a match (ESC)** — ESC in game now opens **settings over the paused match**: the
+  character goes idle, unresponsive to input and taking no damage while you adjust options. **Back**
+  resumes exactly where you stopped; **Leave Match** raises the usual confirmation.
+- **Controls tab: remap everything** — every player function (move, jump, aim, shoot, look, quit,
+  fullscreen, debug) can be mapped to a **key or mouse button**, with a per-row reset to default. Keys
+  are stored by **physical position**, so AZERTY and ABNT2 keyboards keep the same spot. And there's
+  an **Animations** section: the humanoid's 36, read from the model itself, mappable to keys —
+  pressing the key plays the animation **on top of movement**, without disturbing WASD, and the other
+  players see the gesture.
+- **The template's weapon now counts** — the character manager's "Weapon" field was saved but ignored;
+  it now sets the **damage** of whoever carries it. Each weapon has its own configurable damage in the
+  Models screen (default: 1 health per hit), and a **character with no weapon doesn't shoot**.
 - **Health and response over the network (version 202608071124)** — health stopped propagating only
   through events and became **replicated state**, including the **per-limb** map: whoever joins a room
   already in combat sees the enemy with the server's exact health and limbs, instead of full bars that

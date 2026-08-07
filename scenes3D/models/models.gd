@@ -326,6 +326,10 @@ var _cam_home: Vector2 = Vector2.ZERO
 @onready var cbo_effects: OptionButton = %EffectsLists
 @onready var member_row: HBoxContainer = %MemberRow
 @onready var cbo_members: OptionButton = %Members
+# Dano da arma (só na categoria "weapons"): quanto ela tira de vida por acerto. É o número que o
+# personagem passa a usar quando o template lhe atribui esta arma — ver LimbConfig.weapon_damage.
+@onready var weapon_damage_row: HBoxContainer = %WeaponDamageRow
+@onready var weapon_damage_spin: SpinBox = %WeaponDamage
 @onready var sub_member_row: HBoxContainer = %SubMemberRow
 @onready var cbo_sub_members: OptionButton = %SubMembers
 # Dropdown "Esqueleto" (ossos avulsos), exibido SÓ no modo "Todos os membros". Fica ABAIXO do editor
@@ -403,6 +407,7 @@ func _ready() -> void:
 	cbo_category.add_item(Locale.tr_key(SELECT_LABEL))
 	for category in _categories:
 		cbo_category.add_item(Locale.tr_key(category["label"]))
+	weapon_damage_spin.value_changed.connect(_on_weapon_damage_changed)
 	cbo_category.item_selected.connect(_on_category_selected)
 	cbo_models.item_selected.connect(_on_model_selected)
 	cbo_meshes.item_selected.connect(_on_mesh_selected)
@@ -1016,7 +1021,32 @@ func _plan_member_entries() -> Array:
 # todo modelo tem ao menos "CORPO" para definir um collider); só esconde as rows no placeholder de
 # categoria. **Restaura o valor PERSISTIDO (sel_member) sempre que exibido; se não houver/for inválido
 # → "Selecione..."** (2026-06-25).
+# Mostra/atualiza a linha "Dano da arma" — só faz sentido na categoria weapons, com uma arma
+# escolhida. O valor vive no MESMO limb_config.json do modelo que já guarda o dano por membro.
+func _refresh_weapon_damage_row() -> void:
+	if weapon_damage_row == null:
+		return
+	var key := _current_model_key()
+	var is_weapon: bool = _current_category_key() == "weapons" and key != ""
+	weapon_damage_row.visible = is_weapon
+	if not is_weapon:
+		return
+	# `set_value_no_signal`: preencher o campo não pode disparar a gravação (senão só abrir a tela
+	# já carimbaria um valor próprio numa arma que ainda usava o padrão).
+	weapon_damage_spin.set_value_no_signal(
+			float(LimbConfig.weapon_damage(key)) if LimbConfig.has_weapon_damage(key) else 0.0)
+
+
+func _on_weapon_damage_changed(value: float) -> void:
+	var key := _current_model_key()
+	if key == "" or _current_category_key() != "weapons":
+		return
+	# 0 = apaga o ajuste e volta ao padrão (LimbConfig.WEAPON_DAMAGE_FALLBACK).
+	LimbConfig.set_weapon_damage(key, int(value))
+
+
 func _populate_members() -> void:
+	_refresh_weapon_damage_row()
 	if _current_category_key() == "":
 		_reset_members()
 		return
@@ -1046,6 +1076,8 @@ func _reset_members() -> void:
 	cbo_members.select(0)
 	cbo_members.disabled = true
 	member_row.visible = false
+	if weapon_damage_row != null:
+		weapon_damage_row.visible = false
 	_member_entries = []
 	# A row some → seus dropdowns de geometria também; e a janela de Afastamento/Escala fecha (sem alvo).
 	_close_collider_dialog()

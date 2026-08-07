@@ -52,6 +52,8 @@ atualizado: 2026-07-06
 - [[⚔️ facções (ES)|facciones]] — bandos en runtime (hostil/aliado/neutral): sin fuego amigo, targeting por facción, neutrales dinámicos
 - [[🌐 multiplayer (ES)|multijugador]] — arquitectura con autoridad de servidor
 - [[🕹️ input-lag-cliente (ES)|input lag del cliente]] — qué paga solo el cliente en latencia (y qué es simétrico), qué se corrigió y cómo medirlo
+- [[🧍 humanoide-jogavel (ES)|humanoide jugable]] — tercer personaje jugable: rig y animaciones propios, locomoción por velocidad
+- [[🎛️ controles-e-gestos (ES)|controles y gestos]] — pestaña Controles: remapeo de teclas/ratón, atajos de animación y gestos en partida
 - [[🚪 salas (ES)|salas]] — servidor multinivel: salas simultáneas (SubViewport+World3D) + rejilla de gestión
 - [[🛰️ hospedagem-online (ES)|hospedaje online]] — jugar por internet: playit.gg (UDP) · Tailscale/ZeroTier · redirección de puertos (ngrok NO funciona)
 - [[❤️ sistema-de-vida (ES)|sistema de salud]] — HP, barra de salud, respawn

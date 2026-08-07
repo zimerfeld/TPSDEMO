@@ -242,6 +242,32 @@ garantizan las spawn properties. Regla general: **lo que sea dinámico debe repe
 oyentes conectados** — el estado que cambia en runtime necesita replicación continua en el
 `replication_config`; crear/eliminar piezas ya viaja solo por el spawner.
 
+## El ARMA de la entrada ya cuenta (2026-08-07)
+
+El desplegable **"Arma"** del gestor de personajes existía y **guardaba** (`weapon_key`/`weapon_path`
+en la entrada), pero el spawn **nunca lo leía**: cada personaje usaba el `weapon_damage` fijo de su
+propia escena (50 en el player, 10 en el red_robot). Ahora `_configure_spawned_node` aplica el arma
+elegida.
+
+| situación | daño por acierto |
+| --- | --- |
+| arma con daño definido en la pantalla Models | ese valor |
+| arma sin daño definido | **1** (`LimbConfig.WEAPON_DAMAGE_FALLBACK`) |
+| **sin arma en la entrada** | **0 → el personaje no dispara** |
+
+Sin arma el personaje **no dispara** (`Player.can_shoot()`), en lugar de soltar una bala que atraviesa
+a todos sin herir — y la predicción del efecto de disparo en el cliente también queda bloqueada, si no
+habría fogonazo y sonido sin bala.
+
+El daño del arma vive en el **mismo `limb_config.json`** del modelo que ya guarda el daño por miembro
+(`library3D/weapons/<arma>/`, override en `user://`), editable en la pantalla Models: la fila **"Daño
+del arma"** aparece cuando la categoría es `weapons`. **`0` = usar el valor por defecto** — escribir 0
+BORRA el ajuste en vez de guardar cero. Rellenar el campo al abrir la pantalla usa
+`set_value_no_signal`; sin eso, solo abrirla sobre un arma ya le grabaría un valor propio.
+
+Quien nace **fuera** de plantilla (el jugador que entra por la pantalla de personaje) conserva el
+`weapon_damage` de la escena.
+
 ## Arquitectura
 
 - **`TemplateManagerBase`** (`autoload/template_manager_base.gd`): base común de los dos autoloads.

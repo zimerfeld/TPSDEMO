@@ -215,6 +215,26 @@ em terceira pessoa. Em alto nível, oferece:
   Uma **tela de "Carregando"** cobre a entrada em qualquer level (offline) ou sala (online) e, no
   startup, prepara os gráficos adiantado — então a primeira partida começa fluida, em vez de travar
   alguns segundos esperando os shaders no meio da ação.
+- **Terceiro personagem jogável: o HUMANOIDE** — além do robô e da variante rosa, agora dá para
+  escolher um humanoide com **rig e animações próprios** (36 clipes em português). Ele anda, corre e
+  pula; as demais animações ficam à disposição como **gestos** (ver Controles abaixo). O motor de
+  movimento do jogo tirava a velocidade da própria animação — e as do humanoide não deslocam o corpo,
+  então ele ganhou locomoção calculada, com a **cadência do passo escalada** para os pés não
+  patinarem. A tela de seleção passou a mostrar o modelo e a pose de descanso **de cada personagem**,
+  em vez do robô para todos.
+- **Configurações durante a partida (ESC)** — ESC no jogo agora abre as **configurações sobre a
+  partida, pausada**: o personagem fica ocioso, sem responder aos comandos nem levar dano enquanto
+  você ajusta as opções. **Voltar** retoma exatamente de onde parou; **Abandonar Partida** abre a
+  confirmação de sempre.
+- **Aba Controles: remapear tudo** — cada função do jogador (andar, pular, mirar, atirar, olhar, sair,
+  tela cheia, depuração) pode ser mapeada a uma **tecla ou botão do mouse**, com botão de voltar ao
+  padrão por linha. As teclas são gravadas por **posição física**, então teclados AZERTY e ABNT2
+  mantêm o mesmo lugar. E há uma seção de **Animações**: as 36 do humanoide, lidas do próprio modelo,
+  mapeáveis a teclas — apertar a tecla toca a animação **por cima do movimento**, sem atrapalhar o
+  WSAD, e os outros jogadores veem o gesto.
+- **A arma do template passou a valer** — o campo "Arma" do gerenciador de personagens era salvo mas
+  ignorado; agora define o **dano** de quem a carrega. Cada arma tem seu dano configurável na tela
+  Models (padrão: 1 de vida por acerto), e **personagem sem arma não dispara**.
 - **Vida e resposta em rede (versão 202608071124)** — a vida deixou de se propagar só por eventos e
   passou a ser **estado replicado**, inclusive o mapa **por membro**: quem entra numa sala já em
   combate vê o inimigo com a vida e os membros exatos do servidor, em vez de barras cheias que nunca

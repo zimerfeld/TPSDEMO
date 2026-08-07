@@ -93,7 +93,7 @@ theme_override_font_sizes/font_size = 40
 text = "ESCOLHA SEU PERSONAGEM"
 horizontal_alignment = 1
 
-[node name="Name" type="Label" parent="UI" unique_id=1189056919]
+[node name="Name" type="Label" parent="UI" groups=["loc_manual"] unique_id=1189056919]
 unique_name_in_owner = true
 layout_mode = 1
 anchor_top = 0.82
