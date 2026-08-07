@@ -71,7 +71,13 @@ disparos en tercera persona. A grandes rasgos ofrece:
   escenario: **caja magenta, esfera esmeralda y píldora ámbar** — geometrías volumétricas básicas con
   materiales emisivos, su propia luz y colisionadores siguiendo el concepto LimbColliders/miembro-BODY,
   configurables en la pantalla Models). Un nivel puede tener una plantilla de personajes **y** un
-  escenario activos al mismo tiempo, aplicados en el juego en solitario y en las salas en línea.
+  escenario activos al mismo tiempo, aplicados en el juego en solitario y en las salas en línea. Desde
+  la versión **202608071124**, la **gestión de salas del host también elige el escenario** (antes solo
+  la plantilla de personajes): la sala en línea nace con el nivel completo, y las piezas llegan a quien
+  entra **en las mismas coordenadas del servidor** — antes nacían todas apiladas en el origen para los
+  clientes, porque el transform no viajaba en el paquete de creación. Una herramienta de línea de
+  comandos (`scripts/scenery_contract.gd`) valida, corrige e importa modelos contra ese contrato, y los
+  gestores avisan en pantalla cuando el modelo elegido no lo cumple.
 - **Entornos de arena (llamativos, baratos por diseño)** — cada nivel trae su propia atmósfera cyberpunk:
   un **cielo procedural con degradado**, **niebla de distancia** exponencial y un **suelo de rejilla de neón**
   emisivo (un único shader compartido, `themes/level_grid_floor.gdshader` — matemática pura por píxel, sin
@@ -196,6 +202,19 @@ disparos en tercera persona. A grandes rasgos ofrece:
   Una **pantalla de "Cargando"** cubre la entrada a cualquier level (offline) o sala (online) y, en el
   arranque, prepara los gráficos por adelantado — así la primera partida empieza fluida en vez de
   congelarse unos segundos esperando los shaders en plena acción.
+- **Vida y respuesta en red (versión 202608071124)** — la vida dejó de propagarse solo por eventos y
+  pasó a ser **estado replicado**, incluido el mapa **por miembro**: quien entra en una sala ya en
+  combate ve al enemigo con la vida y los miembros exactos del servidor, en vez de barras llenas que
+  nunca se corregían — y un enemigo abatido ya no sigue caminando hasta desaparecer sin explotar. Del
+  lado del control, el **fogonazo, el sonido y la sacudida del disparo salen en el instante del clic**
+  (la bala y el daño los sigue decidiendo el servidor), tu comando ya no espera la rejilla de
+  sincronización para salir, y el **movimiento dejó de temblar**: el servidor ya no devuelve al dueño
+  el vector de andar que él acaba de producir. La parada quedó seca, sin resbalar ni saltar adelante.
+- **Spawn de sala mucho más barato (versión 202608071124)** — montar las hitboxes por miembro de un
+  personaje costaba **282 ms**; una sala con 16 enemigos gastaba unos 4 segundos de CPU solo en eso.
+  Con la clasificación de hueso hecha una vez (en lugar de una vez por vértice) y reutilizada entre
+  entidades del mismo modelo, bajó a **0,25 ms** a partir del segundo personaje — con las hitboxes
+  verificadas idénticas, sin cambiar un milímetro de colisión.
 - **Biblioteca + visor de modelos 3D** — recursos 3D reutilizables organizados por tipo bajo `library3D/`,
   explorables en el juego a través de la pantalla Models (categoría → modelo → parte) con interruptores, en
   orden, para rotación, **Animação**, **Efeitos especiais** (todo lo vinculado al modelo

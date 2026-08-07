@@ -26,7 +26,7 @@ atualizado: 2026-07-06
 - **Stack:** Godot 4.6.2 · GDScript · Windows build via `build_windows.ps1` (single .exe with embedded PCK).
 - **Differentiators:** multi-level rooms on the same server (SubViewport+World3D), per-limb hitbox damage (headshot), per-level Template/Scenery managers, EN/PT/ES i18n on every screen.
 - **Performance goal:** minimum **60 FPS** on minimal graphics hardware, using only cheap techniques (procedural sky, emissive shaders, fog) — validated on the `.exe`.
-- **Current state:** several P0 items done and awaiting the user's commit/review; room netcode proven on loopback; real-network validation (2 PCs) still pending. See [[📌 Backlog (EN)|Backlog]].
+- **Current state:** release **202608071124** published (scenery pickable on the host, replicated health, control response and ~1000× cheaper spawn). Netcode validated over the playit.gg tunnel with measurements on both sides — including *late join* into a room already in combat. See [[📌 Backlog (EN)|Backlog]].
 - **Business angle:** open-source product in the zimerfeld portfolio (social proof via GitHub stars/downloads); funding via GitHub Sponsors and Ko-fi → [[💜 Financiamento e Patrocínio (EN)|Funding & Sponsorship]].
 
 ## 🧭 Navigation by priority
@@ -51,6 +51,7 @@ atualizado: 2026-07-06
 - [[🔫 combate-tiro (EN)|combat/shooting]] — bullet, hit RPC, cooldown
 - [[⚔️ facções (EN)|factions]] — runtime sides (hostile/ally/neutral): no friendly fire, faction targeting, dynamic neutrals
 - [[🌐 multiplayer (EN)|multiplayer]] — server-authoritative architecture
+- [[🕹️ input-lag-cliente (EN)|client input lag]] — what only the client pays for in latency (and what is symmetric), what was fixed and how to measure it
 - [[🚪 salas (EN)|rooms]] — multi-level server: simultaneous rooms (SubViewport+World3D) + management grid
 - [[🛰️ hospedagem-online (EN)|online hosting]] — playing over the internet: playit.gg (UDP) · Tailscale/ZeroTier · port forwarding (ngrok does NOT work)
 - [[❤️ sistema-de-vida (EN)|health system]] — HP, health bar, respawn

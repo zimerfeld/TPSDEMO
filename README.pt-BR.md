@@ -73,7 +73,13 @@ em terceira pessoa. Em alto nível, oferece:
   (objetos de palco: **caixa magenta, esfera esmeralda e cápsula âmbar** — geometrias volumétricas
   básicas com material emissivo, luz própria e colliders no conceito LimbColliders/membro CORPO,
   configuráveis na tela Models). Cada level pode ter um template de personagens **e** um cenário
-  ativos ao mesmo tempo, aplicados no jogo solo e nas salas online.
+  ativos ao mesmo tempo, aplicados no jogo solo e nas salas online. Desde a versão **202608071124**, a
+  **gerência de salas do host também escolhe o cenário** (antes só o template de personagens): a sala
+  online nasce com o nível completo, e as peças chegam a quem entra **nas mesmas coordenadas do
+  servidor** — antes elas nasciam todas empilhadas na origem para os clientes, porque o transform não
+  viajava no pacote de criação. Uma ferramenta de linha de comando
+  (`scripts/scenery_contract.gd`) valida, corrige e importa modelos contra esse contrato, e os
+  gerenciadores avisam na tela quando o modelo escolhido não o cumpre.
 - **Ambientes de arena (impactantes e baratos por design)** — cada level tem sua própria atmosfera
   cyberpunk: **céu procedural em gradiente**, **névoa de distância** exponencial e um **piso-grade
   neon** emissivo (um shader compartilhado, `themes/level_grid_floor.gdshader` — pura matemática
@@ -209,6 +215,19 @@ em terceira pessoa. Em alto nível, oferece:
   Uma **tela de "Carregando"** cobre a entrada em qualquer level (offline) ou sala (online) e, no
   startup, prepara os gráficos adiantado — então a primeira partida começa fluida, em vez de travar
   alguns segundos esperando os shaders no meio da ação.
+- **Vida e resposta em rede (versão 202608071124)** — a vida deixou de se propagar só por eventos e
+  passou a ser **estado replicado**, inclusive o mapa **por membro**: quem entra numa sala já em
+  combate vê o inimigo com a vida e os membros exatos do servidor, em vez de barras cheias que nunca
+  se corrigiam — e um inimigo abatido não fica mais vivo e andando até sumir sem explodir. Do lado do
+  controle, o **clarão, o som e a tremida do tiro saem no instante do clique** (a bala e o dano seguem
+  decididos pelo servidor), o envio do seu comando deixou de esperar a grade de sincronização, e o
+  **movimento parou de tremer**: o servidor não devolve mais ao dono o vetor de andar que ele acabou
+  de produzir. A parada ficou seca, sem escorregar nem saltar para a frente.
+- **Spawn de sala muito mais barato (versão 202608071124)** — montar as hitboxes por membro de um
+  personagem custava **282 ms**; uma sala com 16 inimigos gastava cerca de 4 segundos de CPU só nisso.
+  Com a classificação de osso feita uma vez (em vez de uma vez por vértice) e reaproveitada entre
+  entidades do mesmo modelo, caiu para **0,25 ms** a partir do segundo personagem — com as hitboxes
+  verificadas idênticas, sem mudar um milímetro de colisão.
 - **Biblioteca + visualizador de modelos 3D** — assets 3D reutilizáveis organizados por tipo em
   `library3D/`, navegáveis no jogo pela tela Models (categoria → modelo → parte) com toggles, nesta
   ordem, de rotação, **Animação**, **Efeitos especiais** (tudo ligado ao modelo que nenhum outro
