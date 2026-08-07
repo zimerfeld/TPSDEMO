@@ -3,6 +3,37 @@ extends Node
 signal replace_main_scene
 
 const MENU_PATH: String = "res://scenes2D/menu/menu.tscn"
+const SETTINGS_SCENE: String = "res://scenes2D/settings/settings.tscn"
+
+## Level sobre o qual esta tela está aberta (modo PAUSA, aberto pelo ESC durante a partida). Vazio no
+## uso normal, em que a tela é a cena principal e o "Voltar" leva ao menu. Ver open_over_level.
+var _paused_level: Node = null
+
+
+## Abre as configurações SOBRE um nível em andamento (ESC na partida), em vez de trocar de cena.
+## A partida fica PAUSADA — é o que deixa o personagem ocioso, sem responder aos comandos e sem
+## continuar levando dano enquanto o jogador mexe nas opções — e esta tela roda em PROCESS_MODE_ALWAYS
+## para seguir funcionando com a árvore parada (mesmo padrão da confirmação de abandono).
+## Devolve a instância criada; ela se libera sozinha no "Voltar" (ou no ESC).
+static func open_over_level(level: Node) -> Node:
+	var screen: Node = (load(SETTINGS_SCENE) as PackedScene).instantiate()
+	screen._paused_level = level
+	screen.process_mode = Node.PROCESS_MODE_ALWAYS
+	level.add_child(screen)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	level.get_tree().paused = true
+	return screen
+
+
+# Fecha o modo PAUSA: despausa, recaptura o mouse e libera esta instância — a partida volta
+# exatamente de onde parou.
+func _close_over_level() -> void:
+	var level := _paused_level
+	_paused_level = null
+	if is_instance_valid(level) and level.is_inside_tree():
+		level.get_tree().paused = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	queue_free()
 
 # Fator que MULTIPLICA a cor (modulate) AUTORADA de uma opção NÃO selecionada — escurece mantendo o
 # matiz do gradiente verde→amarelo→laranja→vermelho (a selecionada fica na cor CHEIA, realçada). O
@@ -214,6 +245,10 @@ func _ready() -> void:
 	# O Tab/Shift+Tab atravessa as abas em sequência (ver _input → UINav.tab_container_focus_step); por
 	# isso a cena NÃO monta um anel fechado — a navegação por Tab é tratada explicitamente, recalculando
 	# a ordem global (todas as abas + Voltar/Reset/idioma/Debug2D) a cada passo.
+	_build_controls_tab()
+	# Aberta sobre uma partida (ESC): ganha o botão de abandonar ao lado do Voltar.
+	if _paused_level != null:
+		_add_abandon_button()
 	_focus_first_tab_control.call_deferred()
 
 
@@ -691,7 +726,203 @@ func _on_reset_pressed() -> void:
 		_select_saved_resolution()
 		_apply_settings()
 		Settings.apply_window_resolution(get_window())
+		InputBindings.reset_all()      # o Reset geral também devolve as teclas ao padrão
+		AnimationBindings.reset_all()  # e os atalhos de animação
+		_refresh_binding_buttons()
 	)
+
+
+# ───────────────────────────── aba Controles ─────────────────────────────
+# Uma linha por ação do jogador: rótulo + botão com a tecla/botão atual. Clicar no botão entra em
+# modo de CAPTURA — a próxima tecla ou botão do mouse pressionado vira o novo atalho. As linhas são
+# montadas em código a partir de InputBindings.ACTIONS, para acrescentar uma ação nova exigir só uma
+# entrada naquela lista (e a chave de tradução), sem mexer na cena.
+
+# Ação aguardando captura ("" = nenhuma). Enquanto != "", o _input desta tela desvia TODO evento de
+# tecla/botão para o remapeamento — inclusive o ESC, que aqui significa "cancelar a captura".
+var _capturing_action: String = ""
+# chave → botão que mostra o atalho, para repintar depois de mudar/resetar. A chave é o nome da AÇÃO
+# ou, para as animações, `_ANIM_PREFIX + nome do clipe` — as duas listas dividem a mesma captura.
+var _binding_buttons: Dictionary = {}
+# Prefixo que distingue uma linha de ANIMAÇÃO de uma linha de ação. Atalho de animação NÃO entra no
+# InputMap: ele é consultado pelo jogo (AnimationBindings.animation_for_event) para saber que clipe
+# tocar, então a movimentação básica (WSAD) segue intacta mesmo que a mesma tecla apareça nos dois.
+const _ANIM_PREFIX := "anim:"
+
+
+func _build_controls_tab() -> void:
+	var body := get_node_or_null(^"%ControlsBody") as VBoxContainer
+	if body == null:
+		return
+	for c in body.get_children():
+		c.queue_free()
+	_binding_buttons.clear()
+	# Tab começa depois do último controle das abas anteriores; o Voltar/Reset/idiomas vêm depois
+	# (59+), então a faixa 40+ acomoda as ações sem colidir.
+	var tab_index := 40
+	var current_group := ""
+	for entry in InputBindings.ACTIONS:
+		var group := String(entry["group"])
+		if group != current_group:
+			current_group = group
+			var header := Label.new()
+			header.name = "Group%s" % group
+			header.text = Locale.tr_key(group)
+			header.add_theme_font_size_override("font_size", 24)
+			header.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+			body.add_child(header)
+		var action := String(entry["action"])
+		var row := HBoxContainer.new()
+		row.name = "Row_%s" % action
+		row.add_theme_constant_override("separation", 8)
+		var label := Label.new()
+		label.name = "Label_%s" % action
+		label.text = Locale.tr_key(String(entry["label"]))
+		label.custom_minimum_size = Vector2(350, 44)
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 22)
+		row.add_child(label)
+		var button := Button.new()
+		button.name = "Bind_%s" % action
+		button.custom_minimum_size = Vector2(280, 44)
+		button.add_theme_font_size_override("font_size", 20)
+		button.set_meta(UINav.TAB_ORDER_META, tab_index)
+		tab_index += 1
+		button.pressed.connect(_start_capture.bind(action))
+		row.add_child(button)
+		var reset := Button.new()
+		reset.name = "Default_%s" % action
+		reset.text = Locale.tr_key("Padrão")
+		reset.custom_minimum_size = Vector2(120, 44)
+		reset.add_theme_font_size_override("font_size", 20)
+		reset.set_meta(UINav.TAB_ORDER_META, tab_index)
+		tab_index += 1
+		reset.pressed.connect(_reset_binding.bind(action))
+		row.add_child(reset)
+		body.add_child(row)
+		_binding_buttons[action] = button
+	tab_index = _build_animation_rows(body, tab_index)
+	_refresh_binding_buttons()
+
+
+# Seção "Animações": uma linha por animação DO MODELO (lidas do .glb, não escritas à mão), mapeável a
+# uma tecla ou botão do mouse igual às ações. As de movimentação já nascem com a tecla herdada da ação
+# correspondente — é o "servir como padrão" da demanda. Devolve o próximo índice de Tab livre.
+func _build_animation_rows(body: VBoxContainer, tab_index: int) -> int:
+	var animations := AnimationBindings.animation_names()
+	if animations.is_empty():
+		return tab_index
+	var header := Label.new()
+	header.name = "GroupAnimacoes"
+	header.text = "%s (%d)" % [Locale.tr_key("Animações"), animations.size()]
+	header.add_theme_font_size_override("font_size", 24)
+	header.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	body.add_child(header)
+	var hint := Label.new()
+	hint.name = "AnimacoesHint"
+	hint.text = Locale.tr_key("Lidas do modelo humanoide. As de movimentação herdam a tecla da ação — a movimentação básica (WSAD) continua a mesma.")
+	hint.add_theme_font_size_override("font_size", 16)
+	hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_child(hint)
+	for animation in animations:
+		var row := HBoxContainer.new()
+		row.name = "AnimRow_%s" % animation
+		row.add_theme_constant_override("separation", 8)
+		var label := Label.new()
+		label.name = "AnimLabel_%s" % animation
+		# O nome do clipe é DADO do modelo (vem do Blender) — não passa por tradução.
+		label.text = animation
+		label.custom_minimum_size = Vector2(350, 44)
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 22)
+		row.add_child(label)
+		var button := Button.new()
+		button.name = "AnimBind_%s" % animation
+		button.custom_minimum_size = Vector2(280, 44)
+		button.add_theme_font_size_override("font_size", 20)
+		button.set_meta(UINav.TAB_ORDER_META, tab_index)
+		tab_index += 1
+		button.pressed.connect(_start_capture.bind(_ANIM_PREFIX + animation))
+		row.add_child(button)
+		var reset := Button.new()
+		reset.name = "AnimDefault_%s" % animation
+		reset.text = Locale.tr_key("Padrão")
+		reset.custom_minimum_size = Vector2(120, 44)
+		reset.add_theme_font_size_override("font_size", 20)
+		reset.set_meta(UINav.TAB_ORDER_META, tab_index)
+		tab_index += 1
+		reset.pressed.connect(_reset_binding.bind(_ANIM_PREFIX + animation))
+		row.add_child(reset)
+		body.add_child(row)
+		_binding_buttons[_ANIM_PREFIX + animation] = button
+	return tab_index
+
+
+# Repinta os botões com o atalho vigente de cada linha (ações e animações).
+func _refresh_binding_buttons() -> void:
+	for key in _binding_buttons:
+		var button := _binding_buttons[key] as Button
+		if not is_instance_valid(button):
+			continue
+		if _capturing_action == key:
+			button.text = Locale.tr_key("Pressione uma tecla...")
+			continue
+		var name := String(key)
+		var event: InputEvent = (
+			AnimationBindings.event_for(name.substr(_ANIM_PREFIX.length()))
+			if name.begins_with(_ANIM_PREFIX)
+			else InputBindings.current_event(name))
+		button.text = InputBindings.label_for(event) if event != null else Locale.tr_key("Não definido")
+
+
+func _start_capture(key: String) -> void:
+	_capturing_action = key
+	_refresh_binding_buttons()
+
+
+func _reset_binding(key: String) -> void:
+	if key.begins_with(_ANIM_PREFIX):
+		AnimationBindings.reset_binding(key.substr(_ANIM_PREFIX.length()))
+	else:
+		InputBindings.reset_binding(key)
+	_refresh_binding_buttons()
+
+
+# Consome o evento durante a captura. ESC cancela; tecla/botão do mouse viram o novo atalho. Um
+# atalho já usado por OUTRA ação é aceito, mas com aviso — quem remapeia costuma trocar duas ações
+# de lugar, e bloquear obrigaria a limpar uma delas antes.
+func _handle_capture(event: InputEvent) -> bool:
+	if _capturing_action == "":
+		return false
+	if event is InputEventKey and (event as InputEventKey).keycode == KEY_ESCAPE:
+		_capturing_action = ""
+		_refresh_binding_buttons()
+		return true
+	if not InputBindings.is_supported(event) or not event.is_pressed():
+		return false
+	var key := _capturing_action
+	_capturing_action = ""
+	# ANIMAÇÃO: grava só a associação (o InputMap não é tocado), então repetir uma tecla de movimento
+	# aqui é legítimo — a tecla continua andando e passa a dizer também que clipe tocar.
+	if key.begins_with(_ANIM_PREFIX):
+		AnimationBindings.set_binding(key.substr(_ANIM_PREFIX.length()), event)
+		_refresh_binding_buttons()
+		return true
+	var clash := InputBindings.conflicting_action(key, event)
+	InputBindings.set_binding(key, event)
+	_refresh_binding_buttons()
+	if clash != "":
+		FloatingDialog.alert(self, Locale.tr_key("Atalho repetido"),
+				"%s %s" % [Locale.tr_key("Este atalho também está em uso por:"), Locale.tr_key(_action_label(clash))])
+	return true
+
+
+func _action_label(action: String) -> String:
+	for entry in InputBindings.ACTIONS:
+		if String(entry["action"]) == action:
+			return String(entry["label"])
+	return action
 
 
 # Abre (ou traz à frente) o Gerenciador de Música: ouvir faixas e atribuir/remover a trilha de cada
@@ -726,7 +957,38 @@ func _on_sfx_volume_changed(volume: int) -> void:
 
 
 func _on_back_pressed() -> void:
+	# Aberta sobre uma partida: "Voltar" retoma o jogo, não vai para o menu.
+	if _paused_level != null:
+		_close_over_level()
+		return
 	emit_signal("replace_main_scene", load(MENU_PATH))
+
+
+# "Abandonar Partida" (só no modo PAUSA): usa a MESMA confirmação de sempre. Ela cuida de despausar,
+# fechar esta tela e voltar à seleção de níveis; o "Não" devolve o jogador às configurações.
+func _on_abandon_pressed() -> void:
+	if _paused_level == null:
+		return
+	LevelExit.confirm_abandon(_paused_level, self)
+
+
+# Cria o botão "Abandonar Partida" ao lado do "Voltar" — só quando a tela está sobre uma partida, por
+# isso é montado em código e não no .tscn (na tela normal, vinda do menu, ele não faz sentido).
+# Entra no anel de Tab logo depois do Voltar.
+func _add_abandon_button() -> void:
+	var actions := get_node_or_null(^"UI/Actions") as HBoxContainer
+	var back := get_node_or_null(^"UI/Actions/Back") as Button
+	if actions == null or back == null or actions.has_node(^"Abandon"):
+		return
+	var abandon := Button.new()
+	abandon.name = "Abandon"
+	abandon.text = Locale.tr_key("Abandonar Partida")
+	abandon.custom_minimum_size = Vector2(240, 50)
+	abandon.add_theme_font_size_override("font_size", 28)
+	abandon.set_meta(UINav.TAB_ORDER_META, int(back.get_meta(UINav.TAB_ORDER_META, 59)) + 1)
+	abandon.pressed.connect(_on_abandon_pressed)
+	actions.add_child(abandon)
+	actions.move_child(abandon, back.get_index() + 1)
 
 
 # True se há alguma janela flutuante VISÍVEL (diálogo de confirmação, gerenciador de música…) — nesse
@@ -739,6 +1001,11 @@ func _floating_window_open() -> bool:
 
 
 func _input(input_event: InputEvent) -> void:
+	# Capturando um atalho novo (aba Controles): o evento é do remapeamento, não da navegação — nem
+	# mesmo o ESC, que ali significa "cancelar a captura".
+	if _handle_capture(input_event):
+		get_viewport().set_input_as_handled()
+		return
 	# Tab/Shift+Tab atravessam as abas do TabContainer em sequência (regra do projeto 2026-06-30):
 	# dentro da aba anda esquerda→direita/cima→baixo; no último controle da aba pula p/ a próxima aba e
 	# realça o 1º controle dela; só sai p/ Voltar/Reset/idioma quando está no último controle da última

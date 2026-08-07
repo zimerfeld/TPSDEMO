@@ -170,6 +170,10 @@ func load_settings() -> void:
 				needs_save = true
 	if needs_save:
 		save_settings()
+	# Remapeamento de teclas/botões (aba Controles). Precisa rodar DEPOIS do load: as ações nascem com
+	# o padrão do project.godot e só aqui os overrides do jogador entram no InputMap — sem isto o
+	# remapeamento valeria só na sessão em que foi feito.
+	InputBindings.apply_saved()
 
 
 func save_settings() -> void:

@@ -3,16 +3,33 @@ extends Node
 signal replace_main_scene(resource: PackedScene)
 signal quit
 
+## Personagens jogáveis, na MESMA ORDEM de PlayerSelection.VARIANTS — o que trafega pela rede é o
+## ÍNDICE, então trocar a ordem de um sem o outro faz o jogador nascer com o corpo errado em todos os
+## peers, sem erro nenhum. Acrescentar sempre no FIM.
+##
+## `model_glb` e `idle_anim` existem porque o preview desta tela era cravado no modelo do robô: cada
+## personagem mostra o SEU modelo e a SUA animação parada.
 const CHARACTERS: Array[Dictionary] = [
 	{
 		"name": "PLAYER",
 		"scene_path": "res://library3D/characters/player/player.tscn",
+		"model_glb": "res://library3D/characters/player/player.glb",
+		"idle_anim": "Idlecombatrest",
 		"tint": Color(1.0, 1.0, 1.0, 1.0),
 	},
 	{
 		"name": "PLAYERA",
 		"scene_path": "res://library3D/characters/playera/playera.tscn",
+		"model_glb": "res://library3D/characters/player/player.glb",
+		"idle_anim": "Idlecombatrest",
 		"tint": Color(1.0, 0.55, 0.65, 1.0),
+	},
+	{
+		"name": "HUMANOIDE",
+		"scene_path": "res://library3D/characters/humanoide_jogavel/humanoide_jogavel.tscn",
+		"model_glb": "res://library3D/characters/humanoide/humanoide3.glb",
+		"idle_anim": "ocioso",
+		"tint": Color(1.0, 1.0, 1.0, 1.0),
 	},
 ]
 
@@ -107,24 +124,26 @@ func _load_character(index: int) -> void:
 	var char_data: Dictionary = CHARACTERS[index]
 	character_name_label.text = char_data["name"]
 
-	var model_scene: PackedScene = load("res://library3D/characters/player/player.glb")
+	var model_scene: PackedScene = load(String(char_data["model_glb"]))
 	if model_scene == null:
 		return
 	var model: Node3D = model_scene.instantiate()
 
-	# Apply the same scale used in player.tscn
+	# Escala autorada do robô no player.tscn. Vale só para o modelo DELE — o nó `Robot_Skeleton` é a
+	# raiz do glTF do robô e não existe em outro modelo, então a busca por nome já isola o caso.
 	var skeleton := model.get_node_or_null("Robot_Skeleton") as Node3D
 	if skeleton:
 		skeleton.scale = Vector3(0.803991, 0.803991, 0.803991)
 
 	model_holder.add_child(model)
 
-	# Play idle animation
+	# Animação parada DESTE personagem (o robô descansa em "Idlecombatrest"; o humanoide, em "ocioso").
+	var idle := StringName(char_data.get("idle_anim", ""))
 	var anim_players := model.find_children("*", "AnimationPlayer", true, false)
-	if anim_players.size() > 0:
+	if anim_players.size() > 0 and idle != &"":
 		var ap := anim_players[0] as AnimationPlayer
-		if ap.has_animation(&"Idlecombatrest"):
-			ap.play(&"Idlecombatrest")
+		if ap.has_animation(idle):
+			ap.play(idle)
 
 	var tint: Color = char_data["tint"]
 	if tint != Color.WHITE:

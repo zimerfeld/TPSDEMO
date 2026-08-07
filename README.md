@@ -97,7 +97,7 @@ client at the server's exact coordinates; **health became replicated state** (pe
 joining a room already in combat shows the real health instead of full bars that never corrected
 themselves; the **shot's flash, sound and shake fire on the click** while bullet and damage stay with
 the server; **movement stopped stuttering** for the client; and building a character's per-limb
-hitboxes went from **282 ms to 0.25 ms**, with the hitboxes verified identical. Ground enemies now have **realistic locomotion with no
+hitboxes went from **282 ms to 0.25 ms**, with the hitboxes verified identical. A **third playable character** joined the roster — a humanoid with its own rig and 36 animations, walking with computed locomotion because its clips don't displace the body; **ESC during a match** now opens settings over the paused game (with Leave Match there); a **Controls tab** remaps every function to a key or mouse button and turns the humanoid's animations into **gestures** played over movement without disturbing WASD; and the template's **weapon** finally sets damage — no weapon, no shot. Ground enemies now have **realistic locomotion with no
 foot-sliding**: their legs face the direction they walk and each step is driven by the animation's own
 root motion (stride measured at runtime), so feet land exactly on the ground they cover — weighty,
 believable motion at speeds tuned to what the walk sustains, and they change direction smoothly instead
@@ -168,7 +168,12 @@ estado replicado** (inclusive por membro), então entrar numa sala já em combat
 vez de barras cheias que nunca se corrigiam; o **clarão, o som e a tremida do tiro saem no clique**,
 com a bala e o dano seguindo no servidor; o **movimento parou de tremer** no cliente; e montar as
 hitboxes por membro de um personagem caiu de **282 ms para 0,25 ms**, com as hitboxes verificadas
-idênticas. Os
+idênticas. Um **terceiro personagem jogável** entrou no elenco — um humanoide com rig e 36 animações
+próprias, que anda com locomoção calculada porque seus clipes não deslocam o corpo; o **ESC durante a
+partida** passou a abrir as configurações sobre o jogo pausado (com Abandonar Partida ali); uma **aba
+Controles** remapeia cada função para tecla ou botão do mouse e transforma as animações do humanoide
+em **gestos** tocados por cima do movimento, sem atrapalhar o WSAD; e a **arma** do template enfim
+define o dano — sem arma, sem tiro. Os
 inimigos terrestres agora têm **locomoção realista sem deslizar os pés**: as pernas encaram a direção
 em que andam e cada passo é movido pelo próprio root motion da animação (passada medida em runtime),
 então o pé pousa exatamente sobre o chão percorrido — movimento com peso e crível, em velocidades

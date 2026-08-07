@@ -89,5 +89,7 @@
 	"Membro-dono (agrupa o dano; não mexe na malha)": "Miembro dueño (agrupa el daño; no afecta a la malla)",
 	"Esfera": "Esfera",
 	"Caixa": "Caja",
-	"Cápsula": "Cápsula"
+	"Cápsula": "Cápsula",
+	"Dano da arma:": "Daño del arma:",
+	"0 = padrão (1 de vida por acerto)": "0 = predeterminado (1 de vida por acierto)"
 }
