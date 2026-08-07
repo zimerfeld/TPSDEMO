@@ -209,6 +209,15 @@ disparos en tercera persona. A grandes rasgos ofrece:
   que recibió locomoción calculada, con la **cadencia del paso escalada** para que los pies no
   patinen. La pantalla de selección pasa a mostrar el modelo y la pose de descanso **de cada
   personaje**, en vez del robot para todos.
+- **Correr, agacharse y cambiar el hombro de la mira** — mantener **SHIFT** hace que el personaje
+  corra (con la animación de carrera, no la caminata acelerada); al soltar vuelve a caminar. **CTRL**
+  lo agacha, y la pierna que se arrodilla sigue el lado de la mira. **C** cambia la mira de hombro y
+  recuerda la elección. Las tres teclas son remapeables, y la cadencia del paso sigue la velocidad
+  real — la animación nunca se convierte en cámara rápida. Cada movimiento se comporta como el cuerpo
+  espera: mientras mantienes la dirección, el personaje **sigue caminando** (o corriendo) en vez de
+  dar un paso y detenerse; al agacharse **se queda agachado** en lugar de arrodillarse una y otra vez,
+  y **se levanta** cuando sueltas CTRL. El salto también sabe de dónde viene — hay una animación para
+  saltar parado, otra caminando y otra corriendo.
 - **Configuración durante la partida (ESC)** — ESC en el juego abre ahora la **configuración sobre la
   partida, pausada**: el personaje queda ocioso, sin responder a los mandos ni recibir daño mientras
   ajustas las opciones. **Volver** reanuda justo donde lo dejaste; **Abandonar partida** abre la

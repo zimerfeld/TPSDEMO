@@ -89,5 +89,8 @@
 	"Roda do mouse para baixo": "Roda do mouse para baixo",
 	"Botão do mouse": "Botão do mouse",
 	"Animações": "Animações",
-	"Lidas do modelo humanoide. As de movimentação herdam a tecla da ação — a movimentação básica (WSAD) continua a mesma.": "Lidas do modelo humanoide. As de movimentação herdam a tecla da ação — a movimentação básica (WSAD) continua a mesma."
+	"Lidas do modelo humanoide. As de movimentação herdam a tecla da ação — a movimentação básica (WSAD) continua a mesma.": "Lidas do modelo humanoide. As de movimentação herdam a tecla da ação — a movimentação básica (WSAD) continua a mesma.",
+	"Correr (segurar)": "Correr (segurar)",
+	"Abaixar (segurar)": "Abaixar (segurar)",
+	"Trocar o lado da mira": "Trocar o lado da mira"
 }

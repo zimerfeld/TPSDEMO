@@ -89,5 +89,8 @@
 	"Roda do mouse para baixo": "Mouse wheel down",
 	"Botão do mouse": "Mouse button",
 	"Animações": "Animations",
-	"Lidas do modelo humanoide. As de movimentação herdam a tecla da ação — a movimentação básica (WSAD) continua a mesma.": "Read from the humanoid model. Movement ones inherit the action key — basic movement (WASD) stays the same."
+	"Lidas do modelo humanoide. As de movimentação herdam a tecla da ação — a movimentação básica (WSAD) continua a mesma.": "Read from the humanoid model. Movement ones inherit the action key — basic movement (WASD) stays the same.",
+	"Correr (segurar)": "Run (hold)",
+	"Abaixar (segurar)": "Crouch (hold)",
+	"Trocar o lado da mira": "Switch aim shoulder"
 }
