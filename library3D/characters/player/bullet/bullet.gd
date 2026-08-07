@@ -34,9 +34,25 @@ func _ready() -> void:
 	_apply_visuals()
 	# Sem atirador = bullet inerte: o "BulletCache" pré-instanciado na cena do
 	# player (warm-up) e os bullets replicados em clientes (shooter não replica).
+	# O avanço visual (_process) é EXCLUSIVO do cliente: no servidor quem move a bala é o
+	# _physics_process, e deixar os dois ligados a faria andar ao dobro da velocidade lá.
+	set_process(false)
 	if shooter == null or not multiplayer.is_server():
 		set_physics_process(false)
 		collision_shape.disabled = true
+		# No CLIENTE a bala só recebia o transform replicado a 30 Hz: com 60+ FPS ela ficava parada em
+		# um quadro e saltava 0,67 m no seguinte, parecendo engasgar. Aqui ela AVANÇA sozinha entre as
+		# amostras, na mesma velocidade e direção do disparo — puramente visual: sem colisão, sem
+		# dano, sem RPC (tudo isso continua no servidor, que segue mandando a posição de verdade).
+		# O BulletCache (shooter == null) fica parado: é só warm-up de shaders.
+		set_process(shooter != null)
+
+
+# Avanço visual da bala replicada (cliente). Não usa NetInterp de propósito: a interpolação
+# renderiza `render_delay_ms` no passado, e a bala do próprio jogador ficaria mais de um metro atrás
+# do cano — o oposto do que queremos.
+func _process(delta: float) -> void:
+	global_position += -delta * BULLET_VELOCITY * global_transform.basis.z
 
 
 # Aplica tint/cor/escala configurados. Sentinela (alpha 0) mantém o visual autorado.

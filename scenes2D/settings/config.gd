@@ -83,7 +83,9 @@ var DEFAULTS := {
 		shadow_mapping = true,
 		gi_type = GIType.VOXEL_GI,
 		gi_quality = GIQuality.LOW,
-		ssao_quality = RenderingServer.ENV_SSAO_QUALITY_MEDIUM,
+		# Desligado de fábrica: o ambiente dos levels já nasce sem SSAO, e a meta do projeto é 60 FPS
+		# em hardware gráfico mínimo. Quem quiser o efeito liga nas configurações.
+		ssao_quality = -1,
 		ssil_quality = -1,  # Disabled
 		bloom = false,
 		volumetric_fog = false,
@@ -204,14 +206,19 @@ func apply_graphics_settings(window: Window, environment: Environment, scene_roo
 		# as this would negatively affect the level's performance.
 		scene_root.propagate_call("set", ["shadow_enabled", false])
 
+	# O 2º teste era `if` (não `elif`), então "Desligado" (-1) caía no `else` e RELIGAVA o SSAO — e o
+	# mapeamento estava trocado (Média pedia HIGH em resolução cheia, o mais caro dos três). Ninguém
+	# conseguia desligar o efeito mais caro da lista. Espelha agora a cadeia do SSIL logo abaixo.
 	if Settings.config_file.get_value("rendering", "ssao_quality") == -1:
 		environment.ssao_enabled = false
-	if Settings.config_file.get_value("rendering", "ssao_quality") == RenderingServer.ENV_SSAO_QUALITY_MEDIUM:
+	elif Settings.config_file.get_value("rendering", "ssao_quality") == RenderingServer.ENV_SSAO_QUALITY_MEDIUM:
+		environment.ssao_enabled = true
+		RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_MEDIUM, true, 0.5, 2, 50, 300)
+	elif Settings.config_file.get_value("rendering", "ssao_quality") == RenderingServer.ENV_SSAO_QUALITY_HIGH:
 		environment.ssao_enabled = true
 		RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_HIGH, false, 0.5, 2, 50, 300)
 	else:
-		environment.ssao_enabled = true
-		RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_MEDIUM, true, 0.5, 2, 50, 300)
+		environment.ssao_enabled = false   # valor desconhecido: fica no barato
 
 	if Settings.config_file.get_value("rendering", "ssil_quality") == -1:
 		environment.ssil_enabled = false

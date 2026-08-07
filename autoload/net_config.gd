@@ -37,6 +37,15 @@ func sync_interval() -> float:
 	return 1.0 / float(maxi(sync_hz, 1))
 
 
+# Intervalo de envio do INPUT do cliente dono (s). Deliberadamente SEPARADO do sync_hz: aquele
+# dimensiona o broadcast de ESTADO do servidor (muitas entidades × muitos peers, onde a banda
+# importa); este é um único pacote pequeno com as teclas de um jogador, e cada milissegundo aqui é
+# sentido como input lag. 0 = envia no ritmo do frame, sem grade própria — o custo é da ordem de
+# 2 KB/s de upload a mais, contra até 33 ms de espera em toda ação do cliente.
+func input_interval() -> float:
+	return 0.0
+
+
 # Índice do preset de interpolação atual (para popular o OptionButton). Cai em "balanced" se custom.
 func interp_index() -> int:
 	for i in INTERP_KEYS.size():
