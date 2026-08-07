@@ -26,7 +26,7 @@ atualizado: 2026-07-06
 - **Stack:** Godot 4.6.2 · GDScript · build de Windows vía `build_windows.ps1` (un único .exe con PCK embebido).
 - **Diferenciadores:** salas multinivel en el mismo servidor (SubViewport+World3D), daño por hitbox por miembro (headshot), gestores de Plantillas/Escenarios por nivel, i18n EN/PT/ES en cada pantalla.
 - **Objetivo de rendimiento:** mínimo **60 FPS** en hardware gráfico mínimo, usando solo técnicas baratas (cielo procedural, shaders emisivos, niebla) — validado en el `.exe`.
-- **Estado actual:** varios ítems P0 hechos y a la espera del commit/revisión del usuario; el netcode de salas probado en loopback; validación en red real (2 PC) aún pendiente. Ver [[📌 Backlog (ES)|Backlog]].
+- **Estado actual:** release **202608071124** publicada (escenario elegible en el host, vida replicada, respuesta del control y spawn ~1000× más barato). Netcode validado por el túnel playit.gg con medición de los dos lados — incluido *late join* en una sala ya en combate. Ver [[📌 Backlog (ES)|Backlog]].
 - **Ángulo de negocio:** producto de código abierto en el portafolio zimerfeld (prueba social vía estrellas/descargas de GitHub); financiación vía GitHub Sponsors y Ko-fi → [[💜 Financiamento e Patrocínio (ES)|Financiación y Patrocinio]].
 
 ## 🧭 Navegación por prioridad
@@ -51,6 +51,7 @@ atualizado: 2026-07-06
 - [[🔫 combate-tiro (ES)|combate/disparos]] — bala, RPC de impacto, cooldown
 - [[⚔️ facções (ES)|facciones]] — bandos en runtime (hostil/aliado/neutral): sin fuego amigo, targeting por facción, neutrales dinámicos
 - [[🌐 multiplayer (ES)|multijugador]] — arquitectura con autoridad de servidor
+- [[🕹️ input-lag-cliente (ES)|input lag del cliente]] — qué paga solo el cliente en latencia (y qué es simétrico), qué se corrigió y cómo medirlo
 - [[🚪 salas (ES)|salas]] — servidor multinivel: salas simultáneas (SubViewport+World3D) + rejilla de gestión
 - [[🛰️ hospedagem-online (ES)|hospedaje online]] — jugar por internet: playit.gg (UDP) · Tailscale/ZeroTier · redirección de puertos (ngrok NO funciona)
 - [[❤️ sistema-de-vida (ES)|sistema de salud]] — HP, barra de salud, respawn

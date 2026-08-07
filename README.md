@@ -91,7 +91,13 @@ each entry's model is picked by **cascading folder navigation** (one dropdown pe
 faction, count, **scale (%)** and placement (coordinates, random area or formation) — the fields for the chosen
 placement mode are shown grouped, one mode at a time, and numeric fields are compact; both a character template
 and a scenery can be active at once, applied when the level starts, in solo play and online rooms
-alike, in the editor and in the exported .exe. Ground enemies now have **realistic locomotion with no
+alike, in the editor and in the exported .exe. **Since 202608071124** the host's room management picks
+the **scenery** too, so an online room is born with the complete level and its pieces reach every
+client at the server's exact coordinates; **health became replicated state** (per limb included), so
+joining a room already in combat shows the real health instead of full bars that never corrected
+themselves; the **shot's flash, sound and shake fire on the click** while bullet and damage stay with
+the server; **movement stopped stuttering** for the client; and building a character's per-limb
+hitboxes went from **282 ms to 0.25 ms**, with the hitboxes verified identical. Ground enemies now have **realistic locomotion with no
 foot-sliding**: their legs face the direction they walk and each step is driven by the animation's own
 root motion (stride measured at runtime), so feet land exactly on the ground they cover — weighty,
 believable motion at speeds tuned to what the walk sustains, and they change direction smoothly instead
@@ -155,7 +161,14 @@ flutuantes em que o modelo de cada entrada é escolhido por **navegação em cas
 dropdown por nível da biblioteca), com facção, quantidade, **escala (%)** e posicionamento (coordenadas, área
 aleatória ou formação) — os campos do posicionamento escolhido aparecem agrupados, um modo por vez,
 e os campos numéricos são compactos; um template de personagens e um cenário podem estar ativos ao mesmo tempo,
-aplicados quando o level inicia, no solo e nas salas online, no editor e no .exe exportado. Os
+aplicados quando o level inicia, no solo e nas salas online, no editor e no .exe exportado. **Desde a
+202608071124** a gerência de salas do host escolhe também o **cenário**, então a sala online nasce com
+o nível completo e suas peças chegam a cada cliente nas coordenadas exatas do servidor; a **vida virou
+estado replicado** (inclusive por membro), então entrar numa sala já em combate mostra a vida real em
+vez de barras cheias que nunca se corrigiam; o **clarão, o som e a tremida do tiro saem no clique**,
+com a bala e o dano seguindo no servidor; o **movimento parou de tremer** no cliente; e montar as
+hitboxes por membro de um personagem caiu de **282 ms para 0,25 ms**, com as hitboxes verificadas
+idênticas. Os
 inimigos terrestres agora têm **locomoção realista sem deslizar os pés**: as pernas encaram a direção
 em que andam e cada passo é movido pelo próprio root motion da animação (passada medida em runtime),
 então o pé pousa exatamente sobre o chão percorrido — movimento com peso e crível, em velocidades
