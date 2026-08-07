@@ -218,7 +218,11 @@ third-person shooter sandbox. At a high level it offers:
   running animation, not a sped-up walk); releasing goes back to walking. **CTRL** crouches, and the
   kneeling leg follows the aim side. **C** flips the aim to the other shoulder and remembers it. All
   three keys are remappable, and the stride cadence follows the real speed — the animation never turns
-  into fast-forward.
+  into fast-forward. Each movement now behaves the way the body expects: hold a direction and the
+  character **keeps walking** (or running) instead of taking one step and stopping; crouch and he
+  **stays down** instead of kneeling over and over, then **stands back up** when you release CTRL.
+  The jump knows where it came from too — one animation for jumping in place, another walking,
+  another running.
 - **Settings during a match (ESC)** — ESC in game now opens **settings over the paused match**: the
   character goes idle, unresponsive to input and taking no damage while you adjust options. **Back**
   resumes exactly where you stopped; **Leave Match** raises the usual confirmation.

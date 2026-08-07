@@ -856,6 +856,20 @@ const GESTURE_CLIP := "gesture_clip"
 const GESTURE_DEDUPE_MS: float = 400.0
 var _gesture_played_at: float = -1.0e9
 
+## Escala de tempo da camada de gesto. Zerá-la CONGELA a pose no frame em que estiver.
+const GESTURE_SCALE := "parameters/gesture_scale/scale"
+## Sobra deixada antes do fim do clipe ao congelar. O clipe de postura é CÍCLICO (é o que mantém a
+## camada de gesto viva — ela se encerraria num clipe que acaba); parar o tempo um triz antes do fim
+## garante que o segundo ciclo nunca comece. Sem a sobra, um frame de atraso rebobinaria a pose para o
+## início do movimento — o corpo voltaria a ficar de pé.
+const GESTURE_HOLD_MARGIN: float = 0.06
+## Gestos de POSTURA: em vez de voltarem à locomoção quando o clipe acaba, congelam no último frame e
+## ficam lá até o próximo gesto. É o que faz o agachado ser um ESTADO ("continua abaixado") em vez de
+## uma repetição do movimento de abaixar. Cada personagem declara os seus; vazio = ninguém segura.
+var hold_gestures: PackedStringArray = []
+## Invalida um congelamento agendado quando outro gesto o substitui antes da hora.
+var _gesture_hold_generation: int = 0
+
 
 ## True se este personagem sabe tocar gestos (a árvore tem a camada). O robô, por ora, não tem.
 func supports_gestures() -> bool:
@@ -898,6 +912,7 @@ func play_gesture(animation: String) -> void:
 func abort_gesture() -> void:
 	if not supports_gestures():
 		return
+	_resume_gesture_time()
 	animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT
 	if not _safe_is_server_call(false):
 		_server_gesture_abort.rpc_id(1)
@@ -915,6 +930,7 @@ func _server_gesture_abort() -> void:
 @rpc("authority", "call_local", "reliable")
 func play_gesture_abort() -> void:
 	if supports_gestures():
+		_resume_gesture_time()
 		animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT
 
 
@@ -926,7 +942,50 @@ func _play_gesture_local(animation: String) -> void:
 		return
 	clip.animation = StringName(animation)
 	_gesture_played_at = float(Time.get_ticks_msec())
+	_resume_gesture_time()
 	animation_tree[GESTURE_REQUEST] = AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE
+	if hold_gestures.has(animation):
+		_freeze_gesture_at_end(animation)
+
+
+## Nome do clipe de AGACHAR para o lado dado (1 = direita, -1 = esquerda), e o de LEVANTAR que o
+## desfaz. Vazio quer dizer "este personagem não sabe agachar" — o CTRL simplesmente não o anima. Só o
+## humanoide tem esse vocabulário hoje; o robô não tem os clipes.
+func crouch_gesture(_side: int) -> String:
+	return ""
+
+
+func stand_gesture(_side: int) -> String:
+	return ""
+
+
+func _has_gesture_scale() -> bool:
+	return animation_tree != null and animation_tree.tree_root != null \
+			and animation_tree.tree_root.has_node(&"gesture_scale")
+
+
+## Volta o tempo do gesto a correr e cancela qualquer congelamento pendente. Chamado a cada disparo e
+## no aborto: sem isto, o gesto seguinte a um agachado nasceria com escala 0, ou seja, parado.
+func _resume_gesture_time() -> void:
+	_gesture_hold_generation += 1
+	if _has_gesture_scale():
+		animation_tree[GESTURE_SCALE] = 1.0
+
+
+## Deixa o clipe rodar inteiro UMA vez e então para o tempo, segurando a pose final.
+func _freeze_gesture_at_end(animation: String) -> void:
+	if not _has_gesture_scale():
+		return
+	var clip := animation_tree.get_animation(StringName(animation))
+	if clip == null:
+		return
+	_gesture_hold_generation += 1
+	var generation := _gesture_hold_generation
+	await get_tree().create_timer(maxf(clip.length - GESTURE_HOLD_MARGIN, 0.05)).timeout
+	# Outro gesto entrou no meio do caminho (ou o personagem morreu): este congelamento não vale mais.
+	if generation != _gesture_hold_generation or not is_inside_tree():
+		return
+	animation_tree[GESTURE_SCALE] = 0.0
 
 
 @rpc("call_local")

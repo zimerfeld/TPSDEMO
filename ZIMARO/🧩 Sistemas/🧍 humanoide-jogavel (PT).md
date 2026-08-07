@@ -117,6 +117,57 @@ divergência que é só de input — o mesmo mecanismo que produz o "flickering"
 O lado da mira é aplicado **depois** da animação da câmera, espelhando o X do `SpringArm3D`: o clipe
 de mira continua único, só troca de ombro.
 
+## Estado vs. evento: o que repete, o que segura, o que acontece uma vez (2026-08-07)
+
+O playtest achou tres defeitos que sao, no fundo, **a mesma confusao**: tratar como evento o que o
+corpo entende como estado. Segurar W dava UM passo e parava; o CTRL ficava se ajoelhando em ciclo; e
+saltar correndo tocava o salto parado.
+
+**A causa raiz do primeiro:** o importador do Godot so liga o loop sozinho em clipes com sufixo
+`-cycle` -- convencao do `player.glb`. Os 36 clipes do humanoide chegam **todos** como `LOOP_NONE`,
+entao `andar` (1,10 s) tocava uma vez e congelava com a tecla ainda pressionada.
+`_ensure_locomotion_loops()` marca os ciclicos em codigo, e nao no `.import`, para valer em qualquer
+maquina sem depender de alguem lembrar de reimportar o `.glb`.
+
+O vocabulario passou a se dividir em tres naturezas:
+
+| natureza | clipes | comportamento |
+| --- | --- | --- |
+| **ciclico** | `ocioso`, `andar`, `correr` | repete enquanto a tecla estiver pressionada |
+| **postura** | `ajoelhar_dir`/`_esq` | desce uma vez e **congela** ate soltar o CTRL |
+| **evento** | `levantar_*`, `saltar*`, gestos | toca uma vez, termina e devolve o corpo a locomocao |
+
+### A armadilha do OneShot (medida, nao deduzida)
+
+A primeira tentativa de segurar a pose foi um `AnimationNodeTimeScale` no ramo do gesto, zerado no
+fim do clipe. **Nao funcionou:** o `AnimationNodeOneShot` mede o proprio progresso pelo tempo
+decorrido desde o disparo, e nao pelo tempo do sub-ramo -- congelar o sub-tempo nao o impede de
+terminar. Medido: `escala=0.0` mas `camada_ativa=false`, ou seja, a pose congelada nem estava sendo
+misturada na saida.
+
+A saida combina as duas pecas: o clipe de postura entra em **loop** (e o que mantem a camada de gesto
+viva, ja que um clipe que acaba encerra o OneShot) e o **TimeScale zerado** um triz antes do fim
+impede que o segundo ciclo comece. O jogador ve o corpo descer e ficar la; nunca ve a repeticao.
+A sobra (`GESTURE_HOLD_MARGIN`) importa: sem ela, um frame de atraso rebobinaria a pose para o inicio
+do movimento e o corpo voltaria a ficar de pe.
+
+Soltar o CTRL deixou de **abortar** o gesto e passa a tocar `levantar_*` -- abortar fazia o corpo
+saltar de volta a locomocao sem levantar.
+
+### Salto contextual
+
+`saltar` (parado), `andar_saltar_*` e `correr_saltar_*` ja existiam no `.glb`. A escolha e feita **no
+instante em que a subida comeca** e vale para o salto inteiro; trocar de clipe no ar partiria a
+animacao ao meio. O **lado e fixo** (`dir`), nao o da mira: `aim_side` e local ao dono e nao e
+replicado, entao cada peer escolheria um lado e o mesmo salto sairia com a perna trocada em cada
+tela. O agachado pode usar a mira porque la quem viaja pela rede e o **nome do clipe**.
+
+### Onde o vocabulario mora
+
+`crouch_gesture()`/`stand_gesture()` sao hooks do `Player` que devolvem vazio por padrao -- o
+`player_input` deixou de conhecer `"ajoelhar_dir"` e passou a **perguntar ao personagem**. Um
+personagem sem esses clipes (o robo) simplesmente ignora o CTRL, sem erro.
+
 ## Números a calibrar no olho
 
 `MAX_SPEED = 5,2 m/s` e a altura da câmera `1,72 m` foram **estimados**. Uma constante cada.

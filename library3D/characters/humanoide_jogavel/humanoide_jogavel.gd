@@ -40,7 +40,29 @@ const WALK_BLEND: float = 0.45
 const WALK_BLEND_PARAM := "parameters/walk/blend_position"
 
 
+## Clipes que precisam REPETIR enquanto a tecla estiver pressionada. O importador do Godot só liga o
+## loop sozinho em animações com sufixo `-cycle` (convenção do `player.glb`); as do humanoide chegam
+## todas como LOOP_NONE, então `andar` tocava 1,10 s e PARAVA com a tecla ainda pressionada.
+## `ocioso`/`andar`/`correr` são cíclicos por natureza: uma passada emenda na seguinte.
+## `ajoelhar_*` entra por um motivo TÉCNICO, não estético: a camada de gesto (OneShot) se encerra
+## quando o clipe acaba, e um gesto que acaba não segura pose nenhuma. Com o clipe em loop a camada
+## fica viva, e quem impede a repetição é o congelamento do tempo — ver CROUCH_HOLD. O jogador nunca
+## vê o segundo ciclo.
+const LOOPING_CLIPS: PackedStringArray = [
+	"ocioso", "andar", "correr", "ajoelhar_dir", "ajoelhar_esq",
+]
+
+## Agachar é POSTURA: o corpo desce uma vez e FICA lá até soltar o CTRL (ver Player.hold_gestures).
+## Levantar fica de fora — esse tem que terminar e devolver o corpo à locomoção.
+const CROUCH_HOLD: PackedStringArray = ["ajoelhar_dir", "ajoelhar_esq"]
+
+## Abaixo disto o corpo conta como PARADO ao saltar (salto no lugar, nao a versao em movimento).
+const MOVING_THRESHOLD: float = 0.15
+
+
 func _ready() -> void:
+	_ensure_locomotion_loops()
+	hold_gestures = CROUCH_HOLD
 	# Perfil de rig: reaproveita o `limb_config` da pasta `humanoide/` (a mesma que a tela Models já
 	# edita), em vez de exigir uma configuração nova só porque a cena jogável mora noutra pasta.
 	limb_model_key = "humanoide"
@@ -80,3 +102,55 @@ func _apply_horizontal_velocity(_delta: float, camera_x: Vector3, camera_z: Vect
 		var natural: float = RUN_NATURAL_SPEED if running else WALK_NATURAL_SPEED
 		animation_tree[CADENCE_PARAM] = clampf(
 				speed / maxf(natural, 0.1), CADENCE_MIN, CADENCE_MAX)
+
+
+# Marca como cíclicos os clipes de locomoção. Feito em CÓDIGO e não no `.import` porque assim vale
+# para qualquer máquina, sem depender de alguém lembrar de reimportar o `.glb` — e fica visível a
+# quem lê o personagem, junto da lista do que é estado e do que é evento.
+func _ensure_locomotion_loops() -> void:
+	var players := find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	var anim_player := players[0] as AnimationPlayer
+	for clip_name in LOOPING_CLIPS:
+		if not anim_player.has_animation(clip_name):
+			continue
+		var clip := anim_player.get_animation(clip_name)
+		if clip != null and clip.loop_mode == Animation.LOOP_NONE:
+			clip.loop_mode = Animation.LOOP_LINEAR
+
+
+## Vocabulário de postura deste modelo — a perna que se ajoelha (e a que levanta) segue o lado da
+## mira. Ver Player.crouch_gesture.
+func crouch_gesture(side: int) -> String:
+	return "ajoelhar_dir" if side > 0 else "ajoelhar_esq"
+
+
+func stand_gesture(side: int) -> String:
+	return "levantar_dir" if side > 0 else "levantar_esq"
+
+
+## O salto do humanoide tem TRÊS versões, conforme o que o corpo estava fazendo quando saiu do chão:
+## parado (`saltar`), em caminhada (`andar_saltar_*`) e em corrida (`correr_saltar_*`). A escolha é
+## feita no instante em que a subida começa e vale para o salto inteiro — trocar de clipe no ar
+## partiria a animação ao meio.
+func animate(anim: int, delta: float) -> void:
+	if anim == Animations.JUMP_UP and current_animation != Animations.JUMP_UP:
+		_pick_jump_clip()
+	super.animate(anim, delta)
+
+
+func _pick_jump_clip() -> void:
+	if animation_tree == null or animation_tree.tree_root == null:
+		return
+	var clip_name := "saltar"
+	if motion.length() > MOVING_THRESHOLD:
+		var running: bool = player_input != null and player_input.running
+		# Lado FIXO, não o da mira: `aim_side` é local ao dono e não é replicado, então cada peer
+		# escolheria um lado diferente e o mesmo salto sairia com a perna trocada em cada tela. O
+		# agachado pode usar a mira porque lá quem viaja pela rede é o NOME do clipe.
+		clip_name = "correr_saltar_dir" if running else "andar_saltar_dir"
+	for node_name in [&"jump_up", &"jump_down"]:
+		var clip := animation_tree.tree_root.get_node(node_name) as AnimationNodeAnimation
+		if clip != null:
+			clip.animation = StringName(clip_name)

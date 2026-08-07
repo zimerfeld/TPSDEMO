@@ -226,7 +226,10 @@ em terceira pessoa. Em alto nível, oferece:
   animação de corrida, não a caminhada acelerada); soltar volta a caminhar. **CTRL** abaixa, e a perna
   que ajoelha acompanha o lado da mira. **C** troca a mira de ombro e lembra a escolha. As três teclas
   são remapeáveis, e a cadência do passo acompanha a velocidade real — a animação nunca vira câmera
-  rápida.
+  rápida. Cada movimento se comporta como o corpo espera: enquanto você segura a direção, o
+  personagem **continua andando** (ou correndo) em vez de dar um passo e parar; ao abaixar, ele
+  **fica abaixado** em vez de se ajoelhar repetidamente, e **levanta** quando você solta o CTRL. O
+  salto também sabe de onde veio — há uma animação para pular parado, outra andando e outra correndo.
 - **Configurações durante a partida (ESC)** — ESC no jogo agora abre as **configurações sobre a
   partida, pausada**: o personagem fica ocioso, sem responder aos comandos nem levar dano enquanto
   você ajusta as opções. **Voltar** retoma exatamente de onde parou; **Abandonar Partida** abre a

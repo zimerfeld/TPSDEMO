@@ -353,16 +353,21 @@ func _apply_aim_side() -> void:
 
 
 ## CTRL abaixa. A animação é a do lado da mira — mira à direita ajoelha com a perna direita, à
-## esquerda com a esquerda —, tocada na camada de gesto: entra ao apertar e sai ao soltar.
+## esquerda com a esquerda. São dois movimentos distintos e cada um toca UMA vez: ao apertar, abaixa e
+## FICA abaixado (a pose congela — ver Player.hold_gestures); ao soltar, roda o levantar. Abortar o
+## gesto, como se fazia antes, fazia o corpo saltar de volta à locomoção sem levantar.
+## Quais clipes usar é o personagem quem diz: este nó não conhece o vocabulário de nenhum modelo.
 func _update_crouch() -> void:
 	crouching = Input.is_action_pressed(&"crouch")
 	if crouching == _was_crouching:
 		return
 	_was_crouching = crouching
 	var character := get_parent()
-	if character == null or not character.has_method(&"request_gesture"):
+	var asker: StringName = &"crouch_gesture" if crouching else &"stand_gesture"
+	# Nem todo corpo que aceita este nó é um `Player` — o red_robot é um CharacterBody3D próprio.
+	if character == null or not character.has_method(asker) \
+			or not character.has_method(&"request_gesture"):
 		return
-	if crouching:
-		character.call(&"request_gesture", "ajoelhar_dir" if aim_side > 0 else "ajoelhar_esq")
-	else:
-		character.call(&"abort_gesture")
+	var clip: String = character.call(asker, aim_side)
+	if clip != "":
+		character.call(&"request_gesture", clip)

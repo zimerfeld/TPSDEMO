@@ -114,6 +114,58 @@ correcting a divergence that is purely input — the same mechanism that produce
 The aim side is applied **after** the camera animation, mirroring the `SpringArm3D` X: the aim clip
 stays single, it just switches shoulders.
 
+## State vs. event: what repeats, what holds, what happens once (2026-08-07)
+
+The playtest found three defects that are, at bottom, **the same confusion**: treating as an event
+what the body understands as a state. Holding W took ONE step and stopped; CTRL kept kneeling in a
+loop; and jumping while running played the standing jump.
+
+**Root cause of the first:** Godot's importer only turns looping on by itself for clips with a
+`-cycle` suffix -- the `player.glb` convention. The humanoid's 36 clips all arrive as `LOOP_NONE`, so
+`andar` (1.10 s) played once and froze with the key still held. `_ensure_locomotion_loops()` marks
+the cyclic ones in code rather than in the `.import`, so it holds on any machine without anyone
+having to remember to reimport the `.glb`.
+
+The vocabulary now splits into three natures:
+
+| nature | clips | behaviour |
+| --- | --- | --- |
+| **cyclic** | `ocioso`, `andar`, `correr` | repeats while the key is held |
+| **posture** | `ajoelhar_dir`/`_esq` | goes down once and **freezes** until CTRL is released |
+| **event** | `levantar_*`, `saltar*`, gestures | plays once, ends, hands the body back to locomotion |
+
+### The OneShot trap (measured, not deduced)
+
+The first attempt at holding the pose was an `AnimationNodeTimeScale` on the gesture branch, zeroed
+at the end of the clip. **It didn't work:** `AnimationNodeOneShot` measures its own progress by the
+time elapsed since firing, not by the sub-branch's time -- freezing the sub-time doesn't stop it from
+ending. Measured: `scale=0.0` but `layer_active=false`, i.e. the frozen pose wasn't even being mixed
+into the output.
+
+The fix combines both pieces: the posture clip **loops** (that is what keeps the gesture layer alive,
+since a clip that ends terminates the OneShot) and the **zeroed TimeScale** a hair before the end
+stops the second cycle from starting. The player sees the body go down and stay there; never the
+repeat. The margin (`GESTURE_HOLD_MARGIN`) matters: without it, one frame of delay would rewind the
+pose to the start of the movement and the body would stand back up.
+
+Releasing CTRL no longer **aborts** the gesture -- it plays `levantar_*`. Aborting made the body snap
+back to locomotion without standing up.
+
+### Contextual jump
+
+`saltar` (standing), `andar_saltar_*` and `correr_saltar_*` were already in the `.glb`. The choice is
+made **the instant the rise begins** and holds for the whole jump; swapping clips mid-air would cut
+the animation in half. The **side is fixed** (`dir`), not the aim side: `aim_side` is local to the
+owner and isn't replicated, so each peer would pick its own and the same jump would come out with the
+wrong leg on every screen. Crouching can use the aim side because there it's the **clip name** that
+travels over the network.
+
+### Where the vocabulary lives
+
+`crouch_gesture()`/`stand_gesture()` are `Player` hooks returning empty by default -- `player_input`
+stopped knowing about `"ajoelhar_dir"` and now **asks the character**. A character without those
+clips (the robot) simply ignores CTRL, with no error.
+
 ## Numbers to eyeball
 
 `MAX_SPEED = 5.2 m/s` and the camera height `1.72 m` are **estimates**. One constant each.

@@ -108,6 +108,7 @@ func _build() -> void:
 	tree.set("parameters/state/current_state", "walk")
 	tree.set("parameters/aim/add_amount", 0.0)
 	tree.set("parameters/locomotion_scale/scale", 1.0)
+	tree.set("parameters/gesture_scale/scale", 1.0)
 
 	# 4) CAMERA na altura do humanoide.
 	var camera_base: Node3D = root.get_node_or_null(^"CameraBase")
@@ -177,6 +178,11 @@ func _build_tree() -> AnimationNodeBlendTree:
 	gesture.fadein_time = 0.15
 	gesture.fadeout_time = 0.2
 	tree.add_node(&"gesture", gesture)
+	# Escala de tempo do gesto. Existe para os gestos de POSTURA (agachar): zerando a escala quando o
+	# clipe chega ao fim, o tempo do ramo para e a pose CONGELA no ultimo frame — o personagem fica
+	# abaixado sem repetir a animacao de abaixar. Repetir em loop resolveria "ficar la", mas o corpo
+	# ficaria se ajoelhando de novo e de novo. Ver Player.hold_gestures.
+	tree.add_node(&"gesture_scale", AnimationNodeTimeScale.new())
 	tree.add_node(&"gesture_clip", _clip("ocioso"))
 
 	tree.connect_node(&"state", 0, &"strafe")
@@ -185,7 +191,8 @@ func _build_tree() -> AnimationNodeBlendTree:
 	tree.connect_node(&"state", 3, &"jump_down")
 	tree.connect_node(&"locomotion_scale", 0, &"state")
 	tree.connect_node(&"gesture", 0, &"locomotion_scale")
-	tree.connect_node(&"gesture", 1, &"gesture_clip")
+	tree.connect_node(&"gesture", 1, &"gesture_scale")
+	tree.connect_node(&"gesture_scale", 0, &"gesture_clip")
 	tree.connect_node(&"aim", 0, &"aim_minus")
 	tree.connect_node(&"aim", 1, &"gesture")
 	tree.connect_node(&"aim", 2, &"aim_plus")
